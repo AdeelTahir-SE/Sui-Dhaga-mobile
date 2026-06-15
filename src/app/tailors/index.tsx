@@ -1,3 +1,3 @@
-import TailorsScreen from "@/features/tailors/screens/TailorsScreen";
+import MainTailorsScreen from "@/features/customer-tabs/screens/MainTailorsScreen";
 
-export default TailorsScreen;
+export default MainTailorsScreen;

@@ -1,3 +1,3 @@
-import OrdersScreen from "@/features/booking-orders/screens/OrdersScreen";
+import MainOrdersScreen from "@/features/customer-tabs/screens/MainOrdersScreen";
 
-export default OrdersScreen;
+export default MainOrdersScreen;
