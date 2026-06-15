@@ -1,7 +1,10 @@
 import { Text, View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { PlaceholderVisual } from "./PlaceholderVisual";
+
+const communityPost = require("@/assets/illustrations/generated/community-post.png");
 
 type PostCardProps = {
   author: string;
@@ -33,7 +36,13 @@ export function PostCard({
       <Text className="mb-3 text-[12px] leading-5 text-brand-dark">
         {caption}
       </Text>
-      <PlaceholderVisual variant="garment" size="lg" tone={tone} />
+      <View className="h-[260px] w-full overflow-hidden rounded-xl bg-brand-surface">
+        <Image
+          source={communityPost}
+          contentFit="cover"
+          className="h-full w-full"
+        />
+      </View>
       <View className="mt-3 flex-row items-center">
         <Ionicons name="heart" size={18} color="#F05A57" />
         <Text className="ml-2 mr-6 text-[12px] text-brand-dark">128</Text>

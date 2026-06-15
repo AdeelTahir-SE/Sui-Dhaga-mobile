@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 type Tone = "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
@@ -36,6 +37,14 @@ const sizeClasses = {
   chart: "h-[170px] w-full",
 };
 
+const generatedAssets = {
+  person: require("@/assets/illustrations/generated/action-icons.png"),
+  garment: require("@/assets/illustrations/generated/garment-set.png"),
+  machine: require("@/assets/illustrations/generated/tailoring-hero.png"),
+  money: require("@/assets/illustrations/generated/tailor-dashboard-set.png"),
+  chart: require("@/assets/illustrations/generated/tailor-dashboard-set.png"),
+};
+
 export function TailorDashPlaceholder({
   label,
   variant = "garment",
@@ -57,13 +66,17 @@ export function TailorDashPlaceholder({
     <View
       className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-xl ${toneClasses[tone]}`}
     >
-      <Ionicons
-        name={icon}
-        size={size === "hero" || size === "chart" ? 44 : 28}
-        color={iconColors[tone]}
+      <Image
+        source={generatedAssets[variant]}
+        contentFit="cover"
+        className="absolute inset-0 h-full w-full"
       />
+      <View className="absolute inset-0 bg-white/10" />
+      {size === "xs" ? (
+        <Ionicons name={icon} size={14} color={iconColors[tone]} />
+      ) : null}
       {label ? (
-        <Text className="mt-1 px-2 text-center text-[9px] font-medium text-brand-gray">
+        <Text className="absolute bottom-1 rounded bg-white/80 px-2 text-center text-[9px] font-medium text-brand-gray">
           {label}
         </Text>
       ) : null}

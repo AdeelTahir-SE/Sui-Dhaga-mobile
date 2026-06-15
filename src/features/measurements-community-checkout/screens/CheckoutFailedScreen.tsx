@@ -1,17 +1,22 @@
 import { Text, View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { MccButton } from "../components/MccButton";
 import { MccScreenShell } from "../components/MccScreenShell";
 
+const checkoutStatus = require("@/assets/illustrations/generated/checkout-status.png");
+
 export default function CheckoutFailedScreen() {
   return (
     <MccScreenShell>
       <View className="flex-1 items-center px-7 pt-24">
-        <View className="h-24 w-24 items-center justify-center rounded-full bg-[#FFF0F0]">
-          <View className="h-16 w-16 items-center justify-center rounded-full bg-[#F05A57]">
-            <Ionicons name="close" size={36} color="#FFFFFF" />
-          </View>
+        <View className="h-32 w-32 overflow-hidden rounded-full bg-[#FFF0F0]">
+          <Image
+            source={checkoutStatus}
+            contentFit="cover"
+            className="h-full w-full"
+          />
         </View>
         <Text className="mt-10 text-center text-[22px] font-bold text-brand-dark">
           Payment Failed

@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 type PlaceholderImageProps = {
@@ -28,6 +29,11 @@ const sizeClasses = {
   lg: "h-[118px] w-[92px]",
 };
 
+const generatedAssets = {
+  person: require("@/assets/illustrations/generated/action-icons.png"),
+  garment: require("@/assets/illustrations/generated/garment-set.png"),
+};
+
 export function PlaceholderImage({
   label,
   variant = "person",
@@ -38,13 +44,21 @@ export function PlaceholderImage({
     <View
       className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-xl ${toneClasses[tone]}`}
     >
-      <Ionicons
-        name={variant === "person" ? "person" : "shirt-outline"}
-        size={size === "lg" ? 38 : 26}
-        color={iconColors[tone]}
+      <Image
+        source={generatedAssets[variant]}
+        contentFit="cover"
+        className="absolute inset-0 h-full w-full"
       />
+      <View className="absolute inset-0 bg-white/10" />
+      {size === "sm" ? (
+        <Ionicons
+          name={variant === "person" ? "person" : "shirt-outline"}
+          size={14}
+          color={iconColors[tone]}
+        />
+      ) : null}
       {label ? (
-        <Text className="mt-1 px-1 text-center text-[9px] font-medium text-brand-gray">
+        <Text className="absolute bottom-1 rounded bg-white/80 px-1 text-center text-[9px] font-medium text-brand-gray">
           {label}
         </Text>
       ) : null}

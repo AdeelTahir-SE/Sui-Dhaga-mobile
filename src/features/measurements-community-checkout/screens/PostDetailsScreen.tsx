@@ -1,4 +1,5 @@
 import { Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { MccButton } from "../components/MccButton";
@@ -6,6 +7,8 @@ import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
 import { PlaceholderVisual } from "../components/PlaceholderVisual";
 import { SectionTitle } from "../components/SectionTitle";
+
+const communityPost = require("@/assets/illustrations/generated/community-post.png");
 
 export default function PostDetailsScreen() {
   return (
@@ -24,7 +27,13 @@ export default function PostDetailsScreen() {
             <Text className="text-[11px] font-semibold text-[#F05A57]">Follow</Text>
           </TouchableOpacity>
         </View>
-        <PlaceholderVisual variant="garment" size="lg" tone="mint" />
+        <View className="h-[300px] overflow-hidden rounded-xl bg-brand-surface">
+          <Image
+            source={communityPost}
+            contentFit="cover"
+            className="h-full w-full"
+          />
+        </View>
         <Text className="mt-3 text-[12px] leading-5 text-brand-dark">
           Pastel green Anarkali with delicate floral embroidery.
         </Text>
