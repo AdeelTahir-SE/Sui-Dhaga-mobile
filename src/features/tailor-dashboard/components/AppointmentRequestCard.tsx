@@ -1,0 +1,54 @@
+import { Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
+import { DashActionButton } from "./DashActionButton";
+import { StatusPill } from "./StatusPill";
+import { TailorDashPlaceholder } from "./TailorDashPlaceholder";
+
+type AppointmentRequestCardProps = {
+  name: string;
+  service: string;
+  date: string;
+  time: string;
+  newRequest?: boolean;
+  tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
+};
+
+export function AppointmentRequestCard({
+  name,
+  service,
+  date,
+  time,
+  newRequest,
+  tone = "coral",
+}: AppointmentRequestCardProps) {
+  return (
+    <View className="mb-3 rounded-xl border border-brand-border bg-white p-3">
+      <View className="flex-row">
+        <TailorDashPlaceholder variant="person" size="sm" tone={tone} />
+        <View className="ml-3 flex-1">
+          <View className="flex-row items-start justify-between">
+            <Text className="text-[13px] font-bold text-brand-dark">{name}</Text>
+            <StatusPill
+              label={newRequest ? "New Request" : "Upcoming"}
+              tone={newRequest ? "gold" : "blue"}
+            />
+          </View>
+          <Text className="mt-1 text-[12px] text-brand-dark">{service}</Text>
+          <View className="mt-3 flex-row items-center">
+            <Ionicons name="calendar-outline" size={13} color="#6F767E" />
+            <Text className="ml-1 mr-4 text-[11px] text-brand-gray">{date}</Text>
+            <Ionicons name="time-outline" size={13} color="#6F767E" />
+            <Text className="ml-1 text-[11px] text-brand-gray">{time}</Text>
+          </View>
+        </View>
+      </View>
+      {newRequest ? (
+        <View className="mt-3 flex-row gap-3">
+          <DashActionButton title="Reject" variant="outline" />
+          <DashActionButton title="Accept" />
+        </View>
+      ) : null}
+    </View>
+  );
+}

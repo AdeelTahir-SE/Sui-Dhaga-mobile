@@ -1,0 +1,72 @@
+import { Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
+type Tone = "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
+
+type TailorDashPlaceholderProps = {
+  label?: string;
+  variant?: "person" | "garment" | "machine" | "money" | "chart";
+  size?: "xs" | "sm" | "md" | "hero" | "chart";
+  tone?: Tone;
+};
+
+const toneClasses: Record<Tone, string> = {
+  teal: "bg-primary-50",
+  coral: "bg-[#FFF0EC]",
+  gold: "bg-[#FFF6DA]",
+  blue: "bg-[#EAF3FF]",
+  mint: "bg-[#EAF8EE]",
+  cream: "bg-[#F8F4EA]",
+};
+
+const iconColors: Record<Tone, string> = {
+  teal: "#14919B",
+  coral: "#F05A57",
+  gold: "#D79A00",
+  blue: "#3B77C9",
+  mint: "#29A45B",
+  cream: "#B18A4A",
+};
+
+const sizeClasses = {
+  xs: "h-10 w-10",
+  sm: "h-16 w-16",
+  md: "h-20 w-20",
+  hero: "h-[130px] w-[150px]",
+  chart: "h-[170px] w-full",
+};
+
+export function TailorDashPlaceholder({
+  label,
+  variant = "garment",
+  size = "md",
+  tone = "teal",
+}: TailorDashPlaceholderProps) {
+  const icon =
+    variant === "person"
+      ? "person"
+      : variant === "machine"
+        ? "construct-outline"
+        : variant === "money"
+          ? "cash-outline"
+          : variant === "chart"
+            ? "trending-up-outline"
+            : "shirt-outline";
+
+  return (
+    <View
+      className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-xl ${toneClasses[tone]}`}
+    >
+      <Ionicons
+        name={icon}
+        size={size === "hero" || size === "chart" ? 44 : 28}
+        color={iconColors[tone]}
+      />
+      {label ? (
+        <Text className="mt-1 px-2 text-center text-[9px] font-medium text-brand-gray">
+          {label}
+        </Text>
+      ) : null}
+    </View>
+  );
+}

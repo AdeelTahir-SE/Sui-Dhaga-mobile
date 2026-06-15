@@ -14,6 +14,10 @@ export default function RootLayout() {
         <Stack.Screen name="booking" />
         <Stack.Screen name="appointments" />
         <Stack.Screen name="orders" />
+        <Stack.Screen name="measurements" />
+        <Stack.Screen name="community" />
+        <Stack.Screen name="checkout" />
+        <Stack.Screen name="tailor-dashboard" />
       </Stack>
     </>
   );
