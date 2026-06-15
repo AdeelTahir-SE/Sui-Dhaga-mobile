@@ -1,5 +1,8 @@
 import { Text, View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+
+const profileActionIcons = require("@/assets/illustrations/customer-tabs/profile-action-icons.png");
 
 type ProfileMenuRowProps = {
   title: string;
@@ -15,7 +18,13 @@ export function ProfileMenuRow({ title, subtitle, icon, highlighted }: ProfileMe
         highlighted ? "bg-[#FFF8EF] border border-[#F2DFC4]" : "bg-white"
       }`}
     >
-      <Ionicons name={icon} size={22} color={highlighted ? "#14919B" : "#1A1D1F"} />
+      <View className="h-9 w-9 overflow-hidden rounded-lg bg-primary-50">
+        <Image
+          source={profileActionIcons}
+          contentFit="cover"
+          className="h-full w-full"
+        />
+      </View>
       <View className="ml-3 flex-1">
         <Text className="text-[13px] font-semibold text-brand-dark">{title}</Text>
         <Text className="mt-1 text-[10px] text-brand-gray">{subtitle}</Text>

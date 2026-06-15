@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
 import { PasswordStrength } from "../components/PasswordStrength";
+import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
 
 const lockIllustration = require("@/assets/illustrations/auth-flow/auth-reset-password.png");
 
@@ -24,6 +25,7 @@ export default function ResetPasswordScreen() {
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+      <AuthEdgeDecorations variant="teal" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -106,15 +108,7 @@ export default function ResetPasswordScreen() {
             </View>
           </View>
 
-          {/* Bottom Decoration */}
-          <View
-            className="h-24 mt-8"
-            style={{
-              backgroundColor: "rgba(14, 145, 155, 0.06)",
-              borderTopLeftRadius: 40,
-              borderTopRightRadius: 40,
-            }}
-          />
+          <View className="h-28" />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

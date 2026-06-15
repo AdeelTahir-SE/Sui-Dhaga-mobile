@@ -1,4 +1,5 @@
 import { Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 
 import { CustomerTabShell } from "../components/CustomerTabShell";
@@ -7,6 +8,8 @@ import { MainTailorCard } from "../components/MainTailorCard";
 import { QuickAction } from "../components/QuickAction";
 import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
+
+const homeHero = require("@/assets/illustrations/customer-tabs/home-hero.png");
 
 export default function HomeScreen() {
   return (
@@ -36,9 +39,11 @@ export default function HomeScreen() {
               Explore Tailors
             </Text>
           </TouchableOpacity>
-          <View className="absolute bottom-0 right-3">
-            <TabPlaceholder variant="machine" size="hero" tone="cream" />
-          </View>
+          <Image
+            source={homeHero}
+            contentFit="cover"
+            className="absolute bottom-0 right-0 h-full w-[58%]"
+          />
         </View>
 
         <SectionTitle title="Quick Actions" />

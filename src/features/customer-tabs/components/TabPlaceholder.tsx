@@ -38,10 +38,10 @@ const sizeClasses = {
 };
 
 const generatedAssets = {
-  garment: require("@/assets/illustrations/generated/garment-set.png"),
-  person: require("@/assets/illustrations/generated/action-icons.png"),
-  machine: require("@/assets/illustrations/generated/tailoring-hero.png"),
-  card: require("@/assets/illustrations/generated/action-icons.png"),
+  garment: require("@/assets/illustrations/customer-tabs/category-tiles.png"),
+  person: require("@/assets/illustrations/customer-tabs/tailor-avatars.png"),
+  machine: require("@/assets/illustrations/customer-tabs/home-hero.png"),
+  card: require("@/assets/illustrations/customer-tabs/profile-action-icons.png"),
 };
 
 export function TabPlaceholder({

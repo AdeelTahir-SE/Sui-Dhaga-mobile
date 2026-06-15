@@ -1,6 +1,9 @@
 import { Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 
 import { TabPlaceholder } from "./TabPlaceholder";
+
+const orderItems = require("@/assets/illustrations/customer-tabs/order-items.png");
 
 type MainOrderCardProps = {
   id: string;
@@ -26,7 +29,9 @@ export function MainOrderCard({
   return (
     <View className="mb-4 rounded-xl border border-brand-border p-3">
       <View className="flex-row">
-        <TabPlaceholder variant="garment" size="md" tone={tone} />
+        <View className="h-24 w-20 overflow-hidden rounded-xl bg-brand-surface">
+          <Image source={orderItems} contentFit="cover" className="h-full w-full" />
+        </View>
         <View className="ml-3 flex-1">
           <View className="flex-row items-start justify-between">
             <Text className="text-[12px] font-bold text-brand-dark">Order #{id}</Text>

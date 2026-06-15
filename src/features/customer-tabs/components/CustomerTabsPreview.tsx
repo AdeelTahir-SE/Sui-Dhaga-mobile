@@ -1,4 +1,5 @@
-import { Text, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 type CustomerTab = "Home" | "Tailors" | "Design" | "Orders" | "Messages" | "Profile";
@@ -11,13 +12,14 @@ export function CustomerTabsPreview({ active }: CustomerTabsPreviewProps) {
   const tabs: {
     label: CustomerTab;
     icon: keyof typeof Ionicons.glyphMap;
+    href: string;
   }[] = [
-    { label: "Home", icon: "home-outline" },
-    { label: "Tailors", icon: "person-outline" },
-    { label: "Design", icon: "color-wand-outline" },
-    { label: "Orders", icon: "bag-handle-outline" },
-    { label: "Messages", icon: "chatbubble-outline" },
-    { label: "Profile", icon: "person-circle-outline" },
+    { label: "Home", icon: "home-outline", href: "/home" },
+    { label: "Tailors", icon: "person-outline", href: "/tailors" },
+    { label: "Design", icon: "color-wand-outline", href: "/design" },
+    { label: "Orders", icon: "bag-handle-outline", href: "/orders" },
+    { label: "Messages", icon: "chatbubble-outline", href: "/messages" },
+    { label: "Profile", icon: "person-circle-outline", href: "/profile" },
   ];
 
   return (
@@ -26,7 +28,12 @@ export function CustomerTabsPreview({ active }: CustomerTabsPreviewProps) {
         const selected = tab.label === active;
 
         return (
-          <View key={tab.label} className="items-center">
+          <TouchableOpacity
+            key={tab.label}
+            accessibilityRole="button"
+            onPress={() => router.push(tab.href as never)}
+            className="items-center"
+          >
             <View>
               <Ionicons
                 name={tab.icon}
@@ -46,7 +53,7 @@ export function CustomerTabsPreview({ active }: CustomerTabsPreviewProps) {
             >
               {tab.label}
             </Text>
-          </View>
+          </TouchableOpacity>
         );
       })}
     </View>

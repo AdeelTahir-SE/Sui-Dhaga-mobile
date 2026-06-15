@@ -3,6 +3,7 @@ import { View, Text, Image } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthButton } from "../components/AuthButton";
+import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
 
 const successIllustration = require("@/assets/illustrations/auth-flow/auth-password-reset-successful.png");
 
@@ -11,6 +12,7 @@ export default function PasswordResetSuccessScreen() {
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+      <AuthEdgeDecorations variant="coral" />
       <View className="flex-1 px-6 justify-center">
         {/* Success Illustration */}
         <View className="items-center mb-6">
@@ -45,16 +47,7 @@ export default function PasswordResetSuccessScreen() {
           />
         </View>
       </View>
-
-      {/* Bottom Decoration */}
-      <View
-        className="h-28"
-        style={{
-          backgroundColor: "rgba(14, 145, 155, 0.06)",
-          borderTopLeftRadius: 40,
-          borderTopRightRadius: 40,
-        }}
-      />
+      <View className="h-28" />
     </View>
   );
 }

@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
+import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
 
 const forgotIllustration = require("@/assets/illustrations/auth-flow/auth-forgot-password.png");
 const sewingMachine = require("@/assets/illustrations/auth-flow/auth-sewing-machine.png");
@@ -23,6 +24,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+      <AuthEdgeDecorations variant="gold" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -93,26 +95,7 @@ export default function ForgotPasswordScreen() {
             />
           </View>
 
-          {/* Bottom Decoration */}
-          <View className="mt-auto">
-            {/* Sewing Machine */}
-            <View className="items-center mt-6">
-              <Image
-                source={sewingMachine}
-                style={{ width: 200, height: 100 }}
-                resizeMode="contain"
-              />
-            </View>
-            {/* Teal gradient bar */}
-            <View
-              className="h-16 mt-2"
-              style={{
-                backgroundColor: "rgba(14, 145, 155, 0.06)",
-                borderTopLeftRadius: 40,
-                borderTopRightRadius: 40,
-              }}
-            />
-          </View>
+          <View className="h-28" />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

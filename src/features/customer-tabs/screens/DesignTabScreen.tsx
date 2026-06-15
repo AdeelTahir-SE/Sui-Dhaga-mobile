@@ -1,4 +1,5 @@
 import { Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -7,6 +8,8 @@ import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
+
+const designAssets = require("@/assets/illustrations/customer-tabs/design-assets.png");
 
 function DesignOption({
   title,
@@ -52,7 +55,13 @@ export default function DesignTabScreen() {
             <Text className="text-[16px] font-bold text-white">New Design</Text>
             <Text className="mt-1 text-[12px] text-white">Start from scratch</Text>
           </View>
-          <TabPlaceholder variant="garment" size="sm" tone="cream" />
+          <View className="h-16 w-16 overflow-hidden rounded-xl bg-white">
+            <Image
+              source={designAssets}
+              contentFit="cover"
+              className="h-full w-full"
+            />
+          </View>
         </TouchableOpacity>
 
         <DesignOption title="Text to Design" subtitle="Describe your dream outfit" icon="text" href="/design-studio/text-to-design" />
@@ -71,7 +80,7 @@ export default function DesignTabScreen() {
         <View className="flex-row gap-3">
           {["coral", "mint", "cream"].map((tone, index) => (
             <View key={tone} className="flex-1">
-              <TabPlaceholder variant="garment" size="wide" tone={tone as "coral"} label={`Template ${index + 1}`} />
+             <TabPlaceholder variant="garment" size="wide" tone={tone as "coral"} label={`Template ${index + 1}`} />
             </View>
           ))}
         </View>

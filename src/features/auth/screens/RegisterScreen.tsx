@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
 import { RoleCard } from "../components/RoleCard";
+import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
 
 const customerImg = require("@/assets/illustrations/auth-flow/cutomer-crete-account.png");
 const tailorImg = require("@/assets/illustrations/auth-flow/tailor-create-account.png");
@@ -54,6 +55,7 @@ export default function RegisterScreen() {
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+      <AuthEdgeDecorations variant="coral" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -199,7 +201,7 @@ export default function RegisterScreen() {
             <AuthButton title="Create Account" onPress={() => {}} />
 
             {/* Login Link */}
-            <View className="flex-row justify-center mt-6 mb-8">
+            <View className="flex-row justify-center mt-6 mb-28">
               <Text className="text-[14px] text-brand-gray">
                 Already have an account?{"  "}
               </Text>

@@ -1,4 +1,5 @@
-import { Text, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
+import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 type TailorDashboardTabsProps = {
@@ -16,12 +17,13 @@ export function TailorDashboardTabs({ active }: TailorDashboardTabsProps) {
   const tabs: {
     label: TailorDashboardTabsProps["active"];
     icon: keyof typeof Ionicons.glyphMap;
+    href: string;
   }[] = [
-    { label: "Dashboard", icon: "home-outline" },
-    { label: "Orders", icon: "bag-handle-outline" },
-    { label: "Appointments", icon: "calendar-outline" },
-    { label: "Earnings", icon: "cash-outline" },
-    { label: "Profile", icon: "person-circle-outline" },
+    { label: "Dashboard", icon: "home-outline", href: "/tailor-dashboard" },
+    { label: "Orders", icon: "bag-handle-outline", href: "/tailor-dashboard/orders" },
+    { label: "Appointments", icon: "calendar-outline", href: "/tailor-dashboard/appointments" },
+    { label: "Earnings", icon: "cash-outline", href: "/tailor-dashboard/earnings" },
+    { label: "Profile", icon: "person-circle-outline", href: "/profile" },
   ];
 
   return (
@@ -30,7 +32,12 @@ export function TailorDashboardTabs({ active }: TailorDashboardTabsProps) {
         const selected = tab.label === active;
 
         return (
-          <View key={tab.label} className="items-center">
+          <TouchableOpacity
+            key={tab.label}
+            accessibilityRole="button"
+            onPress={() => router.push(tab.href as never)}
+            className="items-center"
+          >
             <Ionicons
               name={tab.icon}
               size={18}
@@ -43,7 +50,7 @@ export function TailorDashboardTabs({ active }: TailorDashboardTabsProps) {
             >
               {tab.label}
             </Text>
-          </View>
+          </TouchableOpacity>
         );
       })}
     </View>

@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
 import { SocialLoginButton } from "../components/SocialLoginButton";
+import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -21,6 +22,7 @@ export default function LoginScreen() {
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+      <AuthEdgeDecorations variant="teal" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -119,7 +121,7 @@ export default function LoginScreen() {
             </View>
 
             {/* Register Link */}
-            <View className="flex-row justify-center mt-10 mb-8">
+            <View className="flex-row justify-center mt-10 mb-28">
               <Text className="text-[14px] text-brand-gray">
                 Don't have an account?{"  "}
               </Text>
