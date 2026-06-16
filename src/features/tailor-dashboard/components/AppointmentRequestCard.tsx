@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import type { ImageSource } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { DashActionButton } from "./DashActionButton";
@@ -6,6 +7,7 @@ import { StatusPill } from "./StatusPill";
 import { TailorDashPlaceholder } from "./TailorDashPlaceholder";
 
 type AppointmentRequestCardProps = {
+  image?: ImageSource;
   name: string;
   service: string;
   date: string;
@@ -15,6 +17,7 @@ type AppointmentRequestCardProps = {
 };
 
 export function AppointmentRequestCard({
+  image,
   name,
   service,
   date,
@@ -25,7 +28,7 @@ export function AppointmentRequestCard({
   return (
     <View className="mb-3 rounded-xl border border-brand-border bg-white p-3">
       <View className="flex-row">
-        <TailorDashPlaceholder variant="person" size="sm" tone={tone} />
+        <TailorDashPlaceholder image={image} variant="person" size="sm" tone={tone} />
         <View className="ml-3 flex-1">
           <View className="flex-row items-start justify-between">
             <Text className="text-[13px] font-bold text-brand-dark">{name}</Text>

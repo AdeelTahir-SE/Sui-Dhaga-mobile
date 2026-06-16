@@ -10,10 +10,33 @@ import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
 
 const homeHero = require("@/assets/illustrations/customer-tabs/home-hero.png");
+const categoryKurtas = require("@/assets/illustrations/customer-tabs/home/category-kurtas-suits.png");
+const categoryLehengas = require("@/assets/illustrations/customer-tabs/home/category-lehengas.png");
+const categorySarees = require("@/assets/illustrations/customer-tabs/home/category-sarees.png");
+const categoryShirts = require("@/assets/illustrations/customer-tabs/home/category-shirts.png");
+const tailorRekha = require("@/assets/illustrations/customer-tabs/home/tailor-rekha.png");
+const recentLook1 = require("@/assets/illustrations/customer-tabs/home/recent-look-1.png");
+const recentLook2 = require("@/assets/illustrations/customer-tabs/home/recent-look-2.png");
+const recentLook3 = require("@/assets/illustrations/customer-tabs/home/recent-look-3.png");
+const recentLook4 = require("@/assets/illustrations/customer-tabs/home/recent-look-4.png");
+
+const categories = [
+  { title: "Kurtas & Suits", image: categoryKurtas, tone: "mint" },
+  { title: "Lehengas", image: categoryLehengas, tone: "coral" },
+  { title: "Sarees", image: categorySarees, tone: "gold" },
+  { title: "Shirts", image: categoryShirts, tone: "blue" },
+] as const;
+
+const recentDesigns = [
+  { title: "Look 1", image: recentLook1, tone: "coral" },
+  { title: "Look 2", image: recentLook2, tone: "mint" },
+  { title: "Look 3", image: recentLook3, tone: "blue" },
+  { title: "Look 4", image: recentLook4, tone: "cream" },
+] as const;
 
 export default function HomeScreen() {
   return (
-    <CustomerTabShell>
+    <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Home" />}>
       <View className="px-5 pt-3">
         <View className="mb-4 flex-row items-start justify-between">
           <View>
@@ -42,7 +65,13 @@ export default function HomeScreen() {
           <Image
             source={homeHero}
             contentFit="cover"
-            className="absolute bottom-0 right-0 h-full w-[58%]"
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              height: "100%",
+              width: "58%",
+            }}
           />
         </View>
 
@@ -56,13 +85,14 @@ export default function HomeScreen() {
 
         <SectionTitle title="Popular Categories" />
         <View className="flex-row gap-2">
-          {["Kurtas & Suits", "Lehengas", "Sarees", "Shirts"].map((title, index) => (
-            <View key={title} className="flex-1">
+          {categories.map((category) => (
+            <View key={category.title} className="flex-1">
               <TabPlaceholder
+                image={category.image}
                 variant="garment"
                 size="sm"
-                tone={["mint", "coral", "gold", "blue"][index] as "mint"}
-                label={title}
+                tone={category.tone}
+                label={category.title}
               />
             </View>
           ))}
@@ -74,24 +104,24 @@ export default function HomeScreen() {
           rating="4.8 (128 reviews)"
           distance="2.1 km away"
           specialty="Bridal, Suits, Sarees"
+          image={tailorRekha}
           topRated
         />
 
         <SectionTitle title="Recent Designs" />
         <View className="flex-row gap-2">
-          {["Look 1", "Look 2", "Look 3", "Look 4"].map((look, index) => (
-            <View key={look} className="flex-1">
+          {recentDesigns.map((design) => (
+            <View key={design.title} className="flex-1">
               <TabPlaceholder
+                image={design.image}
                 variant="garment"
                 size="sm"
-                tone={["coral", "mint", "cream", "blue"][index] as "coral"}
-                label={look}
+                tone={design.tone}
+                label={design.title}
               />
             </View>
           ))}
         </View>
-
-        <CustomerTabsPreview active="Home" />
       </View>
     </CustomerTabShell>
   );

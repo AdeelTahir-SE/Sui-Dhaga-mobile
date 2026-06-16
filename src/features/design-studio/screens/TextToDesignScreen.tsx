@@ -1,9 +1,5 @@
 import { DesignToolScreen } from "../components/DesignToolScreen";
-import {
-  imageDesignImage,
-  sketchDesignImage,
-  textDesignImage,
-} from "../constants/designStudioAssets";
+import { designPreviewImages } from "../constants/designStudioAssets";
 
 export default function TextToDesignScreen() {
   return (
@@ -12,7 +8,7 @@ export default function TextToDesignScreen() {
       promptLabel="Describe your design"
       promptValue="A pastel green Anarkali with floral embroidery, full sleeves, and a boat neckline"
       ctaLabel="Generate Design"
-      previewImages={[textDesignImage, imageDesignImage, sketchDesignImage]}
+      previewImages={designPreviewImages}
     />
   );
 }

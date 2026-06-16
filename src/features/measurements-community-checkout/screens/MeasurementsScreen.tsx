@@ -12,7 +12,7 @@ import { SectionTitle } from "../components/SectionTitle";
 
 export default function MeasurementsScreen() {
   return (
-    <MccScreenShell>
+    <MccScreenShell bottomTabs={<MccTabsPreview active="Profile" />}>
       <MccHeader title="Measurements" rightIcon="notifications-outline" />
       <View className="px-5">
         <MeasurementDiagram />
@@ -45,7 +45,6 @@ export default function MeasurementsScreen() {
           </View>
         </View>
 
-        <MccTabsPreview active="Profile" />
       </View>
     </MccScreenShell>
   );

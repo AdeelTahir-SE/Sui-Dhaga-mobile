@@ -6,9 +6,16 @@ import { TailorHeader } from "../components/TailorHeader";
 import { TailorListCard } from "../components/TailorListCard";
 import { TailorScreenShell } from "../components/TailorScreenShell";
 
+const tailorImages = {
+  rekha: require("@/assets/illustrations/customer-tabs/tailors/rekha.png"),
+  stitchCraft: require("@/assets/illustrations/customer-tabs/tailors/stitch-craft.png"),
+  aarav: require("@/assets/illustrations/customer-tabs/tailors/aarav-bespoke.png"),
+  noor: require("@/assets/illustrations/customer-tabs/tailors/noor-thread.png"),
+};
+
 export default function TailorsScreen() {
   return (
-    <TailorScreenShell>
+    <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
       <TailorHeader
         title="Tailors"
         subtitle="Find the perfect tailor for your style"
@@ -18,6 +25,7 @@ export default function TailorsScreen() {
 
         <View className="mt-5">
           <TailorListCard
+            image={tailorImages.rekha}
             name="Rekha Tailors"
             rating="4.8 (128)"
             distance="2.1 km"
@@ -26,6 +34,7 @@ export default function TailorsScreen() {
             tone="coral"
           />
           <TailorListCard
+            image={tailorImages.stitchCraft}
             name="Stitch Craft"
             rating="4.7 (96)"
             distance="3.4 km"
@@ -33,6 +42,7 @@ export default function TailorsScreen() {
             tone="blue"
           />
           <TailorListCard
+            image={tailorImages.aarav}
             name="Aarav Bespoke"
             rating="4.6 (72)"
             distance="4.2 km"
@@ -40,6 +50,7 @@ export default function TailorsScreen() {
             tone="gold"
           />
           <TailorListCard
+            image={tailorImages.noor}
             name="Noor & Thread"
             rating="4.5 (64)"
             distance="5.1 km"
@@ -48,7 +59,6 @@ export default function TailorsScreen() {
           />
         </View>
 
-        <TailorBottomTabs />
       </View>
     </TailorScreenShell>
   );

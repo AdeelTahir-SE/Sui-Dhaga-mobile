@@ -6,9 +6,19 @@ import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 
+const serviceImages = {
+  lehenga: require("@/assets/illustrations/tailor-dashboard/services/lehenga.png"),
+  anarkali: require("@/assets/illustrations/tailor-dashboard/services/anarkali.png"),
+  sherwani: require("@/assets/illustrations/tailor-dashboard/services/sherwani.png"),
+  blouse: require("@/assets/illustrations/tailor-dashboard/appointments/pooja-singh.png"),
+  saree: require("@/assets/illustrations/tailor-dashboard/services/saree.png"),
+};
+
 export default function TailorServicesScreen() {
   return (
-    <TailorDashboardShell>
+    <TailorDashboardShell
+      bottomTabs={<TailorDashboardTabs active="Services" />}
+    >
       <TailorDashboardHeader title="Services" showBack rightIcon="chatbubble-ellipses-outline" />
       <View className="px-5">
         <View className="mb-4 flex-row gap-3">
@@ -21,12 +31,11 @@ export default function TailorServicesScreen() {
             <Text className="ml-1 text-[12px] font-semibold text-white">Add Service</Text>
           </TouchableOpacity>
         </View>
-        <ServiceCard title="Bridal Lehenga" price="₹18,000" tone="coral" />
-        <ServiceCard title="Anarkali Suit" price="₹8,500" tone="teal" />
-        <ServiceCard title="Sherwani" price="₹12,000" tone="cream" />
-        <ServiceCard title="Blouse Stitching" price="₹2,500" tone="blue" />
-        <ServiceCard title="Saree Stitching" price="₹1,800" tone="gold" />
-        <TailorDashboardTabs active="Services" />
+        <ServiceCard image={serviceImages.lehenga} title="Bridal Lehenga" price="₹18,000" tone="coral" />
+        <ServiceCard image={serviceImages.anarkali} title="Anarkali Suit" price="₹8,500" tone="teal" />
+        <ServiceCard image={serviceImages.sherwani} title="Sherwani" price="₹12,000" tone="cream" />
+        <ServiceCard image={serviceImages.blouse} title="Blouse Stitching" price="₹2,500" tone="blue" />
+        <ServiceCard image={serviceImages.saree} title="Saree Stitching" price="₹1,800" tone="gold" />
       </View>
     </TailorDashboardShell>
   );

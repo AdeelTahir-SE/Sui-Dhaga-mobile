@@ -21,7 +21,7 @@ export function BottomTabsPreview({ active }: BottomTabsPreviewProps) {
   ];
 
   return (
-    <View className="mt-5 flex-row justify-between border-t border-brand-border px-2 pt-3">
+    <View className="flex-row justify-between px-2">
       {tabs.map((tab) => {
         const selected = tab.label === active;
 

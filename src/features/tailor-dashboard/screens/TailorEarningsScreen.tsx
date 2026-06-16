@@ -6,6 +6,12 @@ import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 import { TailorDashPlaceholder } from "../components/TailorDashPlaceholder";
 
+const earningsImages = {
+  money: require("@/assets/illustrations/tailor-dashboard/earnings/money-bag.png"),
+  chart: require("@/assets/illustrations/tailor-dashboard/earnings/monthly-chart.png"),
+  transaction: require("@/assets/illustrations/tailor-dashboard/earnings/transaction.png"),
+};
+
 function TransactionRow({
   id,
   date,
@@ -19,7 +25,12 @@ function TransactionRow({
 }) {
   return (
     <View className="flex-row items-center border-b border-brand-border py-3">
-      <TailorDashPlaceholder variant="money" size="xs" tone="cream" />
+      <TailorDashPlaceholder
+        image={earningsImages.transaction}
+        variant="money"
+        size="xs"
+        tone="cream"
+      />
       <View className="ml-3 flex-1">
         <Text className="text-[12px] font-bold text-brand-dark">#{id}</Text>
         <Text className="mt-1 text-[10px] text-brand-gray">{date}</Text>
@@ -34,7 +45,9 @@ function TransactionRow({
 
 export default function TailorEarningsScreen() {
   return (
-    <TailorDashboardShell>
+    <TailorDashboardShell
+      bottomTabs={<TailorDashboardTabs active="Earnings" />}
+    >
       <TailorDashboardHeader title="Earnings" showBack rightText="This Month" />
       <View className="px-5">
         <Text className="text-[12px] text-brand-gray">Total Earnings</Text>
@@ -45,7 +58,12 @@ export default function TailorEarningsScreen() {
               <Text className="text-[11px] font-semibold text-[#2B9A52]">↑ 16.5% vs last month</Text>
             </View>
           </View>
-          <TailorDashPlaceholder variant="money" size="md" tone="gold" />
+          <TailorDashPlaceholder
+            image={earningsImages.money}
+            variant="money"
+            size="md"
+            tone="gold"
+          />
         </View>
 
         <View className="mt-5 flex-row gap-3">
@@ -60,7 +78,12 @@ export default function TailorEarningsScreen() {
         </View>
 
         <SectionTitle title="Earnings Overview" />
-        <TailorDashPlaceholder variant="chart" size="chart" tone="mint" label="Monthly earnings chart" />
+        <TailorDashPlaceholder
+          image={earningsImages.chart}
+          variant="chart"
+          size="chart"
+          tone="mint"
+        />
 
         <SectionTitle title="Recent Transactions" action="View all" />
         <View className="rounded-xl border border-brand-border px-3">
@@ -68,7 +91,6 @@ export default function TailorEarningsScreen() {
           <TransactionRow id="ORD12344" date="18 May 2024" amount="₹18,000" status="Paid" />
           <TransactionRow id="ORD12343" date="15 May 2024" amount="₹8,500" status="Pending" />
         </View>
-        <TailorDashboardTabs active="Earnings" />
       </View>
     </TailorDashboardShell>
   );

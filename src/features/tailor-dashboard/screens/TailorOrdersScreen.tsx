@@ -5,9 +5,15 @@ import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 
+const orderImages = {
+  anarkali: require("@/assets/illustrations/tailor-dashboard/orders/anarkali-suit.png"),
+  sherwani: require("@/assets/illustrations/tailor-dashboard/orders/sherwani-set.png"),
+  lehenga: require("@/assets/illustrations/tailor-dashboard/orders/lehenga-choli.png"),
+};
+
 export default function TailorOrdersScreen() {
   return (
-    <TailorDashboardShell>
+    <TailorDashboardShell bottomTabs={<TailorDashboardTabs active="Orders" />}>
       <TailorDashboardHeader title="Orders" showBack rightIcon="cube-outline" />
       <View className="px-5">
         <View className="mb-4 flex-row gap-2">
@@ -17,10 +23,9 @@ export default function TailorOrdersScreen() {
             </View>
           ))}
         </View>
-        <OrderRequestCard id="ORD12345" item="Anarkali Suit" price="₹12,500" customer="Riya Sharma" tone="coral" />
-        <OrderRequestCard id="ORD12344" item="Sherwani Set" price="₹18,000" customer="Aman Verma" tone="teal" />
-        <OrderRequestCard id="ORD12343" item="Lehenga Choli" price="₹22,500" customer="Neha Kapoor" tone="coral" />
-        <TailorDashboardTabs active="Orders" />
+        <OrderRequestCard image={orderImages.anarkali} id="ORD12345" item="Anarkali Suit" price="₹12,500" customer="Riya Sharma" tone="coral" />
+        <OrderRequestCard image={orderImages.sherwani} id="ORD12344" item="Sherwani Set" price="₹18,000" customer="Aman Verma" tone="teal" />
+        <OrderRequestCard image={orderImages.lehenga} id="ORD12343" item="Lehenga Choli" price="₹22,500" customer="Neha Kapoor" tone="coral" />
       </View>
     </TailorDashboardShell>
   );

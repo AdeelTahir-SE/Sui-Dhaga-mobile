@@ -1,7 +1,5 @@
 import { Text, TouchableOpacity, View } from "react-native";
-import { Image } from "expo-image";
-
-import { TabPlaceholder } from "./TabPlaceholder";
+import { Image, type ImageSource } from "expo-image";
 
 const orderItems = require("@/assets/illustrations/customer-tabs/order-items.png");
 
@@ -12,6 +10,7 @@ type MainOrderCardProps = {
   delivery: string;
   price: string;
   status: string;
+  image?: ImageSource;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   button?: string;
 };
@@ -23,6 +22,7 @@ export function MainOrderCard({
   delivery,
   price,
   status,
+  image,
   tone = "coral",
   button = "Track Order",
 }: MainOrderCardProps) {
@@ -30,7 +30,11 @@ export function MainOrderCard({
     <View className="mb-4 rounded-xl border border-brand-border p-3">
       <View className="flex-row">
         <View className="h-24 w-20 overflow-hidden rounded-xl bg-brand-surface">
-          <Image source={orderItems} contentFit="cover" className="h-full w-full" />
+          <Image
+            source={image ?? orderItems}
+            contentFit="contain"
+            style={{ height: "100%", width: "100%" }}
+          />
         </View>
         <View className="ml-3 flex-1">
           <View className="flex-row items-start justify-between">

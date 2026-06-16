@@ -8,7 +8,9 @@ import { MccScreenShell } from "../components/MccScreenShell";
 import { PlaceholderVisual } from "../components/PlaceholderVisual";
 import { SectionTitle } from "../components/SectionTitle";
 
-const communityPost = require("@/assets/illustrations/generated/community-post.png");
+const authorRekha = require("@/assets/illustrations/measurements-community-checkout/community/author-rekha.png");
+const commentAyesha = require("@/assets/illustrations/measurements-community-checkout/community/comment-ayesha.png");
+const postPastelAnarkali = require("@/assets/illustrations/measurements-community-checkout/community/post-pastel-anarkali.png");
 
 export default function PostDetailsScreen() {
   return (
@@ -17,7 +19,7 @@ export default function PostDetailsScreen() {
       <View className="px-5">
         <View className="mb-3 flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <PlaceholderVisual variant="person" size="xs" tone="coral" />
+            <PlaceholderVisual image={authorRekha} variant="person" size="xs" tone="coral" />
             <View className="ml-3">
               <Text className="text-[13px] font-bold text-brand-dark">Rekha Designs</Text>
               <Text className="text-[10px] text-brand-gray">@rekhadesigns</Text>
@@ -29,9 +31,9 @@ export default function PostDetailsScreen() {
         </View>
         <View className="h-[300px] overflow-hidden rounded-xl bg-brand-surface">
           <Image
-            source={communityPost}
+            source={postPastelAnarkali}
             contentFit="cover"
-            className="h-full w-full"
+            style={{ height: "100%", width: "100%" }}
           />
         </View>
         <Text className="mt-3 text-[12px] leading-5 text-brand-dark">
@@ -47,7 +49,7 @@ export default function PostDetailsScreen() {
 
         <SectionTitle title="Comments (24)" />
         <View className="flex-row">
-          <PlaceholderVisual variant="person" size="xs" tone="blue" />
+          <PlaceholderVisual image={commentAyesha} variant="person" size="xs" tone="blue" />
           <View className="ml-3 flex-1">
             <Text className="text-[12px] font-bold text-brand-dark">Ayesha Khan</Text>
             <Text className="mt-1 text-[12px] text-brand-dark">Beautiful color combination!</Text>

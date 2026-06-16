@@ -1,19 +1,21 @@
 import { Text, View } from "react-native";
+import type { ImageSource } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { StatusPill } from "./StatusPill";
 import { TailorDashPlaceholder } from "./TailorDashPlaceholder";
 
 type ServiceCardProps = {
+  image?: ImageSource;
   title: string;
   price: string;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
 };
 
-export function ServiceCard({ title, price, tone = "coral" }: ServiceCardProps) {
+export function ServiceCard({ image, title, price, tone = "coral" }: ServiceCardProps) {
   return (
     <View className="mb-3 flex-row items-center rounded-xl border border-brand-border bg-white p-3">
-      <TailorDashPlaceholder variant="garment" size="sm" tone={tone} />
+      <TailorDashPlaceholder image={image} variant="garment" size="sm" tone={tone} />
       <View className="ml-3 flex-1">
         <Text className="text-[13px] font-bold text-brand-dark">{title}</Text>
         <Text className="mt-1 text-[11px] text-brand-gray">

@@ -1,10 +1,11 @@
-import { Text, View } from "react-native";
-import { Image } from "expo-image";
+import { StyleSheet, Text, View } from "react-native";
+import { Image, type ImageSource } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 type Tone = "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
 
 type TabPlaceholderProps = {
+  image?: ImageSource;
   label?: string;
   variant?: "person" | "garment" | "machine" | "card";
   size?: "xs" | "sm" | "md" | "wide" | "hero";
@@ -45,6 +46,7 @@ const generatedAssets = {
 };
 
 export function TabPlaceholder({
+  image,
   label,
   variant = "garment",
   size = "md",
@@ -64,9 +66,9 @@ export function TabPlaceholder({
       className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-xl ${toneClasses[tone]}`}
     >
       <Image
-        source={generatedAssets[variant]}
-        contentFit="cover"
-        className="absolute inset-0 h-full w-full"
+        source={image ?? generatedAssets[variant]}
+        contentFit="contain"
+        style={StyleSheet.absoluteFill}
       />
       <View className="absolute inset-0 bg-white/10" />
       {size === "xs" ? (

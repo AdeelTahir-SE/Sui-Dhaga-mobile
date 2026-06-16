@@ -1,8 +1,7 @@
 import { DesignToolScreen } from "../components/DesignToolScreen";
 import {
-  imageDesignImage,
-  sketchDesignImage,
-  textDesignImage,
+  sketchPreviewImages,
+  sketchUploadImage,
 } from "../constants/designStudioAssets";
 
 export default function SketchToDesignScreen() {
@@ -10,12 +9,12 @@ export default function SketchToDesignScreen() {
     <DesignToolScreen
       title="Sketch to Design"
       uploadTitle="Upload Sketch"
-      uploadedImage={sketchDesignImage}
+      uploadedImage={sketchUploadImage}
       changeLabel="Change Sketch"
       promptLabel="Describe your design"
       promptValue="Add floral embroidery on yoke and border. Full sleeves."
       ctaLabel="Generate Design"
-      previewImages={[sketchDesignImage, imageDesignImage, textDesignImage]}
+      previewImages={sketchPreviewImages}
     />
   );
 }

@@ -9,7 +9,25 @@ import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
 
-const designAssets = require("@/assets/illustrations/customer-tabs/design-assets.png");
+const newDesignDress = require("@/assets/illustrations/customer-tabs/design/new-design-dress.png");
+const myDesign1 = require("@/assets/illustrations/customer-tabs/design/my-design-1.png");
+const myDesign2 = require("@/assets/illustrations/customer-tabs/design/my-design-2.png");
+const myDesign3 = require("@/assets/illustrations/customer-tabs/design/my-design-3.png");
+const template1 = require("@/assets/illustrations/customer-tabs/design/template-1.png");
+const template2 = require("@/assets/illustrations/customer-tabs/design/template-2.png");
+const template3 = require("@/assets/illustrations/customer-tabs/design/template-3.png");
+
+const myDesigns = [
+  { title: "Design 1", image: myDesign1, tone: "mint" },
+  { title: "Design 2", image: myDesign2, tone: "coral" },
+  { title: "Design 3", image: myDesign3, tone: "blue" },
+] as const;
+
+const templates = [
+  { title: "Template 1", image: template1, tone: "mint" },
+  { title: "Template 2", image: template2, tone: "cream" },
+  { title: "Template 3", image: template3, tone: "coral" },
+] as const;
 
 function DesignOption({
   title,
@@ -41,7 +59,7 @@ function DesignOption({
 
 export default function DesignTabScreen() {
   return (
-    <CustomerTabShell>
+    <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Design" />}>
       <CustomerHeader title="AI Design Studio" subtitle="Create something extraordinary ✨" />
       <View className="px-5">
         <TouchableOpacity
@@ -57,9 +75,9 @@ export default function DesignTabScreen() {
           </View>
           <View className="h-16 w-16 overflow-hidden rounded-xl bg-white">
             <Image
-              source={designAssets}
-              contentFit="cover"
-              className="h-full w-full"
+              source={newDesignDress}
+              contentFit="contain"
+              style={{ height: "100%", width: "100%" }}
             />
           </View>
         </TouchableOpacity>
@@ -70,21 +88,20 @@ export default function DesignTabScreen() {
 
         <SectionTitle title="My Designs" />
         <View className="flex-row gap-3">
-          {["mint", "cream", "gold"].map((tone, index) => (
-            <View key={tone} className="flex-1">
-              <TabPlaceholder variant="garment" size="wide" tone={tone as "mint"} label={`Design ${index + 1}`} />
+          {myDesigns.map((design) => (
+            <View key={design.title} className="flex-1">
+              <TabPlaceholder image={design.image} variant="garment" size="wide" tone={design.tone} label={design.title} />
             </View>
           ))}
         </View>
         <SectionTitle title="Templates" />
         <View className="flex-row gap-3">
-          {["coral", "mint", "cream"].map((tone, index) => (
-            <View key={tone} className="flex-1">
-             <TabPlaceholder variant="garment" size="wide" tone={tone as "coral"} label={`Template ${index + 1}`} />
+          {templates.map((template) => (
+            <View key={template.title} className="flex-1">
+             <TabPlaceholder image={template.image} variant="garment" size="wide" tone={template.tone} label={template.title} />
             </View>
           ))}
         </View>
-        <CustomerTabsPreview active="Design" />
       </View>
     </CustomerTabShell>
   );

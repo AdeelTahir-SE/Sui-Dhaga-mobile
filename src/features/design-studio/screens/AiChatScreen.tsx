@@ -6,8 +6,7 @@ import { ChatBubble } from "../components/ChatBubble";
 import { ScreenShell } from "../components/ScreenShell";
 import { StudioHeader } from "../components/StudioHeader";
 import {
-  imageDesignImage,
-  sketchDesignImage,
+  royalDesignImages,
 } from "../constants/designStudioAssets";
 
 export default function AiChatScreen() {
@@ -27,15 +26,25 @@ export default function AiChatScreen() {
 
         <View className="mb-4 flex-row gap-3">
           <Image
-            source={sketchDesignImage}
+            source={royalDesignImages[0]}
             contentFit="cover"
-            className="h-[156px] flex-1 rounded-xl bg-brand-surface"
+            style={{
+              flex: 1,
+              height: 156,
+              borderRadius: 12,
+              backgroundColor: "#F7F8FA",
+            }}
           />
           <View className="flex-1">
             <Image
-              source={imageDesignImage}
+              source={royalDesignImages[1]}
               contentFit="cover"
-              className="h-[156px] rounded-xl bg-brand-surface"
+              style={{
+                height: 156,
+                width: "100%",
+                borderRadius: 12,
+                backgroundColor: "#F7F8FA",
+              }}
             />
             <View className="absolute right-3 top-3 h-8 w-8 items-center justify-center rounded-full bg-white">
               <Ionicons name="heart-outline" size={18} color="#6F767E" />

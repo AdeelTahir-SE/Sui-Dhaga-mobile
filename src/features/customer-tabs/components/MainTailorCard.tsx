@@ -1,4 +1,5 @@
 import { Text, TouchableOpacity, View } from "react-native";
+import type { ImageSource } from "expo-image";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -9,6 +10,7 @@ type MainTailorCardProps = {
   rating: string;
   distance: string;
   specialty: string;
+  image?: ImageSource;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   topRated?: boolean;
 };
@@ -18,13 +20,14 @@ export function MainTailorCard({
   rating,
   distance,
   specialty,
+  image,
   tone = "coral",
   topRated,
 }: MainTailorCardProps) {
   return (
     <View className="mb-3 rounded-xl border border-brand-border p-3">
       <View className="flex-row">
-        <TabPlaceholder variant="person" size="md" tone={tone} />
+        <TabPlaceholder image={image} variant="person" size="md" tone={tone} />
         <View className="ml-3 flex-1">
           <View className="flex-row items-start justify-between">
             <Text className="text-[14px] font-bold text-brand-dark">{name}</Text>

@@ -7,10 +7,7 @@ import { ScreenShell } from "../components/ScreenShell";
 import { SectionTitle } from "../components/SectionTitle";
 import { StudioHeader } from "../components/StudioHeader";
 import {
-  fabricColors,
-  imageDesignImage,
-  sketchDesignImage,
-  textDesignImage,
+  techPackPreviewImage,
 } from "../constants/designStudioAssets";
 
 export default function ExportTechPackScreen() {
@@ -20,36 +17,16 @@ export default function ExportTechPackScreen() {
       <View className="px-5">
         <SectionTitle title="Tech Pack Preview" />
         <View className="rounded-2xl border border-brand-border bg-white p-3">
-          <View className="flex-row">
-            <Image
-              source={textDesignImage}
-              contentFit="contain"
-              className="h-[170px] flex-1 rounded-xl bg-[#F8F6F0]"
-            />
-            <View className="ml-3 flex-1 gap-2">
-              <View className="flex-row gap-2">
-                <Image
-                  source={imageDesignImage}
-                  contentFit="cover"
-                  className="h-20 flex-1 rounded-lg"
-                />
-                <Image
-                  source={sketchDesignImage}
-                  contentFit="cover"
-                  className="h-20 flex-1 rounded-lg"
-                />
-              </View>
-              <View className="flex-row gap-2">
-                {fabricColors.slice(0, 3).map((color) => (
-                  <View
-                    key={color}
-                    className="h-20 flex-1 rounded-lg"
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </View>
-            </View>
-          </View>
+          <Image
+            source={techPackPreviewImage}
+            contentFit="contain"
+            style={{
+              height: 222,
+              width: "100%",
+              borderRadius: 12,
+              backgroundColor: "#F8F6F0",
+            }}
+          />
         </View>
 
         <SectionTitle title="Garment Details" />

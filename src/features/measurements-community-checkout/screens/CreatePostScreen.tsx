@@ -6,6 +6,10 @@ import { MccScreenShell } from "../components/MccScreenShell";
 import { PlaceholderVisual } from "../components/PlaceholderVisual";
 import { SectionTitle } from "../components/SectionTitle";
 
+const uploadCoralLehenga = require("@/assets/illustrations/measurements-community-checkout/community/upload-coral-lehenga.png");
+const uploadNavyLehenga = require("@/assets/illustrations/measurements-community-checkout/community/upload-navy-lehenga.png");
+const uploadCoralAnarkali = require("@/assets/illustrations/measurements-community-checkout/community/upload-coral-anarkali.png");
+
 export default function CreatePostScreen() {
   return (
     <MccScreenShell>
@@ -13,9 +17,9 @@ export default function CreatePostScreen() {
       <View className="px-5">
         <SectionTitle title="Upload Images" />
         <View className="flex-row flex-wrap gap-3">
-          <PlaceholderVisual variant="garment" size="md" tone="coral" />
-          <PlaceholderVisual variant="garment" size="md" tone="blue" />
-          <PlaceholderVisual variant="garment" size="md" tone="gold" />
+          <PlaceholderVisual image={uploadCoralLehenga} variant="garment" size="md" tone="coral" />
+          <PlaceholderVisual image={uploadNavyLehenga} variant="garment" size="md" tone="blue" />
+          <PlaceholderVisual image={uploadCoralAnarkali} variant="garment" size="md" tone="gold" />
           <PlaceholderVisual variant="card" size="md" tone="cream" label="Add More" />
         </View>
 

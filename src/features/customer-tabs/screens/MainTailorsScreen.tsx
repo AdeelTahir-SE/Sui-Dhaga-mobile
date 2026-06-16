@@ -6,9 +6,14 @@ import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MainTailorCard } from "../components/MainTailorCard";
 
+const tailorRekha = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
+const tailorStitchCraft = require("@/assets/illustrations/customer-tabs/tailors/stitch-craft.png");
+const tailorAarav = require("@/assets/illustrations/customer-tabs/tailors/aarav-bespoke.png");
+const tailorNoor = require("@/assets/illustrations/customer-tabs/tailors/noor-thread.png");
+
 export default function MainTailorsScreen() {
   return (
-    <CustomerTabShell>
+    <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Tailors" />}>
       <CustomerHeader title="Find Tailors" subtitle="Jaipur, Rajasthan" />
       <View className="px-5">
         <View className="h-[48px] flex-row items-center rounded-xl border border-brand-border px-4">
@@ -25,11 +30,10 @@ export default function MainTailorsScreen() {
             </View>
           ))}
         </View>
-        <MainTailorCard name="Rekha Tailors" rating="4.8 (128)" distance="2.1 km" specialty="Specializes in Bridal, Suits" topRated tone="coral" />
-        <MainTailorCard name="Stitch Craft" rating="4.7 (96)" distance="3.4 km" specialty="Specializes in Men's Wear" tone="blue" />
-        <MainTailorCard name="Aarav Bespoke" rating="4.6 (72)" distance="4.2 km" specialty="Specializes in Indo-Western" tone="gold" />
-        <MainTailorCard name="Noor & Thread" rating="4.5 (64)" distance="5.1 km" specialty="Specializes in Sarees" tone="teal" />
-        <CustomerTabsPreview active="Tailors" />
+        <MainTailorCard name="Rekha Tailors" rating="4.8 (128)" distance="2.1 km" specialty="Specializes in Bridal, Suits" image={tailorRekha} topRated tone="coral" />
+        <MainTailorCard name="Stitch Craft" rating="4.7 (96)" distance="3.4 km" specialty="Specializes in Men's Wear" image={tailorStitchCraft} tone="blue" />
+        <MainTailorCard name="Aarav Bespoke" rating="4.6 (72)" distance="4.2 km" specialty="Specializes in Indo-Western" image={tailorAarav} tone="gold" />
+        <MainTailorCard name="Noor & Thread" rating="4.5 (64)" distance="5.1 km" specialty="Specializes in Sarees" image={tailorNoor} tone="teal" />
       </View>
     </CustomerTabShell>
   );

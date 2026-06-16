@@ -47,7 +47,12 @@ export function DesignToolScreen({
                 <Image
                   source={uploadedImage}
                   contentFit="cover"
-                  className="h-[166px] w-full rounded-lg bg-brand-surface"
+                  style={{
+                    height: 166,
+                    width: "100%",
+                    borderRadius: 8,
+                    backgroundColor: "#F7F8FA",
+                  }}
                 />
                 <TouchableOpacity className="absolute right-3 top-3 h-8 w-8 items-center justify-center rounded-full bg-white">
                   <Ionicons name="close" size={18} color="#6F767E" />

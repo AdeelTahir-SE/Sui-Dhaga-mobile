@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -46,8 +46,8 @@ export function PlaceholderImage({
     >
       <Image
         source={generatedAssets[variant]}
-        contentFit="cover"
-        className="absolute inset-0 h-full w-full"
+        contentFit="contain"
+        style={StyleSheet.absoluteFill}
       />
       <View className="absolute inset-0 bg-white/10" />
       {size === "sm" ? (

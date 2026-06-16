@@ -7,9 +7,14 @@ import { MccScreenShell } from "../components/MccScreenShell";
 import { MccTabsPreview } from "../components/MccTabsPreview";
 import { PostCard } from "../components/PostCard";
 
+const authorRekha = require("@/assets/illustrations/measurements-community-checkout/community/author-rekha.png");
+const authorStitchStyle = require("@/assets/illustrations/measurements-community-checkout/community/author-stitch-style.png");
+const postPastelAnarkali = require("@/assets/illustrations/measurements-community-checkout/community/post-pastel-anarkali.png");
+const postNavyLehenga = require("@/assets/illustrations/measurements-community-checkout/community/post-navy-lehenga.png");
+
 export default function CommunityScreen() {
   return (
-    <MccScreenShell>
+    <MccScreenShell bottomTabs={<MccTabsPreview active="Community" />}>
       <MccHeader title="Community" rightIcon="notifications-outline" />
       <View className="px-5">
         <View className="mb-4 flex-row gap-2">
@@ -23,12 +28,16 @@ export default function CommunityScreen() {
           author="Rekha Designs"
           handle="@rekhadesigns"
           caption="Pastel green Anarkali with delicate floral embroidery."
+          avatarImage={authorRekha}
+          postImage={postPastelAnarkali}
           tone="mint"
         />
         <PostCard
           author="Stitch & Style"
           handle="@stitchstyle"
           caption="Navy blue lehenga with sequin work."
+          avatarImage={authorStitchStyle}
+          postImage={postNavyLehenga}
           tone="blue"
         />
         <TouchableOpacity
@@ -37,7 +46,6 @@ export default function CommunityScreen() {
         >
           <Ionicons name="add" size={28} color="#FFFFFF" />
         </TouchableOpacity>
-        <MccTabsPreview active="Community" />
       </View>
     </MccScreenShell>
   );

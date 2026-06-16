@@ -8,9 +8,9 @@ import { ScreenShell } from "../components/ScreenShell";
 import { StudioHeader } from "../components/StudioHeader";
 import { Swatches } from "../components/Swatches";
 import {
+  editorPreviewImage,
   editorColors,
-  fabricColors,
-  textDesignImage,
+  fabricTextureImages,
 } from "../constants/designStudioAssets";
 
 export default function DesignEditorScreen() {
@@ -42,9 +42,9 @@ export default function DesignEditorScreen() {
 
           <View className="flex-1 items-center rounded-2xl bg-[#F8F6F0] py-4">
             <Image
-              source={textDesignImage}
+              source={editorPreviewImage}
               contentFit="contain"
-              className="h-[320px] w-full"
+              style={{ height: 320, width: "100%" }}
             />
           </View>
 
@@ -98,11 +98,16 @@ export default function DesignEditorScreen() {
             (fabric, index) => (
               <View key={fabric} className="items-center">
                 <View
-                  className={`h-12 w-12 rounded-xl border ${
+                  className={`h-12 w-12 overflow-hidden rounded-xl border ${
                     index === 1 ? "border-primary" : "border-brand-border"
                   }`}
-                  style={{ backgroundColor: fabricColors[index] }}
-                />
+                >
+                  <Image
+                    source={fabricTextureImages[index]}
+                    contentFit="cover"
+                    style={{ height: "100%", width: "100%" }}
+                  />
+                </View>
                 <Text
                   className={`mt-1 text-[10px] ${
                     index === 1 ? "text-primary" : "text-brand-gray"

@@ -7,6 +7,8 @@ import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 import { TailorDashPlaceholder } from "../components/TailorDashPlaceholder";
 
+const dashboardHeroImage = require("@/assets/illustrations/tailor-dashboard/dashboard-hero.png");
+
 function ActivityRow({
   title,
   subtitle,
@@ -32,7 +34,9 @@ function ActivityRow({
 
 export default function TailorDashboardScreen() {
   return (
-    <TailorDashboardShell>
+    <TailorDashboardShell
+      bottomTabs={<TailorDashboardTabs active="Dashboard" />}
+    >
       <TailorDashboardHeader title="Dashboard" />
       <View className="px-5">
         <View className="overflow-hidden rounded-2xl bg-primary-50 p-4">
@@ -44,7 +48,12 @@ export default function TailorDashboardScreen() {
             Here's what's happening today.
           </Text>
           <View className="absolute bottom-3 right-4">
-            <TailorDashPlaceholder variant="machine" size="hero" tone="cream" />
+            <TailorDashPlaceholder
+              image={dashboardHeroImage}
+              variant="machine"
+              size="hero"
+              tone="cream"
+            />
           </View>
         </View>
 
@@ -64,8 +73,6 @@ export default function TailorDashboardScreen() {
         <Text className="mt-4 text-center text-[12px] font-semibold text-primary">
           View all activity
         </Text>
-
-        <TailorDashboardTabs active="Dashboard" />
       </View>
     </TailorDashboardShell>
   );

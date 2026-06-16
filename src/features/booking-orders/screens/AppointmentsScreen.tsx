@@ -9,7 +9,7 @@ import { SegmentedTabs } from "../components/SegmentedTabs";
 
 export default function AppointmentsScreen() {
   return (
-    <BookingOrdersScreenShell>
+    <BookingOrdersScreenShell bottomTabs={<BottomTabsPreview active="Tailors" />}>
       <BookingOrdersHeader
         title="Appointments"
         leftIcon="menu"
@@ -66,8 +66,6 @@ export default function AppointmentsScreen() {
           tone="red"
           placeholderTone="teal"
         />
-
-        <BottomTabsPreview active="Tailors" />
       </View>
     </BookingOrdersScreenShell>
   );

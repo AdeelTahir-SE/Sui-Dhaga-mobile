@@ -7,6 +7,24 @@ import { TailorHeader } from "../components/TailorHeader";
 import { TailorPlaceholder } from "../components/TailorPlaceholder";
 import { TailorScreenShell } from "../components/TailorScreenShell";
 
+const comparedTailors = [
+  {
+    name: "Rekha Tailors",
+    tone: "coral",
+    image: require("@/assets/illustrations/customer-tabs/tailors/rekha.png"),
+  },
+  {
+    name: "Stitch Craft",
+    tone: "blue",
+    image: require("@/assets/illustrations/customer-tabs/tailors/stitch-craft.png"),
+  },
+  {
+    name: "Aarav Bespoke",
+    tone: "gold",
+    image: require("@/assets/illustrations/customer-tabs/tailors/aarav-bespoke.png"),
+  },
+] as const;
+
 function FeatureRow({
   feature,
   values,
@@ -34,7 +52,7 @@ function FeatureRow({
 
 export default function CompareTailorsScreen() {
   return (
-    <TailorScreenShell>
+    <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
       <TailorHeader
         title="Compare Tailors"
         subtitle="Compare and choose the best for you"
@@ -43,16 +61,13 @@ export default function CompareTailorsScreen() {
       />
       <View className="px-5">
         <View className="mb-5 flex-row items-start justify-between">
-          {[
-            ["Rekha Tailors", "coral"],
-            ["Stitch Craft", "blue"],
-            ["Aarav Bespoke", "gold"],
-          ].map(([name, tone]) => (
+          {comparedTailors.map(({ name, tone, image }) => (
             <View key={name} className="items-center">
               <View className="relative">
                 <TailorPlaceholder
+                  image={image}
                   size="sm"
-                  tone={tone as "coral" | "blue" | "gold"}
+                  tone={tone}
                 />
                 <View className="absolute -right-2 -top-2 h-6 w-6 items-center justify-center rounded-full bg-white">
                   <Ionicons name="close" size={14} color="#1A1D1F" />
@@ -80,14 +95,15 @@ export default function CompareTailorsScreen() {
                 Feature
               </Text>
             </View>
-            {["coral", "blue", "gold"].map((tone) => (
+            {comparedTailors.map(({ tone, image }) => (
               <View
                 key={tone}
                 className="flex-1 items-center justify-center border-l border-brand-border"
               >
                 <TailorPlaceholder
+                  image={image}
                   size="xs"
-                  tone={tone as "coral" | "blue" | "gold"}
+                  tone={tone}
                 />
               </View>
             ))}
@@ -117,7 +133,6 @@ export default function CompareTailorsScreen() {
           </View>
         </View>
 
-        <TailorBottomTabs />
       </View>
     </TailorScreenShell>
   );

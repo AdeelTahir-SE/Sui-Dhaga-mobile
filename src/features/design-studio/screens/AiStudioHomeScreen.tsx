@@ -7,9 +7,9 @@ import { SectionTitle } from "../components/SectionTitle";
 import { StudioHeader } from "../components/StudioHeader";
 import { StudioOptionCard } from "../components/StudioOptionCard";
 import {
-  imageDesignImage,
-  sketchDesignImage,
-  textDesignImage,
+  aiSuggestionImages,
+  designPreviewImages,
+  studioHeroImage,
 } from "../constants/designStudioAssets";
 
 export default function AiStudioHomeScreen() {
@@ -27,9 +27,15 @@ export default function AiStudioHomeScreen() {
             </Text>
           </View>
           <Image
-            source={textDesignImage}
-            contentFit="cover"
-            className="absolute bottom-0 right-0 h-[112px] w-[132px]"
+            source={studioHeroImage}
+            contentFit="contain"
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              height: 112,
+              width: 132,
+            }}
           />
           <View className="absolute bottom-0 left-0 h-16 w-[68%] rounded-tr-[48px] bg-[#DDF1ED]" />
           <View className="absolute bottom-0 right-0 h-20 w-[44%] rounded-tl-[72px] bg-primary" />
@@ -66,17 +72,17 @@ export default function AiStudioHomeScreen() {
         <SectionTitle title="Recent Designs" action="View all" />
         <View className="flex-row justify-between">
           <PreviewCard
-            image={textDesignImage}
+            image={designPreviewImages[0]}
             title="Anarkali Suit"
             subtitle="Today"
           />
           <PreviewCard
-            image={imageDesignImage}
+            image={designPreviewImages[1]}
             title="Lehenga"
             subtitle="Yesterday"
           />
           <PreviewCard
-            image={sketchDesignImage}
+            image={designPreviewImages[2]}
             title="Kurta Set"
             subtitle="2 days ago"
           />
@@ -116,17 +122,17 @@ export default function AiStudioHomeScreen() {
         </View>
         <View className="flex-row justify-between">
           <PreviewCard
-            image={textDesignImage}
+            image={aiSuggestionImages[0]}
             title="Pastel Eid Look"
             subtitle="Soft palette"
           />
           <PreviewCard
-            image={imageDesignImage}
+            image={aiSuggestionImages[1]}
             title="Wedding Set"
             subtitle="Royal style"
           />
           <PreviewCard
-            image={sketchDesignImage}
+            image={aiSuggestionImages[2]}
             title="Festive Kurta"
             subtitle="Light work"
           />

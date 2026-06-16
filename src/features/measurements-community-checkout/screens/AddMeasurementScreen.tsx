@@ -5,6 +5,8 @@ import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
 import { PlaceholderVisual } from "../components/PlaceholderVisual";
 
+const bustGuide = require("@/assets/illustrations/measurements-community-checkout/measurements/bust-guide.png");
+
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <View className="mb-4">
@@ -37,7 +39,7 @@ export default function AddMeasurementScreen() {
           <Text className="flex-1 text-[12px] leading-5 text-brand-dark">
             Measure around the fullest part of your bust.
           </Text>
-          <PlaceholderVisual variant="body" size="sm" tone="cream" />
+          <PlaceholderVisual image={bustGuide} variant="body" size="sm" tone="cream" />
         </View>
         <Field label="Value" value="34                                      inches" />
         <View className="mb-7">

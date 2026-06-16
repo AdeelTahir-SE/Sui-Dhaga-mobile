@@ -9,6 +9,22 @@ import { TailorHeader } from "../components/TailorHeader";
 import { TailorPlaceholder } from "../components/TailorPlaceholder";
 import { TailorScreenShell } from "../components/TailorScreenShell";
 
+const profileHeroImage = require("@/assets/illustrations/tailor-discovery/profile-hero.png");
+const rekhaImage = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
+
+const galleryImages = [
+  require("@/assets/illustrations/tailor-discovery/gallery/mint-anarkali.png"),
+  require("@/assets/illustrations/tailor-discovery/gallery/gold-saree.png"),
+  require("@/assets/illustrations/tailor-discovery/gallery/coral-lehenga.png"),
+  require("@/assets/illustrations/tailor-discovery/gallery/teal-sherwani.png"),
+  require("@/assets/illustrations/tailor-discovery/gallery/cream-kurta.png"),
+];
+
+const serviceImages = [
+  require("@/assets/illustrations/tailor-discovery/services/custom-anarkali.png"),
+  require("@/assets/illustrations/tailor-discovery/services/bridal-lehenga.png"),
+];
+
 function SectionHeader({ title }: { title: string }) {
   return (
     <View className="mb-3 mt-5 flex-row items-center justify-between">
@@ -20,9 +36,14 @@ function SectionHeader({ title }: { title: string }) {
 
 export default function TailorProfileScreen() {
   return (
-    <TailorScreenShell>
+    <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
       <View className="relative">
-        <TailorPlaceholder variant="map" size="wide" tone="cream" />
+        <TailorPlaceholder
+          image={profileHeroImage}
+          variant="map"
+          size="wide"
+          tone="cream"
+        />
         <View className="absolute left-0 right-0 top-0">
           <TailorHeader title="" showBack rightIcon="heart-outline" />
         </View>
@@ -33,7 +54,7 @@ export default function TailorProfileScreen() {
 
       <View className="px-5">
         <View className="-mt-8 flex-row items-end">
-          <TailorPlaceholder size="md" tone="coral" />
+          <TailorPlaceholder image={rekhaImage} size="md" tone="coral" />
           <View className="ml-4 flex-1 pb-1">
             <Text className="text-[21px] font-bold text-brand-dark">
               Rekha Tailors
@@ -65,6 +86,7 @@ export default function TailorProfileScreen() {
           {["teal", "blue", "coral", "gold", "cream"].map((tone, index) => (
             <View key={tone} className="flex-1">
               <TailorPlaceholder
+                image={galleryImages[index]}
                 variant="garment"
                 size="sm"
                 tone={tone as "teal" | "blue" | "coral" | "gold" | "cream"}
@@ -93,6 +115,7 @@ export default function TailorProfileScreen() {
               className="flex-1 rounded-xl border border-brand-border p-3"
             >
               <TailorPlaceholder
+                image={serviceImages[tone === "teal" ? 0 : 1]}
                 variant="garment"
                 size="sm"
                 tone={tone as "teal" | "coral"}
@@ -126,7 +149,6 @@ export default function TailorProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <TailorBottomTabs />
       </View>
     </TailorScreenShell>
   );

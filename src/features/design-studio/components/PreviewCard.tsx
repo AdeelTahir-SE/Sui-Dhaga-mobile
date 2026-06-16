@@ -13,7 +13,12 @@ export function PreviewCard({ image, title, subtitle }: PreviewCardProps) {
       <Image
         source={image}
         contentFit="cover"
-        className="h-[88px] w-full rounded-lg bg-brand-surface"
+        style={{
+          height: 88,
+          width: "100%",
+          borderRadius: 8,
+          backgroundColor: "#F7F8FA",
+        }}
       />
       <Text className="mt-2 text-[11px] font-medium text-brand-dark">
         {title}

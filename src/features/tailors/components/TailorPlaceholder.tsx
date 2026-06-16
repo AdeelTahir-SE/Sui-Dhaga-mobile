@@ -1,10 +1,11 @@
-import { Text, View } from "react-native";
-import { Image } from "expo-image";
+import { StyleSheet, Text, View } from "react-native";
+import { Image, type ImageSource } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 type PlaceholderTone = "teal" | "coral" | "gold" | "blue" | "cream";
 
 type TailorPlaceholderProps = {
+  image?: ImageSource;
   label?: string;
   variant?: "person" | "garment" | "map";
   size?: "xs" | "sm" | "md" | "lg" | "wide";
@@ -42,6 +43,7 @@ const generatedAssets = {
 };
 
 export function TailorPlaceholder({
+  image,
   label,
   variant = "person",
   size = "md",
@@ -59,9 +61,9 @@ export function TailorPlaceholder({
       className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-xl ${toneClasses[tone]}`}
     >
       <Image
-        source={generatedAssets[variant]}
-        contentFit="cover"
-        className="absolute inset-0 h-full w-full"
+        source={image ?? generatedAssets[variant]}
+        contentFit={image ? "cover" : "contain"}
+        style={StyleSheet.absoluteFill}
       />
       <View className="absolute inset-0 bg-white/10" />
       {size === "xs" ? (

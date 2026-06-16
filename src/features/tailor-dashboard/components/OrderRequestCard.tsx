@@ -1,10 +1,12 @@
 import { Text, View } from "react-native";
+import type { ImageSource } from "expo-image";
 
 import { DashActionButton } from "./DashActionButton";
 import { StatusPill } from "./StatusPill";
 import { TailorDashPlaceholder } from "./TailorDashPlaceholder";
 
 type OrderRequestCardProps = {
+  image?: ImageSource;
   id: string;
   item: string;
   price: string;
@@ -13,6 +15,7 @@ type OrderRequestCardProps = {
 };
 
 export function OrderRequestCard({
+  image,
   id,
   item,
   price,
@@ -22,7 +25,7 @@ export function OrderRequestCard({
   return (
     <View className="mb-3 rounded-xl border border-brand-border bg-white p-3">
       <View className="flex-row">
-        <TailorDashPlaceholder variant="garment" size="md" tone={tone} />
+        <TailorDashPlaceholder image={image} variant="garment" size="md" tone={tone} />
         <View className="ml-3 flex-1">
           <View className="flex-row items-start justify-between">
             <Text className="text-[13px] font-bold text-brand-dark">#{id}</Text>

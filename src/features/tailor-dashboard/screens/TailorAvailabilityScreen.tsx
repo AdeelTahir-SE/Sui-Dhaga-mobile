@@ -9,7 +9,9 @@ import { TimeSlotRow } from "../components/TimeSlotRow";
 
 export default function TailorAvailabilityScreen() {
   return (
-    <TailorDashboardShell>
+    <TailorDashboardShell
+      bottomTabs={<TailorDashboardTabs active="Availability" />}
+    >
       <TailorDashboardHeader title="Availability" showBack />
       <View className="px-5">
         <View className="mb-4 flex-row items-center justify-between">
@@ -43,7 +45,6 @@ export default function TailorAvailabilityScreen() {
           <TimeSlotRow time="02:00 PM - 03:00 PM" />
           <TimeSlotRow time="03:00 PM - 04:00 PM" booked />
         </View>
-        <TailorDashboardTabs active="Availability" />
       </View>
     </TailorDashboardShell>
   );

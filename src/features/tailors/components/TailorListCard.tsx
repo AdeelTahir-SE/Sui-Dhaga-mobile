@@ -1,5 +1,6 @@
 import { Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
+import type { ImageSource } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { RatingLine } from "./RatingLine";
@@ -7,6 +8,7 @@ import { TailorBadge } from "./TailorBadge";
 import { TailorPlaceholder } from "./TailorPlaceholder";
 
 type TailorListCardProps = {
+  image?: ImageSource;
   name: string;
   rating: string;
   distance: string;
@@ -16,6 +18,7 @@ type TailorListCardProps = {
 };
 
 export function TailorListCard({
+  image,
   name,
   rating,
   distance,
@@ -26,7 +29,7 @@ export function TailorListCard({
   return (
     <View className="mb-3 rounded-xl border border-brand-border bg-white p-3">
       <View className="flex-row">
-        <TailorPlaceholder size="md" tone={tone} />
+        <TailorPlaceholder image={image} size="md" tone={tone} />
         <View className="ml-3 flex-1">
           <View className="flex-row items-start justify-between">
             <Text className="text-[15px] font-bold text-brand-dark">

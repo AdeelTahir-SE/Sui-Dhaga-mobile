@@ -15,7 +15,7 @@ export default function CheckoutFailedScreen() {
           <Image
             source={checkoutStatus}
             contentFit="cover"
-            className="h-full w-full"
+            style={{ height: "100%", width: "100%" }}
           />
         </View>
         <Text className="mt-10 text-center text-[22px] font-bold text-brand-dark">

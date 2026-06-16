@@ -1,5 +1,5 @@
 import { Text, View } from "react-native";
-import { Image } from "expo-image";
+import { Image, type ImageSource } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { PlaceholderVisual } from "./PlaceholderVisual";
@@ -10,6 +10,8 @@ type PostCardProps = {
   author: string;
   handle: string;
   caption: string;
+  avatarImage?: ImageSource;
+  postImage?: ImageSource;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
 };
 
@@ -17,13 +19,15 @@ export function PostCard({
   author,
   handle,
   caption,
+  avatarImage,
+  postImage,
   tone = "mint",
 }: PostCardProps) {
   return (
     <View className="mb-4 rounded-2xl border border-brand-border bg-white p-3">
       <View className="mb-3 flex-row items-center justify-between">
         <View className="flex-row items-center">
-          <PlaceholderVisual variant="person" size="xs" tone="coral" />
+          <PlaceholderVisual image={avatarImage} variant="person" size="xs" tone="coral" />
           <View className="ml-3">
             <Text className="text-[13px] font-bold text-brand-dark">
               {author}
@@ -38,9 +42,9 @@ export function PostCard({
       </Text>
       <View className="h-[260px] w-full overflow-hidden rounded-xl bg-brand-surface">
         <Image
-          source={communityPost}
+          source={postImage ?? communityPost}
           contentFit="cover"
-          className="h-full w-full"
+          style={{ height: "100%", width: "100%" }}
         />
       </View>
       <View className="mt-3 flex-row items-center">

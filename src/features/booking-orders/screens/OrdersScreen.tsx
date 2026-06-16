@@ -9,7 +9,7 @@ import { SegmentedTabs } from "../components/SegmentedTabs";
 
 export default function OrdersScreen() {
   return (
-    <BookingOrdersScreenShell>
+    <BookingOrdersScreenShell bottomTabs={<BottomTabsPreview active="Orders" />}>
       <BookingOrdersHeader
         title="My Orders"
         leftIcon="menu"
@@ -69,8 +69,6 @@ export default function OrdersScreen() {
           buttonLabel="View Details"
           placeholderTone="blue"
         />
-
-        <BottomTabsPreview active="Orders" />
       </View>
     </BookingOrdersScreenShell>
   );
