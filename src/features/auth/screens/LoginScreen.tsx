@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   View,
   Text,
+  Image,
   ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -14,6 +15,8 @@ import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
 import { SocialLoginButton } from "../components/SocialLoginButton";
 import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
+
+const logoImg = require("@/assets/logos/main-logo.png");
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
@@ -44,15 +47,11 @@ export default function LoginScreen() {
           <View className="px-6 flex-1">
             {/* Logo */}
             <View className="flex-row items-center mt-5 mb-1">
-              <Text
-                className="text-[38px] text-primary font-bold"
-                style={{
-                  fontFamily:
-                    Platform.OS === "ios" ? "Georgia" : "serif",
-                }}
-              >
-                {"𝒮 "}
-              </Text>
+              <Image
+                source={logoImg}
+                className="w-10 h-10 mr-2.5"
+                resizeMode="contain"
+              />
               <Text
                 className="text-[26px] text-brand-dark font-semibold"
                 style={{
@@ -114,11 +113,10 @@ export default function LoginScreen() {
             </View>
 
             {/* Social Login */}
-            <View className="flex-row justify-center gap-6">
-              <SocialLoginButton provider="google" onPress={() => {}} />
-              <SocialLoginButton provider="apple" onPress={() => {}} />
-              <SocialLoginButton provider="facebook" onPress={() => {}} />
-            </View>
+            <SocialLoginButton
+              title="Continue with Google"
+              onPress={() => {}}
+            />
 
             {/* Register Link */}
             <View className="flex-row justify-center mt-10 mb-28">

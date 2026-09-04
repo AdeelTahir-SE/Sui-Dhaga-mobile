@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
 import { RoleCard } from "../components/RoleCard";
+import { SocialLoginButton } from "../components/SocialLoginButton";
 import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
 
 const customerImg = require("@/assets/illustrations/auth-flow/cutomer-crete-account.png");
@@ -199,6 +200,21 @@ export default function RegisterScreen() {
 
             {/* Create Account Button */}
             <AuthButton title="Create Account" onPress={() => {}} />
+
+            {/* Divider */}
+            <View className="flex-row items-center my-6">
+              <View className="flex-1 h-px bg-brand-border" />
+              <Text className="mx-4 text-[13px] text-brand-gray">
+                or sign up with
+              </Text>
+              <View className="flex-1 h-px bg-brand-border" />
+            </View>
+
+            {/* Social Signup */}
+            <SocialLoginButton
+              title="Sign up with Google"
+              onPress={() => {}}
+            />
 
             {/* Login Link */}
             <View className="flex-row justify-center mt-6 mb-28">

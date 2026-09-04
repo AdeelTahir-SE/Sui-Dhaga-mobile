@@ -1,6 +1,5 @@
-import React from "react";
-import { View, Text, Image } from "react-native";
 import { router } from "expo-router";
+import { Image, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AuthButton } from "../components/AuthButton";
 import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
@@ -13,12 +12,12 @@ export default function PasswordResetSuccessScreen() {
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
       <AuthEdgeDecorations variant="coral" />
-      <View className="flex-1 px-6 justify-center">
+      <View className="flex-1 px-6 justify-center pt-8 pb-4">
         {/* Success Illustration */}
-        <View className="items-center mb-6">
+        <View className="items-center mt-4 mb-4">
           <Image
             source={successIllustration}
-            style={{ width: 220, height: 200 }}
+            style={{ width: 280, height: 200 }}
             resizeMode="contain"
           />
         </View>
@@ -27,7 +26,7 @@ export default function PasswordResetSuccessScreen() {
         <Text className="text-[24px] font-bold text-brand-dark text-center">
           Password Reset{"\n"}Successfully!
         </Text>
-        <Text className="text-[14px] text-brand-gray text-center mt-3 mb-10 leading-[20px]">
+        <Text className="text-[14px] text-brand-gray text-center mt-3 mb-8 leading-[20px]">
           Your password has been reset.{"\n"}You can now login to your account.
         </Text>
 
@@ -47,7 +46,6 @@ export default function PasswordResetSuccessScreen() {
           />
         </View>
       </View>
-      <View className="h-28" />
     </View>
   );
 }

@@ -1,36 +1,36 @@
 import React from "react";
-import { TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { TouchableOpacity, Text, type ViewStyle } from "react-native";
+import { Image } from "expo-image";
 
-type Provider = "google" | "apple" | "facebook";
+const googleIcon = require("@/assets/icons/google-color-icon.svg");
 
 type SocialLoginButtonProps = {
-  provider: Provider;
+  provider?: "google";
+  title?: string;
   onPress: () => void;
-};
-
-const providerConfig: Record<
-  Provider,
-  { icon: keyof typeof Ionicons.glyphMap; color: string }
-> = {
-  google: { icon: "logo-google", color: "#DB4437" },
-  apple: { icon: "logo-apple", color: "#000000" },
-  facebook: { icon: "logo-facebook", color: "#1877F2" },
+  style?: ViewStyle;
 };
 
 export function SocialLoginButton({
-  provider,
+  title = "Continue with Google",
   onPress,
+  style,
 }: SocialLoginButtonProps) {
-  const { icon, color } = providerConfig[provider];
-
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.7}
-      className="w-[60px] h-[60px] rounded-full border-[1.5px] border-brand-border items-center justify-center bg-white"
+      activeOpacity={0.8}
+      className="flex-row items-center justify-center h-[54px] w-full rounded-xl bg-white border border-brand-border"
+      style={style}
     >
-      <Ionicons name={icon} size={26} color={color} />
+      <Image
+        source={googleIcon}
+        style={{ width: 22, height: 22, marginRight: 10 }}
+        contentFit="contain"
+      />
+      <Text className="text-[15px] font-semibold text-brand-dark">
+        {title}
+      </Text>
     </TouchableOpacity>
   );
 }

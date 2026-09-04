@@ -1,3 +1,4 @@
+import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,21 +14,24 @@ type TailorDashboardTabsProps = {
     | "Profile";
 };
 
-export function TailorDashboardTabs({ active }: TailorDashboardTabsProps) {
-  const tabs: {
-    label: TailorDashboardTabsProps["active"];
-    icon: keyof typeof Ionicons.glyphMap;
-    href: string;
-  }[] = [
-    { label: "Dashboard", icon: "home-outline", href: "/tailor-dashboard" },
-    { label: "Orders", icon: "bag-handle-outline", href: "/tailor-dashboard/orders" },
-    { label: "Appointments", icon: "calendar-outline", href: "/tailor-dashboard/appointments" },
-    { label: "Earnings", icon: "cash-outline", href: "/tailor-dashboard/earnings" },
-    { label: "Profile", icon: "person-circle-outline", href: "/profile" },
-  ];
+type TabItem = {
+  label: TailorDashboardTabsProps["active"];
+  icon: keyof typeof Ionicons.glyphMap;
+  activeIcon: keyof typeof Ionicons.glyphMap;
+  href: string;
+};
 
+const tabs: TabItem[] = [
+  { label: "Dashboard", icon: "home-outline", activeIcon: "home", href: "/tailor-dashboard" },
+  { label: "Orders", icon: "bag-handle-outline", activeIcon: "bag-handle", href: "/tailor-dashboard/orders" },
+  { label: "Appointments", icon: "calendar-outline", activeIcon: "calendar", href: "/tailor-dashboard/appointments" },
+  { label: "Earnings", icon: "cash-outline", activeIcon: "cash", href: "/tailor-dashboard/earnings" },
+  { label: "Profile", icon: "person-circle-outline", activeIcon: "person-circle", href: "/profile" },
+];
+
+export function TailorDashboardTabs({ active }: TailorDashboardTabsProps) {
   return (
-    <View className="flex-row justify-between px-2">
+    <View className="flex-row items-center justify-around">
       {tabs.map((tab) => {
         const selected = tab.label === active;
 
@@ -35,17 +39,26 @@ export function TailorDashboardTabs({ active }: TailorDashboardTabsProps) {
           <TouchableOpacity
             key={tab.label}
             accessibilityRole="button"
+            activeOpacity={0.7}
             onPress={() => router.push(tab.href as never)}
-            className="items-center"
+            className="flex-1 items-center justify-center py-0.5"
           >
-            <Ionicons
-              name={tab.icon}
-              size={18}
-              color={selected ? "#14919B" : "#6F767E"}
-            />
+            <View
+              className={`h-8 w-12 items-center justify-center rounded-full ${
+                selected ? "bg-primary-light" : "bg-transparent"
+              }`}
+            >
+              <Ionicons
+                name={selected ? tab.activeIcon : tab.icon}
+                size={21}
+                color={selected ? "#14919B" : "#6F767E"}
+              />
+            </View>
             <Text
-              className={`mt-1 text-[9px] ${
-                selected ? "font-semibold text-primary" : "text-brand-gray"
+              className={`mt-0.5 text-[10px] tracking-tight ${
+                selected
+                  ? "font-bold text-primary"
+                  : "font-medium text-brand-gray"
               }`}
             >
               {tab.label}

@@ -13,8 +13,15 @@ export function FixedBottomTabs({ children }: FixedBottomTabsProps) {
 
   return (
     <View
-      className="absolute bottom-0 left-0 right-0 border-t border-brand-border bg-white px-5 pt-3"
-      style={{ paddingBottom: insets.bottom + 10 }}
+      className="absolute bottom-0 left-0 right-0 bg-white px-2 pt-2"
+      style={{
+        paddingBottom: Math.max(insets.bottom, 10),
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+        elevation: 8,
+      }}
     >
       {children}
     </View>
