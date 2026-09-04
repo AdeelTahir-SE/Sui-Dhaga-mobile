@@ -81,20 +81,11 @@ export function CustomerTabsPreview({ active }: CustomerTabsPreviewProps) {
                 selected ? "bg-primary-light" : "bg-transparent"
               }`}
             >
-              <View className="relative items-center justify-center">
-                <Ionicons
-                  name={selected ? tab.activeIcon : tab.icon}
-                  size={21}
-                  color={selected ? "#14919B" : "#6F767E"}
-                />
-                {tab.label === "Messages" ? (
-                  <View className="absolute -top-1 -right-2 h-4 min-w-4 items-center justify-center rounded-full bg-[#EF4444] px-1 border-[1.5px] border-white">
-                    <Text className="text-[8px] font-bold text-white leading-none">
-                      1
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
+              <Ionicons
+                name={selected ? tab.activeIcon : tab.icon}
+                size={21}
+                color={selected ? "#14919B" : "#6F767E"}
+              />
             </View>
             <Text
               className={`mt-0.5 text-[10px] tracking-tight ${
