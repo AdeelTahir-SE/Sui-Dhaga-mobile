@@ -12,14 +12,19 @@ export default function RootLayout() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
 
   useEffect(() => {
-    checkAuth();
+    const timer = setTimeout(() => {
+      checkAuth();
+    }, 0);
+
     SystemUI.setBackgroundColorAsync("#FFFFFF");
     if (Platform.OS === "android") {
       RNStatusBar.setTranslucent(true);
       RNStatusBar.setBackgroundColor("transparent", true);
       RNStatusBar.setBarStyle("dark-content", true);
     }
-  }, [checkAuth]);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <SafeAreaProvider style={{ flex: 1, backgroundColor: "#FFFFFF" }}>

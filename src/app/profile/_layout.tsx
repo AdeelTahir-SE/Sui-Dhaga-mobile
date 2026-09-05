@@ -1,12 +1,6 @@
-import { Stack } from "expo-router";
+import { Slot } from "expo-router";
 
 export default function ProfileLayout() {
-  return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: "#FFFFFF" },
-      }}
-    />
-  );
+  return <Slot />;
 }
+

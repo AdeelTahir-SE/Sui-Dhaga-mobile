@@ -19,7 +19,6 @@ export function useTailors(initialFilters?: TailorFilters) {
         setTailors([]);
       }
     } catch (err: any) {
-      console.warn('Failed to load tailors from backend:', err.message);
       setError(err.message || 'Failed to load tailors');
       setTailors([]);
     } finally {
@@ -29,8 +28,37 @@ export function useTailors(initialFilters?: TailorFilters) {
   }, []);
 
   useEffect(() => {
-    fetchTailors(initialFilters);
-  }, [fetchTailors, initialFilters]);
+    let isMounted = true;
+
+    setIsLoading(true);
+    setError(null);
+    tailorsApi.getTailors(initialFilters)
+      .then((res) => {
+        if (isMounted) {
+          if (res.data && Array.isArray(res.data)) {
+            setTailors(res.data);
+          } else {
+            setTailors([]);
+          }
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          setError(err.message || 'Failed to load tailors');
+          setTailors([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialFilters]);
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -60,13 +88,13 @@ export function useTailorDetails(tailorId: string) {
 
     tailorsApi.getTailorById(tailorId)
       .then((res) => {
-        if (isMounted) {
-          setTailor(res.data || null);
+        if (isMounted && res.data) {
+          setTailor(res.data);
         }
       })
       .catch((err) => {
         if (isMounted) {
-          setError(err.message);
+          setError(err.message || 'Failed to load tailor details');
           setTailor(null);
         }
       })
@@ -81,3 +109,5 @@ export function useTailorDetails(tailorId: string) {
 
   return { tailor, isLoading, error };
 }
+
+

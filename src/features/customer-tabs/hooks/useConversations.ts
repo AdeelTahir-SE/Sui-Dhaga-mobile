@@ -28,8 +28,37 @@ export function useConversations() {
   }, []);
 
   useEffect(() => {
-    fetchConversations();
-  }, [fetchConversations]);
+    let isMounted = true;
+
+    setIsLoading(true);
+    setError(null);
+    conversationsApi.getConversations()
+      .then((res) => {
+        if (isMounted) {
+          if (res.data && Array.isArray(res.data)) {
+            setConversations(res.data);
+          } else {
+            setConversations([]);
+          }
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          setError(err.message || 'Failed to load conversations');
+          setConversations([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);

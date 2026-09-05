@@ -1,7 +1,8 @@
 import React from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
@@ -32,35 +33,75 @@ export default function HomeScreen() {
   const { designs, isLoading: designsLoading } = useDesigns();
 
   const userName = user?.fullName?.split(" ")[0] || user?.name?.split(" ")[0] || "there";
-
+  const userInitial = userName.charAt(0).toUpperCase();
   const recommendedTailor = tailors[0];
 
   return (
     <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Home" />}>
       <View className="px-5 pt-3 pb-8">
-        <View className="mb-4 flex-row items-start justify-between">
-          <View>
-            <Text className="text-[17px] font-bold text-brand-dark">
-              Hello, {userName} 👋
-            </Text>
-            <Text className="mt-1 text-[11px] text-brand-gray">
-              Ready to look your best today?
-            </Text>
+        {/* Prominent Header / User Profile Bar */}
+        <View className="mb-5 flex-row items-center justify-between">
+          <View className="flex-row items-center gap-3">
+            {/* Avatar with Status Ring */}
+            <View className="relative">
+              <View className="h-12 w-12 items-center justify-center rounded-full bg-primary shadow-sm">
+                <Text className="text-[18px] font-black text-white">
+                  {userInitial}
+                </Text>
+              </View>
+              <View className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500" />
+            </View>
+
+            <View>
+              <Text className="text-[13px] font-medium text-brand-gray">
+                Hi, Welcome Back 👋
+              </Text>
+              <Text className="text-[20px] font-black text-brand-dark tracking-tight">
+                {user?.fullName || user?.name || (user?.email ? user.email.split('@')[0] : "Guest")}
+              </Text>
+            </View>
           </View>
-          <Text className="text-[20px]">♧</Text>
+
+          {/* Action Icons */}
+          <View className="flex-row items-center gap-2">
+            <TouchableOpacity
+              onPress={() => router.push("/tailors" as never)}
+              activeOpacity={0.7}
+              className="h-11 w-11 items-center justify-center rounded-2xl border border-brand-border/80 bg-white shadow-xs"
+            >
+              <Ionicons name="search-outline" size={22} color="#1A1D1F" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push("/messages" as never)}
+              activeOpacity={0.7}
+              className="relative h-11 w-11 items-center justify-center rounded-2xl border border-brand-border/80 bg-white shadow-xs"
+            >
+              <Ionicons name="notifications-outline" size={22} color="#1A1D1F" />
+              <View className="absolute top-2.5 right-2.5 h-2.5 w-2.5 rounded-full bg-red-500" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View className="overflow-hidden rounded-2xl bg-[#FFF7EA] p-4">
-          <Text className="w-[48%] text-[22px] font-bold leading-7 text-brand-dark">
+        {/* Prominent Hero Banner */}
+        <View className="relative overflow-hidden rounded-3xl bg-[#FFF7EA] border border-[#FFE8C7] p-5 shadow-sm min-h-[168px] justify-center">
+          <View className="self-start rounded-full bg-primary/10 px-3 py-1 mb-2">
+            <Text className="text-[11px] font-bold text-primary tracking-wide">
+              CUSTOM TAILORING
+            </Text>
+          </View>
+          <Text className="w-[56%] text-[23px] font-black leading-[29px] text-brand-dark">
             Your Style, Your Story, Our Craft.
           </Text>
           <TouchableOpacity
             onPress={() => router.push("/tailors" as never)}
-            className="mt-4 self-start rounded-lg bg-primary px-4 py-3"
+            activeOpacity={0.8}
+            className="mt-3.5 self-start rounded-xl bg-primary px-5 py-3 shadow-sm active:bg-primary-dark flex-row items-center gap-1.5"
           >
-            <Text className="text-[12px] font-semibold text-white">
+            <Text className="text-[13px] font-bold text-white tracking-wide">
               Explore Tailors
             </Text>
+            <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
           </TouchableOpacity>
           <Image
             source={homeHero}
@@ -68,72 +109,128 @@ export default function HomeScreen() {
             style={{
               position: "absolute",
               bottom: 0,
-              right: 0,
-              height: "100%",
-              width: "58%",
+              right: -5,
+              height: "105%",
+              width: "56%",
             }}
           />
         </View>
 
+        {/* Quick Actions (Prominent 4-Tile Grid) */}
         <SectionTitle title="Quick Actions" />
-        <View className="flex-row gap-2">
-          <QuickAction title="Book Appointment" icon="calendar-outline" />
-          <QuickAction title="AI Design Studio" icon="color-wand-outline" />
-          <QuickAction title="My Orders" icon="bag-handle-outline" />
-          <QuickAction title="Style Assistant" icon="sparkles-outline" />
+        <View className="flex-row gap-2.5">
+          <QuickAction
+            title="Book Tailor"
+            icon="calendar-outline"
+            onPress={() => router.push("/tailors" as never)}
+          />
+          <QuickAction
+            title="AI Studio"
+            icon="color-wand-outline"
+            onPress={() => router.push("/design-studio" as never)}
+          />
+          <QuickAction
+            title="My Orders"
+            icon="bag-handle-outline"
+            onPress={() => router.push("/orders" as never)}
+          />
+          <QuickAction
+            title="Assistant"
+            icon="sparkles-outline"
+            onPress={() => router.push("/design-studio/chat" as never)}
+          />
         </View>
 
-        <SectionTitle title="Popular Categories" />
-        <View className="flex-row gap-2">
+        {/* Popular Categories */}
+        <SectionTitle
+          title="Popular Categories"
+          action="View All"
+          onPressAction={() => router.push("/tailors" as never)}
+        />
+        <View className="flex-row gap-2.5">
           {categories.map((category) => (
-            <View key={category.title} className="flex-1">
+            <TouchableOpacity
+              key={category.title}
+              activeOpacity={0.8}
+              onPress={() => router.push("/tailors" as never)}
+              className="flex-1 items-center"
+            >
               <TabPlaceholder
                 image={category.image}
                 variant="garment"
                 size="sm"
                 tone={category.tone}
-                label={category.title}
               />
-            </View>
+              <Text
+                className="mt-2 text-center text-[12px] font-bold text-brand-dark leading-[16px]"
+                numberOfLines={2}
+              >
+                {category.title}
+              </Text>
+            </TouchableOpacity>
           ))}
         </View>
 
-        <SectionTitle title="Recommended Tailors" />
+        {/* Recommended Tailors */}
+        <SectionTitle
+          title="Recommended Tailors"
+          action="See All"
+          onPressAction={() => router.push("/tailors" as never)}
+        />
         {tailorsLoading ? (
-          <View className="py-6 items-center justify-center">
-            <ActivityIndicator size="small" color="#FF6B6B" />
+          <View className="py-8 items-center justify-center">
+            <ActivityIndicator size="small" color="#14919B" />
           </View>
         ) : recommendedTailor ? (
           <MainTailorCard
             name={recommendedTailor.name || recommendedTailor.businessName || "Tailor"}
-            rating={`${recommendedTailor.rating || 4.8} (${recommendedTailor.reviews || recommendedTailor.reviewsCount || 0} reviews)`}
-            distance={recommendedTailor.distance || "2.1 km away"}
-            specialty={recommendedTailor.specialty || recommendedTailor.specialties?.join(', ') || "Bridal, Suits, Sarees"}
+            rating={`${recommendedTailor.rating || 0} (${recommendedTailor.reviews || recommendedTailor.reviewsCount || 0} reviews)`}
+            distance={recommendedTailor.distance || "Nearby"}
+            specialty={recommendedTailor.specialty || recommendedTailor.specialties?.join(', ') || "Bespoke Tailoring"}
             image={recommendedTailor.image || recommendedTailor.imageUrl}
-            topRated={recommendedTailor.topRated || recommendedTailor.isTopRated}
+            topRated={recommendedTailor.topRated || recommendedTailor.isTopRated || false}
           />
         ) : (
-          <View className="rounded-xl border border-brand-border p-4 items-center justify-center bg-brand-surface/30">
-            <Text className="text-[12px] text-brand-gray">No tailors available right now</Text>
+          <View className="rounded-2xl border border-brand-border p-6 items-center justify-center bg-white shadow-sm">
+            <Text className="text-[14px] font-medium text-brand-gray">No tailors available right now</Text>
           </View>
         )}
 
+        {/* Recent Designs */}
         {designs.length > 0 ? (
           <>
-            <SectionTitle title="Recent Designs" />
-            <View className="flex-row gap-2">
-              {designs.slice(0, 4).map((design, index) => (
-                <View key={design.id || index} className="flex-1">
+            <SectionTitle
+              title="Recent Designs"
+              action="Open Studio"
+              onPressAction={() => router.push("/design-studio" as never)}
+            />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 12, paddingRight: 10 }}
+            >
+              {designs.slice(0, 5).map((design, index) => (
+                <TouchableOpacity
+                  key={design.id || index}
+                  activeOpacity={0.8}
+                  onPress={() => router.push("/design-studio" as never)}
+                  className="w-[110px] items-center"
+                >
                   <TabPlaceholder
                     image={design.imageUrl || design.image}
                     variant="garment"
-                    size="sm"
+                    size="md"
                     tone="coral"
-                    label={design.name}
                   />
-                </View>
+                  <Text
+                    className="mt-2 text-center text-[12px] font-bold text-brand-dark leading-[16px]"
+                    numberOfLines={1}
+                  >
+                    {design.name || "Custom Outfit"}
+                  </Text>
+                </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           </>
         ) : null}
       </View>

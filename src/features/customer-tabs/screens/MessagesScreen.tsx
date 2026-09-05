@@ -139,10 +139,7 @@ export default function MessagesScreen() {
             </TouchableOpacity>
           </View>
         ) : filteredConversations.length === 0 ? (
-          <View
-            className="flex-1 items-center justify-center px-6 py-12"
-            style={{ minHeight: 440, justifyContent: "center", alignItems: "center" }}
-          >
+          <View className="flex-1 items-center justify-center px-6 py-12 min-h-[440px]">
             <View className="w-20 h-20 rounded-full bg-primary/10 items-center justify-center mb-4">
               <Ionicons name="chatbubbles-outline" size={36} color="#14919B" />
             </View>
@@ -159,19 +156,8 @@ export default function MessagesScreen() {
                 onPress={() => router.push("/tailors" as any)}
                 activeOpacity={0.8}
                 className="h-[48px] px-6 rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
-                style={{
-                  height: 48,
-                  paddingHorizontal: 24,
-                  borderRadius: 12,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "#14919B",
-                }}
               >
-                <Text
-                  className="text-[14px] font-semibold text-white"
-                  style={{ fontSize: 14, fontWeight: "600", color: "#FFFFFF" }}
-                >
+                <Text className="text-[14px] font-semibold text-white">
                   Explore Tailors
                 </Text>
               </TouchableOpacity>

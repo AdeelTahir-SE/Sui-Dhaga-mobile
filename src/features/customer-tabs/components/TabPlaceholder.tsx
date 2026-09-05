@@ -31,11 +31,12 @@ const iconColors: Record<Tone, string> = {
 };
 
 const sizeClasses = {
-  xs: "h-10 w-10",
-  sm: "h-16 w-16",
-  md: "h-24 w-20",
-  wide: "h-[116px] w-full",
-  hero: "h-[132px] w-[150px]",
+  xs: "h-12 w-12",
+  sm: "h-20 w-20",
+  md: "h-28 w-24",
+  lg: "h-32 w-28",
+  wide: "h-[130px] w-full",
+  hero: "h-[150px] w-[170px]",
 };
 
 const generatedAssets = {
@@ -63,7 +64,7 @@ export function TabPlaceholder({
 
   return (
     <View
-      className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-xl ${toneClasses[tone]}`}
+      className={`${sizeClasses[size] || sizeClasses.md} items-center justify-center overflow-hidden rounded-2xl ${toneClasses[tone]}`}
     >
       <Image
         source={image ?? generatedAssets[variant]}
@@ -72,10 +73,10 @@ export function TabPlaceholder({
       />
       <View className="absolute inset-0 bg-white/10" />
       {size === "xs" ? (
-        <Ionicons name={icon} size={14} color={iconColors[tone]} />
+        <Ionicons name={icon} size={18} color={iconColors[tone]} />
       ) : null}
       {label ? (
-        <Text className="absolute bottom-1 rounded bg-white/80 px-1 text-center text-[9px] font-medium text-brand-gray">
+        <Text className="absolute bottom-1.5 rounded-md bg-white/90 px-2 py-0.5 text-center text-[11px] font-bold text-brand-dark shadow-xs">
           {label}
         </Text>
       ) : null}

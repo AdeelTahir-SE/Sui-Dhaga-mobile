@@ -29,8 +29,38 @@ export function useOrders(statusFilter?: string) {
   }, [statusFilter]);
 
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    let isMounted = true;
+
+    setIsLoading(true);
+    setError(null);
+    ordersApi.getMyOrders()
+      .catch(() => ordersApi.getOrders({ status: statusFilter }))
+      .then((res) => {
+        if (isMounted) {
+          if (res.data && Array.isArray(res.data)) {
+            setOrders(res.data);
+          } else {
+            setOrders([]);
+          }
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          setError(err.message || 'Failed to load orders');
+          setOrders([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [statusFilter]);
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);

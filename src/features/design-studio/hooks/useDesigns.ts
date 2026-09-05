@@ -30,7 +30,6 @@ export function useDesigns() {
         setTemplates([]);
       }
     } catch (err: any) {
-      console.warn('Failed to load designs from backend:', err.message);
       setError(err.message || 'Failed to load designs');
       setDesigns([]);
       setTemplates([]);
@@ -41,8 +40,46 @@ export function useDesigns() {
   }, []);
 
   useEffect(() => {
-    fetchDesigns();
-  }, [fetchDesigns]);
+    let isMounted = true;
+
+    setIsLoading(true);
+    setError(null);
+    Promise.all([
+      designsApi.getMyDesigns().catch(() => designsApi.getDesigns()).catch(() => ({ data: [] })),
+      designsApi.getTemplates().catch(() => ({ data: [] })),
+    ])
+      .then(([designsRes, templatesRes]) => {
+        if (isMounted) {
+          if (designsRes.data && Array.isArray(designsRes.data)) {
+            setDesigns(designsRes.data);
+          } else {
+            setDesigns([]);
+          }
+          if (templatesRes.data && Array.isArray(templatesRes.data)) {
+            setTemplates(templatesRes.data);
+          } else {
+            setTemplates([]);
+          }
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          setError(err.message || 'Failed to load designs');
+          setDesigns([]);
+          setTemplates([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -65,3 +102,5 @@ export function useDesigns() {
     createDesign,
   };
 }
+
+
