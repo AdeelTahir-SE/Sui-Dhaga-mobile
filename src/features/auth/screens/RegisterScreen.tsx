@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -18,8 +19,10 @@ import { AuthButton } from "../components/AuthButton";
 import { RoleCard } from "../components/RoleCard";
 import { SocialLoginButton } from "../components/SocialLoginButton";
 import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
+import { AuthMessageBanner } from "../components/AuthMessageBanner";
 import { useAuthStore } from "../../../stores/auth.store";
 
+const logoImg = require("@/assets/logos/main-logo.png");
 const customerImg = require("@/assets/illustrations/auth-flow/cutomer-crete-account.png");
 const tailorImg = require("@/assets/illustrations/auth-flow/tailor-create-account.png");
 const designerImg = require("@/assets/illustrations/auth-flow/designer-create-account.png");
@@ -149,28 +152,61 @@ export default function RegisterScreen() {
   if (registrationSuccess) {
     return (
       <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
-        <AuthEdgeDecorations variant="coral" />
-        <View className="flex-1 px-6 justify-center items-center pb-12">
-          {/* Success Icon */}
-          <View className="w-20 h-20 rounded-full bg-emerald-50 items-center justify-center mb-6 border border-emerald-200">
-            <Ionicons name="mail-unread-outline" size={40} color="#059669" />
+        <AuthEdgeDecorations variant="teal" />
+        <View className="flex-1 px-6 justify-center items-center pb-10">
+          {/* Logo Header */}
+          <View className="flex-row items-center mb-8">
+            <Image
+              source={logoImg}
+              className="w-10 h-10 mr-2.5"
+              resizeMode="contain"
+            />
+            <Text
+              className="text-[26px] text-brand-dark font-semibold"
+              style={{
+                fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+              }}
+            >
+              Sui Dhaga
+            </Text>
           </View>
 
-          {/* Heading */}
-          <Text className="text-[24px] font-bold text-brand-dark text-center">
+          {/* Glowing Mail Icon Badge */}
+          <View className="w-24 h-24 rounded-full bg-primary/10 items-center justify-center mb-6 border border-primary/20">
+            <View className="w-16 h-16 rounded-full bg-primary/20 items-center justify-center">
+              <Ionicons name="mail-open-outline" size={32} color="#14919B" />
+            </View>
+          </View>
+
+          {/* Heading & Subtitle */}
+          <Text className="text-[26px] font-bold text-brand-dark text-center">
             Account Created! 🎉
           </Text>
-          <Text className="text-[16px] font-semibold text-primary text-center mt-3">
-            Please check your email and verify
-          </Text>
-          <Text className="text-[14px] text-brand-gray text-center mt-2 mb-8 leading-5 px-3">
-            We've sent a verification link to{"\n"}
-            <Text className="font-semibold text-brand-dark">{email.trim()}</Text>.
-            {"\n"}Please click the link in your email to verify your account before logging in.
-          </Text>
+          <View className="mt-2.5 mb-2 bg-primary/10 px-3.5 py-1 rounded-full border border-primary/20">
+            <Text className="text-[12px] font-bold text-primary uppercase tracking-wider">
+              Verification Link Sent
+            </Text>
+          </View>
 
-          {/* Actions */}
-          <View className="w-full gap-3">
+          {/* Email Info Card */}
+          <View className="w-full rounded-2xl bg-brand-surface p-4 border border-brand-border my-5 shadow-sm">
+            <View className="flex-row items-center mb-1.5">
+              <Ionicons name="mail" size={15} color="#14919B" style={{ marginRight: 6 }} />
+              <Text className="text-[12px] font-semibold text-brand-gray">
+                Sent to:
+              </Text>
+            </View>
+            <Text className="text-[15px] font-bold text-brand-dark select-all">
+              {email.trim()}
+            </Text>
+            <View className="h-px bg-brand-border my-2.5" />
+            <Text className="text-[12px] text-brand-gray leading-[18px]">
+              Please check your inbox (and spam folder) and click the verification link to activate your account.
+            </Text>
+          </View>
+
+          {/* Action Buttons */}
+          <View className="w-full gap-3 mt-2">
             <AuthButton
               title="Go to Login"
               onPress={() => router.replace("/auth/login" as any)}
@@ -386,10 +422,11 @@ export default function RegisterScreen() {
 
             {/* Error Message */}
             {errorMessage ? (
-              <View className="mb-5 rounded-xl bg-red-50 p-3.5 border border-red-200 flex-row items-center">
-                <Ionicons name="alert-circle" size={18} color="#DC2626" style={{ marginRight: 8 }} />
-                <Text className="text-[13px] text-red-600 font-medium flex-1">{errorMessage}</Text>
-              </View>
+              <AuthMessageBanner
+                type="error"
+                message={errorMessage}
+                onDismiss={() => setErrorMessage(null)}
+              />
             ) : null}
 
             {/* Create Account Button */}

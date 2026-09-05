@@ -17,6 +17,7 @@ import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
 import { SocialLoginButton } from "../components/SocialLoginButton";
 import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
+import { AuthMessageBanner } from "../components/AuthMessageBanner";
 import { useAuthStore } from "../../../stores/auth.store";
 
 const logoImg = require("@/assets/logos/main-logo.png");
@@ -143,10 +144,11 @@ export default function LoginScreen() {
 
             {/* Error Message */}
             {errorMessage ? (
-              <View className="mb-5 rounded-xl bg-red-50 p-3.5 border border-red-200 flex-row items-center">
-                <Ionicons name="alert-circle" size={18} color="#DC2626" style={{ marginRight: 8 }} />
-                <Text className="text-[13px] text-red-600 font-medium flex-1">{errorMessage}</Text>
-              </View>
+              <AuthMessageBanner
+                type="error"
+                message={errorMessage}
+                onDismiss={() => setErrorMessage(null)}
+              />
             ) : null}
 
             {/* Login Button */}
