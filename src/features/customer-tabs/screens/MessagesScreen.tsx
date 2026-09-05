@@ -96,7 +96,7 @@ export default function MessagesScreen() {
         <View className="mb-4 h-[48px] flex-row items-center rounded-xl border border-brand-border px-4 bg-white">
           <Ionicons name="search" size={17} color="#6F767E" />
           <TextInput
-            className="ml-3 flex-1 text-[13px] text-brand-dark"
+            className="ml-3 flex-1 text-[13px] font-medium text-brand-dark"
             placeholder="Search messages..."
             placeholderTextColor="#9CA3AF"
             value={searchQuery}
@@ -114,7 +114,7 @@ export default function MessagesScreen() {
         {isLoading && !isRefreshing ? (
           <View className="py-20 items-center justify-center">
             <ActivityIndicator size="large" color="#14919B" />
-            <Text className="mt-3 text-[13px] text-brand-gray">
+            <Text className="mt-3 text-[13px] font-medium text-brand-gray">
               Loading conversations...
             </Text>
           </View>
@@ -126,14 +126,14 @@ export default function MessagesScreen() {
             <Text className="text-[15px] font-bold text-brand-dark text-center">
               Unable to load messages
             </Text>
-            <Text className="mt-1 text-[13px] text-brand-gray text-center mb-4">
+            <Text className="mt-1 text-[13px] font-medium text-brand-gray text-center mb-4">
               {error}
             </Text>
             <TouchableOpacity
               onPress={refresh}
               className="px-4 py-2 rounded-xl bg-primary"
             >
-              <Text className="text-[13px] font-semibold text-white">
+              <Text className="text-[13px] font-bold text-white tracking-wide">
                 Try Again
               </Text>
             </TouchableOpacity>
@@ -143,10 +143,10 @@ export default function MessagesScreen() {
             <View className="w-20 h-20 rounded-full bg-primary/10 items-center justify-center mb-4">
               <Ionicons name="chatbubbles-outline" size={36} color="#14919B" />
             </View>
-            <Text className="text-[18px] font-bold text-brand-dark text-center">
+            <Text className="text-[18px] font-bold text-brand-dark text-center tracking-tight">
               {searchQuery.trim() ? "No results found" : "No Messages Yet"}
             </Text>
-            <Text className="mt-2 text-[13px] text-brand-gray text-center leading-[19px] mb-6">
+            <Text className="mt-2 text-[13px] font-medium text-brand-gray text-center leading-[19px] mb-6">
               {searchQuery.trim()
                 ? `No conversations match "${searchQuery}".`
                 : "When you contact tailors, inquire about orders, or chat with stylists, your conversations will appear here."}
@@ -157,7 +157,7 @@ export default function MessagesScreen() {
                 activeOpacity={0.8}
                 className="h-[48px] px-6 rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
               >
-                <Text className="text-[14px] font-semibold text-white">
+                <Text className="text-[13px] font-bold text-white tracking-wide">
                   Explore Tailors
                 </Text>
               </TouchableOpacity>

@@ -33,8 +33,8 @@ function DesignOption({
         <Ionicons name={icon} size={20} color="#14919B" />
       </View>
       <View className="ml-3 flex-1">
-        <Text className="text-[13px] font-semibold text-brand-dark">{title}</Text>
-        <Text className="mt-1 text-[10px] text-brand-gray">{subtitle}</Text>
+        <Text className="text-[14px] font-bold text-brand-dark">{title}</Text>
+        <Text className="mt-0.5 text-[11px] font-medium text-brand-gray">{subtitle}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color="#1A1D1F" />
     </TouchableOpacity>
@@ -56,8 +56,8 @@ export default function DesignTabScreen() {
             <Ionicons name="add" size={26} color="#14919B" />
           </View>
           <View className="ml-4 flex-1">
-            <Text className="text-[16px] font-bold text-white">New Design</Text>
-            <Text className="mt-1 text-[12px] text-white">Start from scratch</Text>
+            <Text className="text-[18px] font-black text-white tracking-tight">New Design</Text>
+            <Text className="mt-0.5 text-[13px] font-medium text-white/90">Start from scratch</Text>
           </View>
           <View className="h-16 w-16 overflow-hidden rounded-xl bg-white">
             <Image
@@ -87,7 +87,7 @@ export default function DesignTabScreen() {
           </View>
         ) : (
           <View className="rounded-xl border border-dashed border-brand-border p-4 items-center justify-center bg-brand-surface/20">
-            <Text className="text-[12px] text-brand-gray">No saved designs yet. Tap above to create one!</Text>
+            <Text className="text-[13px] font-medium text-brand-gray">No saved designs yet. Tap above to create one!</Text>
           </View>
         )}
 
@@ -106,7 +106,7 @@ export default function DesignTabScreen() {
           </View>
         ) : (
           <View className="rounded-xl border border-dashed border-brand-border p-4 items-center justify-center bg-brand-surface/20">
-            <Text className="text-[12px] text-brand-gray">Templates will appear here</Text>
+            <Text className="text-[13px] font-medium text-brand-gray">Templates will appear here</Text>
           </View>
         )}
       </View>

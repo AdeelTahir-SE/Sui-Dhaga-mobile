@@ -22,7 +22,7 @@ export default function MainTailorsScreen() {
       <View className="px-5 pb-6">
         <View className="h-[48px] flex-row items-center rounded-xl border border-brand-border px-4">
           <Ionicons name="search" size={17} color="#6F767E" />
-          <Text className="ml-3 flex-1 text-[12px] text-brand-gray">
+          <Text className="ml-3 flex-1 text-[13px] font-medium text-brand-gray">
             Search by name, specialty or location
           </Text>
           <Ionicons name="options-outline" size={18} color="#1A1D1F" />
@@ -30,7 +30,7 @@ export default function MainTailorsScreen() {
         <View className="my-4 flex-row gap-2">
           {["Filters", "Near Me", "Rating 4+", "Verified"].map((filter) => (
             <View key={filter} className="rounded-lg border border-brand-border px-3 py-2">
-              <Text className="text-[11px] font-medium text-brand-dark">{filter}</Text>
+              <Text className="text-[11px] font-bold text-brand-dark">{filter}</Text>
             </View>
           ))}
         </View>
@@ -38,7 +38,7 @@ export default function MainTailorsScreen() {
         {isLoading && !isRefreshing ? (
           <View className="py-12 items-center justify-center">
             <ActivityIndicator size="small" color="#FF6B6B" />
-            <Text className="mt-2 text-[12px] text-brand-gray">Loading tailors...</Text>
+            <Text className="mt-2 text-[13px] font-medium text-brand-gray">Loading tailors...</Text>
           </View>
         ) : tailors.length === 0 ? (
           <View className="py-12 items-center justify-center rounded-2xl border border-brand-border bg-white p-6">

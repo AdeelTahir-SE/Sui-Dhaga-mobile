@@ -55,7 +55,7 @@ export function MessageRow({
             toneBg[tone] || "bg-[#E0F7F7]"
           }`}
         >
-          <Text className="text-[15px] font-bold text-primary-dark">
+          <Text className="text-[16px] font-black text-primary-dark">
             {initial}
           </Text>
         </View>
@@ -65,14 +65,14 @@ export function MessageRow({
       <View className="ml-3.5 flex-1 pr-2">
         <Text
           numberOfLines={1}
-          className="text-[14px] font-bold text-brand-dark"
+          className="text-[15px] font-bold text-brand-dark"
         >
           {name}
         </Text>
         <Text
           numberOfLines={1}
-          className={`mt-1 text-[12px] ${
-            unreadCount > 0 ? "font-semibold text-brand-dark" : "text-brand-gray"
+          className={`mt-1 text-[13px] ${
+            unreadCount > 0 ? "font-bold text-brand-dark" : "font-medium text-brand-gray"
           }`}
         >
           {message || "No messages yet"}

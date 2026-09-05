@@ -38,19 +38,19 @@ export function MainTailorCard({
             <View className="mt-1 flex-row items-center">
               <Ionicons name="star" size={15} color="#F4B400" />
               <Text className="ml-1 text-[13px] font-semibold text-brand-dark">{rating}</Text>
-              <Text className="ml-2 text-[13px] text-brand-gray">• {distance}</Text>
+              <Text className="ml-2 text-[13px] font-medium text-brand-gray">• {distance}</Text>
             </View>
-            <Text className="mt-1.5 text-[13px] text-brand-gray leading-[18px]" numberOfLines={2}>
+            <Text className="mt-1.5 text-[13px] font-medium text-brand-gray leading-[18px]" numberOfLines={2}>
               {specialty}
             </Text>
           </View>
 
           <View className="mt-2.5 flex-row gap-2">
-            <Text className="rounded-lg bg-primary-50 px-2.5 py-1 text-[11px] font-semibold text-primary">
+            <Text className="rounded-lg bg-primary-50 px-2.5 py-1 text-[11px] font-bold text-primary">
               ✓ Verified
             </Text>
             {topRated ? (
-              <Text className="rounded-lg bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+              <Text className="rounded-lg bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
                 ★ Top Rated
               </Text>
             ) : null}

@@ -33,8 +33,8 @@ export function ProfileMenuRow({
         />
       </View>
       <View className="ml-3 flex-1">
-        <Text className="text-[13px] font-semibold text-brand-dark">{title}</Text>
-        <Text className="mt-1 text-[10px] text-brand-gray">{subtitle}</Text>
+        <Text className="text-[14px] font-bold text-brand-dark">{title}</Text>
+        <Text className="mt-0.5 text-[11px] font-medium text-brand-gray">{subtitle}</Text>
       </View>
       <Ionicons name={highlighted ? "pencil-outline" : "chevron-forward"} size={17} color="#9CA3AF" />
     </View>

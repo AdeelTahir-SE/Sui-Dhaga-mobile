@@ -100,8 +100,10 @@ export default function MainOrdersScreen() {
                 }`}
               >
                 <Text
-                  className={`text-[13px] font-semibold ${
-                    isActive ? "text-primary" : "text-brand-gray"
+                  className={`text-[13px] ${
+                    isActive
+                      ? "font-bold text-primary"
+                      : "font-semibold text-brand-gray"
                   }`}
                 >
                   {tab.label} ({tab.count})
@@ -115,7 +117,7 @@ export default function MainOrdersScreen() {
         {isLoading && !isRefreshing ? (
           <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 380 }}>
             <ActivityIndicator size="large" color="#14919B" />
-            <Text className="mt-3 text-[13px] text-brand-gray">
+            <Text className="mt-3 text-[13px] font-medium text-brand-gray">
               Loading your orders...
             </Text>
           </View>
@@ -127,7 +129,7 @@ export default function MainOrdersScreen() {
             <Text className="text-[15px] font-bold text-brand-dark text-center">
               Unable to load orders
             </Text>
-            <Text className="mt-1 text-[13px] text-brand-gray text-center mb-4">
+            <Text className="mt-1 text-[13px] font-medium text-brand-gray text-center mb-4">
               {error}
             </Text>
             <TouchableOpacity
@@ -135,7 +137,7 @@ export default function MainOrdersScreen() {
               activeOpacity={0.7}
               className="px-5 py-2.5 rounded-xl bg-primary"
             >
-              <Text className="text-[13px] font-semibold text-white">
+              <Text className="text-[13px] font-bold text-white tracking-wide">
                 Try Again
               </Text>
             </TouchableOpacity>
@@ -155,14 +157,14 @@ export default function MainOrdersScreen() {
                 color="#14919B"
               />
             </View>
-            <Text className="text-[18px] font-bold text-brand-dark text-center">
+            <Text className="text-[18px] font-bold text-brand-dark text-center tracking-tight">
               {selectedTab === "completed"
                 ? "No Completed Orders"
                 : selectedTab === "cancelled"
                 ? "No Cancelled Orders"
                 : "No Active Orders"}
             </Text>
-            <Text className="mt-2 text-[13px] text-brand-gray text-center leading-[20px] max-w-[280px] mb-6">
+            <Text className="mt-2 text-[13px] font-medium text-brand-gray text-center leading-[20px] max-w-[280px] mb-6">
               {selectedTab === "completed"
                 ? "When your tailoring orders are finished and delivered, they will appear here."
                 : selectedTab === "cancelled"
@@ -175,7 +177,7 @@ export default function MainOrdersScreen() {
               onPress={() => router.push("/tailors" as never)}
               className="h-[48px] px-6 rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
             >
-              <Text className="text-[14px] font-semibold text-white">
+              <Text className="text-[13px] font-bold text-white tracking-wide">
                 Explore Tailors
               </Text>
             </TouchableOpacity>

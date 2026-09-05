@@ -56,7 +56,7 @@ export default function ProfileScreen() {
             tone="coral"
           />
           <View className="mt-4 flex-row items-center">
-            <Text className="text-[18px] font-bold text-brand-dark">
+            <Text className="text-[20px] font-black text-brand-dark tracking-tight">
               {displayName}
             </Text>
             <Ionicons
@@ -66,10 +66,10 @@ export default function ProfileScreen() {
               style={{ marginLeft: 6 }}
             />
           </View>
-          <Text className="mt-2 text-[12px] text-brand-gray">
+          <Text className="mt-1.5 text-[13px] font-medium text-brand-gray">
             {displayEmail}
           </Text>
-          <Text className="mt-1 text-[12px] text-brand-gray">
+          <Text className="mt-0.5 text-[13px] font-medium text-brand-gray">
             {displayPhone}
           </Text>
         </View>
@@ -112,7 +112,7 @@ export default function ProfileScreen() {
           onPress={handleLogout}
           className="mt-6 h-[52px] items-center justify-center rounded-xl border border-[#F5D1D1] bg-[#FFF3F3]"
         >
-          <Text className="text-[14px] font-semibold text-[#D73232]">
+          <Text className="text-[14px] font-bold text-[#D73232] tracking-wide">
             Logout
           </Text>
         </TouchableOpacity>

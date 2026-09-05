@@ -38,36 +38,23 @@ export default function HomeScreen() {
   const { designs, isLoading: designsLoading } = useDesigns();
 
   const userName =
-    user?.fullName?.split(" ")[0] || user?.name?.split(" ")[0] || "there";
-  const userInitial = userName.charAt(0).toUpperCase();
+    user?.fullName?.split(" ")[0] ||
+    user?.name?.split(" ")[0] ||
+    (user?.email ? user.email.split("@")[0] : "Ayesha");
   const recommendedTailor = tailors[0];
 
   return (
     <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Home" />}>
       <View className="px-5 pt-3 pb-8">
-        {/* Prominent Header / User Profile Bar */}
+        {/* Prominent Header / User Welcome Bar */}
         <View className="mb-5 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
-            {/* Avatar with Status Ring */}
-            <View className="relative">
-              <View className="h-12 w-12 items-center justify-center rounded-full bg-primary shadow-sm">
-                <Text className="text-[18px] font-black text-white">
-                  {userInitial}
-                </Text>
-              </View>
-              <View className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500" />
-            </View>
-
-            <View>
-              <Text className="text-[13px] font-medium text-brand-gray">
-                Hi, Welcome Back 👋
-              </Text>
-              <Text className="text-[20px] font-black text-brand-dark tracking-tight">
-                {user?.fullName ||
-                  user?.name ||
-                  (user?.email ? user.email.split("@")[0] : "Guest")}
-              </Text>
-            </View>
+          <View>
+            <Text className="text-[20px] font-black text-brand-dark tracking-tight">
+              Hello, {userName} 👋
+            </Text>
+            <Text className="mt-0.5 text-[13px] font-medium text-brand-gray">
+              Ready to look your best today?
+            </Text>
           </View>
 
           {/* Action Icons */}
@@ -75,7 +62,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={() => router.push("/tailors" as never)}
               activeOpacity={0.7}
-              className="h-11 w-11 items-center justify-center rounded-2xl border border-brand-border/80 bg-white shadow-xs"
+              className="h-11 w-11 items-center justify-center rounded-md border border-brand-border/80 bg-white shadow-xs"
             >
               <Ionicons name="search-outline" size={22} color="#1A1D1F" />
             </TouchableOpacity>
@@ -83,7 +70,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={() => router.push("/messages" as never)}
               activeOpacity={0.7}
-              className="relative h-11 w-11 items-center justify-center rounded-2xl border border-brand-border/80 bg-white shadow-xs"
+              className="relative h-11 w-11 items-center justify-center rounded-md border border-brand-border/80 bg-white shadow-xs"
             >
               <Ionicons
                 name="notifications-outline"
@@ -96,19 +83,14 @@ export default function HomeScreen() {
         </View>
 
         {/* Prominent Hero Banner */}
-        <View className="relative overflow-hidden rounded-3xl bg-[#FFF7EA] border border-[#FFE8C7] p-5 shadow-sm min-h-[168px] justify-center">
-          <View className="self-start rounded-full bg-primary/10 px-3 py-1 mb-2">
-            <Text className="text-[11px] font-bold text-primary tracking-wide">
-              CUSTOM TAILORING
-            </Text>
-          </View>
+        <View className="relative overflow-hidden rounded-md bg-[#FFF7EA] border border-[#FFE8C7] p-5 shadow-sm min-h-[168px] justify-center">
           <Text className="w-[56%] text-[23px] font-black leading-[29px] text-brand-dark">
             Your Style, Your Story, Our Craft.
           </Text>
           <TouchableOpacity
             onPress={() => router.push("/tailors" as never)}
             activeOpacity={0.8}
-            className="mt-3.5 self-start rounded-xl bg-primary px-5 py-3 shadow-sm active:bg-primary-dark flex-row items-center gap-1.5"
+            className="mt-3.5 self-start rounded-md bg-primary px-5 py-3 shadow-sm active:bg-primary-dark flex-row items-center gap-1.5"
           >
             <Text className="text-[13px] font-bold text-white tracking-wide">
               Explore Tailors
@@ -213,7 +195,7 @@ export default function HomeScreen() {
             }
           />
         ) : (
-          <View className="rounded-2xl border border-brand-border p-6 items-center justify-center bg-white shadow-sm">
+          <View className="rounded-md border border-brand-border p-6 items-center justify-center bg-white shadow-sm">
             <Text className="text-[14px] font-medium text-brand-gray">
               No tailors available right now
             </Text>

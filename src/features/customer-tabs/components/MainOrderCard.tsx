@@ -75,15 +75,15 @@ export function MainOrderCard({
           <View className="flex-row items-start justify-between">
             <Text className="text-[12px] font-bold text-brand-dark">Order #{id}</Text>
             <View className={`rounded-md px-2 py-0.5 border ${statusBadge.bg} ${statusBadge.border}`}>
-              <Text className={`text-[10px] font-semibold ${statusBadge.text}`}>
+              <Text className={`text-[10px] font-bold ${statusBadge.text}`}>
                 {status}
               </Text>
             </View>
           </View>
-          <Text numberOfLines={1} className="mt-1.5 text-[13px] font-bold text-brand-dark">{item}</Text>
-          <Text numberOfLines={1} className="mt-0.5 text-[11px] text-brand-gray">{tailor}</Text>
-          <Text className="mt-0.5 text-[11px] text-brand-gray">{delivery}</Text>
-          <Text className="mt-1.5 text-[14px] font-bold text-primary">{price}</Text>
+          <Text numberOfLines={1} className="mt-1.5 text-[14px] font-bold text-brand-dark">{item}</Text>
+          <Text numberOfLines={1} className="mt-0.5 text-[12px] font-medium text-brand-gray">{tailor}</Text>
+          <Text className="mt-0.5 text-[12px] font-medium text-brand-gray">{delivery}</Text>
+          <Text className="mt-1.5 text-[15px] font-bold text-primary">{price}</Text>
         </View>
       </View>
 
@@ -92,7 +92,7 @@ export function MainOrderCard({
           onPress={handleCardPress}
           className="rounded-xl border border-primary px-4 py-2 bg-primary/5 active:bg-primary/10"
         >
-          <Text className="text-[11px] font-bold text-primary">
+          <Text className="text-[12px] font-bold text-primary tracking-wide">
             {isCompleted ? "View Invoice" : isCancelled ? "Order Details" : button}
           </Text>
         </TouchableOpacity>
