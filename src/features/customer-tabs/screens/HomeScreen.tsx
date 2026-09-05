@@ -1,18 +1,23 @@
-import React from "react";
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  ActivityIndicator,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
+import { useAuthStore } from "../../../stores/auth.store";
+import { useDesigns } from "../../design-studio/hooks/useDesigns";
+import { useTailors } from "../../tailors/hooks/useTailors";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MainTailorCard } from "../components/MainTailorCard";
 import { QuickAction } from "../components/QuickAction";
 import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
-import { useAuthStore } from "../../../stores/auth.store";
-import { useTailors } from "../../tailors/hooks/useTailors";
-import { useDesigns } from "../../design-studio/hooks/useDesigns";
 
 const homeHero = require("@/assets/illustrations/customer-tabs/home-hero.png");
 const categoryKurtas = require("@/assets/illustrations/customer-tabs/home/category-kurtas-suits.png");
@@ -32,7 +37,8 @@ export default function HomeScreen() {
   const { tailors, isLoading: tailorsLoading } = useTailors();
   const { designs, isLoading: designsLoading } = useDesigns();
 
-  const userName = user?.fullName?.split(" ")[0] || user?.name?.split(" ")[0] || "there";
+  const userName =
+    user?.fullName?.split(" ")[0] || user?.name?.split(" ")[0] || "there";
   const userInitial = userName.charAt(0).toUpperCase();
   const recommendedTailor = tailors[0];
 
@@ -57,7 +63,9 @@ export default function HomeScreen() {
                 Hi, Welcome Back 👋
               </Text>
               <Text className="text-[20px] font-black text-brand-dark tracking-tight">
-                {user?.fullName || user?.name || (user?.email ? user.email.split('@')[0] : "Guest")}
+                {user?.fullName ||
+                  user?.name ||
+                  (user?.email ? user.email.split("@")[0] : "Guest")}
               </Text>
             </View>
           </View>
@@ -77,7 +85,11 @@ export default function HomeScreen() {
               activeOpacity={0.7}
               className="relative h-11 w-11 items-center justify-center rounded-2xl border border-brand-border/80 bg-white shadow-xs"
             >
-              <Ionicons name="notifications-outline" size={22} color="#1A1D1F" />
+              <Ionicons
+                name="notifications-outline"
+                size={22}
+                color="#1A1D1F"
+              />
               <View className="absolute top-2.5 right-2.5 h-2.5 w-2.5 rounded-full bg-red-500" />
             </TouchableOpacity>
           </View>
@@ -178,26 +190,38 @@ export default function HomeScreen() {
           onPressAction={() => router.push("/tailors" as never)}
         />
         {tailorsLoading ? (
-          <View className="py-8 items-center justify-center">
             <ActivityIndicator size="small" color="#14919B" />
-          </View>
         ) : recommendedTailor ? (
           <MainTailorCard
-            name={recommendedTailor.name || recommendedTailor.businessName || "Tailor"}
+            name={
+              recommendedTailor.name ||
+              recommendedTailor.businessName ||
+              "Tailor"
+            }
             rating={`${recommendedTailor.rating || 0} (${recommendedTailor.reviews || recommendedTailor.reviewsCount || 0} reviews)`}
             distance={recommendedTailor.distance || "Nearby"}
-            specialty={recommendedTailor.specialty || recommendedTailor.specialties?.join(', ') || "Bespoke Tailoring"}
+            specialty={
+              recommendedTailor.specialty ||
+              recommendedTailor.specialties?.join(", ") ||
+              "Bespoke Tailoring"
+            }
             image={recommendedTailor.image || recommendedTailor.imageUrl}
-            topRated={recommendedTailor.topRated || recommendedTailor.isTopRated || false}
+            topRated={
+              recommendedTailor.topRated ||
+              recommendedTailor.isTopRated ||
+              false
+            }
           />
         ) : (
           <View className="rounded-2xl border border-brand-border p-6 items-center justify-center bg-white shadow-sm">
-            <Text className="text-[14px] font-medium text-brand-gray">No tailors available right now</Text>
+            <Text className="text-[14px] font-medium text-brand-gray">
+              No tailors available right now
+            </Text>
           </View>
         )}
 
         {/* Recent Designs */}
-        {designs.length > 0 ? (
+        {designs?.length > 0 ? (
           <>
             <SectionTitle
               title="Recent Designs"
@@ -209,7 +233,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ gap: 12, paddingRight: 10 }}
             >
-              {designs.slice(0, 5).map((design, index) => (
+              {designs?.slice(0, 5)?.map((design, index) => (
                 <TouchableOpacity
                   key={design.id || index}
                   activeOpacity={0.8}

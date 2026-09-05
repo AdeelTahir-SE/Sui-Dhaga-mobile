@@ -13,7 +13,7 @@ type CustomerTabShellProps = {
   contentContainerStyle?: any;
 };
 
-export function CustomerTabShell({
+export  function CustomerTabShell({
   children,
   bottomTabs,
   refreshControl,
