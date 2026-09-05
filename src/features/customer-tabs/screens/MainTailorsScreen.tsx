@@ -40,13 +40,17 @@ export default function MainTailorsScreen() {
             <ActivityIndicator size="small" color="#FF6B6B" />
             <Text className="mt-2 text-[12px] text-brand-gray">Loading tailors...</Text>
           </View>
+        ) : tailors.length === 0 ? (
+          <View className="py-12 items-center justify-center rounded-2xl border border-brand-border bg-white p-6">
+            <Text className="text-[14px] font-medium text-brand-gray">No tailors available</Text>
+          </View>
         ) : (
           tailors.map((tailor, index) => (
             <MainTailorCard
               key={tailor.id || index}
               name={tailor.name || tailor.businessName || "Tailor"}
-              rating={`${tailor.rating || 4.8} (${tailor.reviews || tailor.reviewsCount || 0})`}
-              distance={tailor.distance || "2.0 km"}
+              rating={`${tailor.rating || 0} (${tailor.reviews || tailor.reviewsCount || 0})`}
+              distance={tailor.distance || "Nearby"}
               specialty={tailor.specialty || tailor.specialties?.join(', ') || "Bespoke Stitching"}
               image={tailor.image || tailor.imageUrl}
               topRated={tailor.topRated || tailor.isTopRated}
