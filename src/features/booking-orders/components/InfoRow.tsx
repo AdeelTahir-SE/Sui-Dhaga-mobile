@@ -5,9 +5,10 @@ type InfoRowProps = {
   icon?: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
+  highlight?: boolean;
 };
 
-export function InfoRow({ icon, label, value }: InfoRowProps) {
+export function InfoRow({ icon, label, value, highlight }: InfoRowProps) {
   return (
     <View className="flex-row items-center justify-between py-2">
       <View className="flex-row items-center">
@@ -19,9 +20,9 @@ export function InfoRow({ icon, label, value }: InfoRowProps) {
             style={{ marginRight: 8 }}
           />
         ) : null}
-        <Text className="text-[12px] text-brand-gray">{label}</Text>
+        <Text className={`text-[12px] ${highlight ? "font-bold text-brand-dark" : "text-brand-gray"}`}>{label}</Text>
       </View>
-      <Text className="text-right text-[12px] font-medium text-brand-dark">
+      <Text className={`text-right text-[12px] ${highlight ? "font-bold text-primary" : "font-medium text-brand-dark"}`}>
         {value}
       </Text>
     </View>

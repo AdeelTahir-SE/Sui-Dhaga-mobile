@@ -1,5 +1,6 @@
-import { Text, TouchableOpacity, View } from "react-native";
-import { router } from "expo-router";
+import React from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { RatingLine } from "../components/RatingLine";
@@ -8,6 +9,7 @@ import { TailorBottomTabs } from "../components/TailorBottomTabs";
 import { TailorHeader } from "../components/TailorHeader";
 import { TailorPlaceholder } from "../components/TailorPlaceholder";
 import { TailorScreenShell } from "../components/TailorScreenShell";
+import { useTailorDetails } from "../hooks/useTailors";
 
 const profileHeroImage = require("@/assets/illustrations/tailor-discovery/profile-hero.png");
 const rekhaImage = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
@@ -35,6 +37,17 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 export default function TailorProfileScreen() {
+  const { tailorId } = useLocalSearchParams<{ tailorId?: string }>();
+  const { tailor, isLoading } = useTailorDetails(tailorId || "1");
+
+  const name = tailor?.name || tailor?.businessName || "Rekha Tailors";
+  const rating = String(tailor?.rating || "4.8");
+  const reviewsCount = `${tailor?.reviews || tailor?.reviewsCount || 128} reviews`;
+  const distance = tailor?.distance || "2.1 km";
+  const location = tailor?.location?.address || "C-Scheme, Jaipur, Rajasthan";
+  const bio = tailor?.bio || "Experienced in creating custom outfits with perfect fit and beautiful finishing. 12+ years of experience.";
+  const tags = tailor?.specialties || ["Bridal", "Suits", "Sarees", "Lehengas", "Alterations"];
+
   return (
     <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
       <View className="relative">
@@ -52,33 +65,31 @@ export default function TailorProfileScreen() {
         </View>
       </View>
 
-      <View className="px-5">
+      <View className="px-5 pb-8">
         <View className="-mt-8 flex-row items-end">
-          <TailorPlaceholder image={rekhaImage} size="md" tone="coral" />
+          <TailorPlaceholder image={tailor?.image || tailor?.imageUrl || rekhaImage} size="md" tone="coral" />
           <View className="ml-4 flex-1 pb-1">
             <Text className="text-[21px] font-bold text-brand-dark">
-              Rekha Tailors
+              {name}
             </Text>
-            <RatingLine rating="4.8" reviews="128 reviews" distance="2.1 km" />
+            <RatingLine rating={rating} reviews={reviewsCount} distance={distance} />
             <Text className="mt-1 text-[12px] text-brand-gray">
-              C-Scheme, Jaipur, Rajasthan
+              {location}
             </Text>
           </View>
         </View>
 
         <View className="mt-4 flex-row flex-wrap gap-2">
-          {["Bridal", "Suits", "Sarees", "Lehengas", "Alterations"].map(
-            (tag) => (
-              <View
-                key={tag}
-                className="rounded-lg border border-brand-border px-3 py-2"
-              >
-                <Text className="text-[11px] font-medium text-brand-dark">
-                  {tag}
-                </Text>
-              </View>
-            ),
-          )}
+          {tags.map((tag) => (
+            <View
+              key={tag}
+              className="rounded-lg border border-brand-border px-3 py-2 bg-white"
+            >
+              <Text className="text-[11px] font-medium text-brand-dark">
+                {tag}
+              </Text>
+            </View>
+          ))}
         </View>
 
         <SectionHeader title="Gallery" />
@@ -100,8 +111,7 @@ export default function TailorProfileScreen() {
           About
         </Text>
         <Text className="text-[12px] leading-5 text-brand-gray">
-          Experienced in creating custom outfits with perfect fit and beautiful
-          finishing. 12+ years of experience.
+          {bio}
         </Text>
 
         <SectionHeader title="Services" />
@@ -112,7 +122,7 @@ export default function TailorProfileScreen() {
           ].map(([title, price, days, tone]) => (
             <View
               key={title}
-              className="flex-1 rounded-xl border border-brand-border p-3"
+              className="flex-1 rounded-xl border border-brand-border p-3 bg-white"
             >
               <TailorPlaceholder
                 image={serviceImages[tone === "teal" ? 0 : 1]}
@@ -131,15 +141,18 @@ export default function TailorProfileScreen() {
           ))}
         </View>
 
-        <View className="mt-5 flex-row gap-3">
-          <TouchableOpacity className="h-[52px] flex-1 flex-row items-center justify-center rounded-xl border border-primary">
+        <View className="mt-6 flex-row gap-3">
+          <TouchableOpacity
+            onPress={() => router.push("/messages" as any)}
+            className="h-[52px] flex-1 flex-row items-center justify-center rounded-xl border border-primary bg-white"
+          >
             <Ionicons name="chatbubble-outline" size={17} color="#14919B" />
             <Text className="ml-2 text-[14px] font-semibold text-primary">
               Message
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push("/booking/rekha-tailors" as never)}
+            onPress={() => router.push(`/booking/${tailorId || "1"}` as never)}
             className="h-[52px] flex-1 flex-row items-center justify-center rounded-xl bg-primary"
           >
             <Ionicons name="calendar-outline" size={17} color="#FFFFFF" />
@@ -148,7 +161,6 @@ export default function TailorProfileScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-
       </View>
     </TailorScreenShell>
   );

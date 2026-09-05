@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 type PlaceholderImageProps = {
+  image?: any;
   label?: string;
   variant?: "person" | "garment";
   size?: "sm" | "md" | "lg";
@@ -35,6 +36,7 @@ const generatedAssets = {
 };
 
 export function PlaceholderImage({
+  image,
   label,
   variant = "person",
   size = "md",
@@ -45,7 +47,7 @@ export function PlaceholderImage({
       className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-xl ${toneClasses[tone]}`}
     >
       <Image
-        source={generatedAssets[variant]}
+        source={image || generatedAssets[variant]}
         contentFit="contain"
         style={StyleSheet.absoluteFill}
       />
