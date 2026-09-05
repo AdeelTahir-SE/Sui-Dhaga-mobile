@@ -10,7 +10,7 @@ type MainTailorCardProps = {
   rating: string;
   distance: string;
   specialty: string;
-  image?: ImageSource;
+  image?: any;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   topRated?: boolean;
 };

@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 type PlaceholderTone = "teal" | "coral" | "gold" | "blue" | "cream";
 
 type TailorPlaceholderProps = {
-  image?: ImageSource;
+  image?: any;
   label?: string;
   variant?: "person" | "garment" | "map";
   size?: "xs" | "sm" | "md" | "lg" | "wide";

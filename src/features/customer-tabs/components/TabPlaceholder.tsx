@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 type Tone = "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
 
 type TabPlaceholderProps = {
-  image?: ImageSource;
+  image?: any;
   label?: string;
   variant?: "person" | "garment" | "machine" | "card";
   size?: "xs" | "sm" | "md" | "wide" | "hero";

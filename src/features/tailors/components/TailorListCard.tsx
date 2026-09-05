@@ -8,7 +8,7 @@ import { TailorBadge } from "./TailorBadge";
 import { TailorPlaceholder } from "./TailorPlaceholder";
 
 type TailorListCardProps = {
-  image?: ImageSource;
+  image?: any;
   name: string;
   rating: string;
   distance: string;
