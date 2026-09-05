@@ -2,34 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { appointmentsApi, CreateAppointmentPayload } from '../../../api/appointments.api';
 import { AppointmentItem } from '../../../types/api';
 
-const DEFAULT_APPOINTMENTS: AppointmentItem[] = [
-  {
-    id: '1',
-    tailorId: '1',
-    tailorName: 'Rekha Tailors',
-    tailorAvatar: require('@/assets/illustrations/customer-tabs/tailors/rekha.png'),
-    serviceType: 'Bridal Lehenga Measurement',
-    appointmentDate: 'Thu, Oct 24',
-    appointmentTime: '11:00 AM',
-    status: 'Upcoming',
-    notes: 'Bring reference fabric swatches',
-    location: 'Studio Visit - C-Scheme, Jaipur',
-  },
-  {
-    id: '2',
-    tailorId: '2',
-    tailorName: 'Stitch Craft',
-    tailorAvatar: require('@/assets/illustrations/customer-tabs/tailors/stitch-craft.png'),
-    serviceType: 'Bespoke Suit Fitting',
-    appointmentDate: 'Mon, Oct 28',
-    appointmentTime: '03:30 PM',
-    status: 'Upcoming',
-    location: 'Home Measurement Service',
-  },
-];
-
 export function useAppointments(statusFilter?: string) {
-  const [appointments, setAppointments] = useState<AppointmentItem[]>(DEFAULT_APPOINTMENTS);
+  const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -39,15 +13,15 @@ export function useAppointments(statusFilter?: string) {
     setError(null);
     try {
       const res = await appointmentsApi.getMyAppointments().catch(() => appointmentsApi.getAppointments({ status: statusFilter }));
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res.data && Array.isArray(res.data)) {
         setAppointments(res.data);
       } else {
-        setAppointments(DEFAULT_APPOINTMENTS);
+        setAppointments([]);
       }
     } catch (err: any) {
-      console.warn('Failed to load appointments from backend, using fallback:', err.message);
+      console.warn('Failed to load appointments from backend:', err.message);
       setError(err.message || 'Failed to load appointments');
-      setAppointments(DEFAULT_APPOINTMENTS);
+      setAppointments([]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

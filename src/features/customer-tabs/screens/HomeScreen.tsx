@@ -1,4 +1,5 @@
-import { Text, TouchableOpacity, View } from "react-native";
+import React from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 
@@ -8,17 +9,15 @@ import { MainTailorCard } from "../components/MainTailorCard";
 import { QuickAction } from "../components/QuickAction";
 import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
+import { useAuthStore } from "../../../stores/auth.store";
+import { useTailors } from "../../tailors/hooks/useTailors";
+import { useDesigns } from "../../design-studio/hooks/useDesigns";
 
 const homeHero = require("@/assets/illustrations/customer-tabs/home-hero.png");
 const categoryKurtas = require("@/assets/illustrations/customer-tabs/home/category-kurtas-suits.png");
 const categoryLehengas = require("@/assets/illustrations/customer-tabs/home/category-lehengas.png");
 const categorySarees = require("@/assets/illustrations/customer-tabs/home/category-sarees.png");
 const categoryShirts = require("@/assets/illustrations/customer-tabs/home/category-shirts.png");
-const tailorRekha = require("@/assets/illustrations/customer-tabs/home/tailor-rekha.png");
-const recentLook1 = require("@/assets/illustrations/customer-tabs/home/recent-look-1.png");
-const recentLook2 = require("@/assets/illustrations/customer-tabs/home/recent-look-2.png");
-const recentLook3 = require("@/assets/illustrations/customer-tabs/home/recent-look-3.png");
-const recentLook4 = require("@/assets/illustrations/customer-tabs/home/recent-look-4.png");
 
 const categories = [
   { title: "Kurtas & Suits", image: categoryKurtas, tone: "mint" },
@@ -27,21 +26,22 @@ const categories = [
   { title: "Shirts", image: categoryShirts, tone: "blue" },
 ] as const;
 
-const recentDesigns = [
-  { title: "Look 1", image: recentLook1, tone: "coral" },
-  { title: "Look 2", image: recentLook2, tone: "mint" },
-  { title: "Look 3", image: recentLook3, tone: "blue" },
-  { title: "Look 4", image: recentLook4, tone: "cream" },
-] as const;
-
 export default function HomeScreen() {
+  const user = useAuthStore((state) => state.user);
+  const { tailors, isLoading: tailorsLoading } = useTailors();
+  const { designs, isLoading: designsLoading } = useDesigns();
+
+  const userName = user?.fullName?.split(" ")[0] || user?.name?.split(" ")[0] || "there";
+
+  const recommendedTailor = tailors[0];
+
   return (
     <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Home" />}>
-      <View className="px-5 pt-3">
+      <View className="px-5 pt-3 pb-8">
         <View className="mb-4 flex-row items-start justify-between">
           <View>
             <Text className="text-[17px] font-bold text-brand-dark">
-              Hello, Ayesha 👋
+              Hello, {userName} 👋
             </Text>
             <Text className="mt-1 text-[11px] text-brand-gray">
               Ready to look your best today?
@@ -99,29 +99,43 @@ export default function HomeScreen() {
         </View>
 
         <SectionTitle title="Recommended Tailors" />
-        <MainTailorCard
-          name="Rekha Tailors"
-          rating="4.8 (128 reviews)"
-          distance="2.1 km away"
-          specialty="Bridal, Suits, Sarees"
-          image={tailorRekha}
-          topRated
-        />
+        {tailorsLoading ? (
+          <View className="py-6 items-center justify-center">
+            <ActivityIndicator size="small" color="#FF6B6B" />
+          </View>
+        ) : recommendedTailor ? (
+          <MainTailorCard
+            name={recommendedTailor.name || recommendedTailor.businessName || "Tailor"}
+            rating={`${recommendedTailor.rating || 4.8} (${recommendedTailor.reviews || recommendedTailor.reviewsCount || 0} reviews)`}
+            distance={recommendedTailor.distance || "2.1 km away"}
+            specialty={recommendedTailor.specialty || recommendedTailor.specialties?.join(', ') || "Bridal, Suits, Sarees"}
+            image={recommendedTailor.image || recommendedTailor.imageUrl}
+            topRated={recommendedTailor.topRated || recommendedTailor.isTopRated}
+          />
+        ) : (
+          <View className="rounded-xl border border-brand-border p-4 items-center justify-center bg-brand-surface/30">
+            <Text className="text-[12px] text-brand-gray">No tailors available right now</Text>
+          </View>
+        )}
 
-        <SectionTitle title="Recent Designs" />
-        <View className="flex-row gap-2">
-          {recentDesigns.map((design) => (
-            <View key={design.title} className="flex-1">
-              <TabPlaceholder
-                image={design.image}
-                variant="garment"
-                size="sm"
-                tone={design.tone}
-                label={design.title}
-              />
+        {designs.length > 0 ? (
+          <>
+            <SectionTitle title="Recent Designs" />
+            <View className="flex-row gap-2">
+              {designs.slice(0, 4).map((design, index) => (
+                <View key={design.id || index} className="flex-1">
+                  <TabPlaceholder
+                    image={design.imageUrl || design.image}
+                    variant="garment"
+                    size="sm"
+                    tone="coral"
+                    label={design.name}
+                  />
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          </>
+        ) : null}
       </View>
     </CustomerTabShell>
   );

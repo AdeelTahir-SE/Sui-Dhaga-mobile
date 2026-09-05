@@ -1,4 +1,5 @@
-import { Text, TouchableOpacity, View } from "react-native";
+import React from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,26 +9,9 @@ import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
+import { useDesigns } from "../../design-studio/hooks/useDesigns";
 
 const newDesignDress = require("@/assets/illustrations/customer-tabs/design/new-design-dress.png");
-const myDesign1 = require("@/assets/illustrations/customer-tabs/design/my-design-1.png");
-const myDesign2 = require("@/assets/illustrations/customer-tabs/design/my-design-2.png");
-const myDesign3 = require("@/assets/illustrations/customer-tabs/design/my-design-3.png");
-const template1 = require("@/assets/illustrations/customer-tabs/design/template-1.png");
-const template2 = require("@/assets/illustrations/customer-tabs/design/template-2.png");
-const template3 = require("@/assets/illustrations/customer-tabs/design/template-3.png");
-
-const myDesigns = [
-  { title: "Design 1", image: myDesign1, tone: "mint" },
-  { title: "Design 2", image: myDesign2, tone: "coral" },
-  { title: "Design 3", image: myDesign3, tone: "blue" },
-] as const;
-
-const templates = [
-  { title: "Template 1", image: template1, tone: "mint" },
-  { title: "Template 2", image: template2, tone: "cream" },
-  { title: "Template 3", image: template3, tone: "coral" },
-] as const;
 
 function DesignOption({
   title,
@@ -58,10 +42,12 @@ function DesignOption({
 }
 
 export default function DesignTabScreen() {
+  const { designs, templates, isLoading } = useDesigns();
+
   return (
     <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Design" />}>
       <CustomerHeader title="AI Design Studio" subtitle="Create something extraordinary ✨" />
-      <View className="px-5">
+      <View className="px-5 pb-8">
         <TouchableOpacity
           onPress={() => router.push("/design-studio" as never)}
           className="mb-4 flex-row items-center overflow-hidden rounded-2xl bg-primary p-4"
@@ -87,21 +73,42 @@ export default function DesignTabScreen() {
         <DesignOption title="Sketch to Design" subtitle="Upload sketch & visualize" icon="color-wand-outline" href="/design-studio/sketch-to-design" />
 
         <SectionTitle title="My Designs" />
-        <View className="flex-row gap-3">
-          {myDesigns.map((design) => (
-            <View key={design.title} className="flex-1">
-              <TabPlaceholder image={design.image} variant="garment" size="wide" tone={design.tone} label={design.title} />
-            </View>
-          ))}
-        </View>
+        {isLoading ? (
+          <View className="py-4 items-center justify-center">
+            <ActivityIndicator size="small" color="#FF6B6B" />
+          </View>
+        ) : designs.length > 0 ? (
+          <View className="flex-row gap-3">
+            {designs.slice(0, 3).map((design, index) => (
+              <View key={design.id || index} className="flex-1">
+                <TabPlaceholder image={design.imageUrl || design.image} variant="garment" size="wide" tone="mint" label={design.name} />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View className="rounded-xl border border-dashed border-brand-border p-4 items-center justify-center bg-brand-surface/20">
+            <Text className="text-[12px] text-brand-gray">No saved designs yet. Tap above to create one!</Text>
+          </View>
+        )}
+
         <SectionTitle title="Templates" />
-        <View className="flex-row gap-3">
-          {templates.map((template) => (
-            <View key={template.title} className="flex-1">
-             <TabPlaceholder image={template.image} variant="garment" size="wide" tone={template.tone} label={template.title} />
-            </View>
-          ))}
-        </View>
+        {isLoading ? (
+          <View className="py-4 items-center justify-center">
+            <ActivityIndicator size="small" color="#FF6B6B" />
+          </View>
+        ) : templates.length > 0 ? (
+          <View className="flex-row gap-3">
+            {templates.slice(0, 3).map((template, index) => (
+              <View key={template.id || index} className="flex-1">
+                <TabPlaceholder image={template.imageUrl || template.image} variant="garment" size="wide" tone="cream" label={template.name} />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View className="rounded-xl border border-dashed border-brand-border p-4 items-center justify-center bg-brand-surface/20">
+            <Text className="text-[12px] text-brand-gray">Templates will appear here</Text>
+          </View>
+        )}
       </View>
     </CustomerTabShell>
   );

@@ -2,23 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { measurementsApi, CreateMeasurementPayload } from '../../../api/measurements.api';
 import { MeasurementItem } from '../../../types/api';
 
-const DEFAULT_MEASUREMENTS: MeasurementItem[] = [
-  {
-    id: '1',
-    profileName: 'Standard Profile',
-    unit: 'inches',
-    chest: 34,
-    waist: 28,
-    hips: 36,
-    shoulder: 14.5,
-    sleeveLength: 22,
-    shirtLength: 15,
-  },
-];
-
 export function useMeasurements() {
-  const [measurements, setMeasurements] = useState<MeasurementItem[]>(DEFAULT_MEASUREMENTS);
-  const [activeProfile, setActiveProfile] = useState<MeasurementItem | null>(DEFAULT_MEASUREMENTS[0]);
+  const [measurements, setMeasurements] = useState<MeasurementItem[]>([]);
+  const [activeProfile, setActiveProfile] = useState<MeasurementItem | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -32,14 +18,14 @@ export function useMeasurements() {
         setMeasurements(res.data);
         setActiveProfile(res.data[0]);
       } else {
-        setMeasurements(DEFAULT_MEASUREMENTS);
-        setActiveProfile(DEFAULT_MEASUREMENTS[0]);
+        setMeasurements([]);
+        setActiveProfile(null);
       }
     } catch (err: any) {
-      console.warn('Failed to load measurements from backend, using fallback:', err.message);
+      console.warn('Failed to load measurements from backend:', err.message);
       setError(err.message || 'Failed to load measurements');
-      setMeasurements(DEFAULT_MEASUREMENTS);
-      setActiveProfile(DEFAULT_MEASUREMENTS[0]);
+      setMeasurements([]);
+      setActiveProfile(null);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

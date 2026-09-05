@@ -2,44 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { ordersApi, CreateOrderPayload } from '../../../api/orders.api';
 import { OrderItem } from '../../../types/api';
 
-const DEFAULT_ORDERS: OrderItem[] = [
-  {
-    id: '1',
-    orderNumber: '#SD-8492',
-    status: 'In Progress',
-    itemName: 'Silk Anarkali Suit',
-    tailorName: 'Rekha Tailors',
-    deliveryDate: 'Expected Oct 24',
-    price: 4500,
-    image: require('@/assets/illustrations/customer-tabs/orders/anarkali.png'),
-    timeline: [
-      { status: 'Order Placed', date: 'Oct 12, 2026', completed: true },
-      { status: 'Fabric Received', date: 'Oct 14, 2026', completed: true },
-      { status: 'Stitching in Progress', date: 'Oct 18, 2026', completed: true },
-      { status: 'Quality Check', date: 'Oct 22, 2026', completed: false },
-      { status: 'Ready for Delivery', date: 'Oct 24, 2026', completed: false },
-    ],
-  },
-  {
-    id: '2',
-    orderNumber: '#SD-8420',
-    status: 'Confirmed',
-    itemName: 'Custom Tuxedo Suit',
-    tailorName: 'Stitch Craft',
-    deliveryDate: 'Expected Nov 02',
-    price: 8200,
-    image: require('@/assets/illustrations/customer-tabs/orders/tuxedo.png'),
-    timeline: [
-      { status: 'Order Placed', date: 'Oct 15, 2026', completed: true },
-      { status: 'Confirmed by Tailor', date: 'Oct 16, 2026', completed: true },
-      { status: 'Stitching in Progress', date: 'Oct 25, 2026', completed: false },
-      { status: 'Ready for Delivery', date: 'Nov 02, 2026', completed: false },
-    ],
-  },
-];
-
 export function useOrders(statusFilter?: string) {
-  const [orders, setOrders] = useState<OrderItem[]>(DEFAULT_ORDERS);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -49,15 +13,15 @@ export function useOrders(statusFilter?: string) {
     setError(null);
     try {
       const res = await ordersApi.getMyOrders().catch(() => ordersApi.getOrders({ status: statusFilter }));
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res.data && Array.isArray(res.data)) {
         setOrders(res.data);
       } else {
-        setOrders(DEFAULT_ORDERS);
+        setOrders([]);
       }
     } catch (err: any) {
-      console.warn('Failed to load orders from backend, using fallback:', err.message);
+      console.warn('Failed to load orders from backend:', err.message);
       setError(err.message || 'Failed to load orders');
-      setOrders(DEFAULT_ORDERS);
+      setOrders([]);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -104,19 +68,13 @@ export function useOrderDetails(orderId: string) {
     ordersApi.getOrderById(orderId)
       .then((res) => {
         if (isMounted) {
-          if (res.data) {
-            setOrder(res.data);
-          } else {
-            const fallback = DEFAULT_ORDERS.find((o) => o.id === orderId || o.orderNumber === orderId) || DEFAULT_ORDERS[0];
-            setOrder(fallback);
-          }
+          setOrder(res.data || null);
         }
       })
       .catch((err) => {
         if (isMounted) {
-          const fallback = DEFAULT_ORDERS.find((o) => o.id === orderId || o.orderNumber === orderId) || DEFAULT_ORDERS[0];
-          setOrder(fallback);
           setError(err.message);
+          setOrder(null);
         }
       })
       .finally(() => {
