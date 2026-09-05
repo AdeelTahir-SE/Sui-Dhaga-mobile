@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
-import { ActivityIndicator, View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 
 import { BookingOrdersHeader } from "../components/BookingOrdersHeader";
 import { BookingOrdersScreenShell } from "../components/BookingOrdersScreenShell";
@@ -16,7 +16,12 @@ export default function OrdersScreen() {
   const { orders, isLoading } = useOrders();
 
   const getTone = (index: number): "coral" | "teal" | "gold" | "blue" => {
-    const tones: ("coral" | "teal" | "gold" | "blue")[] = ["coral", "teal", "gold", "blue"];
+    const tones: ("coral" | "teal" | "gold" | "blue")[] = [
+      "coral",
+      "teal",
+      "gold",
+      "blue",
+    ];
     return tones[index % tones.length];
   };
 
@@ -31,36 +36,39 @@ export default function OrdersScreen() {
   };
 
   const activeOrders = useMemo(
-    () => orders.filter((o) => !isCompleted(o.status) && !isCancelled(o.status)),
-    [orders]
+    () =>
+      orders.filter((o) => !isCompleted(o.status) && !isCancelled(o.status)),
+    [orders],
   );
 
   const completedOrders = useMemo(
     () => orders.filter((o) => isCompleted(o.status)),
-    [orders]
+    [orders],
   );
 
   const cancelledOrders = useMemo(
     () => orders.filter((o) => isCancelled(o.status)),
-    [orders]
+    [orders],
   );
 
   const currentList =
     selectedTab === 0
       ? activeOrders
       : selectedTab === 1
-      ? completedOrders
-      : cancelledOrders;
+        ? completedOrders
+        : cancelledOrders;
 
   const currentLabel =
     selectedTab === 0
       ? "Active Orders"
       : selectedTab === 1
-      ? "Completed Orders"
-      : "Cancelled Orders";
+        ? "Completed Orders"
+        : "Cancelled Orders";
 
   return (
-    <BookingOrdersScreenShell bottomTabs={<BottomTabsPreview active="Orders" />}>
+    <BookingOrdersScreenShell
+      bottomTabs={<BottomTabsPreview active="Orders" />}
+    >
       <BookingOrdersHeader
         title="My Orders"
         leftIcon="menu"
@@ -86,15 +94,18 @@ export default function OrdersScreen() {
           <View className="mt-4">
             <SectionLabel title={currentLabel} />
             {currentList.length === 0 ? (
-              <View className="py-14 items-center justify-center px-6 rounded-2xl border border-brand-border bg-brand-surface/30 my-4" style={{ minHeight: 320 }}>
+              <View
+                className="py-14 items-center justify-center px-6 rounded-2xl border border-brand-border bg-brand-surface/30 my-4"
+                style={{ minHeight: 320 }}
+              >
                 <View className="w-16 h-16 rounded-full bg-primary/10 items-center justify-center mb-3">
                   <Ionicons
                     name={
                       selectedTab === 1
                         ? "checkmark-circle-outline"
                         : selectedTab === 2
-                        ? "close-circle-outline"
-                        : "bag-handle-outline"
+                          ? "close-circle-outline"
+                          : "bag-handle-outline"
                     }
                     size={32}
                     color="#14919B"
@@ -104,22 +115,22 @@ export default function OrdersScreen() {
                   {selectedTab === 1
                     ? "No completed orders"
                     : selectedTab === 2
-                    ? "No cancelled orders"
-                    : "No active orders"}
+                      ? "No cancelled orders"
+                      : "No active orders"}
                 </Text>
                 <Text className="mt-1.5 text-[13px] text-brand-gray text-center max-w-[260px] mb-5 leading-[19px]">
                   {selectedTab === 0
                     ? "Start a new tailoring order with an expert tailor."
                     : selectedTab === 1
-                    ? "Delivered and completed orders will appear here."
-                    : "You do not have any cancelled orders."}
+                      ? "Delivered and completed orders will appear here."
+                      : "You do not have any cancelled orders."}
                 </Text>
                 <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={() => router.push("/tailors" as never)}
-                  className="h-[48px] px-8 rounded-md bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+                  className="h-[56px] px-12 rounded-xl bg-primary items-center justify-center shadow-md active:bg-primary-dark"
                 >
-                  <Text className="text-[14px] font-semibold text-white tracking-wide">
+                  <Text className="text-[16px] font-semibold text-white tracking-wide">
                     Explore Tailors
                   </Text>
                 </TouchableOpacity>
@@ -135,13 +146,48 @@ export default function OrdersScreen() {
                     id={order.orderNumber || order.id || `ORD${index + 1000}`}
                     item={order.itemName || "Custom Outfit"}
                     tailor={order.tailorName || "Tailor"}
-                    placedOn={order.createdAt || (isDeliv ? "Completed" : isCancel ? "Cancelled" : "Recent")}
+                    placedOn={
+                      order.createdAt ||
+                      (isDeliv
+                        ? "Completed"
+                        : isCancel
+                          ? "Cancelled"
+                          : "Recent")
+                    }
                     price={`Rs ${order.price?.toLocaleString?.() || order.price || 0}`}
-                    delivery={isDeliv ? "Delivered" : isCancel ? "Cancelled" : order.deliveryDate || "In Progress"}
-                    status={isDeliv ? "Delivered" : isCancel ? "Cancelled" : order.status === "Confirmed" ? "Confirmed" : "In Progress"}
-                    statusTone={isDeliv ? "green" : isCancel ? "red" : order.status === "Confirmed" ? "blue" : undefined}
+                    delivery={
+                      isDeliv
+                        ? "Delivered"
+                        : isCancel
+                          ? "Cancelled"
+                          : order.deliveryDate || "In Progress"
+                    }
+                    status={
+                      isDeliv
+                        ? "Delivered"
+                        : isCancel
+                          ? "Cancelled"
+                          : order.status === "Confirmed"
+                            ? "Confirmed"
+                            : "In Progress"
+                    }
+                    statusTone={
+                      isDeliv
+                        ? "green"
+                        : isCancel
+                          ? "red"
+                          : order.status === "Confirmed"
+                            ? "blue"
+                            : undefined
+                    }
                     placeholderTone={getTone(index)}
-                    buttonLabel={isDeliv ? "View Details" : isCancel ? "Order Details" : "Track Order"}
+                    buttonLabel={
+                      isDeliv
+                        ? "View Details"
+                        : isCancel
+                          ? "Order Details"
+                          : "Track Order"
+                    }
                   />
                 );
               })
