@@ -1,5 +1,7 @@
-import React, { useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import React, { useState, useMemo } from "react";
+import { ActivityIndicator, View, Text, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 import { BookingOrdersHeader } from "../components/BookingOrdersHeader";
 import { BookingOrdersScreenShell } from "../components/BookingOrdersScreenShell";
@@ -13,14 +15,49 @@ export default function OrdersScreen() {
   const [selectedTab, setSelectedTab] = useState(0);
   const { orders, isLoading } = useOrders();
 
-  const getTone = (index: number) => {
+  const getTone = (index: number): "coral" | "teal" | "gold" | "blue" => {
     const tones: ("coral" | "teal" | "gold" | "blue")[] = ["coral", "teal", "gold", "blue"];
     return tones[index % tones.length];
   };
 
-  const activeOrders = orders.filter((o) => o.status === "In Progress" || o.status === "Confirmed" || o.status === "Pending");
-  const completedOrders = orders.filter((o) => o.status === "Completed");
-  const cancelledOrders = orders.filter((o) => o.status === "Cancelled");
+  const isCompleted = (status?: string) => {
+    const s = (status || "").toLowerCase();
+    return s === "completed" || s === "delivered";
+  };
+
+  const isCancelled = (status?: string) => {
+    const s = (status || "").toLowerCase();
+    return s === "cancelled" || s === "canceled";
+  };
+
+  const activeOrders = useMemo(
+    () => orders.filter((o) => !isCompleted(o.status) && !isCancelled(o.status)),
+    [orders]
+  );
+
+  const completedOrders = useMemo(
+    () => orders.filter((o) => isCompleted(o.status)),
+    [orders]
+  );
+
+  const cancelledOrders = useMemo(
+    () => orders.filter((o) => isCancelled(o.status)),
+    [orders]
+  );
+
+  const currentList =
+    selectedTab === 0
+      ? activeOrders
+      : selectedTab === 1
+      ? completedOrders
+      : cancelledOrders;
+
+  const currentLabel =
+    selectedTab === 0
+      ? "Active Orders"
+      : selectedTab === 1
+      ? "Completed Orders"
+      : "Cancelled Orders";
 
   return (
     <BookingOrdersScreenShell bottomTabs={<BottomTabsPreview active="Orders" />}>
@@ -32,6 +69,8 @@ export default function OrdersScreen() {
       />
       <View className="px-5 pb-8">
         <SegmentedTabs
+          activeIndex={selectedTab}
+          onSelectTab={setSelectedTab}
           tabs={[
             `Active (${activeOrders.length})`,
             `Completed (${completedOrders.length})`,
@@ -41,90 +80,73 @@ export default function OrdersScreen() {
 
         {isLoading ? (
           <View className="py-12 items-center justify-center">
-            <ActivityIndicator size="small" color="#FF6B6B" />
+            <ActivityIndicator size="small" color="#14919B" />
           </View>
         ) : (
-          <>
-            <SectionLabel title="Active Orders" />
-            {activeOrders.map((order, index) => (
-              <OrderCard
-                key={order.id || index}
-                id={order.orderNumber || order.id || `ORD${index + 1000}`}
-                item={order.itemName || "Custom Outfit"}
-                tailor={order.tailorName || "Tailor"}
-                placedOn={order.createdAt || "Recent"}
-                price={`₹${order.price?.toLocaleString?.() || order.price || 0}`}
-                delivery={order.deliveryDate || "In Progress"}
-                status={order.status === "Confirmed" ? "Confirmed" : "In Progress"}
-                statusTone={order.status === "Confirmed" ? "blue" : undefined}
-                placeholderTone={getTone(index)}
-              />
-            ))}
-
-            <SectionLabel title="Completed Orders" />
-            {completedOrders.length > 0 ? (
-              completedOrders.map((order, index) => (
-                <OrderCard
-                  key={order.id || index}
-                  id={order.orderNumber || order.id}
-                  item={order.itemName}
-                  tailor={order.tailorName || "Tailor"}
-                  placedOn={order.createdAt || "Completed"}
-                  price={`₹${order.price?.toLocaleString?.() || order.price || 0}`}
-                  delivery="Delivered"
-                  status="Delivered"
-                  statusTone="green"
-                  buttonLabel="View Details"
-                  placeholderTone={getTone(index + 2)}
-                />
-              ))
+          <View className="mt-4">
+            <SectionLabel title={currentLabel} />
+            {currentList.length === 0 ? (
+              <View className="py-14 items-center justify-center px-6 rounded-2xl border border-brand-border bg-brand-surface/30 my-4" style={{ minHeight: 320 }}>
+                <View className="w-16 h-16 rounded-full bg-primary/10 items-center justify-center mb-3">
+                  <Ionicons
+                    name={
+                      selectedTab === 1
+                        ? "checkmark-circle-outline"
+                        : selectedTab === 2
+                        ? "close-circle-outline"
+                        : "bag-handle-outline"
+                    }
+                    size={32}
+                    color="#14919B"
+                  />
+                </View>
+                <Text className="text-[16px] font-bold text-brand-dark text-center">
+                  {selectedTab === 1
+                    ? "No completed orders"
+                    : selectedTab === 2
+                    ? "No cancelled orders"
+                    : "No active orders"}
+                </Text>
+                <Text className="mt-1.5 text-[13px] text-brand-gray text-center max-w-[260px] mb-5 leading-[19px]">
+                  {selectedTab === 0
+                    ? "Start a new tailoring order with an expert tailor."
+                    : selectedTab === 1
+                    ? "Delivered and completed orders will appear here."
+                    : "You do not have any cancelled orders."}
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => router.push("/tailors" as never)}
+                  className="h-[48px] px-8 rounded-md bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+                >
+                  <Text className="text-[14px] font-semibold text-white tracking-wide">
+                    Explore Tailors
+                  </Text>
+                </TouchableOpacity>
+              </View>
             ) : (
-              <OrderCard
-                id="ORD12320"
-                item="Saree Stitching"
-                tailor="Noor & Thread"
-                placedOn="10 May 2024"
-                price="₹4,200"
-                delivery="Delivered"
-                status="Delivered"
-                statusTone="green"
-                buttonLabel="View Details"
-                placeholderTone="gold"
-              />
-            )}
+              currentList.map((order, index) => {
+                const isDeliv = isCompleted(order.status);
+                const isCancel = isCancelled(order.status);
 
-            <SectionLabel title="Cancelled Orders" />
-            {cancelledOrders.length > 0 ? (
-              cancelledOrders.map((order, index) => (
-                <OrderCard
-                  key={order.id || index}
-                  id={order.orderNumber || order.id}
-                  item={order.itemName}
-                  tailor={order.tailorName || "Tailor"}
-                  placedOn={order.createdAt || "Cancelled"}
-                  price={`₹${order.price?.toLocaleString?.() || order.price || 0}`}
-                  delivery="Cancelled"
-                  status="Cancelled"
-                  statusTone="red"
-                  buttonLabel="View Details"
-                  placeholderTone="blue"
-                />
-              ))
-            ) : (
-              <OrderCard
-                id="ORD12310"
-                item="Blouse Stitching"
-                tailor="Ethnic Weaves"
-                placedOn="08 May 2024"
-                price="₹1,200"
-                delivery="Cancelled"
-                status="Cancelled"
-                statusTone="red"
-                buttonLabel="View Details"
-                placeholderTone="blue"
-              />
+                return (
+                  <OrderCard
+                    key={order.id || index}
+                    id={order.orderNumber || order.id || `ORD${index + 1000}`}
+                    item={order.itemName || "Custom Outfit"}
+                    tailor={order.tailorName || "Tailor"}
+                    placedOn={order.createdAt || (isDeliv ? "Completed" : isCancel ? "Cancelled" : "Recent")}
+                    price={`Rs ${order.price?.toLocaleString?.() || order.price || 0}`}
+                    delivery={isDeliv ? "Delivered" : isCancel ? "Cancelled" : order.deliveryDate || "In Progress"}
+                    status={isDeliv ? "Delivered" : isCancel ? "Cancelled" : order.status === "Confirmed" ? "Confirmed" : "In Progress"}
+                    statusTone={isDeliv ? "green" : isCancel ? "red" : order.status === "Confirmed" ? "blue" : undefined}
+                    placeholderTone={getTone(index)}
+                    buttonLabel={isDeliv ? "View Details" : isCancel ? "Order Details" : "Track Order"}
+                  />
+                );
+              })
             )}
-          </>
+          </View>
         )}
       </View>
     </BookingOrdersScreenShell>

@@ -148,3 +148,37 @@ export interface NotificationItem {
   isRead: boolean;
   createdAt: string;
 }
+
+export interface ConversationParticipant {
+  id: string;
+  name?: string;
+  fullName?: string;
+  email?: string;
+  role?: string;
+  avatarUrl?: string;
+  avatar?: string;
+}
+
+export interface MessageItem {
+  id: string;
+  conversationId: string;
+  senderId?: string;
+  senderName?: string;
+  senderAvatar?: string;
+  text: string;
+  attachments?: string[];
+  isRead?: boolean;
+  createdAt: string;
+}
+
+export interface ConversationItem {
+  id: string;
+  participantId?: string;
+  participant?: ConversationParticipant;
+  participants?: ConversationParticipant[];
+  lastMessage?: string | { text: string; createdAt: string; isRead?: boolean };
+  lastMessageAt?: string;
+  unreadCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}

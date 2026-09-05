@@ -1,5 +1,7 @@
+import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Image, type ImageSource } from "expo-image";
+import { router } from "expo-router";
 
 const orderItems = require("@/assets/illustrations/customer-tabs/order-items.png");
 
@@ -10,9 +12,11 @@ type MainOrderCardProps = {
   delivery: string;
   price: string;
   status: string;
-  image?: ImageSource;
+  image?: ImageSource | string;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   button?: string;
+  orderId?: string;
+  onPress?: () => void;
 };
 
 export function MainOrderCard({
@@ -23,35 +27,76 @@ export function MainOrderCard({
   price,
   status,
   image,
-  tone = "coral",
   button = "Track Order",
+  orderId,
+  onPress,
 }: MainOrderCardProps) {
+  const normalizedStatus = (status || "").toLowerCase();
+  const isCompleted = normalizedStatus === "completed" || normalizedStatus === "delivered";
+  const isCancelled = normalizedStatus === "cancelled" || normalizedStatus === "canceled";
+
+  const statusBadge = isCompleted ? {
+    bg: "bg-emerald-50",
+    text: "text-emerald-700",
+    border: "border-emerald-200",
+  } : isCancelled ? {
+    bg: "bg-rose-50",
+    text: "text-rose-700",
+    border: "border-rose-200",
+  } : {
+    bg: "bg-[#FFF6DA]",
+    text: "text-[#C08300]",
+    border: "border-amber-200",
+  };
+
+  const handleCardPress = () => {
+    if (onPress) {
+      onPress();
+    } else if (orderId || id) {
+      router.push(`/orders/${orderId || id}` as any);
+    }
+  };
+
   return (
-    <View className="mb-4 rounded-xl border border-brand-border p-3">
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={handleCardPress}
+      className="mb-4 rounded-2xl border border-brand-border bg-white p-3.5 shadow-sm"
+    >
       <View className="flex-row">
-        <View className="h-24 w-20 overflow-hidden rounded-xl bg-brand-surface">
+        <View className="h-24 w-20 overflow-hidden rounded-xl bg-brand-surface border border-brand-border">
           <Image
             source={image ?? orderItems}
             contentFit="contain"
             style={{ height: "100%", width: "100%" }}
           />
         </View>
-        <View className="ml-3 flex-1">
+        <View className="ml-3.5 flex-1">
           <View className="flex-row items-start justify-between">
             <Text className="text-[12px] font-bold text-brand-dark">Order #{id}</Text>
-            <Text className="rounded bg-[#FFF6DA] px-2 py-1 text-[9px] font-medium text-[#C08300]">
-              {status}
-            </Text>
+            <View className={`rounded-md px-2 py-0.5 border ${statusBadge.bg} ${statusBadge.border}`}>
+              <Text className={`text-[10px] font-semibold ${statusBadge.text}`}>
+                {status}
+              </Text>
+            </View>
           </View>
-          <Text className="mt-3 text-[12px] font-semibold text-brand-dark">{item}</Text>
-          <Text className="mt-1 text-[11px] text-brand-gray">{tailor}</Text>
-          <Text className="mt-1 text-[11px] text-brand-gray">Delivery by {delivery}</Text>
-          <Text className="mt-2 text-[13px] font-bold text-brand-dark">{price}</Text>
+          <Text numberOfLines={1} className="mt-1.5 text-[13px] font-bold text-brand-dark">{item}</Text>
+          <Text numberOfLines={1} className="mt-0.5 text-[11px] text-brand-gray">{tailor}</Text>
+          <Text className="mt-0.5 text-[11px] text-brand-gray">{delivery}</Text>
+          <Text className="mt-1.5 text-[14px] font-bold text-primary">{price}</Text>
         </View>
       </View>
-      <TouchableOpacity className="mt-3 self-end rounded-lg border border-primary px-5 py-2">
-        <Text className="text-[11px] font-semibold text-primary">{button}</Text>
-      </TouchableOpacity>
-    </View>
+
+      <View className="mt-3 pt-2.5 border-t border-brand-border/60 flex-row justify-end">
+        <TouchableOpacity
+          onPress={handleCardPress}
+          className="rounded-xl border border-primary px-4 py-2 bg-primary/5 active:bg-primary/10"
+        >
+          <Text className="text-[11px] font-bold text-primary">
+            {isCompleted ? "View Invoice" : isCancelled ? "Order Details" : button}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   );
 }
