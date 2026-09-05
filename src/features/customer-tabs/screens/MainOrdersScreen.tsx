@@ -173,9 +173,20 @@ export default function MainOrdersScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => router.push("/tailors" as never)}
-              className="h-[56px] px-12 rounded-xl bg-primary items-center justify-center shadow-md active:bg-primary-dark"
+              className="h-[48px] px-6 rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+              style={{
+                height: 48,
+                paddingHorizontal: 24,
+                borderRadius: 12,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#14919B",
+              }}
             >
-              <Text className="text-[16px] font-semibold text-white tracking-wide">
+              <Text
+                className="text-[14px] font-semibold text-white"
+                style={{ fontSize: 14, fontWeight: "600", color: "#FFFFFF" }}
+              >
                 Explore Tailors
               </Text>
             </TouchableOpacity>
