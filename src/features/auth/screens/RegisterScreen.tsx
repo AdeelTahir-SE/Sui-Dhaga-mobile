@@ -81,8 +81,8 @@ export default function RegisterScreen() {
     const trimmedName = fullName.trim();
     const trimmedEmail = email.trim();
 
-    if (!trimmedName || !trimmedEmail || !password.trim()) {
-      Alert.alert("Required Fields", "Please enter your name, email, and password.");
+    if (!trimmedEmail || !password.trim()) {
+      Alert.alert("Required Fields", "Please enter your email and password.");
       return;
     }
 
@@ -121,6 +121,10 @@ export default function RegisterScreen() {
       }
     }
 
+    // Determine the registered name: use person's name if provided, otherwise the portion before '@'
+    const emailPrefix = trimmedEmail.split("@")[0];
+    const registeredName = trimmedName || emailPrefix;
+
     // Backend accepts "customer" or "tailor"
     const backendRole: "customer" | "tailor" =
       selectedRole === "tailor" ? "tailor" : "customer";
@@ -131,7 +135,8 @@ export default function RegisterScreen() {
       const success = await register({
         email: trimmedEmail,
         password,
-        name: trimmedName,
+        name: registeredName,
+        fullName: registeredName,
         role: backendRole,
         phone: formattedPhone,
       });
@@ -267,7 +272,7 @@ export default function RegisterScreen() {
             {/* Full Name */}
             <AuthInput
               label="Full Name"
-              placeholder="Enter your full name"
+              placeholder="Enter your full name (optional)"
               value={fullName}
               onChangeText={(text) => {
                 setFullName(text);

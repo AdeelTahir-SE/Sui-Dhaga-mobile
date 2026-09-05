@@ -92,7 +92,7 @@ export default function MainTailorsScreen() {
       }
     >
       <CustomerHeader title="Find Tailors" subtitle="Jaipur, Rajasthan" />
-      <View className="px-5 pb-6">
+      <View className="flex-1 px-5 pb-6">
         {/* Search Bar */}
         <View className="h-[48px] flex-row items-center rounded-md border border-brand-border px-4 bg-white">
           <Ionicons name="search" size={17} color="#6F767E" />
@@ -143,7 +143,7 @@ export default function MainTailorsScreen() {
 
         {/* Content States */}
         {isLoading && !isRefreshing ? (
-          <View className="py-20 items-center justify-center">
+          <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 380 }}>
             <ActivityIndicator size="large" color="#14919B" />
             <Text className="mt-3 text-[13px] font-medium text-brand-gray">
               Loading tailors...

@@ -63,14 +63,15 @@ function extractAuthData(
   }
 
   const email = rawUser?.email || fallbackPayload?.email || '';
+  const emailPrefix = email ? email.split('@')[0] : 'User';
   const id = String(rawUser?.id || rawUser?._id || rawUser?.userId || email || 'user_' + Date.now());
   const fullName =
-    rawUser?.fullName ||
-    rawUser?.name ||
-    fallbackPayload?.fullName ||
-    fallbackPayload?.name ||
-    (email ? email.split('@')[0] : 'User');
-  const name = rawUser?.name || fullName;
+    rawUser?.fullName?.trim() ||
+    rawUser?.name?.trim() ||
+    fallbackPayload?.fullName?.trim() ||
+    fallbackPayload?.name?.trim() ||
+    emailPrefix;
+  const name = rawUser?.name?.trim() || fullName || emailPrefix;
   const role = (rawUser?.role || fallbackPayload?.role || 'customer') as any;
   const phone = rawUser?.phone || fallbackPayload?.phone;
   const avatar = rawUser?.avatar || rawUser?.avatarUrl;

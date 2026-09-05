@@ -2,12 +2,14 @@ import React from "react";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { ProfileMenuRow } from "../components/ProfileMenuRow";
 import { TabPlaceholder } from "../components/TabPlaceholder";
 import { useAuthStore } from "../../../stores/auth.store";
+import { storage } from "../../../api/client";
 
 const profileAyesha = require("@/assets/illustrations/customer-tabs/profile/ayesha.png");
 const profileMeasurements = require("@/assets/illustrations/customer-tabs/profile/measurements.png");
@@ -18,7 +20,49 @@ const profileSettings = require("@/assets/illustrations/customer-tabs/profile/se
 
 export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
+
+  const pickImage = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access your photos is required to change your profile picture."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const uri = result.assets[0].uri;
+        const updatedUser = user
+          ? { ...user, avatar: uri, avatarUrl: uri }
+          : {
+              id: "guest",
+              email: "guest@suidhaga.app",
+              name: "Guest User",
+              fullName: "Guest User",
+              role: "customer" as const,
+              avatar: uri,
+              avatarUrl: uri,
+            };
+        setUser(updatedUser);
+        await storage.setUser(updatedUser).catch(() => {});
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to update profile image");
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -49,12 +93,21 @@ export default function ProfileScreen() {
           <Ionicons name="settings-outline" size={20} color="#1A1D1F" />
         </View>
         <View className="items-center">
-          <TabPlaceholder
-            image={user?.avatar || user?.avatarUrl || profileAyesha}
-            variant="person"
-            size="md"
-            tone="coral"
-          />
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={pickImage}
+            className="relative"
+          >
+            <TabPlaceholder
+              image={user?.avatar || user?.avatarUrl || profileAyesha}
+              variant="person"
+              size="md"
+              tone="coral"
+            />
+            <View className="absolute bottom-1 right-1 h-7 w-7 items-center justify-center rounded-md bg-primary border-2 border-white shadow-sm">
+              <Ionicons name="camera-outline" size={15} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
           <View className="mt-4 flex-row items-center">
             <Text className="text-[20px] font-black text-brand-dark tracking-tight">
               {displayName}

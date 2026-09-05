@@ -76,22 +76,20 @@ export default function MessagesScreen() {
   }, [conversations, searchQuery]);
 
   return (
-    <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Messages" />}>
+    <CustomerTabShell
+      bottomTabs={<CustomerTabsPreview active="Messages" />}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={refresh}
+          tintColor="#14919B"
+          colors={["#14919B"]}
+        />
+      }
+    >
       <CustomerHeader title="Messages" rightIcon="settings-outline" />
 
-      <ScrollView
-        className="flex-1 px-5"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
-            tintColor="#14919B"
-            colors={["#14919B"]}
-          />
-        }
-      >
+      <View className="flex-1 px-5 pb-6">
         {/* Search Bar */}
         <View className="mb-4 h-[48px] flex-row items-center rounded-md border border-brand-border px-4 bg-white">
           <Ionicons name="search" size={17} color="#6F767E" />
@@ -112,14 +110,14 @@ export default function MessagesScreen() {
 
         {/* Content States */}
         {isLoading && !isRefreshing ? (
-          <View className="py-20 items-center justify-center">
+          <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 380 }}>
             <ActivityIndicator size="large" color="#14919B" />
             <Text className="mt-3 text-[13px] font-medium text-brand-gray">
               Loading conversations...
             </Text>
           </View>
         ) : error && conversations.length === 0 ? (
-          <View className="py-16 items-center justify-center px-4">
+          <View className="flex-1 items-center justify-center py-16 px-4" style={{ minHeight: 380 }}>
             <View className="w-14 h-14 rounded-full bg-red-50 items-center justify-center mb-3">
               <Ionicons name="cloud-offline-outline" size={26} color="#DC2626" />
             </View>
@@ -209,7 +207,7 @@ export default function MessagesScreen() {
             })}
           </View>
         )}
-      </ScrollView>
+      </View>
     </CustomerTabShell>
   );
 }
