@@ -18,6 +18,80 @@ interface AuthState {
   setUser: (user: User | null) => void;
 }
 
+function extractAuthData(
+  response: any,
+  fallbackPayload?: { email?: string; name?: string; fullName?: string; role?: string; phone?: string }
+): { token: string; user: User } | null {
+  if (!response) return null;
+
+  // The payload might be in response.data, response itself, or response.data.data
+  const root = response;
+  const d = response.data !== undefined ? response.data : response;
+
+  // Search for token across all possible backend conventions
+  const token =
+    d?.accessToken ||
+    d?.token ||
+    d?.access_token ||
+    d?.jwt ||
+    d?.session?.access_token ||
+    d?.session?.token ||
+    d?.data?.accessToken ||
+    d?.data?.token ||
+    d?.data?.access_token ||
+    root?.accessToken ||
+    root?.token ||
+    root?.access_token ||
+    root?.jwt;
+
+  if (!token || typeof token !== 'string') {
+    return null;
+  }
+
+  // Search for user object across possible backend conventions
+  let rawUser =
+    d?.user ||
+    d?.session?.user ||
+    d?.data?.user ||
+    d?.profile ||
+    root?.user ||
+    null;
+
+  // If user object is not separately nested, check if d has user properties
+  if (!rawUser && (d?.id || d?._id || d?.email || fallbackPayload?.email)) {
+    rawUser = d;
+  }
+
+  const email = rawUser?.email || fallbackPayload?.email || '';
+  const id = String(rawUser?.id || rawUser?._id || rawUser?.userId || email || 'user_' + Date.now());
+  const fullName =
+    rawUser?.fullName ||
+    rawUser?.name ||
+    fallbackPayload?.fullName ||
+    fallbackPayload?.name ||
+    (email ? email.split('@')[0] : 'User');
+  const name = rawUser?.name || fullName;
+  const role = (rawUser?.role || fallbackPayload?.role || 'customer') as any;
+  const phone = rawUser?.phone || fallbackPayload?.phone;
+  const avatar = rawUser?.avatar || rawUser?.avatarUrl;
+
+  const user: User = {
+    id,
+    email,
+    fullName,
+    name,
+    role,
+    phone,
+    avatar,
+    avatarUrl: avatar,
+    bio: rawUser?.bio,
+    createdAt: rawUser?.createdAt,
+    updatedAt: rawUser?.updatedAt,
+  };
+
+  return { token, user };
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
@@ -45,9 +119,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       // Refresh user profile from backend
       try {
         const res = await authApi.getMe();
-        if (res.data) {
-          await storage.setUser(res.data);
-          set({ user: res.data, isAuthenticated: true });
+        const extracted = extractAuthData(res) || (res.data ? { token, user: res.data } : null);
+        if (extracted?.user) {
+          await storage.setUser(extracted.user);
+          set({ user: extracted.user, isAuthenticated: true });
         }
       } catch {
         // If network error, keep using saved user from storage
@@ -63,20 +138,26 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await authApi.login(payload);
-      const data = res.data;
-      if (data?.accessToken && data?.user) {
-        await storage.setToken(data.accessToken);
-        await storage.setUser(data.user);
+      const authData = extractAuthData(res, { email: payload.email });
+
+      if (authData) {
+        await storage.setToken(authData.token);
+        await storage.setUser(authData.user);
         set({
-          user: data.user,
-          token: data.accessToken,
+          user: authData.user,
+          token: authData.token,
           isAuthenticated: true,
           isLoading: false,
           error: null,
         });
         return true;
       } else {
-        throw new Error(res.message || 'Login failed: Invalid server response');
+        const errorMsg =
+          (res.success === false && (res.error || res.message)) ||
+          res.error ||
+          res.message ||
+          'Login failed: Invalid server response';
+        throw new Error(errorMsg);
       }
     } catch (err: any) {
       const message = err?.message || 'Login failed. Please verify your credentials.';
@@ -89,20 +170,72 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await authApi.register(payload);
-      const data = res.data;
-      if (data?.accessToken && data?.user) {
-        await storage.setToken(data.accessToken);
-        await storage.setUser(data.user);
+      let authData = extractAuthData(res, {
+        email: payload.email,
+        name: payload.name,
+        fullName: payload.name,
+        role: payload.role,
+        phone: payload.phone,
+      });
+
+      // If backend registered user successfully (HTTP 201) but did not return a session token in registration response, auto-login
+      if (!authData) {
+        try {
+          const loginRes = await authApi.login({
+            email: payload.email,
+            password: payload.password,
+          });
+          authData = extractAuthData(loginRes, {
+            email: payload.email,
+            name: payload.name,
+            fullName: payload.name,
+            role: payload.role,
+            phone: payload.phone,
+          });
+        } catch {
+          // If auto-login fails, registration itself was still successful
+        }
+      }
+
+      if (authData) {
+        await storage.setToken(authData.token);
+        await storage.setUser(authData.user);
         set({
-          user: data.user,
-          token: data.accessToken,
+          user: authData.user,
+          token: authData.token,
           isAuthenticated: true,
           isLoading: false,
           error: null,
         });
         return true;
       } else {
-        throw new Error(res.message || 'Registration failed');
+        // If registration succeeded without errors, create state
+        if (res.success !== false) {
+          const fallbackUser: User = {
+            id: 'user_' + Date.now(),
+            email: payload.email,
+            name: payload.name || payload.email.split('@')[0],
+            fullName: payload.name || payload.email.split('@')[0],
+            role: (payload.role || 'customer') as any,
+            phone: payload.phone,
+          };
+          await storage.setUser(fallbackUser);
+          set({
+            user: fallbackUser,
+            token: null,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+          return true;
+        }
+
+        const errorMsg =
+          (res.success === false && (res.error || res.message)) ||
+          res.error ||
+          res.message ||
+          'Registration failed';
+        throw new Error(errorMsg);
       }
     } catch (err: any) {
       const message = err?.message || 'Registration failed. Please check your details.';

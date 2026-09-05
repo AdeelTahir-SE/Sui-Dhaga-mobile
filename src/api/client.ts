@@ -94,6 +94,123 @@ export class ApiError extends Error {
   }
 }
 
+function formatErrorDetails(obj: any): string[] {
+  if (!obj) return [];
+  const messages: string[] = [];
+
+  if (typeof obj === 'string') {
+    return [obj.trim()];
+  }
+
+  // Zod flatten structure: { formErrors: string[], fieldErrors: Record<string, string[]> }
+  if (obj.fieldErrors && typeof obj.fieldErrors === 'object') {
+    Object.entries(obj.fieldErrors).forEach(([field, errs]) => {
+      if (Array.isArray(errs) && errs.length > 0) {
+        const validErrs = errs.filter((e) => typeof e === 'string' && e.trim());
+        if (validErrs.length > 0) {
+          messages.push(`${field}: ${validErrs.join(', ')}`);
+        }
+      } else if (typeof errs === 'string' && errs.trim()) {
+        messages.push(`${field}: ${errs.trim()}`);
+      }
+    });
+  }
+
+  if (obj.formErrors && Array.isArray(obj.formErrors) && obj.formErrors.length > 0) {
+    const validForms = obj.formErrors.filter((e: any) => typeof e === 'string' && e.trim());
+    messages.push(...validForms);
+  }
+
+  // Zod issues array: { issues: [{ path: string[], message: string }] }
+  if (Array.isArray(obj.issues)) {
+    obj.issues.forEach((issue: any) => {
+      if (issue?.message) {
+        const path = Array.isArray(issue.path) && issue.path.length > 0 ? `${issue.path.join('.')}: ` : '';
+        messages.push(`${path}${issue.message}`);
+      }
+    });
+  }
+
+  // General errors array
+  if (Array.isArray(obj.errors)) {
+    obj.errors.forEach((e: any) => {
+      if (typeof e === 'string') {
+        messages.push(e);
+      } else if (e?.message) {
+        const field = e.field || e.param || (Array.isArray(e.path) ? e.path.join('.') : e.path);
+        messages.push(field ? `${field}: ${e.message}` : e.message);
+      } else if (e?.msg) {
+        const field = e.field || e.param || (Array.isArray(e.path) ? e.path.join('.') : e.path);
+        messages.push(field ? `${field}: ${e.msg}` : e.msg);
+      }
+    });
+  } else if (obj.errors && typeof obj.errors === 'object' && !obj.fieldErrors) {
+    const sub = formatErrorDetails(obj.errors);
+    if (sub.length > 0) {
+      messages.push(...sub);
+    } else {
+      Object.entries(obj.errors).forEach(([field, val]) => {
+        if (typeof val === 'string') messages.push(`${field}: ${val}`);
+        else if (Array.isArray(val)) messages.push(`${field}: ${val.join(', ')}`);
+        else if (val && typeof val === 'object' && (val as any).message) messages.push(`${field}: ${(val as any).message}`);
+      });
+    }
+  }
+
+  // General details array or object
+  if (Array.isArray(obj.details)) {
+    obj.details.forEach((d: any) => {
+      if (typeof d === 'string') {
+        messages.push(d);
+      } else if (d?.message) {
+        const path = Array.isArray(d.path) ? d.path.join('.') : d.path;
+        messages.push(path ? `${path}: ${d.message}` : d.message);
+      }
+    });
+  } else if (obj.details && typeof obj.details === 'object') {
+    messages.push(...formatErrorDetails(obj.details));
+  }
+
+  return messages;
+}
+
+function extractErrorMessage(data: any, status: number): string {
+  if (!data) return `Request failed with status ${status}`;
+
+  if (typeof data === 'string') return data;
+
+  // 1. Check for detailed Zod/fieldErrors/validation issues across all payload levels
+  const detailedMessages = [
+    ...(data.fieldErrors || data.formErrors ? formatErrorDetails(data) : []),
+    ...(data.errors ? formatErrorDetails(data.errors) : []),
+    ...(data.error && typeof data.error === 'object' ? formatErrorDetails(data.error) : []),
+    ...(data.details ? formatErrorDetails(data.details) : []),
+    ...(data.data && typeof data.data === 'object' ? formatErrorDetails(data.data) : []),
+  ].filter(Boolean);
+
+  if (detailedMessages.length > 0) {
+    const unique = Array.from(new Set(detailedMessages));
+    return unique.join('. ');
+  }
+
+  // 2. If data.message is an array
+  if (Array.isArray(data.message)) {
+    return data.message.join('. ');
+  }
+
+  // 3. If data.message is a string
+  if (typeof data.message === 'string' && data.message.trim()) {
+    return data.message.trim();
+  }
+
+  // 4. If data.error is a string
+  if (typeof data.error === 'string' && data.error.trim()) {
+    return data.error.trim();
+  }
+
+  return `Request failed with status ${status}`;
+}
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
   skipAuth?: boolean;
@@ -152,7 +269,7 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
     }
 
     if (!response.ok) {
-      const errorMessage = data?.message || data?.error || `Request failed with status ${response.status}`;
+      const errorMessage = extractErrorMessage(data, response.status);
       throw new ApiError(errorMessage, response.status, data);
     }
 

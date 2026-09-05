@@ -47,9 +47,19 @@ const roles: { id: Role; title: string; description: string; image: any }[] = [
   },
 ];
 
+const countryOptions = [
+  { code: "+92", flag: "🇵🇰", label: "Pakistan" },
+  { code: "+91", flag: "🇮🇳", label: "India" },
+  { code: "+971", flag: "🇦🇪", label: "UAE" },
+  { code: "+1", flag: "🇺🇸", label: "USA/CA" },
+  { code: "+44", flag: "🇬🇧", label: "UK" },
+];
+
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const [selectedRole, setSelectedRole] = useState<Role>("customer");
+  const [selectedCountryIndex, setSelectedCountryIndex] = useState(0);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -58,12 +68,32 @@ export default function RegisterScreen() {
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const register = useAuthStore((state) => state.register);
 
+  const currentCountry = countryOptions[selectedCountryIndex];
+
   const handleRegister = async () => {
-    if (!fullName.trim() || !email.trim() || !password.trim()) {
+    const trimmedName = fullName.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedName || !trimmedEmail || !password.trim()) {
       Alert.alert("Required Fields", "Please enter your name, email, and password.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      Alert.alert("Invalid Email", "Please enter a valid email address.");
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert(
+        "Weak Password",
+        "Password must be at least 8 characters long (e.g., Password123!)."
+      );
       return;
     }
 
@@ -77,20 +107,34 @@ export default function RegisterScreen() {
       return;
     }
 
+    let formattedPhone: string | undefined = undefined;
+    const rawPhoneDigits = phone.trim().replace(/\D/g, "");
+    if (rawPhoneDigits.length > 0) {
+      if (phone.trim().startsWith("+")) {
+        formattedPhone = `+${rawPhoneDigits}`;
+      } else {
+        const digits = rawPhoneDigits.replace(/^0+/, "");
+        formattedPhone = `${currentCountry.code}${digits}`;
+      }
+    }
+
+    // Backend accepts "customer" or "tailor"
+    const backendRole: "customer" | "tailor" =
+      selectedRole === "tailor" ? "tailor" : "customer";
+
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
       const success = await register({
-        email: email.trim(),
+        email: trimmedEmail,
         password,
-        fullName: fullName.trim(),
-        name: fullName.trim(),
-        phone: phone.trim() ? `+91${phone.trim()}` : undefined,
-        role: selectedRole,
+        name: trimmedName,
+        role: backendRole,
+        phone: formattedPhone,
       });
 
       if (success) {
-        router.replace("/home" as any);
+        setRegistrationSuccess(true);
       } else {
         const storeError = useAuthStore.getState().error;
         setErrorMessage(storeError || "Registration failed. Please check your information.");
@@ -101,6 +145,41 @@ export default function RegisterScreen() {
       setIsSubmitting(false);
     }
   };
+
+  if (registrationSuccess) {
+    return (
+      <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+        <AuthEdgeDecorations variant="coral" />
+        <View className="flex-1 px-6 justify-center items-center pb-12">
+          {/* Success Icon */}
+          <View className="w-20 h-20 rounded-full bg-emerald-50 items-center justify-center mb-6 border border-emerald-200">
+            <Ionicons name="mail-unread-outline" size={40} color="#059669" />
+          </View>
+
+          {/* Heading */}
+          <Text className="text-[24px] font-bold text-brand-dark text-center">
+            Account Created! 🎉
+          </Text>
+          <Text className="text-[16px] font-semibold text-primary text-center mt-3">
+            Please check your email and verify
+          </Text>
+          <Text className="text-[14px] text-brand-gray text-center mt-2 mb-8 leading-5 px-3">
+            We've sent a verification link to{"\n"}
+            <Text className="font-semibold text-brand-dark">{email.trim()}</Text>.
+            {"\n"}Please click the link in your email to verify your account before logging in.
+          </Text>
+
+          {/* Actions */}
+          <View className="w-full gap-3">
+            <AuthButton
+              title="Go to Login"
+              onPress={() => router.replace("/auth/login" as any)}
+            />
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
@@ -131,12 +210,6 @@ export default function RegisterScreen() {
               Join Sui Dhaga and discover the perfect custom tailoring
               experience.
             </Text>
-
-            {errorMessage ? (
-              <View className="mb-4 rounded-xl bg-red-50 p-3 border border-red-200">
-                <Text className="text-[13px] text-red-600 font-medium">{errorMessage}</Text>
-              </View>
-            ) : null}
 
             {/* Role Selection */}
             <Text className="text-[13px] font-medium text-brand-dark mb-3">
@@ -186,29 +259,64 @@ export default function RegisterScreen() {
                 Phone Number
               </Text>
               <View className="flex-row items-center border border-brand-border rounded-xl h-[52px] bg-white overflow-hidden">
-                {/* Country Code */}
-                <TouchableOpacity className="flex-row items-center px-3 h-full border-r border-brand-border">
-                  <Text className="text-[15px] mr-1">🇮🇳</Text>
+                {/* Country Code Selector */}
+                <TouchableOpacity
+                  onPress={() => setShowCountryPicker(!showCountryPicker)}
+                  className="flex-row items-center px-3 h-full border-r border-brand-border bg-gray-50/60"
+                  activeOpacity={0.7}
+                >
+                  <Text className="text-[15px] mr-1">{currentCountry.flag}</Text>
                   <Text className="text-[14px] text-brand-dark font-medium">
-                    +91
+                    {currentCountry.code}
                   </Text>
                   <Ionicons
-                    name="chevron-down"
+                    name={showCountryPicker ? "chevron-up" : "chevron-down"}
                     size={14}
-                    color="#9CA3AF"
-                    style={{ marginLeft: 2 }}
+                    color="#6B7280"
+                    style={{ marginLeft: 3 }}
                   />
                 </TouchableOpacity>
                 {/* Phone Input */}
                 <TextInput
                   className="flex-1 text-[15px] text-brand-dark px-3 h-full"
-                  placeholder="Enter phone number"
+                  placeholder="3001234567"
                   placeholderTextColor="#9CA3AF"
                   value={phone}
-                  onChangeText={setPhone}
+                  onChangeText={(text) => {
+                    setPhone(text);
+                    if (errorMessage) setErrorMessage(null);
+                  }}
                   keyboardType="phone-pad"
                 />
               </View>
+
+              {/* Country Code Picker Dropdown */}
+              {showCountryPicker && (
+                <View className="mt-1.5 p-1 rounded-xl border border-brand-border bg-white shadow-sm gap-1">
+                  {countryOptions.map((country, idx) => (
+                    <TouchableOpacity
+                      key={country.code}
+                      onPress={() => {
+                        setSelectedCountryIndex(idx);
+                        setShowCountryPicker(false);
+                      }}
+                      className={`flex-row items-center justify-between px-3 py-2 rounded-lg ${
+                        selectedCountryIndex === idx ? "bg-primary/10" : ""
+                      }`}
+                    >
+                      <View className="flex-row items-center">
+                        <Text className="text-[16px] mr-2">{country.flag}</Text>
+                        <Text className="text-[13px] text-brand-dark font-medium mr-2">
+                          {country.label}
+                        </Text>
+                      </View>
+                      <Text className="text-[13px] text-brand-gray font-semibold">
+                        {country.code}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             {/* Password */}
@@ -222,13 +330,28 @@ export default function RegisterScreen() {
               }}
               secureTextEntry
             />
+            {/* Password Requirement Hint */}
+            <View className="flex-row items-center -mt-2 mb-4 px-1">
+              <Ionicons
+                name="information-circle-outline"
+                size={14}
+                color="#6B7280"
+                style={{ marginRight: 4 }}
+              />
+              <Text className="text-[12px] text-brand-gray">
+                Password must be at least 8 characters (e.g. Password123!)
+              </Text>
+            </View>
 
             {/* Confirm Password */}
             <AuthInput
               label="Confirm Password"
               placeholder="Confirm your password"
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                if (errorMessage) setErrorMessage(null);
+              }}
               secureTextEntry
             />
 
@@ -260,6 +383,14 @@ export default function RegisterScreen() {
                 </Text>
               </Text>
             </TouchableOpacity>
+
+            {/* Error Message */}
+            {errorMessage ? (
+              <View className="mb-5 rounded-xl bg-red-50 p-3.5 border border-red-200 flex-row items-center">
+                <Ionicons name="alert-circle" size={18} color="#DC2626" style={{ marginRight: 8 }} />
+                <Text className="text-[13px] text-red-600 font-medium flex-1">{errorMessage}</Text>
+              </View>
+            ) : null}
 
             {/* Create Account Button */}
             {isSubmitting ? (

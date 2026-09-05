@@ -23,10 +23,15 @@ export interface User {
 }
 
 export interface AuthSession {
-  accessToken: string;
+  accessToken?: string;
+  token?: string;
+  access_token?: string;
+  jwt?: string;
   refreshToken?: string;
+  refresh_token?: string;
   expiresIn?: number;
-  user: User;
+  expires_in?: number;
+  user?: User;
 }
 
 export interface TailorItem {

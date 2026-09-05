@@ -41,7 +41,12 @@ export default function LoginScreen() {
     try {
       const success = await login({ email: email.trim(), password });
       if (success) {
-        router.replace("/home" as any);
+        const user = useAuthStore.getState().user;
+        if (user?.role === "tailor") {
+          router.replace("/tailor-dashboard" as any);
+        } else {
+          router.replace("/home" as any);
+        }
       } else {
         const storeError = useAuthStore.getState().error;
         setErrorMessage(storeError || "Invalid email or password");
@@ -101,12 +106,6 @@ export default function LoginScreen() {
               Login to continue your tailoring journey
             </Text>
 
-            {errorMessage ? (
-              <View className="mb-4 rounded-xl bg-red-50 p-3 border border-red-200">
-                <Text className="text-[13px] text-red-600 font-medium">{errorMessage}</Text>
-              </View>
-            ) : null}
-
             {/* Email / Phone */}
             <AuthInput
               label="Email or Phone"
@@ -135,12 +134,20 @@ export default function LoginScreen() {
             {/* Forgot Password */}
             <TouchableOpacity
               onPress={() => router.push("/auth/forgot-password" as any)}
-              className="self-end -mt-2 mb-7"
+              className="self-end -mt-2 mb-6"
             >
               <Text className="text-[13px] font-medium text-primary">
                 Forgot Password?
               </Text>
             </TouchableOpacity>
+
+            {/* Error Message */}
+            {errorMessage ? (
+              <View className="mb-5 rounded-xl bg-red-50 p-3.5 border border-red-200 flex-row items-center">
+                <Ionicons name="alert-circle" size={18} color="#DC2626" style={{ marginRight: 8 }} />
+                <Text className="text-[13px] text-red-600 font-medium flex-1">{errorMessage}</Text>
+              </View>
+            ) : null}
 
             {/* Login Button */}
             {isSubmitting ? (

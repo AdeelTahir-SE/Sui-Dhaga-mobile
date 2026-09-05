@@ -9,9 +9,8 @@ export interface LoginPayload {
 export interface RegisterPayload {
   email: string;
   password: string;
-  fullName?: string;
   name?: string;
-  role?: string;
+  role?: 'customer' | 'tailor';
   phone?: string;
 }
 
@@ -19,15 +18,35 @@ export const authApi = {
   async login(payload: LoginPayload) {
     return apiClient<AuthSession>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        email: payload.email.trim(),
+        password: payload.password,
+      }),
       skipAuth: true,
     });
   },
 
   async register(payload: RegisterPayload) {
+    const body: Record<string, any> = {
+      email: payload.email.trim(),
+      password: payload.password,
+    };
+
+    if (payload.role) {
+      body.role = payload.role === 'tailor' ? 'tailor' : 'customer';
+    }
+
+    if (payload.name && payload.name.trim()) {
+      body.name = payload.name.trim();
+    }
+
+    if (payload.phone && payload.phone.trim()) {
+      body.phone = payload.phone.trim();
+    }
+
     return apiClient<AuthSession>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
       skipAuth: true,
     });
   },
