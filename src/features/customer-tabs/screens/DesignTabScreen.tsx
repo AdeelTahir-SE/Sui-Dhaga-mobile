@@ -27,9 +27,9 @@ function DesignOption({
   return (
     <TouchableOpacity
       onPress={() => router.push(href as never)}
-      className="mb-3 flex-row items-center rounded-xl border border-brand-border p-4"
+      className="mb-3 flex-row items-center rounded-md border border-brand-border p-4"
     >
-      <View className="h-10 w-10 items-center justify-center rounded-lg bg-primary-50">
+      <View className="h-10 w-10 items-center justify-center rounded-md bg-primary-50">
         <Ionicons name={icon} size={20} color="#14919B" />
       </View>
       <View className="ml-3 flex-1">
@@ -50,16 +50,16 @@ export default function DesignTabScreen() {
       <View className="px-5 pb-8">
         <TouchableOpacity
           onPress={() => router.push("/design-studio" as never)}
-          className="mb-4 flex-row items-center overflow-hidden rounded-2xl bg-primary p-4"
+          className="mb-4 flex-row items-center overflow-hidden rounded-md bg-primary p-4"
         >
-          <View className="h-14 w-14 items-center justify-center rounded-full bg-white">
+          <View className="h-14 w-14 items-center justify-center rounded-md bg-white">
             <Ionicons name="add" size={26} color="#14919B" />
           </View>
           <View className="ml-4 flex-1">
             <Text className="text-[18px] font-black text-white tracking-tight">New Design</Text>
             <Text className="mt-0.5 text-[13px] font-medium text-white/90">Start from scratch</Text>
           </View>
-          <View className="h-16 w-16 overflow-hidden rounded-xl bg-white">
+          <View className="h-16 w-16 overflow-hidden rounded-md bg-white">
             <Image
               source={newDesignDress}
               contentFit="contain"
@@ -86,7 +86,7 @@ export default function DesignTabScreen() {
             ))}
           </View>
         ) : (
-          <View className="rounded-xl border border-dashed border-brand-border p-4 items-center justify-center bg-brand-surface/20">
+          <View className="rounded-md border border-dashed border-brand-border p-4 items-center justify-center bg-brand-surface/20">
             <Text className="text-[13px] font-medium text-brand-gray">No saved designs yet. Tap above to create one!</Text>
           </View>
         )}
@@ -105,7 +105,7 @@ export default function DesignTabScreen() {
             ))}
           </View>
         ) : (
-          <View className="rounded-xl border border-dashed border-brand-border p-4 items-center justify-center bg-brand-surface/20">
+          <View className="rounded-md border border-dashed border-brand-border p-4 items-center justify-center bg-brand-surface/20">
             <Text className="text-[13px] font-medium text-brand-gray">Templates will appear here</Text>
           </View>
         )}

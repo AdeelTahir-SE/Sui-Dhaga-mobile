@@ -135,7 +135,7 @@ export default function MainOrdersScreen() {
             <TouchableOpacity
               onPress={refresh}
               activeOpacity={0.7}
-              className="px-5 py-2.5 rounded-xl bg-primary"
+              className="px-5 py-2.5 rounded-md bg-primary"
             >
               <Text className="text-[13px] font-bold text-white tracking-wide">
                 Try Again
@@ -175,7 +175,7 @@ export default function MainOrdersScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => router.push("/tailors" as never)}
-              className="h-[48px] px-6 rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+              className="h-[48px] px-6 rounded-md bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
             >
               <Text className="text-[13px] font-bold text-white tracking-wide">
                 Explore Tailors

@@ -21,11 +21,11 @@ export function ProfileMenuRow({
 }: ProfileMenuRowProps) {
   return (
     <View
-      className={`mb-2 flex-row items-center rounded-xl p-4 ${
+      className={`mb-2 flex-row items-center rounded-md p-4 ${
         highlighted ? "bg-[#FFF8EF] border border-[#F2DFC4]" : "bg-white"
       }`}
     >
-      <View className="h-9 w-9 overflow-hidden rounded-lg bg-primary-50">
+      <View className="h-9 w-9 overflow-hidden rounded-md bg-primary-50">
         <Image
           source={image ?? profileActionIcons}
           contentFit="contain"

@@ -110,7 +110,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity
           onPress={handleLogout}
-          className="mt-6 h-[52px] items-center justify-center rounded-xl border border-[#F5D1D1] bg-[#FFF3F3]"
+          className="mt-6 h-[52px] items-center justify-center rounded-md border border-[#F5D1D1] bg-[#FFF3F3]"
         >
           <Text className="text-[14px] font-bold text-[#D73232] tracking-wide">
             Logout

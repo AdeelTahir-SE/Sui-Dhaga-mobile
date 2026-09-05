@@ -93,7 +93,7 @@ export default function MessagesScreen() {
         }
       >
         {/* Search Bar */}
-        <View className="mb-4 h-[48px] flex-row items-center rounded-xl border border-brand-border px-4 bg-white">
+        <View className="mb-4 h-[48px] flex-row items-center rounded-md border border-brand-border px-4 bg-white">
           <Ionicons name="search" size={17} color="#6F767E" />
           <TextInput
             className="ml-3 flex-1 text-[13px] font-medium text-brand-dark"
@@ -131,7 +131,7 @@ export default function MessagesScreen() {
             </Text>
             <TouchableOpacity
               onPress={refresh}
-              className="px-4 py-2 rounded-xl bg-primary"
+              className="px-4 py-2 rounded-md bg-primary"
             >
               <Text className="text-[13px] font-bold text-white tracking-wide">
                 Try Again
@@ -155,7 +155,7 @@ export default function MessagesScreen() {
               <TouchableOpacity
                 onPress={() => router.push("/tailors" as any)}
                 activeOpacity={0.8}
-                className="h-[48px] px-6 rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+                className="h-[48px] px-6 rounded-md bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
               >
                 <Text className="text-[13px] font-bold text-white tracking-wide">
                   Explore Tailors

@@ -64,7 +64,7 @@ export function TabPlaceholder({
 
   return (
     <View
-      className={`${sizeClasses[size] || sizeClasses.md} items-center justify-center overflow-hidden rounded-2xl ${toneClasses[tone]}`}
+      className={`${sizeClasses[size] || sizeClasses.md} items-center justify-center overflow-hidden rounded-md ${toneClasses[tone]}`}
     >
       <Image
         source={image ?? generatedAssets[variant]}

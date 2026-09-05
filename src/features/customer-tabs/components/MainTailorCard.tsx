@@ -24,7 +24,7 @@ export function MainTailorCard({
   topRated,
 }: MainTailorCardProps) {
   return (
-    <View className="mb-4 rounded-2xl border border-brand-border bg-white p-4 shadow-sm">
+    <View className="mb-4 rounded-md border border-brand-border bg-white p-4 shadow-sm">
       <View className="flex-row">
         <TabPlaceholder image={image} variant="person" size="md" tone={tone} />
         <View className="ml-3.5 flex-1 justify-between">
@@ -46,11 +46,11 @@ export function MainTailorCard({
           </View>
 
           <View className="mt-2.5 flex-row gap-2">
-            <Text className="rounded-lg bg-primary-50 px-2.5 py-1 text-[11px] font-bold text-primary">
+            <Text className="rounded-md bg-primary-50 px-2.5 py-1 text-[11px] font-bold text-primary">
               ✓ Verified
             </Text>
             {topRated ? (
-              <Text className="rounded-lg bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+              <Text className="rounded-md bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
                 ★ Top Rated
               </Text>
             ) : null}
@@ -66,7 +66,7 @@ export function MainTailorCard({
         <TouchableOpacity
           onPress={() => router.push("/tailors" as never)}
           activeOpacity={0.8}
-          className="h-[40px] px-5 rounded-xl bg-primary items-center justify-center active:bg-primary-dark"
+          className="h-[40px] px-5 rounded-md bg-primary items-center justify-center active:bg-primary-dark"
         >
           <Text className="text-[13px] font-bold text-white">View Profile</Text>
         </TouchableOpacity>

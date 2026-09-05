@@ -61,10 +61,10 @@ export function MainOrderCard({
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={handleCardPress}
-      className="mb-4 rounded-2xl border border-brand-border bg-white p-3.5 shadow-sm"
+      className="mb-4 rounded-md border border-brand-border bg-white p-3.5 shadow-sm"
     >
       <View className="flex-row">
-        <View className="h-24 w-20 overflow-hidden rounded-xl bg-brand-surface border border-brand-border">
+        <View className="h-24 w-20 overflow-hidden rounded-md bg-brand-surface border border-brand-border">
           <Image
             source={image ?? orderItems}
             contentFit="contain"
@@ -90,7 +90,7 @@ export function MainOrderCard({
       <View className="mt-3 pt-2.5 border-t border-brand-border/60 flex-row justify-end">
         <TouchableOpacity
           onPress={handleCardPress}
-          className="rounded-xl border border-primary px-4 py-2 bg-primary/5 active:bg-primary/10"
+          className="rounded-md border border-primary px-4 py-2 bg-primary/5 active:bg-primary/10"
         >
           <Text className="text-[12px] font-bold text-primary tracking-wide">
             {isCompleted ? "View Invoice" : isCancelled ? "Order Details" : button}
