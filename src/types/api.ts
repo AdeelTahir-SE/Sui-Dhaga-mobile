@@ -1,0 +1,145 @@
+export interface ApiResponse<T = any> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: string;
+  details?: any;
+}
+
+export type UserRole = 'customer' | 'tailor' | 'designer' | 'admin';
+
+export interface User {
+  id: string;
+  email: string;
+  fullName?: string;
+  name?: string;
+  role: UserRole;
+  phone?: string;
+  avatarUrl?: string;
+  avatar?: string;
+  bio?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AuthSession {
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  user: User;
+}
+
+export interface TailorItem {
+  id: string;
+  userId?: string;
+  name: string;
+  businessName?: string;
+  rating: number;
+  reviewsCount?: number;
+  reviews?: number;
+  distance?: string;
+  specialty?: string;
+  specialties?: string[];
+  imageUrl?: string;
+  image?: string;
+  avatar?: string;
+  isVerified?: boolean;
+  verified?: boolean;
+  isTopRated?: boolean;
+  topRated?: boolean;
+  hourlyRate?: number;
+  startingPrice?: number;
+  location?: {
+    address?: string;
+    city?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  bio?: string;
+  experienceYears?: number;
+  completedOrders?: number;
+}
+
+export interface OrderItem {
+  id: string;
+  orderNumber?: string;
+  customerId?: string;
+  tailorId?: string;
+  status: 'Pending' | 'In Progress' | 'Confirmed' | 'Completed' | 'Cancelled';
+  itemName: string;
+  tailorName?: string;
+  customerName?: string;
+  deliveryDate?: string;
+  dueDate?: string;
+  price: number;
+  imageUrl?: string;
+  image?: string;
+  notes?: string;
+  measurementsId?: string;
+  timeline?: {
+    status: string;
+    date: string;
+    completed: boolean;
+  }[];
+  createdAt?: string;
+}
+
+export interface AppointmentItem {
+  id: string;
+  tailorId: string;
+  tailorName?: string;
+  tailorAvatar?: string;
+  serviceType: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  status: 'Upcoming' | 'Completed' | 'Cancelled';
+  notes?: string;
+  location?: string;
+  price?: number;
+  createdAt?: string;
+}
+
+export interface DesignItem {
+  id: string;
+  userId?: string;
+  name: string;
+  description?: string;
+  imageUrl: string;
+  image?: string;
+  category?: string;
+  garmentType?: string;
+  fabric?: string;
+  color?: string;
+  tags?: string[];
+  createdAt?: string;
+}
+
+export interface MeasurementItem {
+  id: string;
+  userId?: string;
+  profileName: string;
+  gender?: 'male' | 'female' | 'other';
+  unit?: 'inches' | 'cm';
+  chest?: number;
+  waist?: number;
+  hips?: number;
+  shoulder?: number;
+  sleeveLength?: number;
+  shirtLength?: number;
+  trouserLength?: number;
+  inseam?: number;
+  neck?: number;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'order' | 'appointment' | 'message' | 'system';
+  isRead: boolean;
+  createdAt: string;
+}

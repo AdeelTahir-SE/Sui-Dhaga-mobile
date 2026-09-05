@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,6 +17,7 @@ import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
 import { SocialLoginButton } from "../components/SocialLoginButton";
 import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
+import { useAuthStore } from "../../../stores/auth.store";
 
 const logoImg = require("@/assets/logos/main-logo.png");
 
@@ -22,6 +25,33 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const login = useAuthStore((state) => state.login);
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Missing Fields", "Please enter both your email and password.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const success = await login({ email: email.trim(), password });
+      if (success) {
+        router.replace("/home" as any);
+      } else {
+        const storeError = useAuthStore.getState().error;
+        setErrorMessage(storeError || "Invalid email or password");
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to log in. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
@@ -71,12 +101,21 @@ export default function LoginScreen() {
               Login to continue your tailoring journey
             </Text>
 
+            {errorMessage ? (
+              <View className="mb-4 rounded-xl bg-red-50 p-3 border border-red-200">
+                <Text className="text-[13px] text-red-600 font-medium">{errorMessage}</Text>
+              </View>
+            ) : null}
+
             {/* Email / Phone */}
             <AuthInput
               label="Email or Phone"
               placeholder="Enter email or phone number"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errorMessage) setErrorMessage(null);
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -86,7 +125,10 @@ export default function LoginScreen() {
               label="Password"
               placeholder="Enter your password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (errorMessage) setErrorMessage(null);
+              }}
               secureTextEntry
             />
 
@@ -101,7 +143,13 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* Login Button */}
-            <AuthButton title="Login" onPress={() => {}} />
+            {isSubmitting ? (
+              <View className="h-[52px] items-center justify-center rounded-xl bg-primary">
+                <ActivityIndicator color="#FFFFFF" />
+              </View>
+            ) : (
+              <AuthButton title="Login" onPress={handleLogin} />
+            )}
 
             {/* Divider */}
             <View className="flex-row items-center my-7">

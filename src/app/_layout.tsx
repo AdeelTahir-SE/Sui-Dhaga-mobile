@@ -6,15 +6,20 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SystemUI from "expo-system-ui";
 import "../global.css";
 
+import { useAuthStore } from "../stores/auth.store";
+
 export default function RootLayout() {
+  const checkAuth = useAuthStore((state) => state.checkAuth);
+
   useEffect(() => {
+    checkAuth();
     SystemUI.setBackgroundColorAsync("#FFFFFF");
     if (Platform.OS === "android") {
       RNStatusBar.setTranslucent(true);
       RNStatusBar.setBackgroundColor("transparent", true);
       RNStatusBar.setBarStyle("dark-content", true);
     }
-  }, []);
+  }, [checkAuth]);
 
   return (
     <SafeAreaProvider style={{ flex: 1, backgroundColor: "#FFFFFF" }}>

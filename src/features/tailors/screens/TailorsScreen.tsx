@@ -1,64 +1,50 @@
-import { View } from "react-native";
+import React from "react";
+import { ActivityIndicator, View } from "react-native";
 
 import { SearchAndFilters } from "../components/SearchAndFilters";
 import { TailorBottomTabs } from "../components/TailorBottomTabs";
 import { TailorHeader } from "../components/TailorHeader";
 import { TailorListCard } from "../components/TailorListCard";
 import { TailorScreenShell } from "../components/TailorScreenShell";
-
-const tailorImages = {
-  rekha: require("@/assets/illustrations/customer-tabs/tailors/rekha.png"),
-  stitchCraft: require("@/assets/illustrations/customer-tabs/tailors/stitch-craft.png"),
-  aarav: require("@/assets/illustrations/customer-tabs/tailors/aarav-bespoke.png"),
-  noor: require("@/assets/illustrations/customer-tabs/tailors/noor-thread.png"),
-};
+import { useTailors } from "../hooks/useTailors";
 
 export default function TailorsScreen() {
+  const { tailors, isLoading } = useTailors();
+
+  const getTone = (index: number) => {
+    const tones: ("coral" | "blue" | "gold" | "teal")[] = ["coral", "blue", "gold", "teal"];
+    return tones[index % tones.length];
+  };
+
   return (
     <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
       <TailorHeader
         title="Tailors"
         subtitle="Find the perfect tailor for your style"
       />
-      <View className="px-5">
+      <View className="px-5 pb-6">
         <SearchAndFilters />
 
-        <View className="mt-5">
-          <TailorListCard
-            image={tailorImages.rekha}
-            name="Rekha Tailors"
-            rating="4.8 (128)"
-            distance="2.1 km"
-            specialty="Specializes in Bridal, Suits, Sarees"
-            topRated
-            tone="coral"
-          />
-          <TailorListCard
-            image={tailorImages.stitchCraft}
-            name="Stitch Craft"
-            rating="4.7 (96)"
-            distance="3.4 km"
-            specialty="Specializes in Men's Wear"
-            tone="blue"
-          />
-          <TailorListCard
-            image={tailorImages.aarav}
-            name="Aarav Bespoke"
-            rating="4.6 (72)"
-            distance="4.2 km"
-            specialty="Specializes in Indo-Western"
-            tone="gold"
-          />
-          <TailorListCard
-            image={tailorImages.noor}
-            name="Noor & Thread"
-            rating="4.5 (64)"
-            distance="5.1 km"
-            specialty="Specializes in Sarees"
-            tone="teal"
-          />
-        </View>
-
+        {isLoading ? (
+          <View className="py-12 items-center justify-center">
+            <ActivityIndicator size="small" color="#FF6B6B" />
+          </View>
+        ) : (
+          <View className="mt-5">
+            {tailors.map((tailor, index) => (
+              <TailorListCard
+                key={tailor.id || index}
+                image={tailor.image || tailor.imageUrl}
+                name={tailor.name || tailor.businessName || "Tailor"}
+                rating={`${tailor.rating || 4.8} (${tailor.reviews || tailor.reviewsCount || 0})`}
+                distance={tailor.distance || "2.1 km"}
+                specialty={tailor.specialty || tailor.specialties?.join(', ') || "Bespoke Tailoring"}
+                topRated={tailor.topRated || tailor.isTopRated}
+                tone={getTone(index)}
+              />
+            ))}
+          </View>
+        )}
       </View>
     </TailorScreenShell>
   );

@@ -1,21 +1,25 @@
-import { Text, View } from "react-native";
+import React from "react";
+import { ActivityIndicator, RefreshControl, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { CustomerHeader } from "../components/CustomerHeader";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MainTailorCard } from "../components/MainTailorCard";
-
-const tailorRekha = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
-const tailorStitchCraft = require("@/assets/illustrations/customer-tabs/tailors/stitch-craft.png");
-const tailorAarav = require("@/assets/illustrations/customer-tabs/tailors/aarav-bespoke.png");
-const tailorNoor = require("@/assets/illustrations/customer-tabs/tailors/noor-thread.png");
+import { useTailors } from "../../tailors/hooks/useTailors";
 
 export default function MainTailorsScreen() {
+  const { tailors, isLoading, isRefreshing, refresh } = useTailors();
+
+  const getTone = (index: number) => {
+    const tones: ("coral" | "blue" | "gold" | "teal")[] = ["coral", "blue", "gold", "teal"];
+    return tones[index % tones.length];
+  };
+
   return (
     <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Tailors" />}>
       <CustomerHeader title="Find Tailors" subtitle="Jaipur, Rajasthan" />
-      <View className="px-5">
+      <View className="px-5 pb-6">
         <View className="h-[48px] flex-row items-center rounded-xl border border-brand-border px-4">
           <Ionicons name="search" size={17} color="#6F767E" />
           <Text className="ml-3 flex-1 text-[12px] text-brand-gray">
@@ -30,10 +34,26 @@ export default function MainTailorsScreen() {
             </View>
           ))}
         </View>
-        <MainTailorCard name="Rekha Tailors" rating="4.8 (128)" distance="2.1 km" specialty="Specializes in Bridal, Suits" image={tailorRekha} topRated tone="coral" />
-        <MainTailorCard name="Stitch Craft" rating="4.7 (96)" distance="3.4 km" specialty="Specializes in Men's Wear" image={tailorStitchCraft} tone="blue" />
-        <MainTailorCard name="Aarav Bespoke" rating="4.6 (72)" distance="4.2 km" specialty="Specializes in Indo-Western" image={tailorAarav} tone="gold" />
-        <MainTailorCard name="Noor & Thread" rating="4.5 (64)" distance="5.1 km" specialty="Specializes in Sarees" image={tailorNoor} tone="teal" />
+
+        {isLoading && !isRefreshing ? (
+          <View className="py-12 items-center justify-center">
+            <ActivityIndicator size="small" color="#FF6B6B" />
+            <Text className="mt-2 text-[12px] text-brand-gray">Loading tailors...</Text>
+          </View>
+        ) : (
+          tailors.map((tailor, index) => (
+            <MainTailorCard
+              key={tailor.id || index}
+              name={tailor.name || tailor.businessName || "Tailor"}
+              rating={`${tailor.rating || 4.8} (${tailor.reviews || tailor.reviewsCount || 0})`}
+              distance={tailor.distance || "2.0 km"}
+              specialty={tailor.specialty || tailor.specialties?.join(', ') || "Bespoke Stitching"}
+              image={tailor.image || tailor.imageUrl}
+              topRated={tailor.topRated || tailor.isTopRated}
+              tone={getTone(index)}
+            />
+          ))
+        )}
       </View>
     </CustomerTabShell>
   );

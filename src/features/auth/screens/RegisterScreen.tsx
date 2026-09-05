@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,6 +18,7 @@ import { AuthButton } from "../components/AuthButton";
 import { RoleCard } from "../components/RoleCard";
 import { SocialLoginButton } from "../components/SocialLoginButton";
 import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
+import { useAuthStore } from "../../../stores/auth.store";
 
 const customerImg = require("@/assets/illustrations/auth-flow/cutomer-crete-account.png");
 const tailorImg = require("@/assets/illustrations/auth-flow/tailor-create-account.png");
@@ -53,6 +56,51 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const register = useAuthStore((state) => state.register);
+
+  const handleRegister = async () => {
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+      Alert.alert("Required Fields", "Please enter your name, email, and password.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Password Mismatch", "Passwords do not match. Please verify.");
+      return;
+    }
+
+    if (!agreedToTerms) {
+      Alert.alert("Terms Required", "Please agree to the Terms of Service to proceed.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const success = await register({
+        email: email.trim(),
+        password,
+        fullName: fullName.trim(),
+        name: fullName.trim(),
+        phone: phone.trim() ? `+91${phone.trim()}` : undefined,
+        role: selectedRole,
+      });
+
+      if (success) {
+        router.replace("/home" as any);
+      } else {
+        const storeError = useAuthStore.getState().error;
+        setErrorMessage(storeError || "Registration failed. Please check your information.");
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || "Registration failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
@@ -84,6 +132,12 @@ export default function RegisterScreen() {
               experience.
             </Text>
 
+            {errorMessage ? (
+              <View className="mb-4 rounded-xl bg-red-50 p-3 border border-red-200">
+                <Text className="text-[13px] text-red-600 font-medium">{errorMessage}</Text>
+              </View>
+            ) : null}
+
             {/* Role Selection */}
             <Text className="text-[13px] font-medium text-brand-dark mb-3">
               I want to join as
@@ -106,7 +160,10 @@ export default function RegisterScreen() {
               label="Full Name"
               placeholder="Enter your full name"
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={(text) => {
+                setFullName(text);
+                if (errorMessage) setErrorMessage(null);
+              }}
               autoCapitalize="words"
             />
 
@@ -115,7 +172,10 @@ export default function RegisterScreen() {
               label="Email"
               placeholder="Enter your email address"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errorMessage) setErrorMessage(null);
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -156,7 +216,10 @@ export default function RegisterScreen() {
               label="Password"
               placeholder="Create a password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (errorMessage) setErrorMessage(null);
+              }}
               secureTextEntry
             />
 
@@ -199,7 +262,13 @@ export default function RegisterScreen() {
             </TouchableOpacity>
 
             {/* Create Account Button */}
-            <AuthButton title="Create Account" onPress={() => {}} />
+            {isSubmitting ? (
+              <View className="h-[52px] items-center justify-center rounded-xl bg-primary">
+                <ActivityIndicator color="#FFFFFF" />
+              </View>
+            ) : (
+              <AuthButton title="Create Account" onPress={handleRegister} />
+            )}
 
             {/* Divider */}
             <View className="flex-row items-center my-6">

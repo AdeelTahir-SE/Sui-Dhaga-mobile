@@ -1,21 +1,32 @@
-import { Text, View } from "react-native";
+import React from "react";
+import { ActivityIndicator, Text, View } from "react-native";
 
 import { CustomerHeader } from "../components/CustomerHeader";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MainOrderCard } from "../components/MainOrderCard";
+import { useOrders } from "../../booking-orders/hooks/useOrders";
 
-const orderAnarkali = require("@/assets/illustrations/customer-tabs/orders/order-anarkali.png");
-const orderKurta = require("@/assets/illustrations/customer-tabs/orders/order-kurta.png");
-const orderLehenga = require("@/assets/illustrations/customer-tabs/orders/order-lehenga.png");
+const defaultImages = [
+  require("@/assets/illustrations/customer-tabs/orders/order-anarkali.png"),
+  require("@/assets/illustrations/customer-tabs/orders/order-kurta.png"),
+  require("@/assets/illustrations/customer-tabs/orders/order-lehenga.png"),
+];
 
 export default function MainOrdersScreen() {
+  const { orders, isLoading } = useOrders();
+
+  const getTone = (index: number): "cream" | "mint" | "coral" | "blue" => {
+    const tones: ("cream" | "mint" | "coral" | "blue")[] = ["cream", "mint", "coral", "blue"];
+    return tones[index % tones.length];
+  };
+
   return (
     <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Orders" />}>
       <CustomerHeader title="My Orders" rightIcon="notifications-outline" />
-      <View className="px-5">
+      <View className="px-5 pb-6">
         <View className="mb-4 flex-row gap-5 border-b border-brand-border">
-          {["Active (3)", "Completed (12)", "Cancelled (2)"].map(
+          {[`Active (${orders.filter(o => o.status !== 'Completed' && o.status !== 'Cancelled').length})`, "Completed (12)", "Cancelled (2)"].map(
             (tab, index) => (
               <View
                 key={tab}
@@ -34,37 +45,27 @@ export default function MainOrdersScreen() {
             ),
           )}
         </View>
-        <MainOrderCard
-          id="SD1256"
-          item="Custom Anarkali Suit"
-          tailor="Rekha Tailors"
-          delivery="25 May, 2024"
-          price="Rs 12,500"
-          status="In Progress"
-          image={orderAnarkali}
-          tone="cream"
-        />
-        <MainOrderCard
-          id="SD1241"
-          item="Kurta Set"
-          tailor="Stitch Craft"
-          delivery="30 May, 2024"
-          price="Rs 3,200"
-          status="Confirmed"
-          image={orderKurta}
-          tone="mint"
-          button="View Details"
-        />
-        <MainOrderCard
-          id="SD1230"
-          item="Lehenga"
-          tailor="Aarav Bespoke"
-          delivery="28 May, 2024"
-          price="Rs 18,900"
-          status="In Progress"
-          image={orderLehenga}
-          tone="coral"
-        />
+
+        {isLoading ? (
+          <View className="py-12 items-center justify-center">
+            <ActivityIndicator size="small" color="#FF6B6B" />
+          </View>
+        ) : (
+          orders.map((order, index) => (
+            <MainOrderCard
+              key={order.id || index}
+              id={order.orderNumber || `SD${1200 + index}`}
+              item={order.itemName || "Custom Garment"}
+              tailor={order.tailorName || "Tailor"}
+              delivery={order.deliveryDate || "Expected Soon"}
+              price={`Rs ${order.price?.toLocaleString?.() || order.price || 0}`}
+              status={order.status === "Completed" ? "Completed" : order.status === "Confirmed" ? "Confirmed" : "In Progress"}
+              image={order.image || defaultImages[index % defaultImages.length]}
+              tone={getTone(index)}
+              button={index === 1 ? "View Details" : undefined}
+            />
+          ))
+        )}
       </View>
     </CustomerTabShell>
   );
