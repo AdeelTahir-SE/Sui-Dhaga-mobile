@@ -50,16 +50,23 @@ export default function DesignTabScreen() {
       <View className="px-5 pb-8">
         <TouchableOpacity
           onPress={() => router.push("/design-studio" as never)}
-          className="mb-4 flex-row items-center overflow-hidden rounded-md bg-primary p-4"
+          activeOpacity={0.85}
+          className="mb-4 min-h-[130px] flex-row items-center justify-between overflow-hidden rounded-md bg-primary p-5 shadow-sm"
         >
-          <View className="h-14 w-14 items-center justify-center rounded-md bg-white">
-            <Ionicons name="add" size={26} color="#14919B" />
+          <View className="flex-row items-center flex-1 pr-3">
+            <View className="h-14 w-14 items-center justify-center rounded-md bg-white shadow-xs">
+              <Ionicons name="add" size={28} color="#14919B" />
+            </View>
+            <View className="ml-4 flex-1">
+              <Text className="text-[20px] font-black text-white tracking-tight">
+                New Design
+              </Text>
+              <Text className="mt-1 text-[13px] font-medium text-white/90">
+                Start from scratch
+              </Text>
+            </View>
           </View>
-          <View className="ml-4 flex-1">
-            <Text className="text-[18px] font-black text-white tracking-tight">New Design</Text>
-            <Text className="mt-0.5 text-[13px] font-medium text-white/90">Start from scratch</Text>
-          </View>
-          <View className="h-16 w-16 overflow-hidden rounded-md bg-white">
+          <View className="h-20 w-20 overflow-hidden rounded-md bg-white items-center justify-center">
             <Image
               source={newDesignDress}
               contentFit="contain"

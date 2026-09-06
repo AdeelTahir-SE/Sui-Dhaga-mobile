@@ -37,10 +37,11 @@ export default function HomeScreen() {
   const { tailors, isLoading: tailorsLoading } = useTailors();
   const { designs, isLoading: designsLoading } = useDesigns();
 
+  const emailPrefix = user?.email ? user.email.split("@")[0] : "User";
   const userName =
-    user?.fullName?.split(" ")[0] ||
-    user?.name?.split(" ")[0] ||
-    (user?.email ? user.email.split("@")[0] : "Ayesha");
+    user?.fullName?.trim() ||
+    user?.name?.trim() ||
+    emailPrefix;
   const recommendedTailor = tailors[0];
 
   return (

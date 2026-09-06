@@ -82,7 +82,11 @@ export default function ProfileScreen() {
     );
   };
 
-  const displayName = user?.fullName || user?.name || "Guest User";
+  const emailPrefix = user?.email ? user.email.split("@")[0] : "User";
+  const displayName =
+    user?.fullName?.trim() ||
+    user?.name?.trim() ||
+    emailPrefix;
   const displayEmail = user?.email || "No email provided";
   const displayPhone = user?.phone || "+91 (Not set)";
 

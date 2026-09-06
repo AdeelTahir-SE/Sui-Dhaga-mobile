@@ -136,7 +136,6 @@ export default function RegisterScreen() {
         email: trimmedEmail,
         password,
         name: registeredName,
-        fullName: registeredName,
         role: backendRole,
         phone: formattedPhone,
       });
