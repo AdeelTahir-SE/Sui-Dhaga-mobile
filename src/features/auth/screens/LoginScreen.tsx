@@ -49,7 +49,7 @@ export default function LoginScreen() {
         // Check if corresponding id exists in tailor table
         let hasTailorProfile = false;
         try {
-          const tailorRes = await tailorsApi.getMyTailorProfile();
+          const tailorRes = await tailorsApi?.getMyTailorProfile?.();
           if (tailorRes?.data && tailorRes.data.id) {
             hasTailorProfile = true;
             isTailor = true;

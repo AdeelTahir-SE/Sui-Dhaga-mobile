@@ -176,6 +176,7 @@ export default function HomeScreen() {
             <ActivityIndicator size="small" color="#14919B" />
         ) : recommendedTailor ? (
           <MainTailorCard
+            id={recommendedTailor.id}
             name={
               recommendedTailor.name ||
               recommendedTailor.businessName ||
@@ -188,6 +189,7 @@ export default function HomeScreen() {
               recommendedTailor.specialties?.join(", ") ||
               "Bespoke Tailoring"
             }
+            price={recommendedTailor.startingPrice || 1500}
             image={recommendedTailor.image || recommendedTailor.imageUrl}
             topRated={
               recommendedTailor.topRated ||

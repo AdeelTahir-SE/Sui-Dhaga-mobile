@@ -8,6 +8,7 @@ import { TailorBadge } from "./TailorBadge";
 import { TailorPlaceholder } from "./TailorPlaceholder";
 
 type TailorListCardProps = {
+  id?: string;
   image?: any;
   name: string;
   rating: string;
@@ -15,9 +16,11 @@ type TailorListCardProps = {
   specialty: string;
   tone?: "teal" | "coral" | "gold" | "blue" | "cream";
   topRated?: boolean;
+  onPress?: () => void;
 };
 
 export function TailorListCard({
+  id,
   image,
   name,
   rating,
@@ -25,7 +28,18 @@ export function TailorListCard({
   specialty,
   tone = "coral",
   topRated,
+  onPress,
 }: TailorListCardProps) {
+  const handleViewProfile = () => {
+    if (onPress) {
+      onPress();
+    } else if (id) {
+      router.push(`/tailors/${id}` as any);
+    } else {
+      router.push("/tailors/rekha-tailors" as any);
+    }
+  };
+
   return (
     <View className="mb-3 rounded-xl border border-brand-border bg-white p-3">
       <View className="flex-row">
@@ -46,7 +60,7 @@ export function TailorListCard({
         </View>
       </View>
       <TouchableOpacity
-        onPress={() => router.push("/tailors/rekha-tailors" as never)}
+        onPress={handleViewProfile}
         className="mt-3 self-end rounded-lg border border-primary px-5 py-2"
       >
         <Text className="text-[12px] font-semibold text-primary">

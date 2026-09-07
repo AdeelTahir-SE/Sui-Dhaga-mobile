@@ -110,11 +110,11 @@ export function useTailorProfile() {
 
       updated.isProfileComplete = checkIsComplete(updated);
 
-      // Save to API
-      try {
-        await tailorsApi.saveTailorProfile(updated);
-      } catch {
-        // Continue and save locally even if backend endpoint is unavailable
+      // Save to backend API (POST /tailors or PATCH /tailors/:id)
+      const res = await tailorsApi.saveTailorProfile(updated);
+      if (res?.data && res.data.id) {
+        updated.id = res.data.id;
+        updated.userId = res.data.userId || user?.id;
       }
 
       // Save locally

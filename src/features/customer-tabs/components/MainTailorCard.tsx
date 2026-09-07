@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { TabPlaceholder } from "./TabPlaceholder";
 
 type MainTailorCardProps = {
+  id?: string;
   name: string;
   rating: string;
   distance: string;
@@ -12,9 +13,12 @@ type MainTailorCardProps = {
   image?: any;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   topRated?: boolean;
+  onPress?: () => void;
+  price?: string | number;
 };
 
 export function MainTailorCard({
+  id,
   name,
   rating,
   distance,
@@ -22,7 +26,19 @@ export function MainTailorCard({
   image,
   tone = "coral",
   topRated,
+  onPress,
+  price = "Rs. 1,500",
 }: MainTailorCardProps) {
+  const handleViewProfile = () => {
+    if (onPress) {
+      onPress();
+    } else if (id) {
+      router.push(`/tailors/${id}` as any);
+    } else {
+      router.push("/tailors/rekha-tailors" as any);
+    }
+  };
+
   return (
     <View className="mb-4 rounded-md border border-brand-border bg-white p-4 shadow-sm">
       <View className="flex-row">
@@ -61,10 +77,10 @@ export function MainTailorCard({
       <View className="mt-4 pt-3 border-t border-brand-border/60 flex-row items-center justify-between">
         <View>
           <Text className="text-[11px] font-medium text-brand-gray">Starting from</Text>
-          <Text className="text-[15px] font-bold text-brand-dark">Rs. 1,500</Text>
+          <Text className="text-[15px] font-bold text-brand-dark">{typeof price === 'number' ? `Rs. ${price.toLocaleString()}` : price}</Text>
         </View>
         <TouchableOpacity
-          onPress={() => router.push("/tailors" as never)}
+          onPress={handleViewProfile}
           activeOpacity={0.8}
           className="h-[40px] px-5 rounded-md bg-primary items-center justify-center active:bg-primary-dark"
         >

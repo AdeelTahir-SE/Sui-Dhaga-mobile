@@ -184,6 +184,7 @@ export default function MainTailorsScreen() {
           filteredTailors.map((tailor, index) => (
             <MainTailorCard
               key={tailor.id || index}
+              id={tailor.id}
               name={tailor.name || tailor.businessName || "Tailor"}
               rating={`${tailor.rating || 0} (${tailor.reviews || tailor.reviewsCount || 0})`}
               distance={tailor.distance || "Nearby"}
@@ -192,6 +193,7 @@ export default function MainTailorsScreen() {
                 tailor.specialties?.join(", ") ||
                 "Bespoke Stitching"
               }
+              price={tailor.startingPrice || 1500}
               image={tailor.image || tailor.imageUrl}
               topRated={tailor.topRated || tailor.isTopRated}
               tone={getTone(index)}
