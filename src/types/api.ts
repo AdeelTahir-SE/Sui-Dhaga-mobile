@@ -34,10 +34,19 @@ export interface AuthSession {
   user?: User;
 }
 
+export interface TailorServiceItem {
+  id?: string;
+  title: string;
+  price: number;
+  description?: string;
+  category?: string;
+}
+
 export interface TailorItem {
   id: string;
   userId?: string;
   name: string;
+  shopName?: string;
   businessName?: string;
   rating: number;
   reviewsCount?: number;
@@ -54,6 +63,8 @@ export interface TailorItem {
   topRated?: boolean;
   hourlyRate?: number;
   startingPrice?: number;
+  city?: string;
+  address?: string;
   location?: {
     address?: string;
     city?: string;
@@ -65,6 +76,8 @@ export interface TailorItem {
   completedOrders?: number;
   phone?: string;
   isProfileComplete?: boolean;
+  services?: TailorServiceItem[];
+  gallery?: ({ id?: string; imageUrl: string; caption?: string } | string)[];
 }
 
 export interface OrderItem {

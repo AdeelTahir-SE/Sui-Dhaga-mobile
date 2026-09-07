@@ -37,16 +37,52 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 export default function TailorProfileScreen() {
-  const { tailorId } = useLocalSearchParams<{ tailorId?: string }>();
-  const { tailor, isLoading } = useTailorDetails(tailorId || "1");
+  const params = useLocalSearchParams<{ tailorId?: string; id?: string }>();
+  const tailorId = params.tailorId || params.id || "";
+  const { tailor, isLoading } = useTailorDetails(tailorId);
 
-  const name = tailor?.name || tailor?.businessName || "Rekha Tailors";
-  const rating = String(tailor?.rating || "4.8");
-  const reviewsCount = `${tailor?.reviews || tailor?.reviewsCount || 128} reviews`;
-  const distance = tailor?.distance || "2.1 km";
-  const location = tailor?.location?.address || "C-Scheme, Jaipur, Rajasthan";
-  const bio = tailor?.bio || "Experienced in creating custom outfits with perfect fit and beautiful finishing. 12+ years of experience.";
-  const tags = tailor?.specialties || ["Bridal", "Suits", "Sarees", "Lehengas", "Alterations"];
+  if (isLoading && !tailor) {
+    return (
+      <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
+        <View className="flex-1 items-center justify-center py-32">
+          <ActivityIndicator size="large" color="#14919B" />
+          <Text className="mt-4 text-[14px] font-medium text-brand-gray">
+            Loading tailor profile...
+          </Text>
+        </View>
+      </TailorScreenShell>
+    );
+  }
+
+  const name = tailor?.shopName || tailor?.businessName || tailor?.name || "Tailor Profile";
+  const rating = tailor?.rating ? Number(tailor.rating).toFixed(1) : "5.0";
+  const reviewsCount = `${tailor?.reviewsCount ?? tailor?.reviews ?? 0} reviews`;
+  const distance = tailor?.distance || "Nearby";
+  const location = tailor?.address
+    ? tailor?.city
+      ? `${tailor.address}, ${tailor.city}`
+      : tailor.address
+    : tailor?.city || tailor?.location?.address || "Location not specified";
+  const bio =
+    tailor?.bio ||
+    (tailor?.experienceYears
+      ? `${tailor.experienceYears}+ years of professional tailoring experience delivering premium bespoke garments.`
+      : "Professional tailoring and custom stitching services.");
+  const tags =
+    tailor?.specialties && tailor.specialties.length > 0
+      ? tailor.specialties
+      : tailor?.specialty
+        ? [tailor.specialty]
+        : ["Custom Tailoring", "Bridal Wear", "Alterations"];
+
+  const avatarSource =
+    tailor?.imageUrl || tailor?.image || tailor?.avatar
+      ? typeof (tailor.imageUrl || tailor.image || tailor.avatar) === "string"
+        ? { uri: tailor.imageUrl || tailor.image || tailor.avatar }
+        : tailor.imageUrl || tailor.image || tailor.avatar
+      : rekhaImage;
+
+  const services = tailor?.services && tailor.services.length > 0 ? tailor.services : null;
 
   return (
     <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
@@ -67,7 +103,7 @@ export default function TailorProfileScreen() {
 
       <View className="px-5 pb-8">
         <View className="-mt-8 flex-row items-end">
-          <TailorPlaceholder image={tailor?.image || tailor?.imageUrl || rekhaImage} size="md" tone="coral" />
+          <TailorPlaceholder image={avatarSource} size="md" tone="coral" />
           <View className="ml-4 flex-1 pb-1">
             <Text className="text-[21px] font-bold text-brand-dark">
               {name}
@@ -79,13 +115,21 @@ export default function TailorProfileScreen() {
           </View>
         </View>
 
+        {tailor?.experienceYears ? (
+          <View className="mt-3 self-start rounded-full bg-primary-50 px-3 py-1">
+            <Text className="text-[11px] font-bold text-primary">
+              ⭐ {tailor.experienceYears} Years of Experience
+            </Text>
+          </View>
+        ) : null}
+
         <View className="mt-4 flex-row flex-wrap gap-2">
           {tags.map((tag) => (
             <View
               key={tag}
-              className="rounded-lg border border-brand-border px-3 py-2 bg-white"
+              className="rounded-lg border border-brand-border px-3 py-2 bg-white shadow-xs"
             >
-              <Text className="text-[11px] font-medium text-brand-dark">
+              <Text className="text-[11px] font-semibold text-brand-dark">
                 {tag}
               </Text>
             </View>
@@ -115,31 +159,60 @@ export default function TailorProfileScreen() {
         </Text>
 
         <SectionHeader title="Services" />
-        <View className="flex-row gap-3">
-          {[
-            ["Custom Anarkali Suit", "₹12,500", "7 - 10 Days", "teal"],
-            ["Bridal Lehenga", "₹28,000", "15 - 20 Days", "coral"],
-          ].map(([title, price, days, tone]) => (
-            <View
-              key={title}
-              className="flex-1 rounded-xl border border-brand-border p-3 bg-white"
-            >
-              <TailorPlaceholder
-                image={serviceImages[tone === "teal" ? 0 : 1]}
-                variant="garment"
-                size="sm"
-                tone={tone as "teal" | "coral"}
-              />
-              <Text className="mt-3 text-[12px] font-semibold text-brand-dark">
-                {title}
-              </Text>
-              <Text className="mt-1 text-[12px] font-bold text-brand-dark">
-                {price}
-              </Text>
-              <Text className="mt-1 text-[10px] text-brand-gray">{days}</Text>
-            </View>
-          ))}
-        </View>
+        {services ? (
+          <View className="flex-row flex-wrap gap-3">
+            {services.map((service, index) => (
+              <View
+                key={service.id || service.title || index}
+                className="w-[48%] rounded-xl border border-brand-border p-3 bg-white"
+              >
+                <TailorPlaceholder
+                  image={serviceImages[index % serviceImages.length]}
+                  variant="garment"
+                  size="sm"
+                  tone={index % 2 === 0 ? "teal" : "coral"}
+                />
+                <Text className="mt-3 text-[12px] font-semibold text-brand-dark" numberOfLines={1}>
+                  {service.title}
+                </Text>
+                <Text className="mt-1 text-[13px] font-bold text-brand-dark">
+                  Rs. {Number(service.price).toLocaleString()}
+                </Text>
+                {service.description ? (
+                  <Text className="mt-1 text-[10px] text-brand-gray" numberOfLines={2}>
+                    {service.description}
+                  </Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View className="flex-row gap-3">
+            {[
+              ["Custom Anarkali Suit", "Rs. 4,500", "7 - 10 Days", "teal"],
+              ["Bridal Lehenga", "Rs. 15,000", "15 - 20 Days", "coral"],
+            ].map(([title, price, days, tone]) => (
+              <View
+                key={title}
+                className="flex-1 rounded-xl border border-brand-border p-3 bg-white"
+              >
+                <TailorPlaceholder
+                  image={serviceImages[tone === "teal" ? 0 : 1]}
+                  variant="garment"
+                  size="sm"
+                  tone={tone as "teal" | "coral"}
+                />
+                <Text className="mt-3 text-[12px] font-semibold text-brand-dark">
+                  {title}
+                </Text>
+                <Text className="mt-1 text-[12px] font-bold text-brand-dark">
+                  {price}
+                </Text>
+                <Text className="mt-1 text-[10px] text-brand-gray">{days}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         <View className="mt-6 flex-row gap-3">
           <TouchableOpacity
