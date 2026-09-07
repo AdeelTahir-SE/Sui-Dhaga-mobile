@@ -19,6 +19,7 @@ import { SocialLoginButton } from "../components/SocialLoginButton";
 import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
 import { AuthMessageBanner } from "../components/AuthMessageBanner";
 import { useAuthStore } from "../../../stores/auth.store";
+import { tailorsApi } from "../../../api/tailors.api";
 
 const logoImg = require("@/assets/logos/main-logo.png");
 
@@ -43,8 +44,24 @@ export default function LoginScreen() {
       const success = await login({ email: email.trim(), password });
       if (success) {
         const user = useAuthStore.getState().user;
-        if (user?.role === "tailor") {
-          router.replace("/tailor-dashboard" as any);
+        let isTailor = user?.role === "tailor";
+
+        // Check if corresponding id exists in tailor table
+        let hasTailorProfile = false;
+        try {
+          const tailorRes = await tailorsApi.getMyTailorProfile();
+          if (tailorRes?.data && tailorRes.data.id) {
+            hasTailorProfile = true;
+            isTailor = true;
+          }
+        } catch {}
+
+        if (isTailor) {
+          if (hasTailorProfile) {
+            router.replace("/tailor-dashboard" as any);
+          } else {
+            router.replace("/tailor-dashboard/complete-profile" as any);
+          }
         } else {
           router.replace("/home" as any);
         }

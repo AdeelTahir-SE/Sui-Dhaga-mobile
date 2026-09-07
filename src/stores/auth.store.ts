@@ -68,13 +68,28 @@ function extractAuthData(
   const fullName =
     rawUser?.fullName?.trim() ||
     rawUser?.name?.trim() ||
+    rawUser?.user_metadata?.full_name?.trim() ||
+    rawUser?.user_metadata?.name?.trim() ||
     fallbackPayload?.fullName?.trim() ||
     fallbackPayload?.name?.trim() ||
     emailPrefix;
   const name = rawUser?.name?.trim() || fullName || emailPrefix;
-  const role = (rawUser?.role || fallbackPayload?.role || 'customer') as any;
-  const phone = rawUser?.phone || fallbackPayload?.phone;
-  const avatar = rawUser?.avatar || rawUser?.avatarUrl;
+
+  const rawRole =
+    rawUser?.user_metadata?.role ||
+    rawUser?.app_metadata?.role ||
+    (rawUser?.role && rawUser.role !== 'authenticated' ? rawUser.role : undefined) ||
+    fallbackPayload?.role;
+
+  const role: User['role'] =
+    rawRole?.toLowerCase?.() === 'tailor'
+      ? 'tailor'
+      : rawRole?.toLowerCase?.() === 'designer'
+      ? 'designer'
+      : 'customer';
+
+  const phone = rawUser?.phone || rawUser?.user_metadata?.phone || fallbackPayload?.phone;
+  const avatar = rawUser?.avatar || rawUser?.avatarUrl || rawUser?.user_metadata?.avatar_url;
 
   const user: User = {
     id,

@@ -210,7 +210,7 @@ export default function TailorProfileSetupScreen() {
   if (isLoading) {
     return (
       <TailorDashboardShell
-        bottomTabs={<TailorDashboardTabs active="Profile" />}
+        bottomTabs={isComplete ? <TailorDashboardTabs active="Profile" /> : undefined}
       >
         <View className="flex-1 items-center justify-center py-24">
           <ActivityIndicator size="large" color="#14919B" />
@@ -224,7 +224,7 @@ export default function TailorProfileSetupScreen() {
 
   return (
     <TailorDashboardShell
-      bottomTabs={<TailorDashboardTabs active="Profile" />}
+      bottomTabs={isComplete ? <TailorDashboardTabs active="Profile" /> : undefined}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
