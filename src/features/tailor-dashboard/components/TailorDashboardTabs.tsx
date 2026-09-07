@@ -26,7 +26,7 @@ const tabs: TabItem[] = [
   { label: "Orders", icon: "bag-handle-outline", activeIcon: "bag-handle", href: "/tailor-dashboard/orders" },
   { label: "Appointments", icon: "calendar-outline", activeIcon: "calendar", href: "/tailor-dashboard/appointments" },
   { label: "Earnings", icon: "cash-outline", activeIcon: "cash", href: "/tailor-dashboard/earnings" },
-  { label: "Profile", icon: "person-circle-outline", activeIcon: "person-circle", href: "/profile" },
+  { label: "Profile", icon: "person-circle-outline", activeIcon: "person-circle", href: "/tailor-dashboard/profile" },
 ];
 
 export function TailorDashboardTabs({ active }: TailorDashboardTabsProps) {

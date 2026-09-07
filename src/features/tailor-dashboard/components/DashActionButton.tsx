@@ -25,7 +25,7 @@ export function DashActionButton({
   return (
     <TouchableOpacity
       accessibilityRole="button"
-      className={`h-[42px] flex-1 items-center justify-center rounded-lg border ${buttonClass}`}
+      className={`h-[42px] flex-1 items-center justify-center rounded-md border ${buttonClass}`}
     >
       <Text className={`text-[12px] font-semibold ${textClass}`}>{title}</Text>
     </TouchableOpacity>

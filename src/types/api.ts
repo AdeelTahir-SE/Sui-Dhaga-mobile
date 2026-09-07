@@ -63,6 +63,8 @@ export interface TailorItem {
   bio?: string;
   experienceYears?: number;
   completedOrders?: number;
+  phone?: string;
+  isProfileComplete?: boolean;
 }
 
 export interface OrderItem {

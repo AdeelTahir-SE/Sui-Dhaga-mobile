@@ -66,7 +66,7 @@ export function TailorDashPlaceholder({
 
   return (
     <View
-      className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-xl ${toneClasses[tone]}`}
+      className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-md ${toneClasses[tone]}`}
     >
       <Image
         source={image ?? generatedAssets[variant]}

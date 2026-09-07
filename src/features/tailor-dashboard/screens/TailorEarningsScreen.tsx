@@ -67,11 +67,11 @@ export default function TailorEarningsScreen() {
         </View>
 
         <View className="mt-5 flex-row gap-3">
-          <View className="flex-1 rounded-xl border border-brand-border p-4">
+          <View className="flex-1 rounded-md border border-brand-border p-4">
             <Text className="text-[11px] text-brand-gray">Completed Orders</Text>
             <Text className="mt-2 text-[22px] font-bold text-brand-dark">32</Text>
           </View>
-          <View className="flex-1 rounded-xl border border-brand-border p-4">
+          <View className="flex-1 rounded-md border border-brand-border p-4">
             <Text className="text-[11px] text-brand-gray">Pending Payments</Text>
             <Text className="mt-2 text-[22px] font-bold text-brand-dark">₹12,350</Text>
           </View>
@@ -86,7 +86,7 @@ export default function TailorEarningsScreen() {
         />
 
         <SectionTitle title="Recent Transactions" action="View all" />
-        <View className="rounded-xl border border-brand-border px-3">
+        <View className="rounded-md border border-brand-border px-3">
           <TransactionRow id="ORD12345" date="20 May 2024" amount="₹12,500" status="Paid" />
           <TransactionRow id="ORD12344" date="18 May 2024" amount="₹18,000" status="Paid" />
           <TransactionRow id="ORD12343" date="15 May 2024" amount="₹8,500" status="Pending" />

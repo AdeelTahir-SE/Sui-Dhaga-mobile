@@ -33,12 +33,12 @@ export default function TailorAvailabilityScreen() {
         </View>
         <View className="mt-4 flex-row items-center justify-between">
           <SectionTitle title="Available Time Slots" />
-          <TouchableOpacity className="rounded-lg border border-primary px-4 py-2">
+          <TouchableOpacity className="rounded-md border border-primary px-4 py-2">
             <Text className="text-[12px] font-semibold text-primary">+ Add Slot</Text>
           </TouchableOpacity>
         </View>
         <Text className="mb-2 text-[13px] font-semibold text-brand-dark">22 May 2024</Text>
-        <View className="rounded-xl border border-brand-border px-4">
+        <View className="rounded-md border border-brand-border px-4">
           <TimeSlotRow time="09:00 AM - 10:00 AM" />
           <TimeSlotRow time="10:00 AM - 11:00 AM" booked />
           <TimeSlotRow time="11:00 AM - 12:00 PM" />

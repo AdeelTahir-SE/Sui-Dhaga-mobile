@@ -26,7 +26,7 @@ export function AppointmentRequestCard({
   tone = "coral",
 }: AppointmentRequestCardProps) {
   return (
-    <View className="mb-3 rounded-xl border border-brand-border bg-white p-3">
+    <View className="mb-3 rounded-md border border-brand-border bg-white p-3">
       <View className="flex-row">
         <TailorDashPlaceholder image={image} variant="person" size="sm" tone={tone} />
         <View className="ml-3 flex-1">

@@ -22,11 +22,11 @@ export default function TailorServicesScreen() {
       <TailorDashboardHeader title="Services" showBack rightIcon="chatbubble-ellipses-outline" />
       <View className="px-5">
         <View className="mb-4 flex-row gap-3">
-          <View className="h-[44px] flex-1 flex-row items-center rounded-xl border border-brand-border px-3">
+          <View className="h-[44px] flex-1 flex-row items-center rounded-md border border-brand-border px-3">
             <Ionicons name="search" size={17} color="#6F767E" />
             <Text className="ml-2 text-[12px] text-brand-gray">Search services</Text>
           </View>
-          <TouchableOpacity className="h-[44px] flex-row items-center rounded-xl bg-primary px-4">
+          <TouchableOpacity className="h-[44px] flex-row items-center rounded-md bg-primary px-4">
             <Ionicons name="add" size={16} color="#FFFFFF" />
             <Text className="ml-1 text-[12px] font-semibold text-white">Add Service</Text>
           </TouchableOpacity>

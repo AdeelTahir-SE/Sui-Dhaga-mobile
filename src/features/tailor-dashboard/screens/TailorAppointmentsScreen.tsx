@@ -21,7 +21,7 @@ export default function TailorAppointmentsScreen() {
       <View className="px-5">
         <View className="mb-4 flex-row gap-2">
           {["Requests 5", "Upcoming 8", "Completed"].map((tab, index) => (
-            <View key={tab} className={`rounded-lg px-3 py-2 ${index === 0 ? "bg-primary-50" : "bg-white border border-brand-border"}`}>
+            <View key={tab} className={`rounded-md px-3 py-2 ${index === 0 ? "bg-primary-50" : "bg-white border border-brand-border"}`}>
               <Text className={`text-[11px] font-medium ${index === 0 ? "text-primary" : "text-brand-dark"}`}>{tab}</Text>
             </View>
           ))}

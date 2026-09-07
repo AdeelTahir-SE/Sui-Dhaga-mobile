@@ -117,7 +117,7 @@ export default function TailorOrdersScreen() {
                   key={tab.key}
                   onPress={() => setSelectedTab(tab.key)}
                   activeOpacity={0.7}
-                  className={`rounded-xl px-3.5 py-2 border ${
+                  className={`rounded-md px-3.5 py-2 border ${
                     isActive
                       ? "bg-primary border-primary"
                       : "bg-white border-brand-border"
@@ -141,7 +141,7 @@ export default function TailorOrdersScreen() {
             <ActivityIndicator size="large" color="#14919B" />
           </View>
         ) : currentList.length === 0 ? (
-          <View className="py-16 items-center justify-center px-4 rounded-2xl border border-brand-border bg-brand-surface/30">
+          <View className="py-16 items-center justify-center px-4 rounded-md border border-brand-border bg-brand-surface/30">
             <Ionicons name="cube-outline" size={36} color="#9CA3AF" />
             <Text className="mt-3 text-[15px] font-bold text-brand-dark text-center">
               {selectedTab === "requests"

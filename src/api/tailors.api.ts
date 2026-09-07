@@ -39,4 +39,17 @@ export const tailorsApi = {
       params: { q: query },
     });
   },
+
+  async getMyTailorProfile() {
+    return apiClient<TailorItem>('/tailors/me', {
+      method: 'GET',
+    });
+  },
+
+  async saveTailorProfile(data: Partial<TailorItem>) {
+    return apiClient<TailorItem>('/tailors/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
 };

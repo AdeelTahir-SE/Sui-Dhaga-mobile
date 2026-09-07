@@ -24,7 +24,7 @@ export function MetricCard({
   tone = "teal",
 }: MetricCardProps) {
   return (
-    <View className="w-[48%] rounded-xl border border-brand-border bg-white p-3">
+    <View className="w-[48%] rounded-md border border-brand-border bg-white p-3">
       <View className="flex-row items-center justify-between">
         <View>
           <Text className="text-[11px] text-brand-gray">{title}</Text>
