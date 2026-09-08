@@ -20,21 +20,37 @@ import { MessageItem, ConversationItem } from "../../../types/api";
 
 export default function ConversationChatScreen() {
   const insets = useSafeAreaInsets();
-  const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
+  const params = useLocalSearchParams<{
+    conversationId?: string;
+    recipientId?: string;
+    name?: string;
+    avatar?: string;
+  }>();
+
+  const [activeConvId, setActiveConvId] = useState<string | null>(
+    params.conversationId && params.conversationId !== "new"
+      ? params.conversationId
+      : null
+  );
   const currentUser = useAuthStore((state) => state.user);
 
   const [conversation, setConversation] = useState<ConversationItem | null>(null);
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [inputText, setInputText] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(
+    Boolean(params.conversationId && params.conversationId !== "new")
+  );
   const [isSending, setIsSending] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!conversationId) return;
+    if (!activeConvId || activeConvId === "new") {
+      setIsLoading(false);
+      return;
+    }
     try {
       const [convRes, msgsRes] = await Promise.all([
-        conversationsApi.getConversationById(conversationId).catch(() => null),
-        conversationsApi.getMessages(conversationId).catch(() => null),
+        conversationsApi.getConversationById(activeConvId).catch(() => null),
+        conversationsApi.getMessages(activeConvId).catch(() => null),
       ]);
 
       if (convRes?.data) setConversation(convRes.data);
@@ -46,14 +62,14 @@ export default function ConversationChatScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [conversationId]);
+  }, [activeConvId]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   const handleSend = async () => {
-    if (!inputText.trim() || !conversationId || isSending) return;
+    if (!inputText.trim() || isSending) return;
     const textToSend = inputText.trim();
     setInputText("");
     setIsSending(true);
@@ -61,7 +77,7 @@ export default function ConversationChatScreen() {
     // Optimistic message
     const tempMessage: MessageItem = {
       id: "temp_" + Date.now(),
-      conversationId,
+      conversationId: activeConvId || "temp",
       senderId: currentUser?.id,
       text: textToSend,
       createdAt: new Date().toISOString(),
@@ -69,16 +85,33 @@ export default function ConversationChatScreen() {
     setMessages((prev) => [...prev, tempMessage]);
 
     try {
-      const res = await conversationsApi.sendMessage(conversationId, {
-        text: textToSend,
-      });
-      if (res.data) {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === tempMessage.id ? res.data! : m))
-        );
+      if (activeConvId && activeConvId !== "new") {
+        const res = await conversationsApi.sendMessage(activeConvId, {
+          text: textToSend,
+        });
+        if (res?.data) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === tempMessage.id ? res.data! : m))
+          );
+        }
+      } else if (params.recipientId) {
+        const startRes = await conversationsApi.startConversation({
+          participantId: params.recipientId,
+          initialMessage: textToSend,
+        });
+        if (startRes?.data && startRes.data.id) {
+          setActiveConvId(startRes.data.id);
+          setConversation(startRes.data);
+          try {
+            const msgs = await conversationsApi.getMessages(startRes.data.id);
+            if (msgs?.data && Array.isArray(msgs.data) && msgs.data.length > 0) {
+              setMessages(msgs.data);
+            }
+          } catch {}
+        }
       }
-    } catch {
-      // Keep optimistic message or retry
+    } catch (err) {
+      console.warn("Failed to send message:", err);
     } finally {
       setIsSending(false);
     }
@@ -87,9 +120,23 @@ export default function ConversationChatScreen() {
   const participant =
     conversation?.participant ||
     conversation?.participants?.[0] ||
-    ({ name: "Tailor", role: "Tailor" } as any);
-  const participantName = participant.name || participant.fullName || "Tailor";
-  const avatarUrl = participant.avatarUrl || participant.avatar;
+    ({
+      name: params.name || "Tailor",
+      fullName: params.name || "Tailor",
+      avatarUrl: params.avatar,
+      role: "Tailor",
+    } as any);
+
+  const participantName =
+    participant.name ||
+    participant.fullName ||
+    params.name ||
+    "Tailor";
+
+  const avatarUrl =
+    participant.avatarUrl ||
+    participant.avatar ||
+    params.avatar;
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>

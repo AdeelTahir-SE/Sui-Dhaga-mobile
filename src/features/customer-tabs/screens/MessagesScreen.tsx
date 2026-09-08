@@ -3,7 +3,6 @@ import {
   Text,
   View,
   TextInput,
-  ScrollView,
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
@@ -16,7 +15,7 @@ import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MessageRow } from "../components/MessageRow";
 import { useConversations } from "../hooks/useConversations";
-import { ConversationItem } from "../../../types/api";
+import { useAuthStore } from "../../../stores/auth.store";
 
 function formatMessageTime(dateString?: string): string {
   if (!dateString) return "";
@@ -51,29 +50,155 @@ function formatMessageTime(dateString?: string): string {
   }
 }
 
+export function getOtherParticipant(conv: any, currentUserId?: string) {
+  if (!conv) return { id: "", name: "Tailor", avatarUrl: null, role: "" };
+
+  const curId = currentUserId ? String(currentUserId).toLowerCase() : "";
+
+  // 1. If backend gave participant object
+  if (conv.participant) {
+    const pId = String(
+      conv.participant.id ||
+      conv.participant._id ||
+      conv.participant.userId ||
+      ""
+    ).toLowerCase();
+
+    if (!curId || pId !== curId) {
+      return {
+        id: conv.participant.id || conv.participant._id || conv.participant.userId || "",
+        name:
+          conv.participant.shopName ||
+          conv.participant.shop_name ||
+          conv.participant.fullName ||
+          conv.participant.full_name ||
+          conv.participant.name ||
+          "User",
+        avatarUrl:
+          conv.participant.avatarUrl ||
+          conv.participant.avatar_url ||
+          conv.participant.avatar ||
+          null,
+        role: conv.participant.role || "",
+      };
+    }
+  }
+
+  // 2. If backend gave user_1 and user_2
+  const u1 = conv.user_1 || conv.user1 || conv.sender;
+  const u2 = conv.user_2 || conv.user2 || conv.recipient || conv.receiver;
+  if (u1 && u2) {
+    const u1Id = String(u1.id || u1._id || "").toLowerCase();
+    const other = curId && u1Id === curId ? u2 : u1;
+    return {
+      id: other.id || other._id || "",
+      name:
+        other.shopName ||
+        other.shop_name ||
+        other.fullName ||
+        other.full_name ||
+        other.name ||
+        "User",
+      avatarUrl: other.avatarUrl || other.avatar_url || other.avatar || null,
+      role: other.role || "",
+    };
+  }
+
+  // 3. If backend gave participants array
+  if (Array.isArray(conv.participants) && conv.participants.length > 0) {
+    const other =
+      conv.participants.find((p: any) => {
+        const pId = String(p.id || p._id || p.userId || "").toLowerCase();
+        return !curId || pId !== curId;
+      }) || conv.participants[0];
+
+    return {
+      id: other.id || other._id || other.userId || "",
+      name:
+        other.shopName ||
+        other.shop_name ||
+        other.fullName ||
+        other.full_name ||
+        other.name ||
+        "User",
+      avatarUrl: other.avatarUrl || other.avatar_url || other.avatar || null,
+      role: other.role || "",
+    };
+  }
+
+  // 4. Fallback from generic properties
+  return {
+    id: conv.participantId || conv.participant_id || conv.id || "",
+    name: conv.participantName || conv.title || conv.name || "Tailor",
+    avatarUrl: conv.participantAvatar || conv.avatarUrl || null,
+    role: "",
+  };
+}
+
 export default function MessagesScreen() {
-  const { conversations, isLoading, isRefreshing, error, refresh } = useConversations();
+  const currentUser = useAuthStore((state) => state.user);
+  const { conversations, isLoading, isRefreshing, error, refresh } =
+    useConversations();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredConversations = useMemo(() => {
-    if (!searchQuery.trim()) return conversations;
-    const q = searchQuery.toLowerCase().trim();
-    return conversations.filter((item) => {
-      const participantName =
-        item.participant?.name ||
-        item.participant?.fullName ||
-        item.participants?.[0]?.name ||
-        "";
-      const lastMsg =
-        typeof item.lastMessage === "string"
-          ? item.lastMessage
-          : item.lastMessage?.text || "";
-      return (
-        participantName.toLowerCase().includes(q) ||
-        lastMsg.toLowerCase().includes(q)
-      );
-    });
-  }, [conversations, searchQuery]);
+    // 1. Filter only conversations belonging to current user
+    let result = conversations;
+    if (currentUser?.id) {
+      const curId = String(currentUser.id).toLowerCase();
+      result = result.filter((item: any) => {
+        const ids = [
+          item.userId,
+          item.user_id,
+          item.user1Id,
+          item.user1_id,
+          item.user2Id,
+          item.user2_id,
+          item.senderId,
+          item.sender_id,
+          item.receiverId,
+          item.receiver_id,
+          item.participantId,
+          item.participant_id,
+          item.user_1?.id,
+          item.user1?.id,
+          item.user_2?.id,
+          item.user2?.id,
+          ...(Array.isArray(item.participants)
+            ? item.participants.map((p: any) => p.id || p._id || p.userId)
+            : []),
+        ]
+          .filter(Boolean)
+          .map((id) => String(id).toLowerCase());
+
+        // If no user fields were provided on the item, assume it was fetched for the authenticated user
+        if (ids.length === 0) return true;
+        return ids.includes(curId);
+      });
+    }
+
+    // 2. Search query filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter((item) => {
+        const other = getOtherParticipant(item, currentUser?.id);
+        const lastMsg =
+          typeof item.lastMessage === "string"
+            ? item.lastMessage
+            : typeof (item as any).last_message === "string"
+            ? (item as any).last_message
+            : item.lastMessage?.text ||
+              (item as any)?.last_message?.text ||
+              "";
+        return (
+          other.name.toLowerCase().includes(q) ||
+          lastMsg.toLowerCase().includes(q)
+        );
+      });
+    }
+
+    return result;
+  }, [conversations, searchQuery, currentUser?.id]);
 
   return (
     <CustomerTabShell
@@ -113,7 +238,7 @@ export default function MessagesScreen() {
           <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 380 }}>
             <ActivityIndicator size="large" color="#14919B" />
             <Text className="mt-3 text-[13px] font-medium text-brand-gray">
-              Loading conversations...
+              Loading your conversations...
             </Text>
           </View>
         ) : error && conversations.length === 0 ? (
@@ -147,7 +272,7 @@ export default function MessagesScreen() {
             <Text className="mt-2 text-[13px] font-medium text-brand-gray text-center leading-[19px] mb-6">
               {searchQuery.trim()
                 ? `No conversations match "${searchQuery}".`
-                : "When you contact tailors, inquire about orders, or chat with stylists, your conversations will appear here."}
+                : "When you contact tailors or inquire about orders, your personal chats will appear here."}
             </Text>
             {!searchQuery.trim() && (
               <TouchableOpacity
@@ -164,20 +289,23 @@ export default function MessagesScreen() {
         ) : (
           <View>
             {filteredConversations.map((item, index) => {
-              const participant =
-                item.participant ||
-                item.participants?.[0] ||
-                ({ name: "Tailor", id: item.id } as any);
-              const participantName =
-                participant.name || participant.fullName || "User";
+              const other = getOtherParticipant(item, currentUser?.id);
               const lastMsgText =
                 typeof item.lastMessage === "string"
                   ? item.lastMessage
-                  : item.lastMessage?.text || "";
+                  : typeof (item as any).last_message === "string"
+                  ? (item as any).last_message
+                  : item.lastMessage?.text ||
+                    (item as any)?.last_message?.text ||
+                    "";
               const msgTime = formatMessageTime(
                 typeof item.lastMessage === "object"
                   ? item.lastMessage?.createdAt
-                  : item.lastMessageAt || item.updatedAt || item.createdAt
+                  : (item as any)?.last_message?.created_at ||
+                    (item as any)?.last_message_at ||
+                    item.lastMessageAt ||
+                    item.updatedAt ||
+                    item.createdAt
               );
               const tones: ("teal" | "coral" | "gold" | "blue" | "mint")[] = [
                 "teal",
@@ -191,15 +319,23 @@ export default function MessagesScreen() {
               return (
                 <MessageRow
                   key={item.id || index}
-                  name={participantName}
+                  name={other.name}
                   message={lastMsgText}
                   time={msgTime}
-                  avatarUrl={participant.avatarUrl || participant.avatar}
-                  unread={item.unreadCount}
+                  avatarUrl={other.avatarUrl || undefined}
+                  unread={item.unreadCount ?? (item as any).unread_count}
                   tone={tone}
                   onPress={() => {
                     if (item.id) {
-                      router.push(`/messages/${item.id}` as any);
+                      router.push({
+                        pathname: `/messages/${item.id}`,
+                        params: {
+                          conversationId: item.id,
+                          recipientId: other.id,
+                          name: other.name,
+                          avatar: other.avatarUrl || "",
+                        },
+                      } as any);
                     }
                   }}
                 />

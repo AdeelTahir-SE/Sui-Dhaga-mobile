@@ -1,5 +1,5 @@
 import React from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -10,6 +10,8 @@ import { TailorHeader } from "../components/TailorHeader";
 import { TailorPlaceholder } from "../components/TailorPlaceholder";
 import { TailorScreenShell } from "../components/TailorScreenShell";
 import { useTailorDetails } from "../hooks/useTailors";
+import { useAuthStore } from "@/stores/auth.store";
+import { conversationsApi } from "@/api/conversations.api";
 
 const profileHeroImage = require("@/assets/illustrations/tailor-discovery/profile-hero.png");
 const rekhaImage = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
@@ -40,6 +42,8 @@ export default function TailorProfileScreen() {
   const params = useLocalSearchParams<{ tailorId?: string; id?: string }>();
   const tailorId = params.tailorId || params.id || "";
   const { tailor, isLoading } = useTailorDetails(tailorId);
+  const currentUser = useAuthStore((state) => state.user);
+  const [isStartingChat, setIsStartingChat] = React.useState(false);
 
   if (isLoading && !tailor) {
     return (
@@ -79,6 +83,124 @@ export default function TailorProfileScreen() {
       : rekhaImage;
 
   const services = tailor?.services && tailor.services.length > 0 ? tailor.services : null;
+
+  const handleMessageTailor = async () => {
+    if (!currentUser) {
+      Alert.alert(
+        "Sign In Required",
+        "Please log in to message this tailor.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Log In",
+            onPress: () => router.push("/auth/login" as any),
+          },
+        ]
+      );
+      return;
+    }
+
+    const targetUserId =
+      tailor?.userId ||
+      (tailor as any)?.user_id ||
+      (tailor as any)?.user?.id ||
+      (tailor as any)?.profile?.id ||
+      tailor?.id ||
+      tailorId;
+
+    if (!targetUserId) {
+      router.push("/messages" as any);
+      return;
+    }
+
+    if (
+      currentUser.id &&
+      String(currentUser.id).toLowerCase() === String(targetUserId).toLowerCase()
+    ) {
+      Alert.alert("Note", "This is your own tailor profile.");
+      return;
+    }
+
+    setIsStartingChat(true);
+    const avatarUrl =
+      typeof avatarSource === "object" && avatarSource && "uri" in avatarSource
+        ? (avatarSource as any).uri
+        : typeof avatarSource === "string"
+        ? avatarSource
+        : "";
+
+    try {
+      // 1. Check if conversation already exists with this tailor
+      const listRes = await conversationsApi.getConversations();
+      const existing = (listRes.data || []).find((c: any) => {
+        const pId =
+          c.participantId ||
+          c.participant?.id ||
+          c.participants?.[0]?.id;
+        return (
+          pId &&
+          (String(pId).toLowerCase() === String(targetUserId).toLowerCase() ||
+            String(pId).toLowerCase() === String(tailorId).toLowerCase())
+        );
+      });
+
+      if (existing && existing.id) {
+        router.push({
+          pathname: `/messages/${existing.id}`,
+          params: {
+            conversationId: existing.id,
+            recipientId: targetUserId,
+            name,
+            avatar: avatarUrl,
+          },
+        } as any);
+        return;
+      }
+
+      // 2. Try to start a new conversation
+      try {
+        const startRes = await conversationsApi.startConversation({
+          participantId: targetUserId,
+        });
+
+        if (startRes?.data && startRes.data.id) {
+          router.push({
+            pathname: `/messages/${startRes.data.id}`,
+            params: {
+              conversationId: startRes.data.id,
+              recipientId: targetUserId,
+              name,
+              avatar: avatarUrl,
+            },
+          } as any);
+          return;
+        }
+      } catch {}
+
+      // 3. Fallback: Open chat screen in new conversation mode
+      router.push({
+        pathname: `/messages/new`,
+        params: {
+          conversationId: "new",
+          recipientId: targetUserId,
+          name,
+          avatar: avatarUrl,
+        },
+      } as any);
+    } catch {
+      router.push({
+        pathname: `/messages/new`,
+        params: {
+          conversationId: "new",
+          recipientId: targetUserId,
+          name,
+          avatar: avatarUrl,
+        },
+      } as any);
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
 
   return (
     <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
@@ -179,13 +301,20 @@ export default function TailorProfileScreen() {
 
         <View className="mt-6 flex-row gap-3">
           <TouchableOpacity
-            onPress={() => router.push("/messages" as any)}
+            onPress={handleMessageTailor}
+            disabled={isStartingChat}
             className="h-[50px] flex-1 flex-row items-center justify-center rounded-md border border-primary bg-white shadow-xs"
           >
-            <Ionicons name="chatbubble-outline" size={17} color="#14919B" />
-            <Text className="ml-2 text-[14px] font-semibold text-primary">
-              Message
-            </Text>
+            {isStartingChat ? (
+              <ActivityIndicator size="small" color="#14919B" />
+            ) : (
+              <>
+                <Ionicons name="chatbubble-outline" size={17} color="#14919B" />
+                <Text className="ml-2 text-[14px] font-semibold text-primary">
+                  Message
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push(`/booking/${tailorId || "1"}` as never)}
