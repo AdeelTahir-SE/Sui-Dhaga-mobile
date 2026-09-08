@@ -41,7 +41,7 @@ export function TailorListCard({
   };
 
   return (
-    <View className="mb-3 rounded-xl border border-brand-border bg-white p-3">
+    <View className="mb-3 rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
       <View className="flex-row">
         <TailorPlaceholder image={image} size="md" tone={tone} />
         <View className="ml-3 flex-1">
@@ -61,7 +61,7 @@ export function TailorListCard({
       </View>
       <TouchableOpacity
         onPress={handleViewProfile}
-        className="mt-3 self-end rounded-lg border border-primary px-5 py-2"
+        className="mt-3 self-end rounded-md border border-primary px-5 py-2"
       >
         <Text className="text-[12px] font-semibold text-primary">
           View Profile

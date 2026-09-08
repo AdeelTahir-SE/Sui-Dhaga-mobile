@@ -51,43 +51,81 @@ export default function TailorProfileSetupScreen() {
   const [customSpecialty, setCustomSpecialty] = useState("");
   const [shopImage, setShopImage] = useState<string | null>(null);
 
-  // Sync profile data once loaded
+  // Sync profile & user data once loaded
   useEffect(() => {
     if (profile) {
-      setBusinessName(profile.businessName || "");
+      const p = profile as any;
+      setBusinessName(p.shopName || p.businessName || "");
       setOwnerName(
-        profile.name ||
+        p.name ||
+          p.user?.fullName ||
+          p.user?.name ||
           user?.fullName ||
           user?.name ||
           (user?.email ? user.email.split("@")[0] : "")
       );
-      setPhone(profile.phone || user?.phone || "");
-      if (typeof profile.location === "object" && profile.location) {
-        setCity(profile.location.city || "");
-        setAddress(profile.location.address || "");
-      } else if (typeof profile.location === "string") {
-        setCity(profile.location);
+      setPhone(
+        p.phone ||
+          p.user?.phone ||
+          user?.phone ||
+          ""
+      );
+      if (typeof p.location === "object" && p.location) {
+        setCity(p.location.city || p.city || "");
+        setAddress(p.location.address || p.address || "");
+      } else if (typeof p.location === "string") {
+        setCity(p.location);
+        setAddress(p.address || "");
+      } else {
+        setCity(p.city || "");
+        setAddress(p.address || "");
       }
       setExperienceYears(
-        profile.experienceYears ? String(profile.experienceYears) : ""
+        p.experienceYears !== undefined && p.experienceYears !== null
+          ? String(p.experienceYears)
+          : ""
       );
       setStartingPrice(
-        profile.startingPrice ? String(profile.startingPrice) : ""
+        p.startingPrice !== undefined && p.startingPrice !== null
+          ? String(p.startingPrice)
+          : p.services?.[0]?.price !== undefined
+          ? String(p.services[0].price)
+          : ""
       );
-      setBio(profile.bio || "");
-      if (profile.specialties && profile.specialties.length > 0) {
-        setSelectedSpecialties(profile.specialties);
-      } else if (profile.specialty) {
-        setSelectedSpecialties([profile.specialty]);
+      setBio(p.bio || "");
+      if (p.specialties && p.specialties.length > 0) {
+        setSelectedSpecialties(p.specialties);
+      } else if (p.specialty) {
+        setSelectedSpecialties([p.specialty]);
+      } else if (p.services && p.services.length > 0) {
+        const serviceTitles = p.services
+          .map((s: any) => s.title || s.name)
+          .filter(Boolean);
+        if (serviceTitles.length > 0) {
+          setSelectedSpecialties(serviceTitles);
+        }
       }
       setShopImage(
-        profile.imageUrl ||
-          profile.image ||
-          profile.avatar ||
+        p.imageUrl ||
+          p.image ||
+          p.avatar ||
+          p.shopImage ||
+          p.user?.avatarUrl ||
+          p.user?.avatar ||
           user?.avatar ||
           user?.avatarUrl ||
           null
       );
+    } else if (user) {
+      if (!ownerName) {
+        setOwnerName(user.fullName || user.name || (user.email ? user.email.split("@")[0] : ""));
+      }
+      if (!phone && user.phone) {
+        setPhone(user.phone);
+      }
+      if (!shopImage && (user.avatar || user.avatarUrl)) {
+        setShopImage(user.avatar || user.avatarUrl || null);
+      }
     }
   }, [profile, user]);
 
@@ -212,7 +250,7 @@ export default function TailorProfileSetupScreen() {
       <TailorDashboardShell
         bottomTabs={isComplete ? <TailorDashboardTabs active="Profile" /> : undefined}
       >
-        <View className="flex-1 items-center justify-center py-24">
+        <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 520 }}>
           <ActivityIndicator size="large" color="#14919B" />
           <Text className="mt-3 text-[14px] font-medium text-brand-gray">
             Loading your tailor profile...
@@ -321,13 +359,13 @@ export default function TailorProfileSetupScreen() {
           </View>
 
           {/* Business & Personal Info Section */}
-          <Text className="mb-2 text-[14px] font-black tracking-tight text-brand-dark">
+          <Text className="mb-3 mt-2 text-[16px] font-black tracking-tight text-brand-dark">
             Shop & Personal Details
           </Text>
 
           {/* Shop / Business Name */}
-          <View className="mb-3">
-            <Text className="mb-1 text-[12px] font-bold text-brand-dark">
+          <View className="mb-3.5">
+            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
               Business / Shop Name *
             </Text>
             <TextInput
@@ -335,13 +373,13 @@ export default function TailorProfileSetupScreen() {
               onChangeText={setBusinessName}
               placeholder="e.g. Rekha Designer Tailors"
               placeholderTextColor="#9CA3AF"
-              className="h-11 rounded-md border border-brand-border bg-white px-3 text-[13px] font-medium text-brand-dark"
+              className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
             />
           </View>
 
           {/* Owner Full Name */}
-          <View className="mb-3">
-            <Text className="mb-1 text-[12px] font-bold text-brand-dark">
+          <View className="mb-3.5">
+            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
               Tailor / Master Name
             </Text>
             <TextInput
@@ -349,13 +387,13 @@ export default function TailorProfileSetupScreen() {
               onChangeText={setOwnerName}
               placeholder="e.g. Master Rekha"
               placeholderTextColor="#9CA3AF"
-              className="h-11 rounded-md border border-brand-border bg-white px-3 text-[13px] font-medium text-brand-dark"
+              className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
             />
           </View>
 
           {/* Phone Number */}
-          <View className="mb-3">
-            <Text className="mb-1 text-[12px] font-bold text-brand-dark">
+          <View className="mb-3.5">
+            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
               Phone / WhatsApp Number
             </Text>
             <TextInput
@@ -364,14 +402,14 @@ export default function TailorProfileSetupScreen() {
               placeholder="e.g. +91 98765 43210"
               keyboardType="phone-pad"
               placeholderTextColor="#9CA3AF"
-              className="h-11 rounded-md border border-brand-border bg-white px-3 text-[13px] font-medium text-brand-dark"
+              className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
             />
           </View>
 
           {/* Location & Experience */}
-          <View className="mt-2 mb-2 flex-row gap-3">
+          <View className="mb-3.5 flex-row gap-3">
             <View className="flex-1">
-              <Text className="mb-1 text-[12px] font-bold text-brand-dark">
+              <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
                 City / Town *
               </Text>
               <TextInput
@@ -379,11 +417,11 @@ export default function TailorProfileSetupScreen() {
                 onChangeText={setCity}
                 placeholder="e.g. Delhi, Lahore"
                 placeholderTextColor="#9CA3AF"
-                className="h-11 rounded-md border border-brand-border bg-white px-3 text-[13px] font-medium text-brand-dark"
+                className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
               />
             </View>
             <View className="w-32">
-              <Text className="mb-1 text-[12px] font-bold text-brand-dark">
+              <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
                 Exp. (Years)
               </Text>
               <TextInput
@@ -392,14 +430,14 @@ export default function TailorProfileSetupScreen() {
                 placeholder="e.g. 8"
                 keyboardType="numeric"
                 placeholderTextColor="#9CA3AF"
-                className="h-11 rounded-md border border-brand-border bg-white px-3 text-[13px] font-medium text-brand-dark"
+                className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
               />
             </View>
           </View>
 
           {/* Shop Address */}
-          <View className="mb-3">
-            <Text className="mb-1 text-[12px] font-bold text-brand-dark">
+          <View className="mb-3.5">
+            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
               Shop / Workshop Address
             </Text>
             <TextInput
@@ -407,13 +445,13 @@ export default function TailorProfileSetupScreen() {
               onChangeText={setAddress}
               placeholder="e.g. Shop 12, Fashion Street Market"
               placeholderTextColor="#9CA3AF"
-              className="h-11 rounded-md border border-brand-border bg-white px-3 text-[13px] font-medium text-brand-dark"
+              className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
             />
           </View>
 
           {/* Starting Price */}
           <View className="mb-4">
-            <Text className="mb-1 text-[12px] font-bold text-brand-dark">
+            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
               Starting Stitching Price (₹ / PKR) *
             </Text>
             <TextInput
@@ -422,15 +460,15 @@ export default function TailorProfileSetupScreen() {
               placeholder="e.g. 500"
               keyboardType="numeric"
               placeholderTextColor="#9CA3AF"
-              className="h-11 rounded-md border border-brand-border bg-white px-3 text-[13px] font-medium text-brand-dark"
+              className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
             />
           </View>
 
           {/* Specialties */}
-          <Text className="mt-2 mb-1 text-[14px] font-black tracking-tight text-brand-dark">
+          <Text className="mb-1 mt-3 text-[16px] font-black tracking-tight text-brand-dark">
             Tailoring Specialties *
           </Text>
-          <Text className="mb-2 text-[11px] text-brand-gray">
+          <Text className="mb-3 text-[12px] font-medium text-brand-gray">
             Select what outfits and services you specialize in:
           </Text>
 
@@ -485,7 +523,7 @@ export default function TailorProfileSetupScreen() {
 
           {/* Bio / About */}
           <View className="mb-6">
-            <Text className="mb-1 text-[12px] font-bold text-brand-dark">
+            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
               About & Workshop Bio
             </Text>
             <TextInput
@@ -496,7 +534,7 @@ export default function TailorProfileSetupScreen() {
               multiline
               numberOfLines={4}
               textAlignVertical="top"
-              className="h-24 rounded-md border border-brand-border bg-white p-3 text-[13px] font-medium text-brand-dark"
+              className="h-24 rounded-md border border-brand-border bg-white p-3.5 text-[13px] font-medium text-brand-dark"
             />
           </View>
 
@@ -505,7 +543,7 @@ export default function TailorProfileSetupScreen() {
             activeOpacity={0.8}
             onPress={handleSave}
             disabled={isSaving}
-            className="h-12 flex-row items-center justify-center rounded-md bg-primary shadow-sm"
+            className="mb-8 h-12 flex-row items-center justify-center rounded-md bg-primary shadow-sm"
           >
             {isSaving ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
@@ -517,7 +555,7 @@ export default function TailorProfileSetupScreen() {
                   color="#FFFFFF"
                   style={{ marginRight: 6 }}
                 />
-                <Text className="text-[14px] font-bold text-white">
+                <Text className="text-[15px] font-bold text-white">
                   Save Tailor Profile
                 </Text>
               </>

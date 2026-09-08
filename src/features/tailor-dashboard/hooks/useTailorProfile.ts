@@ -15,18 +15,24 @@ export function useTailorProfile() {
 
   const checkIsComplete = (p: Partial<TailorItem> | null): boolean => {
     if (!p) return false;
-    const hasBusinessName = !!(p.businessName && p.businessName.trim().length > 0);
+    const hasBusinessName = !!(
+      (p.businessName && p.businessName.trim().length > 0) ||
+      (p.shopName && p.shopName.trim().length > 0)
+    );
     const hasSpecialties = !!(
       (p.specialties && p.specialties.length > 0) ||
       (p.specialty && p.specialty.trim().length > 0)
     );
     const loc = p.location as any;
     const hasCity = !!(
+      p.city?.trim() ||
       (typeof loc === 'object' && loc?.city && typeof loc.city === 'string' && loc.city.trim().length > 0) ||
       (typeof loc === 'string' && loc.trim().length > 0)
     );
-    const hasPrice = typeof p.startingPrice === 'number' && p.startingPrice > 0;
-    return hasBusinessName && hasSpecialties && hasCity && hasPrice;
+    const hasPrice =
+      (typeof p.startingPrice === 'number' && p.startingPrice > 0) ||
+      (p.services && p.services.length > 0 && typeof p.services[0].price === 'number' && p.services[0].price > 0);
+    return hasBusinessName && hasSpecialties && hasCity && !!hasPrice;
   };
 
   const loadProfile = useCallback(async () => {
@@ -39,43 +45,97 @@ export function useTailorProfile() {
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Check local storage first
-      const storedRaw = await storage.getUser();
-      const localProfileKey = `${TAILOR_STORAGE_KEY}_${user.id}`;
-      let cachedProfile: TailorItem | null = null;
-      try {
-        if (typeof window !== 'undefined' && window.localStorage) {
-          const raw = window.localStorage.getItem(localProfileKey);
-          if (raw) cachedProfile = JSON.parse(raw);
-        }
-      } catch {}
-
-      // 2. Fetch from backend API
+      // 1. Fetch from backend API /tailors/me
       let remoteProfile: TailorItem | null = null;
       try {
         const res = await tailorsApi.getMyTailorProfile();
-        if (res.data && res.data.id) {
-          remoteProfile = res.data;
+        const raw = (res?.data && (res.data as any).id ? res.data : (res as any)?.id ? res : null) as any;
+        if (raw) {
+          remoteProfile = {
+            ...raw,
+            id: raw.id,
+            userId: raw.userId || user.id,
+            shopName: raw.shopName || raw.businessName || '',
+            businessName: raw.shopName || raw.businessName || '',
+            name: raw.name || raw.user?.fullName || raw.user?.name || user.fullName || user.name || (user.email ? user.email.split('@')[0] : 'Tailor'),
+            phone: raw.phone || raw.user?.phone || user.phone || '',
+            city: raw.city || raw.location?.city || '',
+            address: raw.address || raw.location?.address || '',
+            location: {
+              city: raw.city || raw.location?.city || '',
+              address: raw.address || raw.location?.address || '',
+            },
+            experienceYears: typeof raw.experienceYears === 'number' ? raw.experienceYears : 0,
+            startingPrice: typeof raw.startingPrice === 'number' ? raw.startingPrice : (raw.services?.[0]?.price ? Number(raw.services[0].price) : 0),
+            specialties: Array.isArray(raw.specialties) ? raw.specialties : (raw.specialty ? [raw.specialty] : []),
+            specialty: raw.specialty || (Array.isArray(raw.specialties) ? raw.specialties[0] : ''),
+            bio: raw.bio || '',
+            rating: typeof raw.rating === 'number' ? raw.rating : 5.0,
+            imageUrl: raw.imageUrl || raw.image || raw.avatar || user.avatar || user.avatarUrl,
+            image: raw.imageUrl || raw.image || raw.avatar || user.avatar || user.avatarUrl,
+            avatar: raw.avatar || raw.imageUrl || raw.image || user.avatar || user.avatarUrl,
+          };
         }
-      } catch {}
+      } catch (err) {
+        console.warn('Error fetching tailor profile via /tailors/me:', err);
+      }
 
-      const effectiveProfile: TailorItem = remoteProfile || cachedProfile || {
+      // 2. Fallback: Search in tailors list for matching user.id
+      if (!remoteProfile) {
+        try {
+          const listRes = await tailorsApi.getTailors();
+          if (listRes?.data && Array.isArray(listRes.data)) {
+            const found = listRes.data.find(
+              (t: any) => t.userId === user.id || t.user?.id === user.id
+            ) as any;
+            if (found) {
+              remoteProfile = {
+                ...found,
+                id: found.id,
+                userId: found.userId || user.id,
+                shopName: found.shopName || found.businessName || '',
+                businessName: found.shopName || found.businessName || '',
+                name: found.name || found.user?.fullName || user.fullName || user.name || 'Tailor',
+                phone: found.phone || found.user?.phone || user.phone || '',
+                city: found.city || found.location?.city || '',
+                address: found.address || found.location?.address || '',
+                location: {
+                  city: found.city || found.location?.city || '',
+                  address: found.address || found.location?.address || '',
+                },
+                experienceYears: typeof found.experienceYears === 'number' ? found.experienceYears : 0,
+                startingPrice: typeof found.startingPrice === 'number' ? found.startingPrice : (found.services?.[0]?.price ? Number(found.services[0].price) : 0),
+                specialties: Array.isArray(found.specialties) ? found.specialties : (found.specialty ? [found.specialty] : []),
+                bio: found.bio || '',
+                rating: typeof found.rating === 'number' ? found.rating : 5.0,
+                imageUrl: found.imageUrl || found.image || found.avatar || user.avatar || user.avatarUrl,
+              };
+            }
+          }
+        } catch {}
+      }
+
+      const effectiveProfile: TailorItem = remoteProfile || {
         id: `tailor_${user.id}`,
         userId: user.id,
         name: user.fullName || user.name || (user.email ? user.email.split('@')[0] : 'Tailor'),
         businessName: '',
+        shopName: '',
         rating: 5.0,
         reviewsCount: 0,
         specialties: [],
         specialty: '',
         startingPrice: 0,
         experienceYears: 0,
+        city: '',
+        address: '',
         location: {
           address: '',
           city: '',
         },
         bio: '',
         phone: user.phone || '',
+        imageUrl: user.avatar || user.avatarUrl,
         isVerified: false,
         isTopRated: false,
       };
@@ -115,14 +175,6 @@ export function useTailorProfile() {
       if (res?.data && res.data.id) {
         updated.id = res.data.id;
         updated.userId = res.data.userId || user?.id;
-      }
-
-      // Save locally
-      if (user?.id && typeof window !== 'undefined' && window.localStorage) {
-        window.localStorage.setItem(
-          `${TAILOR_STORAGE_KEY}_${user.id}`,
-          JSON.stringify(updated)
-        );
       }
 
       setProfile(updated);

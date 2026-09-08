@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 import { MetricCard } from "../components/MetricCard";
 import { SectionTitle } from "../components/SectionTitle";
@@ -144,24 +145,30 @@ export default function TailorDashboardScreen() {
 
         {/* Recent Activity */}
         <SectionTitle title="Recent Activity" />
-        <View className="rounded-md border border-brand-border bg-white px-3.5 shadow-xs">
-          {orders?.length > 0 ? (
-            orders.slice(0, 3).map((o, idx) => (
+        {orders?.length > 0 ? (
+          <View className="rounded-md border border-brand-border bg-white px-3.5 shadow-xs">
+            {orders.slice(0, 3).map((o, idx) => (
               <ActivityRow
                 key={o.id || idx}
                 title={`Order #${o.orderNumber || o.id}`}
                 subtitle={`${o.itemName || "Custom Garment"} • ${o.customerName || "Customer"}`}
                 time={o.status || "Active"}
               />
-            ))
-          ) : (
-            <View className="py-6 items-center justify-center">
-              <Text className="text-[13px] font-medium text-brand-gray">
-                No recent activity to show
-              </Text>
+            ))}
+          </View>
+        ) : (
+          <View className="items-center justify-center rounded-md border border-brand-border bg-white py-8 px-5 shadow-xs">
+            <View className="mb-3.5 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Ionicons name="notifications-outline" size={30} color="#14919B" />
             </View>
-          )}
-        </View>
+            <Text className="text-[16px] font-bold text-brand-dark text-center tracking-tight">
+              No Recent Activity
+            </Text>
+            <Text className="mt-1.5 text-[12px] font-medium text-brand-gray text-center leading-[19px] max-w-[270px]">
+              When customers place new orders, request fittings, or send messages, they'll appear here.
+            </Text>
+          </View>
+        )}
       </View>
     </TailorDashboardShell>
   );

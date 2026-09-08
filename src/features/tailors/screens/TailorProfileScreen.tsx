@@ -44,7 +44,7 @@ export default function TailorProfileScreen() {
   if (isLoading && !tailor) {
     return (
       <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
-        <View className="flex-1 items-center justify-center py-32">
+        <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 520 }}>
           <ActivityIndicator size="large" color="#14919B" />
           <Text className="mt-4 text-[14px] font-medium text-brand-gray">
             Loading tailor profile...
@@ -116,7 +116,7 @@ export default function TailorProfileScreen() {
         </View>
 
         {tailor?.experienceYears ? (
-          <View className="mt-3 self-start rounded-full bg-primary-50 px-3 py-1">
+          <View className="mt-3 self-start rounded-md bg-primary-50 px-3 py-1">
             <Text className="text-[11px] font-bold text-primary">
               ⭐ {tailor.experienceYears} Years of Experience
             </Text>
@@ -127,7 +127,7 @@ export default function TailorProfileScreen() {
           {tags.map((tag) => (
             <View
               key={tag}
-              className="rounded-lg border border-brand-border px-3 py-2 bg-white shadow-xs"
+              className="rounded-md border border-brand-border px-3 py-2 bg-white shadow-xs"
             >
               <Text className="text-[11px] font-semibold text-brand-dark">
                 {tag}
@@ -164,7 +164,7 @@ export default function TailorProfileScreen() {
             {services.map((service, index) => (
               <View
                 key={service.id || service.title || index}
-                className="w-[48%] rounded-xl border border-brand-border p-3 bg-white"
+                className="w-[48%] rounded-md border border-brand-border p-3 bg-white shadow-xs"
               >
                 <TailorPlaceholder
                   image={serviceImages[index % serviceImages.length]}
@@ -194,7 +194,7 @@ export default function TailorProfileScreen() {
             ].map(([title, price, days, tone]) => (
               <View
                 key={title}
-                className="flex-1 rounded-xl border border-brand-border p-3 bg-white"
+                className="flex-1 rounded-md border border-brand-border p-3 bg-white shadow-xs"
               >
                 <TailorPlaceholder
                   image={serviceImages[tone === "teal" ? 0 : 1]}
@@ -217,7 +217,7 @@ export default function TailorProfileScreen() {
         <View className="mt-6 flex-row gap-3">
           <TouchableOpacity
             onPress={() => router.push("/messages" as any)}
-            className="h-[52px] flex-1 flex-row items-center justify-center rounded-xl border border-primary bg-white"
+            className="h-[50px] flex-1 flex-row items-center justify-center rounded-md border border-primary bg-white shadow-xs"
           >
             <Ionicons name="chatbubble-outline" size={17} color="#14919B" />
             <Text className="ml-2 text-[14px] font-semibold text-primary">
@@ -226,7 +226,7 @@ export default function TailorProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push(`/booking/${tailorId || "1"}` as never)}
-            className="h-[52px] flex-1 flex-row items-center justify-center rounded-xl bg-primary"
+            className="h-[50px] flex-1 flex-row items-center justify-center rounded-md bg-primary shadow-xs"
           >
             <Ionicons name="calendar-outline" size={17} color="#FFFFFF" />
             <Text className="ml-2 text-[14px] font-semibold text-white">
