@@ -9,11 +9,13 @@ import {
 type TailorDashboardShellProps = {
   children: React.ReactNode;
   bottomTabs?: React.ReactNode;
+  refreshControl?: React.ReactElement<any>;
 };
 
 export function TailorDashboardShell({
   children,
   bottomTabs,
+  refreshControl,
 }: TailorDashboardShellProps) {
   const insets = useSafeAreaInsets();
 
@@ -21,6 +23,7 @@ export function TailorDashboardShell({
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
       <ScrollView
         className="flex-1"
+        refreshControl={refreshControl}
         contentContainerStyle={{
           flexGrow: 1,
           paddingBottom:

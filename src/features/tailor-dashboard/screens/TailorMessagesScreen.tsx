@@ -10,12 +10,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
-import { CustomerHeader } from "../components/CustomerHeader";
-import { CustomerTabShell } from "../components/CustomerTabShell";
-import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
-import { MessageRow } from "../components/MessageRow";
-import { useConversations } from "../hooks/useConversations";
+import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
+import { TailorDashboardShell } from "../components/TailorDashboardShell";
+import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
+import { MessageRow } from "../../customer-tabs/components/MessageRow";
+import { useConversations } from "../../customer-tabs/hooks/useConversations";
 import { useAuthStore } from "../../../stores/auth.store";
+import { getOtherParticipant } from "../../customer-tabs/screens/MessagesScreen";
 
 function formatMessageTime(dateString?: string): string {
   if (!dateString) return "";
@@ -50,161 +51,7 @@ function formatMessageTime(dateString?: string): string {
   }
 }
 
-export function getOtherParticipant(conv: any, currentUserId?: string) {
-  if (!conv) return { id: "", name: "Tailor", avatarUrl: null, role: "" };
-
-  const curId = currentUserId ? String(currentUserId).toLowerCase().trim() : "";
-
-  // 1. If backend gave participant object
-  if (conv.participant) {
-    const pId = String(
-      conv.participant.id ||
-      conv.participant._id ||
-      conv.participant.userId ||
-      conv.participant.user_id ||
-      ""
-    ).toLowerCase();
-
-    if (!curId || pId !== curId) {
-      return {
-        id: conv.participant.id || conv.participant._id || conv.participant.userId || conv.participant.user_id || "",
-        name:
-          conv.participant.shopName ||
-          conv.participant.shop_name ||
-          conv.participant.businessName ||
-          conv.participant.fullName ||
-          conv.participant.full_name ||
-          conv.participant.name ||
-          "User",
-        avatarUrl:
-          conv.participant.avatarUrl ||
-          conv.participant.avatar_url ||
-          conv.participant.imageUrl ||
-          conv.participant.image ||
-          conv.participant.avatar ||
-          null,
-        role: conv.participant.role || "",
-      };
-    }
-  }
-
-  // 2. If backend gave tailor object
-  if (conv.tailor) {
-    const tId = String(
-      conv.tailor.userId || conv.tailor.user_id || conv.tailor.id || conv.tailor._id || ""
-    ).toLowerCase();
-    if (!curId || tId !== curId) {
-      return {
-        id: conv.tailor.userId || conv.tailor.user_id || conv.tailor.id || conv.tailor._id || "",
-        name:
-          conv.tailor.shopName ||
-          conv.tailor.shop_name ||
-          conv.tailor.businessName ||
-          conv.tailor.fullName ||
-          conv.tailor.full_name ||
-          conv.tailor.name ||
-          "Tailor",
-        avatarUrl:
-          conv.tailor.imageUrl ||
-          conv.tailor.image ||
-          conv.tailor.avatarUrl ||
-          conv.tailor.avatar_url ||
-          conv.tailor.avatar ||
-          null,
-        role: "Tailor",
-      };
-    }
-  }
-
-  // 3. If backend gave customer or user object
-  const customerOrUser = conv.customer || conv.user;
-  if (customerOrUser) {
-    const cId = String(
-      customerOrUser.id || customerOrUser._id || customerOrUser.userId || ""
-    ).toLowerCase();
-    if (!curId || cId !== curId) {
-      return {
-        id: customerOrUser.id || customerOrUser._id || customerOrUser.userId || "",
-        name:
-          customerOrUser.fullName ||
-          customerOrUser.full_name ||
-          customerOrUser.name ||
-          "Customer",
-        avatarUrl:
-          customerOrUser.avatarUrl ||
-          customerOrUser.avatar_url ||
-          customerOrUser.avatar ||
-          customerOrUser.imageUrl ||
-          null,
-        role: customerOrUser.role || "Customer",
-      };
-    }
-  }
-
-  // 4. If backend gave user_1 and user_2
-  const u1 = conv.user_1 || conv.user1 || conv.sender;
-  const u2 = conv.user_2 || conv.user2 || conv.recipient || conv.receiver;
-  if (u1 && u2) {
-    const u1Id = String(u1.id || u1._id || "").toLowerCase();
-    const other = curId && u1Id === curId ? u2 : u1;
-    return {
-      id: other.id || other._id || "",
-      name:
-        other.shopName ||
-        other.shop_name ||
-        other.businessName ||
-        other.fullName ||
-        other.full_name ||
-        other.name ||
-        "User",
-      avatarUrl:
-        other.avatarUrl ||
-        other.avatar_url ||
-        other.avatar ||
-        other.imageUrl ||
-        null,
-      role: other.role || "",
-    };
-  }
-
-  // 5. If backend gave participants array
-  if (Array.isArray(conv.participants) && conv.participants.length > 0) {
-    const other =
-      conv.participants.find((p: any) => {
-        const pId = String(p.id || p._id || p.userId || p.user_id || "").toLowerCase();
-        return !curId || pId !== curId;
-      }) || conv.participants[0];
-
-    return {
-      id: other.id || other._id || other.userId || other.user_id || "",
-      name:
-        other.shopName ||
-        other.shop_name ||
-        other.businessName ||
-        other.fullName ||
-        other.full_name ||
-        other.name ||
-        "User",
-      avatarUrl:
-        other.avatarUrl ||
-        other.avatar_url ||
-        other.avatar ||
-        other.imageUrl ||
-        null,
-      role: other.role || "",
-    };
-  }
-
-  // 6. Fallback from generic properties
-  return {
-    id: conv.participantId || conv.participant_id || conv.tailorId || conv.id || "",
-    name: conv.participantName || conv.tailorName || conv.title || conv.name || "Tailor",
-    avatarUrl: conv.participantAvatar || conv.tailorAvatar || conv.avatarUrl || null,
-    role: "",
-  };
-}
-
-export default function MessagesScreen() {
+export default function TailorMessagesScreen() {
   const currentUser = useAuthStore((state) => state.user);
   const { conversations, isLoading, isRefreshing, error, refresh } =
     useConversations();
@@ -240,7 +87,6 @@ export default function MessagesScreen() {
           .filter(Boolean)
           .map((id) => String(id).toLowerCase());
 
-        // If no user fields were provided on the item, assume it was fetched for the authenticated user
         if (ids.length === 0) return true;
         return ids.includes(curId);
       });
@@ -309,8 +155,8 @@ export default function MessagesScreen() {
   }, [conversations, searchQuery, currentUser?.id]);
 
   return (
-    <CustomerTabShell
-      bottomTabs={<CustomerTabsPreview active="Messages" />}
+    <TailorDashboardShell
+      bottomTabs={<TailorDashboardTabs active="Messages" />}
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
@@ -320,7 +166,10 @@ export default function MessagesScreen() {
         />
       }
     >
-      <CustomerHeader title="Messages" rightIcon="settings-outline" />
+      <TailorDashboardHeader
+        title="Client Inquiries"
+        subtitle="Direct customer messages & order chats"
+      />
 
       <View className="flex-1 px-5 pb-6">
         {/* Search Bar */}
@@ -328,7 +177,7 @@ export default function MessagesScreen() {
           <Ionicons name="search" size={17} color="#6F767E" />
           <TextInput
             className="ml-3 flex-1 text-[13px] font-medium text-brand-dark"
-            placeholder="Search messages..."
+            placeholder="Search client messages..."
             placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -346,7 +195,7 @@ export default function MessagesScreen() {
           <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 380 }}>
             <ActivityIndicator size="large" color="#14919B" />
             <Text className="mt-3 text-[13px] font-medium text-brand-gray">
-              Loading your conversations...
+              Loading customer inquiries...
             </Text>
           </View>
         ) : error && conversations.length === 0 ? (
@@ -355,7 +204,7 @@ export default function MessagesScreen() {
               <Ionicons name="cloud-offline-outline" size={26} color="#DC2626" />
             </View>
             <Text className="text-[15px] font-bold text-brand-dark text-center">
-              Unable to load messages
+              Unable to load inquiries
             </Text>
             <Text className="mt-1 text-[13px] font-medium text-brand-gray text-center mb-4">
               {error}
@@ -375,24 +224,13 @@ export default function MessagesScreen() {
               <Ionicons name="chatbubbles-outline" size={36} color="#14919B" />
             </View>
             <Text className="text-[18px] font-bold text-brand-dark text-center tracking-tight">
-              {searchQuery.trim() ? "No results found" : "No Messages Yet"}
+              {searchQuery.trim() ? "No inquiries found" : "No Customer Inquiries Yet"}
             </Text>
             <Text className="mt-2 text-[13px] font-medium text-brand-gray text-center leading-[19px] mb-6">
               {searchQuery.trim()
-                ? `No conversations match "${searchQuery}".`
-                : "When you contact tailors or inquire about orders, your personal chats will appear here."}
+                ? `No messages match "${searchQuery}".`
+                : "When customers message your tailor workshop about custom stitching, alterations, or appointments, their chats will appear here."}
             </Text>
-            {!searchQuery.trim() && (
-              <TouchableOpacity
-                onPress={() => router.push("/tailors" as any)}
-                activeOpacity={0.8}
-                className="h-[48px] px-6 rounded-md bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
-              >
-                <Text className="text-[13px] font-bold text-white tracking-wide">
-                  Explore Tailors
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
         ) : (
           <View>
@@ -452,6 +290,6 @@ export default function MessagesScreen() {
           </View>
         )}
       </View>
-    </CustomerTabShell>
+    </TailorDashboardShell>
   );
 }

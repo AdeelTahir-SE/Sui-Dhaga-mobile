@@ -7,6 +7,7 @@ type TailorDashboardTabsProps = {
   active:
     | "Dashboard"
     | "Orders"
+    | "Messages"
     | "Appointments"
     | "Services"
     | "Availability"
@@ -24,8 +25,8 @@ type TabItem = {
 const tabs: TabItem[] = [
   { label: "Dashboard", icon: "home-outline", activeIcon: "home", href: "/tailor-dashboard" },
   { label: "Orders", icon: "bag-handle-outline", activeIcon: "bag-handle", href: "/tailor-dashboard/orders" },
+  { label: "Messages", icon: "chatbubble-ellipses-outline", activeIcon: "chatbubble-ellipses", href: "/tailor-dashboard/messages" },
   { label: "Appointments", icon: "calendar-outline", activeIcon: "calendar", href: "/tailor-dashboard/appointments" },
-  { label: "Earnings", icon: "cash-outline", activeIcon: "cash", href: "/tailor-dashboard/earnings" },
   { label: "Profile", icon: "person-circle-outline", activeIcon: "person-circle", href: "/tailor-dashboard/profile" },
 ];
 

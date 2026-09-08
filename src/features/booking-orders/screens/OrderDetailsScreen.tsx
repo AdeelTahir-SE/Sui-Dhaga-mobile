@@ -11,6 +11,7 @@ import { SectionLabel } from "../components/SectionLabel";
 import { StatusPill } from "../components/StatusPill";
 import { TimelineItem } from "../components/TimelineItem";
 import { useOrderDetails } from "../hooks/useOrders";
+import { conversationsApi } from "@/api/conversations.api";
 
 export default function OrderDetailsScreen() {
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
@@ -22,6 +23,57 @@ export default function OrderDetailsScreen() {
   const price = order?.price ? `₹${order.price.toLocaleString()}` : "₹18,900";
   const delivery = order?.deliveryDate || "Expected Soon";
   const status = order?.status || "In Progress";
+
+  const handleMessage = async () => {
+    const targetUserId = order?.tailorId || "";
+    const targetNames = [tailorName].filter(Boolean);
+    try {
+      if (targetUserId || targetNames.length > 0) {
+        const existing = await conversationsApi.findExistingConversation(
+          targetUserId ? [targetUserId] : [],
+          undefined,
+          targetNames
+        );
+        if (existing && (existing.id || (existing as any)._id)) {
+          const convId = existing.id || (existing as any)._id;
+          router.push({
+            pathname: "/messages/[conversationId]",
+            params: {
+              conversationId: convId,
+              recipientId: targetUserId,
+              name: tailorName,
+            },
+          } as any);
+          return;
+        }
+
+        if (targetUserId) {
+          const startRes = await conversationsApi.startConversation({
+            participantId: targetUserId,
+            participant_id: targetUserId,
+            tailorId: targetUserId,
+            recipientId: targetUserId,
+          } as any);
+          const createdConv = (startRes?.data as any)?.conversation || startRes?.data;
+          const createdId = createdConv?.id || (createdConv as any)?._id;
+          if (createdId) {
+            router.push({
+              pathname: "/messages/[conversationId]",
+              params: {
+                conversationId: createdId,
+                recipientId: targetUserId,
+                name: tailorName,
+              },
+            } as any);
+            return;
+          }
+        }
+      }
+      router.push("/messages" as any);
+    } catch {
+      router.push("/messages" as any);
+    }
+  };
 
   return (
     <BookingOrdersScreenShell>
@@ -104,10 +156,10 @@ export default function OrderDetailsScreen() {
                 C-Scheme, Jaipur
               </Text>
               <View className="mt-3 flex-row justify-between">
-                <TouchableOpacity onPress={() => router.push("/messages" as any)}>
+                <TouchableOpacity onPress={handleMessage}>
                   <Text className="text-[11px] font-medium text-primary">Message</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => router.push("/tailors" as any)}>
+                <TouchableOpacity onPress={() => router.push(`/tailors/${order?.tailorId || "1"}` as any)}>
                   <Text className="text-[11px] font-medium text-primary">Profile</Text>
                 </TouchableOpacity>
               </View>

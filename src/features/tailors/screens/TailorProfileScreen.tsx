@@ -130,25 +130,36 @@ export default function TailorProfileScreen() {
         : "";
 
     try {
-      // 1. Check if conversation already exists with this tailor
-      const listRes = await conversationsApi.getConversations();
-      const existing = (listRes.data || []).find((c: any) => {
-        const pId =
-          c.participantId ||
-          c.participant?.id ||
-          c.participants?.[0]?.id;
-        return (
-          pId &&
-          (String(pId).toLowerCase() === String(targetUserId).toLowerCase() ||
-            String(pId).toLowerCase() === String(tailorId).toLowerCase())
-        );
-      });
+      const targets = [
+        targetUserId,
+        tailor?.userId,
+        (tailor as any)?.user_id,
+        (tailor as any)?.user?.id,
+        (tailor as any)?.profile?.id,
+        tailor?.id,
+        tailorId,
+      ].filter(Boolean) as string[];
 
-      if (existing && existing.id) {
+      const targetNames = [
+        name,
+        tailor?.shopName,
+        tailor?.businessName,
+        tailor?.name,
+      ].filter(Boolean) as string[];
+
+      // 1. Check if an existing conversation already exists between current user & tailor
+      const existing = await conversationsApi.findExistingConversation(
+        targets,
+        currentUser.id,
+        targetNames
+      );
+
+      if (existing && (existing.id || (existing as any)._id)) {
+        const convId = existing.id || (existing as any)._id;
         router.push({
-          pathname: `/messages/${existing.id}`,
+          pathname: "/messages/[conversationId]",
           params: {
-            conversationId: existing.id,
+            conversationId: convId,
             recipientId: targetUserId,
             name,
             avatar: avatarUrl,
@@ -157,29 +168,35 @@ export default function TailorProfileScreen() {
         return;
       }
 
-      // 2. Try to start a new conversation
-      try {
-        const startRes = await conversationsApi.startConversation({
-          participantId: targetUserId,
-        });
+      // 2. If conversation does not exist, create conversation first and then continue
+      const startRes = await conversationsApi.startConversation({
+        participantId: targetUserId,
+        participant_id: targetUserId,
+        tailorId: tailor?.id || tailorId || targetUserId,
+        tailor_id: tailor?.id || tailorId || targetUserId,
+        recipientId: targetUserId,
+        recipient_id: targetUserId,
+      } as any);
 
-        if (startRes?.data && startRes.data.id) {
-          router.push({
-            pathname: `/messages/${startRes.data.id}`,
-            params: {
-              conversationId: startRes.data.id,
-              recipientId: targetUserId,
-              name,
-              avatar: avatarUrl,
-            },
-          } as any);
-          return;
-        }
-      } catch {}
+      const createdConv = (startRes?.data as any)?.conversation || startRes?.data;
+      const createdId = createdConv?.id || (createdConv as any)?._id || (createdConv as any)?.data?.id;
 
-      // 3. Fallback: Open chat screen in new conversation mode
+      if (createdId) {
+        router.push({
+          pathname: "/messages/[conversationId]",
+          params: {
+            conversationId: createdId,
+            recipientId: targetUserId,
+            name,
+            avatar: avatarUrl,
+          },
+        } as any);
+        return;
+      }
+
+      // Fallback if backend didn't return an id immediately
       router.push({
-        pathname: `/messages/new`,
+        pathname: "/messages/[conversationId]",
         params: {
           conversationId: "new",
           recipientId: targetUserId,
@@ -187,9 +204,10 @@ export default function TailorProfileScreen() {
           avatar: avatarUrl,
         },
       } as any);
-    } catch {
+    } catch (err) {
+      console.warn("Failed to find or create conversation:", err);
       router.push({
-        pathname: `/messages/new`,
+        pathname: "/messages/[conversationId]",
         params: {
           conversationId: "new",
           recipientId: targetUserId,
