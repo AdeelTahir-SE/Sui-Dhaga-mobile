@@ -77,4 +77,9 @@ export const authApi = {
       method: 'GET',
     });
   },
+
+  async uploadAvatar(fileOrFormData: any) {
+    const { usersApi } = await import('./users.api');
+    return usersApi.uploadAvatar(fileOrFormData);
+  },
 };

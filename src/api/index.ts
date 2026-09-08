@@ -7,3 +7,4 @@ export * from './designs.api';
 export * from './measurements.api';
 export * from './notifications.api';
 export * from './conversations.api';
+export * from './users.api';

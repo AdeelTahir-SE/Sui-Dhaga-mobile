@@ -19,6 +19,8 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { useTailorProfile } from "../hooks/useTailorProfile";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
+import { extractAvatarUrl, usersApi } from "../../../api/users.api";
+import { storage } from "../../../api/client";
 
 const DEFAULT_SPECIALTIES = [
   "Bridal Wear",
@@ -50,6 +52,7 @@ export default function TailorProfileSetupScreen() {
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [customSpecialty, setCustomSpecialty] = useState("");
   const [shopImage, setShopImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Sync profile & user data once loaded
   useEffect(() => {
@@ -168,10 +171,36 @@ export default function TailorProfileSetupScreen() {
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const uri = result.assets[0].uri;
-        setShopImage(uri);
+        const asset = result.assets[0];
+        setShopImage(asset.uri);
+        setIsUploadingImage(true);
+
+        try {
+          const res = await usersApi.uploadAvatar(asset);
+          const newAvatarUrl = extractAvatarUrl(res.data) || asset.uri;
+          setShopImage(newAvatarUrl);
+
+          if (user) {
+            const updatedUser = {
+              ...user,
+              avatar: newAvatarUrl,
+              avatarUrl: newAvatarUrl,
+            };
+            setUser(updatedUser);
+            await storage.setUser(updatedUser).catch(() => {});
+          }
+          Alert.alert("Success", "Shop photo uploaded successfully!");
+        } catch (uploadErr: any) {
+          Alert.alert(
+            "Upload Warning",
+            uploadErr?.message || "Failed to upload photo to server. Local photo selected."
+          );
+        } finally {
+          setIsUploadingImage(false);
+        }
       }
     } catch (err: any) {
+      setIsUploadingImage(false);
       Alert.alert("Error", err?.message || "Failed to pick image");
     }
   };
@@ -338,6 +367,7 @@ export default function TailorProfileSetupScreen() {
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={pickShopImage}
+              disabled={isUploadingImage}
               className="relative h-28 w-full items-center justify-center overflow-hidden rounded-md border border-dashed border-primary/40 bg-primary-50"
             >
               {shopImage ? (
@@ -358,14 +388,21 @@ export default function TailorProfileSetupScreen() {
                 </View>
               )}
 
-              {shopImage && (
+              {isUploadingImage ? (
+                <View className="absolute inset-0 items-center justify-center bg-black/40">
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text className="mt-1 text-[11px] font-bold text-white">
+                    Uploading...
+                  </Text>
+                </View>
+              ) : shopImage ? (
                 <View className="absolute bottom-2 right-2 flex-row items-center rounded-md bg-black/60 px-2.5 py-1">
                   <Ionicons name="camera" size={14} color="#FFFFFF" />
                   <Text className="ml-1 text-[11px] font-semibold text-white">
                     Change
                   </Text>
                 </View>
-              )}
+              ) : null}
             </TouchableOpacity>
           </View>
 

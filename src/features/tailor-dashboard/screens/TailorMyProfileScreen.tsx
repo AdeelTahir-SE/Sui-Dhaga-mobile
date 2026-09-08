@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,16 +10,77 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
 
 import { useAuthStore } from "../../../stores/auth.store";
 import { useTailorProfile } from "../hooks/useTailorProfile";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
+import { extractAvatarUrl, usersApi } from "../../../api/users.api";
+import { storage } from "../../../api/client";
+import { User } from "../../../types/api";
 
 export default function TailorMyProfileScreen() {
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
   const { profile, isLoading, refresh } = useTailorProfile();
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const pickAvatar = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access your photos is required to change your profile picture."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setIsUploadingAvatar(true);
+
+        try {
+          const res = await usersApi.uploadAvatar(asset);
+          const newAvatarUrl = extractAvatarUrl(res.data) || asset.uri;
+
+          if (user) {
+            const updatedUser: User = {
+              ...user,
+              avatar: newAvatarUrl,
+              avatarUrl: newAvatarUrl,
+            };
+            setUser(updatedUser);
+            await storage.setUser(updatedUser).catch(() => {});
+          }
+
+          await refresh?.();
+          Alert.alert("Success", "Tailor profile avatar updated successfully!");
+        } catch (uploadErr: any) {
+          Alert.alert(
+            "Upload Failed",
+            uploadErr?.message || "Failed to upload avatar image. Please try again."
+          );
+        } finally {
+          setIsUploadingAvatar(false);
+        }
+      }
+    } catch (err: any) {
+      setIsUploadingAvatar(false);
+      Alert.alert("Error", err?.message || "Failed to update profile image");
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -182,23 +243,39 @@ export default function TailorMyProfileScreen() {
         {/* Profile Card Banner */}
         <View className="mb-4 overflow-hidden rounded-md border border-brand-border bg-white p-4 shadow-xs">
           <View className="flex-row items-center">
-            {shopImageUri ? (
-              <Image
-                source={{ uri: shopImageUri }}
-                className="h-18 w-18 rounded-md bg-brand-surface"
-                style={{ width: 72, height: 72 }}
-                resizeMode="cover"
-              />
-            ) : (
-              <View
-                className="items-center justify-center rounded-md bg-primary/10 border border-primary/20"
-                style={{ width: 72, height: 72 }}
-              >
-                <Text className="text-[24px] font-black text-primary">
-                  {initials}
-                </Text>
-              </View>
-            )}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={pickAvatar}
+              disabled={isUploadingAvatar}
+              className="relative"
+            >
+              {shopImageUri ? (
+                <Image
+                  source={{ uri: shopImageUri }}
+                  className="rounded-md bg-brand-surface"
+                  style={{ width: 72, height: 72 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View
+                  className="items-center justify-center rounded-md bg-primary/10 border border-primary/20"
+                  style={{ width: 72, height: 72 }}
+                >
+                  <Text className="text-[24px] font-black text-primary">
+                    {initials}
+                  </Text>
+                </View>
+              )}
+              {isUploadingAvatar ? (
+                <View className="absolute inset-0 items-center justify-center rounded-md bg-black/40">
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                </View>
+              ) : (
+                <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-md bg-primary border-2 border-white shadow-sm">
+                  <Ionicons name="camera-outline" size={12} color="#FFFFFF" />
+                </View>
+              )}
+            </TouchableOpacity>
 
             <View className="ml-3.5 flex-1">
               <View className="flex-row items-center">

@@ -241,17 +241,72 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
     }
   }
 
+  const isFormData =
+    (typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData) ||
+    Boolean(fetchOptions.body && typeof (fetchOptions.body as any).append === 'function');
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     Accept: 'application/json',
     ...(customHeaders as Record<string, string>),
   };
+
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  } else if (isFormData) {
+    delete headers['Content-Type'];
+  }
 
   if (!skipAuth) {
     const token = await storage.getToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
+  }
+
+  // If body is FormData, use XMLHttpRequest to prevent expo/fetch "Unsupported FormDataPart implementation" error
+  if (isFormData) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(fetchOptions.method || 'POST', url, true);
+
+      Object.entries(headers).forEach(([key, value]) => {
+        if (value) {
+          xhr.setRequestHeader(key, value);
+        }
+      });
+
+      xhr.onload = () => {
+        let data: any = {};
+        try {
+          data = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+        } catch {
+          data = { raw: xhr.responseText };
+        }
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve({
+            success: data.success !== undefined ? data.success : true,
+            message: data.message,
+            data: data.data !== undefined ? data.data : data,
+            error: data.error,
+          });
+        } else {
+          const errorMessage = extractErrorMessage(data, xhr.status);
+          reject(new ApiError(errorMessage, xhr.status, data));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new ApiError('Network request failed. Please check your internet connection.', 0));
+      };
+
+      xhr.ontimeout = () => {
+        reject(new ApiError('Request timed out. Please try again.', 0));
+      };
+
+      xhr.timeout = 60000;
+      xhr.send(fetchOptions.body as any);
+    });
   }
 
   try {
