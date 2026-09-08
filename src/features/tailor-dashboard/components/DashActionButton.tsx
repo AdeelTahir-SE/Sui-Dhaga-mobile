@@ -11,7 +11,7 @@ export function DashActionButton({
 }: DashActionButtonProps) {
   const buttonClass =
     variant === "primary"
-      ? "bg-primary border-primary"
+      ? "bg-primary border-primary shadow-xs"
       : variant === "danger"
         ? "bg-white border-brand-border"
         : "bg-white border-brand-border";
@@ -27,7 +27,7 @@ export function DashActionButton({
       accessibilityRole="button"
       className={`h-[42px] flex-1 items-center justify-center rounded-md border ${buttonClass}`}
     >
-      <Text className={`text-[12px] font-semibold ${textClass}`}>{title}</Text>
+      <Text className={`text-[13px] font-bold ${textClass}`}>{title}</Text>
     </TouchableOpacity>
   );
 }

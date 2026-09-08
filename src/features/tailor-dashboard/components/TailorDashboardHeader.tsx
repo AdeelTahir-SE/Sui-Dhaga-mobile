@@ -29,14 +29,14 @@ export function TailorDashboardHeader({
           color="#1A1D1F"
         />
       </TouchableOpacity>
-      <Text className="text-[15px] font-semibold text-brand-dark">{title}</Text>
+      <Text className="text-[18px] font-bold text-brand-dark tracking-tight">{title}</Text>
       <TouchableOpacity className="h-10 min-w-10 items-center justify-center px-1">
         {rightText ? (
-          <Text className="text-[11px] font-semibold text-brand-dark">
+          <Text className="text-[13px] font-bold text-primary">
             {rightText}
           </Text>
         ) : (
-          <Ionicons name={rightIcon} size={20} color="#1A1D1F" />
+          <Ionicons name={rightIcon} size={22} color="#1A1D1F" />
         )}
       </TouchableOpacity>
     </View>

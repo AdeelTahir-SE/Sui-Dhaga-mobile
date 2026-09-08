@@ -1,16 +1,19 @@
-import { Text, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 type SectionTitleProps = {
   title: string;
   action?: string;
+  onPressAction?: () => void;
 };
 
-export function SectionTitle({ title, action }: SectionTitleProps) {
+export function SectionTitle({ title, action, onPressAction }: SectionTitleProps) {
   return (
-    <View className="mb-3 mt-5 flex-row items-center justify-between">
-      <Text className="text-[13px] font-semibold text-brand-dark">{title}</Text>
+    <View className="mb-3.5 mt-6 flex-row items-center justify-between">
+      <Text className="text-[18px] font-bold text-brand-dark tracking-tight">{title}</Text>
       {action ? (
-        <Text className="text-[11px] font-semibold text-primary">{action}</Text>
+        <TouchableOpacity onPress={onPressAction} activeOpacity={0.7} className="py-1 px-1">
+          <Text className="text-[14px] font-semibold text-primary">{action}</Text>
+        </TouchableOpacity>
       ) : null}
     </View>
   );

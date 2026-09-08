@@ -117,14 +117,14 @@ export default function TailorOrdersScreen() {
                   key={tab.key}
                   onPress={() => setSelectedTab(tab.key)}
                   activeOpacity={0.7}
-                  className={`rounded-md px-3.5 py-2 border ${
+                  className={`rounded-md px-4 py-2 border shadow-xs ${
                     isActive
                       ? "bg-primary border-primary"
                       : "bg-white border-brand-border"
                   }`}
                 >
                   <Text
-                    className={`text-[12px] font-semibold ${
+                    className={`text-[13px] font-bold ${
                       isActive ? "text-white" : "text-brand-dark"
                     }`}
                   >

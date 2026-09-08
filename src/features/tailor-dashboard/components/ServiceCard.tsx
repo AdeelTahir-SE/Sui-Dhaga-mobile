@@ -14,12 +14,12 @@ type ServiceCardProps = {
 
 export function ServiceCard({ image, title, price, tone = "coral" }: ServiceCardProps) {
   return (
-    <View className="mb-3 flex-row items-center rounded-md border border-brand-border bg-white p-3">
+    <View className="mb-3.5 flex-row items-center rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
       <TailorDashPlaceholder image={image} variant="garment" size="sm" tone={tone} />
-      <View className="ml-3 flex-1">
-        <Text className="text-[13px] font-bold text-brand-dark">{title}</Text>
-        <Text className="mt-1 text-[11px] text-brand-gray">
-          Starting from {price}
+      <View className="ml-3.5 flex-1">
+        <Text className="text-[14px] font-bold text-brand-dark">{title}</Text>
+        <Text className="mt-1 text-[12px] font-medium text-brand-gray">
+          Starting from <Text className="font-bold text-brand-dark">{price}</Text>
         </Text>
         <View className="mt-2 self-start">
           <StatusPill label="Active" />

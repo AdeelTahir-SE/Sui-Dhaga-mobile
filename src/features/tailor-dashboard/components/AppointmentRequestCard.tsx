@@ -26,23 +26,23 @@ export function AppointmentRequestCard({
   tone = "coral",
 }: AppointmentRequestCardProps) {
   return (
-    <View className="mb-3 rounded-md border border-brand-border bg-white p-3">
+    <View className="mb-3.5 rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
       <View className="flex-row">
         <TailorDashPlaceholder image={image} variant="person" size="sm" tone={tone} />
-        <View className="ml-3 flex-1">
+        <View className="ml-3.5 flex-1">
           <View className="flex-row items-start justify-between">
-            <Text className="text-[13px] font-bold text-brand-dark">{name}</Text>
+            <Text className="text-[14px] font-bold text-brand-dark">{name}</Text>
             <StatusPill
               label={newRequest ? "New Request" : "Upcoming"}
               tone={newRequest ? "gold" : "blue"}
             />
           </View>
-          <Text className="mt-1 text-[12px] text-brand-dark">{service}</Text>
-          <View className="mt-3 flex-row items-center">
-            <Ionicons name="calendar-outline" size={13} color="#6F767E" />
-            <Text className="ml-1 mr-4 text-[11px] text-brand-gray">{date}</Text>
-            <Ionicons name="time-outline" size={13} color="#6F767E" />
-            <Text className="ml-1 text-[11px] text-brand-gray">{time}</Text>
+          <Text className="mt-1 text-[13px] font-semibold text-brand-dark">{service}</Text>
+          <View className="mt-2.5 flex-row items-center">
+            <Ionicons name="calendar-outline" size={14} color="#6F767E" />
+            <Text className="ml-1 mr-4 text-[12px] font-medium text-brand-gray">{date}</Text>
+            <Ionicons name="time-outline" size={14} color="#6F767E" />
+            <Text className="ml-1 text-[12px] font-medium text-brand-gray">{time}</Text>
           </View>
         </View>
       </View>

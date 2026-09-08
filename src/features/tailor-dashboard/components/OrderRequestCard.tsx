@@ -23,21 +23,21 @@ export function OrderRequestCard({
   tone = "coral",
 }: OrderRequestCardProps) {
   return (
-    <View className="mb-3 rounded-md border border-brand-border bg-white p-3">
+    <View className="mb-3.5 rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
       <View className="flex-row">
         <TailorDashPlaceholder image={image} variant="garment" size="md" tone={tone} />
-        <View className="ml-3 flex-1">
+        <View className="ml-3.5 flex-1">
           <View className="flex-row items-start justify-between">
-            <Text className="text-[13px] font-bold text-brand-dark">#{id}</Text>
+            <Text className="text-[14px] font-black text-brand-dark">#{id}</Text>
             <StatusPill label="New" tone="gold" />
           </View>
-          <Text className="mt-2 text-[12px] font-medium text-brand-dark">
+          <Text className="mt-1 text-[13px] font-bold text-brand-dark">
             {item}
           </Text>
-          <Text className="mt-1 text-[13px] font-bold text-brand-dark">
+          <Text className="mt-1 text-[14px] font-black text-brand-dark">
             {price}
           </Text>
-          <Text className="mt-1 text-[11px] text-brand-gray">
+          <Text className="mt-1 text-[12px] font-medium text-brand-gray">
             Customer: {customer}
           </Text>
         </View>
