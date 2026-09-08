@@ -268,21 +268,24 @@ export default function TailorMessagesScreen() {
                   name={other.name}
                   message={lastMsgText}
                   time={msgTime}
-                  avatarUrl={other.avatarUrl || undefined}
+                  avatar_url={other.avatar_url || other.avatarUrl || undefined}
+                  avatarUrl={other.avatarUrl || other.avatar_url || undefined}
                   unread={item.unreadCount ?? (item as any).unread_count}
                   tone={tone}
                   onPress={() => {
-                    if (item.id) {
-                      router.push({
-                        pathname: "/messages/[conversationId]",
-                        params: {
-                          conversationId: item.id,
-                          recipientId: other.id,
-                          name: other.name,
-                          avatar: other.avatarUrl || "",
-                        },
-                      } as any);
-                    }
+                    const tailorId = item.participant2_id || item.tailorId || (item as any).tailor_id || currentUser?.id;
+                    const clientId = item.participant1_id || item.customerId || (item as any).customer_id || other.id;
+                    router.push({
+                      pathname: "/messages/[conversationId]",
+                      params: {
+                        conversationId: item.id || "new",
+                        tailorId,
+                        clientId,
+                        recipientId: other.id,
+                        name: other.name,
+                        avatar: other.avatar_url || other.avatarUrl || "",
+                      },
+                    } as any);
                   }}
                 />
               );

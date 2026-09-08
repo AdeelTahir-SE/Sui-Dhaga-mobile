@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { User } from '../types/api';
 import { authApi, LoginPayload, RegisterPayload } from '../api/auth.api';
-import { storage } from '../api/client';
+import { storage, onAuthExpired } from '../api/client';
 
 interface AuthState {
   user: User | null;
@@ -277,3 +277,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 }));
+
+onAuthExpired(() => {
+  useAuthStore.getState().logout().catch(() => {});
+});

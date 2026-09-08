@@ -16,6 +16,7 @@ export interface User {
   role: UserRole;
   phone?: string;
   avatarUrl?: string;
+  avatar_url?: string;
   avatar?: string;
   bio?: string;
   createdAt?: string;
@@ -57,6 +58,9 @@ export interface TailorItem {
   imageUrl?: string;
   image?: string;
   avatar?: string;
+  avatarUrl?: string;
+  banner?: string;
+  bannerUrl?: string;
   isVerified?: boolean;
   verified?: boolean;
   isTopRated?: boolean;
@@ -172,11 +176,18 @@ export interface NotificationItem {
 
 export interface ConversationParticipant {
   id: string;
+  _id?: string;
+  userId?: string;
+  user_id?: string;
   name?: string;
   fullName?: string;
+  full_name?: string;
+  shopName?: string;
+  shop_name?: string;
   email?: string;
   role?: string;
   avatarUrl?: string;
+  avatar_url?: string;
   avatar?: string;
 }
 
@@ -194,12 +205,27 @@ export interface MessageItem {
 
 export interface ConversationItem {
   id: string;
+  tailorId?: string;
+  tailor_id?: string;
+  customerId?: string;
+  customer_id?: string;
+  userId?: string;
+  user_id?: string;
   participantId?: string;
+  participant_id?: string;
+  participant1_id?: string;
+  participant2_id?: string;
   participant?: ConversationParticipant;
+  participant1?: ConversationParticipant;
+  participant2?: ConversationParticipant;
   participants?: ConversationParticipant[];
   lastMessage?: string | { text: string; createdAt: string; isRead?: boolean };
+  last_message?: string | { text: string; createdAt: string; isRead?: boolean };
   lastMessageAt?: string;
+  last_message_at?: string;
   unreadCount?: number;
   createdAt?: string;
+  created_at?: string;
   updatedAt?: string;
+  updated_at?: string;
 }

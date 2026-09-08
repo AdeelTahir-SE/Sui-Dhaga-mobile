@@ -19,7 +19,7 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { useTailorProfile } from "../hooks/useTailorProfile";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
-import { extractAvatarUrl, usersApi } from "../../../api/users.api";
+import { tailorsApi } from "../../../api/tailors.api";
 import { storage } from "../../../api/client";
 
 const DEFAULT_SPECIALTIES = [
@@ -38,7 +38,7 @@ const DEFAULT_SPECIALTIES = [
 export default function TailorProfileSetupScreen() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
-  const { profile, isLoading, isSaving, isComplete, saveProfile } =
+  const { profile, isLoading, isSaving, isComplete, error, saveProfile } =
     useTailorProfile();
 
   const [businessName, setBusinessName] = useState("");
@@ -52,6 +52,7 @@ export default function TailorProfileSetupScreen() {
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [customSpecialty, setCustomSpecialty] = useState("");
   const [shopImage, setShopImage] = useState<string | null>(null);
+  const [pendingBannerAsset, setPendingBannerAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Sync profile & user data once loaded
@@ -113,15 +114,11 @@ export default function TailorProfileSetupScreen() {
         }
       }
       setShopImage(
-        p.imageUrl ||
-          p.image ||
-          p.avatar ||
-          p.shopImage ||
-          p.profile?.avatar_url ||
-          p.user?.avatarUrl ||
-          p.user?.avatar ||
-          user?.avatar ||
-          user?.avatarUrl ||
+        p.bannerUrl ||
+          p.banner_url ||
+          p.banner ||
+          p.shop_banner ||
+          p.shopBanner ||
           null
       );
     } else if (user) {
@@ -130,9 +127,6 @@ export default function TailorProfileSetupScreen() {
       }
       if (!phone && user.phone) {
         setPhone(user.phone);
-      }
-      if (!shopImage && (user.avatar || user.avatarUrl)) {
-        setShopImage(user.avatar || user.avatarUrl || null);
       }
     }
   }, [profile, user]);
@@ -158,7 +152,7 @@ export default function TailorProfileSetupScreen() {
       if (permissionResult.granted === false) {
         Alert.alert(
           "Permission Required",
-          "Permission to access photos is required to update shop picture."
+          "Permission to access photos is required to update shop banner."
         );
         return;
       }
@@ -166,41 +160,16 @@ export default function TailorProfileSetupScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
-        aspect: [4, 3],
+        aspect: [16, 9],
         quality: 0.8,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         setShopImage(asset.uri);
-        setIsUploadingImage(true);
-
-        try {
-          const res = await usersApi.uploadAvatar(asset);
-          const newAvatarUrl = extractAvatarUrl(res.data) || asset.uri;
-          setShopImage(newAvatarUrl);
-
-          if (user) {
-            const updatedUser = {
-              ...user,
-              avatar: newAvatarUrl,
-              avatarUrl: newAvatarUrl,
-            };
-            setUser(updatedUser);
-            await storage.setUser(updatedUser).catch(() => {});
-          }
-          Alert.alert("Success", "Shop photo uploaded successfully!");
-        } catch (uploadErr: any) {
-          Alert.alert(
-            "Upload Warning",
-            uploadErr?.message || "Failed to upload photo to server. Local photo selected."
-          );
-        } finally {
-          setIsUploadingImage(false);
-        }
+        setPendingBannerAsset(asset);
       }
     } catch (err: any) {
-      setIsUploadingImage(false);
       Alert.alert("Error", err?.message || "Failed to pick image");
     }
   };
@@ -230,14 +199,19 @@ export default function TailorProfileSetupScreen() {
       return;
     }
 
+    const resolvedShopName = businessName.trim();
     const payload = {
       name:
         ownerName.trim() ||
         user?.fullName ||
         user?.name ||
         (user?.email ? user.email.split("@")[0] : "Tailor"),
-      businessName: businessName.trim(),
+      businessName: resolvedShopName,
+      shopName: resolvedShopName,
+      shop_name: resolvedShopName,
       phone: phone.trim(),
+      city: city.trim(),
+      address: address.trim(),
       location: {
         city: city.trim(),
         address: address.trim(),
@@ -247,35 +221,78 @@ export default function TailorProfileSetupScreen() {
       specialties: selectedSpecialties,
       specialty: selectedSpecialties[0] || "",
       bio: bio.trim(),
-      imageUrl: shopImage || undefined,
-      image: shopImage || undefined,
+      bannerUrl: shopImage || undefined,
+      banner: shopImage || undefined,
     };
 
-    const success = await saveProfile(payload);
-    if (success) {
-      // Also update user's profile if name/phone updated
-      if (user) {
-        setUser({
-          ...user,
-          name: payload.name,
-          fullName: payload.name,
-          phone: payload.phone || user.phone,
-          avatar: shopImage || user.avatar,
-          avatarUrl: shopImage || user.avatarUrl,
-        });
+    try {
+      const success = await saveProfile(payload);
+      if (success) {
+        // Upload banner if user picked a new image
+        if (pendingBannerAsset) {
+          const targetTailorId = profile?.id;
+          if (targetTailorId) {
+            setIsUploadingImage(true);
+            try {
+              const res = await tailorsApi.uploadBanner(targetTailorId, pendingBannerAsset);
+              const newBannerUrl =
+                res?.data?.bannerUrl ||
+                res?.data?.banner_url ||
+                res?.data?.banner ||
+                res?.data?.shop_banner ||
+                res?.data?.shopBanner ||
+                res?.data?.url ||
+                res?.data?.tailor?.banner_url ||
+                res?.data?.tailor?.bannerUrl ||
+                pendingBannerAsset.uri;
+              setShopImage(newBannerUrl);
+              setPendingBannerAsset(null);
+            } catch (uploadErr: any) {
+              Alert.alert(
+                "Banner Upload Warning",
+                "Profile saved, but banner upload failed: " +
+                  (uploadErr?.message || "Unknown error") +
+                  ". You can try updating the banner again."
+              );
+            } finally {
+              setIsUploadingImage(false);
+            }
+          }
+        }
+
+        // Also update user's profile name/phone only — DO NOT TOUCH AVATAR
+        if (user) {
+          const updatedUser = {
+            ...user,
+            name: payload.name,
+            fullName: payload.name,
+            phone: payload.phone || user.phone,
+          };
+          setUser(updatedUser);
+          await storage.setUser(updatedUser).catch(() => {});
+        }
+        Alert.alert(
+          "Profile Saved",
+          "Your tailor profile has been updated successfully!",
+          [
+            {
+              text: "View Profile",
+              onPress: () => router.replace("/tailor-dashboard/profile" as any),
+            },
+          ]
+        );
+      } else {
+        // NEVER EVER show success on failure or error!
+        Alert.alert(
+          "Save Failed",
+          error || "Failed to save profile. Please check your connection and try again."
+        );
       }
+    } catch (err: any) {
       Alert.alert(
-        "Profile Saved",
-        "Your tailor profile has been updated successfully!",
-        [
-          {
-            text: "View Profile",
-            onPress: () => router.replace("/tailor-dashboard/profile" as any),
-          },
-        ]
+        "Save Error",
+        err?.message || "An unexpected error occurred while saving profile."
       );
-    } else {
-      Alert.alert("Error", "Failed to save profile. Please try again.");
     }
   };
 
@@ -378,12 +395,12 @@ export default function TailorProfileSetupScreen() {
                 />
               ) : (
                 <View className="items-center justify-center p-4">
-                  <Ionicons name="camera-outline" size={30} color="#14919B" />
+                  <Ionicons name="image-outline" size={30} color="#14919B" />
                   <Text className="mt-1 text-[12px] font-semibold text-primary">
-                    Upload Shop or Brand Photo
+                    Upload Shop Banner Photo
                   </Text>
                   <Text className="text-[10px] text-brand-gray">
-                    Tap to select an image from gallery
+                    Tap to select a wide shop banner from gallery
                   </Text>
                 </View>
               )}

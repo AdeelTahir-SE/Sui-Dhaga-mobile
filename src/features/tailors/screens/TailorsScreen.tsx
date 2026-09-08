@@ -35,7 +35,14 @@ export default function TailorsScreen() {
               <TailorListCard
                 key={tailor.id || index}
                 id={tailor.id}
-                image={tailor.imageUrl || tailor.image || tailor.avatar}
+                image={
+                  tailor.avatarUrl ||
+                  tailor.avatar ||
+                  (tailor as any).profile?.avatar_url ||
+                  (tailor as any).user?.avatar_url ||
+                  tailor.imageUrl ||
+                  tailor.image
+                }
                 name={tailor.shopName || tailor.businessName || tailor.name || "Tailor Studio"}
                 rating={
                   tailor.rating

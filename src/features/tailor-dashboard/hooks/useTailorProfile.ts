@@ -45,6 +45,13 @@ export function useTailorProfile() {
     setIsLoading(true);
     setError(null);
     try {
+      // 1. Try to load cached tailor profile first for instant UI response
+      const cached = await storage.getTailorProfile(user.id);
+      if (cached) {
+        cached.isProfileComplete = checkIsComplete(cached);
+        setProfile(cached);
+      }
+
       let remoteProfile: TailorItem | null = null;
       try {
         const res = await tailorsApi.getMyTailorProfile(user.id, user.email);
@@ -72,33 +79,56 @@ export function useTailorProfile() {
         } catch {}
       }
 
-      const effectiveProfile: TailorItem = remoteProfile || {
-        id: `tailor_${user.id}`,
-        userId: user.id,
-        name: user.fullName || user.name || (user.email ? user.email.split('@')[0] : 'Tailor'),
-        businessName: '',
-        shopName: '',
-        rating: 5.0,
-        reviewsCount: 0,
-        specialties: [],
-        specialty: '',
-        startingPrice: 0,
-        experienceYears: 0,
-        city: '',
-        address: '',
-        location: {
-          address: '',
-          city: '',
-        },
-        bio: '',
-        phone: user.phone || '',
-        imageUrl: user.avatar || user.avatarUrl,
-        isVerified: false,
-        isTopRated: false,
-      };
+      if (remoteProfile) {
+        const resolvedShopName =
+          remoteProfile.shopName?.trim() ||
+          remoteProfile.businessName?.trim() ||
+          (cached && (cached.shopName || cached.businessName)) ||
+          '';
 
-      effectiveProfile.isProfileComplete = checkIsComplete(effectiveProfile);
-      setProfile(effectiveProfile);
+        const mergedProfile: TailorItem = {
+          ...(cached || {}),
+          ...remoteProfile,
+          shopName: resolvedShopName,
+          businessName: resolvedShopName,
+        };
+
+        mergedProfile.isProfileComplete = checkIsComplete(mergedProfile);
+        setProfile(mergedProfile);
+        await storage.setTailorProfile(user.id, mergedProfile).catch(() => {});
+      } else if (!cached) {
+        const effectiveProfile: TailorItem = {
+          id: `tailor_${user.id}`,
+          userId: user.id,
+          name: user.fullName || user.name || (user.email ? user.email.split('@')[0] : 'Tailor'),
+          businessName: '',
+          shopName: '',
+          rating: 5.0,
+          reviewsCount: 0,
+          specialties: [],
+          specialty: '',
+          startingPrice: 0,
+          experienceYears: 0,
+          city: '',
+          address: '',
+          location: {
+            address: '',
+            city: '',
+          },
+          bio: '',
+          phone: user.phone || '',
+          avatar: user.avatar || user.avatarUrl,
+          avatarUrl: user.avatar || user.avatarUrl,
+          banner: null,
+          bannerUrl: null,
+          imageUrl: user.avatar || user.avatarUrl,
+          isVerified: false,
+          isTopRated: false,
+        };
+
+        effectiveProfile.isProfileComplete = checkIsComplete(effectiveProfile);
+        setProfile(effectiveProfile);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load tailor profile');
     } finally {
@@ -114,6 +144,14 @@ export function useTailorProfile() {
     setIsSaving(true);
     setError(null);
     try {
+      const resolvedShopName =
+        (data as any).shopName?.trim() ||
+        (data as any).shop_name?.trim() ||
+        (data as any).businessName?.trim() ||
+        profile?.shopName?.trim() ||
+        profile?.businessName?.trim() ||
+        '';
+
       const updated: TailorItem = {
         ...(profile || {
           id: `tailor_${user?.id || Date.now()}`,
@@ -123,21 +161,42 @@ export function useTailorProfile() {
           reviewsCount: 0,
         }),
         ...data,
+        shopName: resolvedShopName,
+        businessName: resolvedShopName,
       };
 
       updated.isProfileComplete = checkIsComplete(updated);
 
       // Save to backend API (POST /tailors or PATCH /tailors/:id)
       const res = await tailorsApi.saveTailorProfile(updated);
+
+      // NEVER EVER treat a failed response or error as a success!
+      if (!res || res.success === false) {
+        const errorMsg =
+          res?.error ||
+          (res as any)?.message ||
+          'Failed to save tailor profile on the server.';
+        setError(errorMsg);
+        return false;
+      }
+
       if (res?.data && res.data.id) {
         updated.id = res.data.id;
         updated.userId = res.data.userId || user?.id;
+        if (res.data.shopName) {
+          updated.shopName = res.data.shopName;
+          updated.businessName = res.data.shopName;
+        }
       }
 
       setProfile(updated);
+      if (user?.id) {
+        await storage.setTailorProfile(user.id, updated).catch(() => {});
+      }
       return true;
     } catch (err: any) {
-      setError(err.message || 'Failed to save tailor profile');
+      const errMsg = err?.message || 'Failed to save tailor profile';
+      setError(errMsg);
       return false;
     } finally {
       setIsSaving(false);

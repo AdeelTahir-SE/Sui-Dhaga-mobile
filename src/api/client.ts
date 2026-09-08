@@ -69,6 +69,34 @@ export const storage = {
     }
   },
 
+  async getTailorProfile(userId?: string): Promise<any | null> {
+    try {
+      const key = `sui_dhaga_tailor_profile_${userId || 'default'}`;
+      if (Platform.OS === 'web') {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+        return raw ? JSON.parse(raw) : null;
+      }
+      const raw = await SecureStore.getItemAsync(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async setTailorProfile(userId: string | undefined, profile: any): Promise<void> {
+    try {
+      const key = `sui_dhaga_tailor_profile_${userId || 'default'}`;
+      const serialized = JSON.stringify(profile);
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') localStorage.setItem(key, serialized);
+      } else {
+        await SecureStore.setItemAsync(key, serialized);
+      }
+    } catch (err) {
+      console.warn('Failed to save tailor profile to storage', err);
+    }
+  },
+
   async removeUser(): Promise<void> {
     try {
       if (Platform.OS === 'web') {
@@ -216,6 +244,29 @@ interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
 }
 
+type AuthExpiredCallback = () => void;
+let authExpiredListener: AuthExpiredCallback | null = null;
+
+export function onAuthExpired(callback: AuthExpiredCallback) {
+  authExpiredListener = callback;
+}
+
+function handleAuthExpirationIfNeeded(status: number, message: string) {
+  const lowerMsg = (message || '').toLowerCase();
+  const isAuthError =
+    status === 401 ||
+    lowerMsg.includes('jwt expired') ||
+    lowerMsg.includes('token expired') ||
+    lowerMsg.includes('invalid token') ||
+    lowerMsg.includes('auth.uid()') ||
+    lowerMsg.includes('violates row-level security') ||
+    lowerMsg.includes('unauthorized');
+
+  if (isAuthError && authExpiredListener) {
+    authExpiredListener();
+  }
+}
+
 export async function apiClient<T = any>(endpoint: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
   const { params, skipAuth = false, headers: customHeaders, ...fetchOptions } = options;
 
@@ -292,6 +343,7 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
           });
         } else {
           const errorMessage = extractErrorMessage(data, xhr.status);
+          handleAuthExpirationIfNeeded(xhr.status, errorMessage);
           reject(new ApiError(errorMessage, xhr.status, data));
         }
       };
@@ -325,6 +377,7 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
 
     if (!response.ok) {
       const errorMessage = extractErrorMessage(data, response.status);
+      handleAuthExpirationIfNeeded(response.status, errorMessage);
       throw new ApiError(errorMessage, response.status, data);
     }
 

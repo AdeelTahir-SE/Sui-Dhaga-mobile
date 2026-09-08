@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 
 import { useAuthStore } from "../../../stores/auth.store";
@@ -17,6 +17,7 @@ import { useTailorProfile } from "../hooks/useTailorProfile";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
+import { tailorsApi } from "../../../api/tailors.api";
 import { storage } from "../../../api/client";
 import { User } from "../../../types/api";
 
@@ -26,6 +27,13 @@ export default function TailorMyProfileScreen() {
   const logout = useAuthStore((state) => state.logout);
   const { profile, isLoading, refresh } = useTailorProfile();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh?.();
+    }, [refresh])
+  );
 
   const pickAvatar = async () => {
     try {
@@ -79,6 +87,55 @@ export default function TailorMyProfileScreen() {
     } catch (err: any) {
       setIsUploadingAvatar(false);
       Alert.alert("Error", err?.message || "Failed to update profile image");
+    }
+  };
+
+  const pickBanner = async () => {
+    try {
+      const targetTailorId = profile?.id;
+      if (!targetTailorId) {
+        Alert.alert("Error", "Tailor profile ID not found. Please save your profile first.");
+        return;
+      }
+
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access your photos is required to change your shop banner."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setIsUploadingBanner(true);
+
+        try {
+          await tailorsApi.uploadBanner(targetTailorId, asset);
+          await refresh?.();
+          Alert.alert("Success", "Shop banner updated successfully!");
+        } catch (uploadErr: any) {
+          Alert.alert(
+            "Upload Failed",
+            uploadErr?.message || "Failed to upload shop banner. Please try again."
+          );
+        } finally {
+          setIsUploadingBanner(false);
+        }
+      }
+    } catch (err: any) {
+      setIsUploadingBanner(false);
+      Alert.alert("Error", err?.message || "Failed to update shop banner");
     }
   };
 
@@ -204,15 +261,25 @@ export default function TailorMyProfileScreen() {
 
   const bio = p.bio?.trim() || "";
 
-  const shopImageUri =
-    p.imageUrl ||
-    p.image ||
+  const tailorAvatarUri =
+    user?.avatarUrl ||
+    user?.avatar ||
+    p.avatarUrl ||
     p.avatar ||
-    p.shopImage ||
+    p.profile?.avatar_url ||
+    p.profile?.avatarUrl ||
+    p.profile?.avatar ||
     p.user?.avatarUrl ||
     p.user?.avatar ||
-    user?.avatar ||
-    user?.avatarUrl;
+    null;
+
+  const bannerUri =
+    p.bannerUrl ||
+    p.banner_url ||
+    p.banner ||
+    p.shop_banner ||
+    p.shopBanner ||
+    null;
 
   const initials = (shopName || "T").charAt(0).toUpperCase();
 
@@ -240,6 +307,43 @@ export default function TailorMyProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Shop Banner Preview & Upload */}
+        <View className="mb-4 overflow-hidden rounded-md border border-brand-border bg-white shadow-xs">
+          <View className="relative h-32 w-full bg-brand-surface">
+            {bannerUri ? (
+              <Image
+                source={{ uri: bannerUri }}
+                className="h-32 w-full"
+                resizeMode="cover"
+              />
+            ) : (
+              <View className="h-32 w-full items-center justify-center bg-gradient-to-r from-primary-50 to-brand-surface border-b border-brand-border">
+                <Ionicons name="image-outline" size={32} color="#14919B" />
+                <Text className="mt-1 text-[12px] font-medium text-brand-gray">
+                  No Shop Banner Uploaded
+                </Text>
+              </View>
+            )}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={pickBanner}
+              disabled={isUploadingBanner}
+              className="absolute bottom-2 right-2 flex-row items-center rounded-md bg-black/70 px-2.5 py-1.5 backdrop-blur-sm"
+            >
+              {isUploadingBanner ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="camera" size={13} color="#FFFFFF" />
+                  <Text className="ml-1.5 text-[11px] font-bold text-white">
+                    {bannerUri ? "Change Banner" : "Upload Banner"}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Profile Card Banner */}
         <View className="mb-4 overflow-hidden rounded-md border border-brand-border bg-white p-4 shadow-xs">
           <View className="flex-row items-center">
@@ -249,9 +353,9 @@ export default function TailorMyProfileScreen() {
               disabled={isUploadingAvatar}
               className="relative"
             >
-              {shopImageUri ? (
+              {tailorAvatarUri ? (
                 <Image
-                  source={{ uri: shopImageUri }}
+                  source={{ uri: tailorAvatarUri }}
                   className="rounded-md bg-brand-surface"
                   style={{ width: 72, height: 72 }}
                   resizeMode="cover"

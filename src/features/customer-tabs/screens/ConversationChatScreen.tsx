@@ -24,25 +24,37 @@ export default function ConversationChatScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     conversationId?: string;
+    tailorId?: string;
+    clientId?: string;
     recipientId?: string;
     name?: string;
     avatar?: string;
   }>();
+
+  const currentUser = useAuthStore((state) => state.user);
+  const isTailor = currentUser?.role === "tailor";
+
+  const resolvedTailorId =
+    params.tailorId ||
+    (isTailor ? currentUser?.id : params.recipientId) ||
+    "";
+
+  const resolvedClientId =
+    params.clientId ||
+    (!isTailor ? currentUser?.id : params.recipientId) ||
+    "";
 
   const [activeConvId, setActiveConvId] = useState<string | null>(
     params.conversationId && params.conversationId !== "new"
       ? params.conversationId
       : null
   );
-  const currentUser = useAuthStore((state) => state.user);
 
   const [conversation, setConversation] = useState<ConversationItem | null>(null);
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [inputText, setInputText] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(
-    Boolean(params.conversationId && params.conversationId !== "new")
-  );
+  const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -61,73 +73,54 @@ export default function ConversationChatScreen() {
   );
 
   const loadData = useCallback(async () => {
-    let convId = activeConvId;
+    setIsLoading(true);
+    try {
+      // 1. Primary path: Use tailorId and clientId
+      if (resolvedTailorId && resolvedClientId) {
+        const [convRes, msgsRes] = await Promise.all([
+          conversationsApi.getConversationBetween(resolvedTailorId, resolvedClientId).catch(() => null),
+          conversationsApi.getMessagesBetween(resolvedTailorId, resolvedClientId).catch(() => null),
+        ]);
 
-    if (!convId || convId === "new") {
-      if (params.recipientId) {
-        try {
-          const targets = [params.recipientId].filter(Boolean) as string[];
-          const targetNames = [params.name].filter(Boolean) as string[];
-          const existing = await conversationsApi.findExistingConversation(
-            targets,
-            currentUser?.id,
-            targetNames
-          );
-          if (existing && (existing.id || (existing as any)._id)) {
-            const foundId = existing.id || (existing as any)._id;
-            convId = foundId;
-            setActiveConvId(foundId);
-            setConversation(existing);
-          } else {
-            // Create conversation if it doesn't exist yet
-            try {
-              const startRes = await conversationsApi.startConversation({
-                participantId: params.recipientId,
-                participant_id: params.recipientId,
-                tailorId: params.recipientId,
-                tailor_id: params.recipientId,
-                recipientId: params.recipientId,
-                recipient_id: params.recipientId,
-              });
-              const createdConv = (startRes?.data as any)?.conversation || startRes?.data;
-              const newId = createdConv?.id || (createdConv as any)?._id;
-              if (newId) {
-                convId = newId;
-                setActiveConvId(newId);
-                if (createdConv) setConversation(createdConv);
-              }
-            } catch (createErr) {
-              console.warn("Failed to auto-create conversation on load:", createErr);
-            }
+        if (convRes?.data?.conversation) {
+          setConversation(convRes.data.conversation);
+          if (convRes.data.conversation.id) {
+            setActiveConvId(convRes.data.conversation.id);
           }
-        } catch {
-          // Gracefully continue
+        }
+        if (msgsRes?.data && Array.isArray(msgsRes.data)) {
+          setMessages(msgsRes.data);
+          markUnreadMessagesAsRead(msgsRes.data);
+        }
+        return;
+      }
+
+      // 2. Fallback: If only activeConvId is known
+      const convId = activeConvId || (params.conversationId !== "new" ? params.conversationId : null);
+      if (convId) {
+        const [convRes, msgsRes] = await Promise.all([
+          conversationsApi.getConversationById(convId).catch(() => null),
+          conversationsApi.getMessages(convId).catch(() => null),
+        ]);
+
+        if (convRes?.data) setConversation(convRes.data);
+        if (msgsRes?.data && Array.isArray(msgsRes.data)) {
+          setMessages(msgsRes.data);
+          markUnreadMessagesAsRead(msgsRes.data);
         }
       }
-    }
-
-    if (!convId || convId === "new") {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const [convRes, msgsRes] = await Promise.all([
-        conversationsApi.getConversationById(convId).catch(() => null),
-        conversationsApi.getMessages(convId).catch(() => null),
-      ]);
-
-      if (convRes?.data) setConversation(convRes.data);
-      if (msgsRes?.data && Array.isArray(msgsRes.data)) {
-        setMessages(msgsRes.data);
-        markUnreadMessagesAsRead(msgsRes.data);
-      }
-    } catch {
-      // Handled gracefully
+    } catch (err) {
+      console.warn("Failed to load conversation messages:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [activeConvId, params.recipientId, params.name, currentUser?.id, markUnreadMessagesAsRead]);
+  }, [
+    resolvedTailorId,
+    resolvedClientId,
+    activeConvId,
+    params.conversationId,
+    markUnreadMessagesAsRead,
+  ]);
 
   useEffect(() => {
     loadData();
@@ -180,7 +173,22 @@ export default function ConversationChatScreen() {
     }, 100);
 
     try {
-      if (activeConvId && activeConvId !== "new") {
+      // 1. Primary path: Send message using tailorId and clientId
+      if (resolvedTailorId && resolvedClientId) {
+        const res = await conversationsApi.sendMessageBetween(resolvedTailorId, resolvedClientId, {
+          text: textToSend || "Attachment",
+          attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+        });
+        if (res?.data) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === tempMessage.id ? res.data! : m))
+          );
+          if ((res.data as any).conversationId && !activeConvId) {
+            setActiveConvId((res.data as any).conversationId);
+          }
+        }
+      } else if (activeConvId && activeConvId !== "new") {
+        // 2. Fallback: Send message using conversationId
         const res = await conversationsApi.sendMessage(activeConvId, {
           text: textToSend || "Attachment",
           attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
@@ -191,6 +199,7 @@ export default function ConversationChatScreen() {
           );
         }
       } else if (params.recipientId) {
+        // 3. Fallback: getOrCreateConversation
         const targetNames = [params.name].filter(Boolean) as string[];
         const startRes = await conversationsApi.getOrCreateConversation(
           params.recipientId,
@@ -219,8 +228,16 @@ export default function ConversationChatScreen() {
     }
   };
 
-  const participant =
+  const curUserId = currentUser?.id ? String(currentUser.id).toLowerCase() : "";
+  const resolvedOtherParticipant =
     conversation?.participant ||
+    (conversation?.participant1 && conversation?.participant2
+      ? String(conversation.participant1.id || conversation.participant1._id || conversation.participant1_id || "").toLowerCase() === curUserId
+        ? conversation.participant2
+        : conversation.participant1
+      : null) ||
+    conversation?.participant2 ||
+    conversation?.participant1 ||
     conversation?.participants?.[0] ||
     ({
       name: params.name || "Tailor",
@@ -229,17 +246,25 @@ export default function ConversationChatScreen() {
       role: "Tailor",
     } as any);
 
+  const participant = resolvedOtherParticipant;
+
   const participantName =
-    participant.name ||
     participant.fullName ||
-    participant.shopName ||
+    participant.full_name ||
+    participant.name ||
     params.name ||
+    participant.shopName ||
+    participant.shop_name ||
     "Tailor";
 
   const avatarUrl =
     participant.avatarUrl ||
+    participant.avatar_url ||
     participant.avatar ||
     participant.imageUrl ||
+    participant.image_url ||
+    participant.image ||
+    participant.profileImage ||
     params.avatar;
 
   const canSend = (inputText.trim().length > 0 || pendingAttachments.length > 0) && !isSending;
@@ -256,20 +281,30 @@ export default function ConversationChatScreen() {
             <Ionicons name="arrow-back" size={22} color="#1A1D1F" />
           </TouchableOpacity>
 
-          {avatarUrl ? (
-            <Image
-              source={{ uri: avatarUrl }}
-              className="w-10 h-10 rounded-full border border-brand-border bg-brand-surface"
-            />
-          ) : (
-            <View className="w-10 h-10 rounded-full bg-primary-50 items-center justify-center border border-primary/20">
-              <Text className="text-[14px] font-bold text-primary">
-                {participantName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
+          <View
+            style={{ width: 40, height: 40, borderRadius: 20 }}
+            className="overflow-hidden mr-3 items-center justify-center border border-brand-border bg-brand-surface"
+          >
+            {avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={{ width: 40, height: 40, borderRadius: 20 }}
+                contentFit="cover"
+                transition={200}
+              />
+            ) : (
+              <View
+                style={{ width: 40, height: 40, borderRadius: 20 }}
+                className="w-full h-full bg-primary-50 items-center justify-center border border-primary/20"
+              >
+                <Text className="text-[15px] font-bold text-primary">
+                  {participantName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </View>
 
-          <View className="ml-3 flex-1">
+          <View className="flex-1">
             <Text numberOfLines={1} className="text-[15px] font-bold text-brand-dark">
               {participantName}
             </Text>
@@ -342,36 +377,77 @@ export default function ConversationChatScreen() {
                 (item as any).images ||
                 [];
 
+              const messageAvatar =
+                (item as any).senderAvatar ||
+                (item as any).sender_avatar ||
+                (item as any).sender?.avatar_url ||
+                (item as any).sender?.avatarUrl ||
+                (item as any).sender?.avatar ||
+                avatarUrl;
+
               return (
                 <View
                   key={item.id || idx}
-                  className={`mb-3 max-w-[82%] rounded-2xl px-4 py-3 ${
-                    isOutgoing
-                      ? "self-end bg-primary rounded-br-none"
-                      : "self-start bg-brand-surface border border-brand-border rounded-bl-none"
+                  className={`mb-3 flex-row items-end ${
+                    isOutgoing ? "justify-end self-end max-w-[85%]" : "justify-start self-start max-w-[85%]"
                   }`}
                 >
-                  {Array.isArray(attachments) && attachments.length > 0 && (
-                    <View className="mb-2 gap-2">
-                      {attachments.map((attUri: string, attIdx: number) => (
+                  {/* Incoming person avatar */}
+                  {!isOutgoing && (
+                    <View
+                      style={{ width: 28, height: 28, borderRadius: 14 }}
+                      className="overflow-hidden mr-2 mb-0.5 items-center justify-center border border-brand-border bg-brand-surface"
+                    >
+                      {messageAvatar ? (
                         <Image
-                          key={attIdx}
-                          source={{ uri: attUri }}
-                          className="h-40 w-52 rounded-xl bg-black/10"
+                          source={{ uri: messageAvatar }}
+                          style={{ width: 28, height: 28, borderRadius: 14 }}
                           contentFit="cover"
+                          transition={200}
                         />
-                      ))}
+                      ) : (
+                        <View
+                          style={{ width: 28, height: 28, borderRadius: 14 }}
+                          className="w-full h-full bg-primary-50 items-center justify-center"
+                        >
+                          <Text className="text-[11px] font-bold text-primary">
+                            {participantName.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
                     </View>
                   )}
-                  {text ? (
-                    <Text
-                      className={`text-[13px] leading-5 ${
-                        isOutgoing ? "text-white font-medium" : "text-brand-dark"
-                      }`}
-                    >
-                      {text}
-                    </Text>
-                  ) : null}
+
+                  {/* Message Bubble */}
+                  <View
+                    className={`rounded-2xl px-4 py-3 ${
+                      isOutgoing
+                        ? "bg-primary rounded-br-none"
+                        : "bg-brand-surface border border-brand-border rounded-bl-none"
+                    }`}
+                  >
+                    {Array.isArray(attachments) && attachments.length > 0 && (
+                      <View className="mb-2 gap-2">
+                        {attachments.map((attUri: string, attIdx: number) => (
+                          <Image
+                            key={attIdx}
+                            source={{ uri: attUri }}
+                            className="h-40 w-52 rounded-xl bg-black/10"
+                            contentFit="cover"
+                          />
+                        ))}
+                      </View>
+                    )}
+                    {text ? (
+                      <Text
+                        className={`text-[13px] leading-5 ${
+                          isOutgoing ? "text-white font-medium" : "text-brand-dark"
+                        }`}
+                      >
+                        {text}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
               );
             })

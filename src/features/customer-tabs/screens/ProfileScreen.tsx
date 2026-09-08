@@ -1,19 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { Image } from "expo-image";
+import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { ProfileMenuRow } from "../components/ProfileMenuRow";
-import { TabPlaceholder } from "../components/TabPlaceholder";
 import { useAuthStore } from "../../../stores/auth.store";
 import { storage } from "../../../api/client";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
 import { User } from "../../../types/api";
 
-const profileAyesha = require("@/assets/illustrations/customer-tabs/profile/ayesha.png");
 const profileMeasurements = require("@/assets/illustrations/customer-tabs/profile/measurements.png");
 const profileSavedDesigns = require("@/assets/illustrations/customer-tabs/profile/saved-designs.png");
 const profilePaymentMethods = require("@/assets/illustrations/customer-tabs/profile/payment-methods.png");
@@ -25,6 +24,50 @@ export default function ProfileScreen() {
   const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Auto-refresh profile data when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
+      usersApi
+        .getMe()
+        .then((res) => {
+          if (!isMounted) return;
+          if (res.data) {
+            const serverUser = res.data;
+            const actualAvatar =
+              serverUser.avatar_url ||
+              serverUser.avatarUrl ||
+              serverUser.avatar ||
+              (serverUser as any).image ||
+              (serverUser as any).imageUrl ||
+              (serverUser as any).profileImage ||
+              (serverUser as any).profile?.avatar_url ||
+              (serverUser as any).profile?.avatarUrl ||
+              user?.avatar_url ||
+              user?.avatarUrl ||
+              user?.avatar;
+
+            const updatedUser: User = {
+              ...(user || {}),
+              ...serverUser,
+              avatar_url: actualAvatar,
+              avatarUrl: actualAvatar,
+              avatar: actualAvatar,
+            };
+            setUser(updatedUser);
+            storage.setUser(updatedUser).catch(() => {});
+          }
+        })
+        .catch(() => {
+          // Ignore network errors on background refresh
+        });
+
+      return () => {
+        isMounted = false;
+      };
+    }, [user, setUser])
+  );
 
   const pickImage = async () => {
     try {
@@ -55,7 +98,12 @@ export default function ProfileScreen() {
           const newAvatarUrl = extractAvatarUrl(res.data) || asset.uri;
 
           const updatedUser: User = user
-            ? { ...user, avatar: newAvatarUrl, avatarUrl: newAvatarUrl }
+            ? {
+                ...user,
+                avatar: newAvatarUrl,
+                avatarUrl: newAvatarUrl,
+                avatar_url: newAvatarUrl,
+              }
             : {
                 id: "guest",
                 email: "guest@suidhaga.app",
@@ -64,15 +112,41 @@ export default function ProfileScreen() {
                 role: "customer" as const,
                 avatar: newAvatarUrl,
                 avatarUrl: newAvatarUrl,
+                avatar_url: newAvatarUrl,
               };
 
           setUser(updatedUser);
           await storage.setUser(updatedUser).catch(() => {});
           Alert.alert("Success", "Profile avatar updated successfully!");
         } catch (uploadErr: any) {
+          // Fallback to local image preview so user sees their chosen avatar immediately
+          const localAvatarUri = asset.uri;
+          const updatedUser: User = user
+            ? {
+                ...user,
+                avatar: localAvatarUri,
+                avatarUrl: localAvatarUri,
+                avatar_url: localAvatarUri,
+              }
+            : {
+                id: "guest",
+                email: "guest@suidhaga.app",
+                name: "Guest User",
+                fullName: "Guest User",
+                role: "customer" as const,
+                avatar: localAvatarUri,
+                avatarUrl: localAvatarUri,
+                avatar_url: localAvatarUri,
+              };
+
+          setUser(updatedUser);
+          await storage.setUser(updatedUser).catch(() => {});
+
           Alert.alert(
-            "Upload Failed",
-            uploadErr?.message || "Failed to upload avatar image. Please try again."
+            "Avatar Updated",
+            uploadErr?.message
+              ? `Profile avatar updated locally. (${uploadErr.message})`
+              : "Profile avatar updated locally."
           );
         } finally {
           setIsUploading(false);
@@ -109,6 +183,23 @@ export default function ProfileScreen() {
     emailPrefix;
   const displayEmail = user?.email || "No email provided";
   const displayPhone = user?.phone || "+91 (Not set)";
+  const avatarUri =
+    user?.avatar_url ||
+    user?.avatarUrl ||
+    user?.avatar ||
+    (user as any)?.image ||
+    (user as any)?.imageUrl ||
+    (user as any)?.profileImage ||
+    null;
+
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase() || "U";
+  };
+  const initials = getInitials(displayName);
 
   return (
     <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Profile" />}>
@@ -122,20 +213,33 @@ export default function ProfileScreen() {
             onPress={pickImage}
             disabled={isUploading}
             className="relative"
+            accessibilityLabel="Change profile picture"
+            accessibilityRole="button"
           >
-            <TabPlaceholder
-              image={user?.avatar || user?.avatarUrl || profileAyesha}
-              variant="person"
-              size="md"
-              tone="coral"
-            />
+            <View className="h-28 w-28 rounded-full border-2 border-primary/25 bg-primary-50 overflow-hidden items-center justify-center shadow-md">
+              {avatarUri ? (
+                <Image
+                  source={{ uri: avatarUri }}
+                  style={{ width: "100%", height: "100%" }}
+                  contentFit="cover"
+                  transition={200}
+                />
+              ) : (
+                <View className="items-center justify-center w-full h-full bg-primary-50">
+                  <Text className="text-[32px] font-black text-primary">
+                    {initials}
+                  </Text>
+                </View>
+              )}
+            </View>
+
             {isUploading ? (
-              <View className="absolute inset-0 items-center justify-center rounded-md bg-black/40">
+              <View className="absolute inset-0 items-center justify-center rounded-full bg-black/40">
                 <ActivityIndicator size="small" color="#FFFFFF" />
               </View>
             ) : (
-              <View className="absolute bottom-1 right-1 h-7 w-7 items-center justify-center rounded-md bg-primary border-2 border-white shadow-sm">
-                <Ionicons name="camera-outline" size={15} color="#FFFFFF" />
+              <View className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full bg-primary border-2 border-white shadow-md">
+                <Ionicons name="camera" size={15} color="#FFFFFF" />
               </View>
             )}
           </TouchableOpacity>

@@ -55,6 +55,41 @@ export function getOtherParticipant(conv: any, currentUserId?: string) {
 
   const curId = currentUserId ? String(currentUserId).toLowerCase().trim() : "";
 
+  const extractAvatar = (obj: any): string | null => {
+    if (!obj || typeof obj !== "object") return null;
+    return (
+      obj.avatarUrl ||
+      obj.avatar_url ||
+      obj.avatar ||
+      obj.profileImage ||
+      obj.profile_image ||
+      obj.imageUrl ||
+      obj.image_url ||
+      obj.image ||
+      obj.photoUrl ||
+      obj.photo_url ||
+      obj.photo ||
+      null
+    );
+  };
+
+  const extractPersonName = (obj: any, fallback = "User"): string => {
+    if (!obj || typeof obj !== "object") return fallback;
+    const name =
+      obj.fullName ||
+      obj.full_name ||
+      obj.name ||
+      obj.firstName ||
+      obj.first_name ||
+      (obj.user?.fullName || obj.user?.full_name || obj.user?.name) ||
+      (obj.profile?.fullName || obj.profile?.full_name || obj.profile?.name) ||
+      obj.shopName ||
+      obj.shop_name ||
+      obj.businessName ||
+      fallback;
+    return typeof name === "string" && name.trim() ? name.trim() : fallback;
+  };
+
   // 1. If backend gave participant object
   if (conv.participant) {
     const pId = String(
@@ -66,23 +101,12 @@ export function getOtherParticipant(conv: any, currentUserId?: string) {
     ).toLowerCase();
 
     if (!curId || pId !== curId) {
+      const avatar = extractAvatar(conv.participant);
       return {
         id: conv.participant.id || conv.participant._id || conv.participant.userId || conv.participant.user_id || "",
-        name:
-          conv.participant.shopName ||
-          conv.participant.shop_name ||
-          conv.participant.businessName ||
-          conv.participant.fullName ||
-          conv.participant.full_name ||
-          conv.participant.name ||
-          "User",
-        avatarUrl:
-          conv.participant.avatarUrl ||
-          conv.participant.avatar_url ||
-          conv.participant.imageUrl ||
-          conv.participant.image ||
-          conv.participant.avatar ||
-          null,
+        name: extractPersonName(conv.participant, "User"),
+        avatarUrl: avatar,
+        avatar_url: avatar,
         role: conv.participant.role || "",
       };
     }
@@ -94,23 +118,12 @@ export function getOtherParticipant(conv: any, currentUserId?: string) {
       conv.tailor.userId || conv.tailor.user_id || conv.tailor.id || conv.tailor._id || ""
     ).toLowerCase();
     if (!curId || tId !== curId) {
+      const avatar = extractAvatar(conv.tailor);
       return {
         id: conv.tailor.userId || conv.tailor.user_id || conv.tailor.id || conv.tailor._id || "",
-        name:
-          conv.tailor.shopName ||
-          conv.tailor.shop_name ||
-          conv.tailor.businessName ||
-          conv.tailor.fullName ||
-          conv.tailor.full_name ||
-          conv.tailor.name ||
-          "Tailor",
-        avatarUrl:
-          conv.tailor.imageUrl ||
-          conv.tailor.image ||
-          conv.tailor.avatarUrl ||
-          conv.tailor.avatar_url ||
-          conv.tailor.avatar ||
-          null,
+        name: extractPersonName(conv.tailor, "Tailor"),
+        avatarUrl: avatar,
+        avatar_url: avatar,
         role: "Tailor",
       };
     }
@@ -123,46 +136,29 @@ export function getOtherParticipant(conv: any, currentUserId?: string) {
       customerOrUser.id || customerOrUser._id || customerOrUser.userId || ""
     ).toLowerCase();
     if (!curId || cId !== curId) {
+      const avatar = extractAvatar(customerOrUser);
       return {
         id: customerOrUser.id || customerOrUser._id || customerOrUser.userId || "",
-        name:
-          customerOrUser.fullName ||
-          customerOrUser.full_name ||
-          customerOrUser.name ||
-          "Customer",
-        avatarUrl:
-          customerOrUser.avatarUrl ||
-          customerOrUser.avatar_url ||
-          customerOrUser.avatar ||
-          customerOrUser.imageUrl ||
-          null,
+        name: extractPersonName(customerOrUser, "Customer"),
+        avatarUrl: avatar,
+        avatar_url: avatar,
         role: customerOrUser.role || "Customer",
       };
     }
   }
 
-  // 4. If backend gave user_1 and user_2
-  const u1 = conv.user_1 || conv.user1 || conv.sender;
-  const u2 = conv.user_2 || conv.user2 || conv.recipient || conv.receiver;
-  if (u1 && u2) {
-    const u1Id = String(u1.id || u1._id || "").toLowerCase();
-    const other = curId && u1Id === curId ? u2 : u1;
+  // 4. If backend gave participant1 and participant2 / user_1 and user_2
+  const p1 = conv.participant1 || conv.user_1 || conv.user1 || conv.sender;
+  const p2 = conv.participant2 || conv.user_2 || conv.user2 || conv.recipient || conv.receiver;
+  if (p1 && p2) {
+    const p1Id = String(p1.id || p1._id || p1.userId || conv.participant1_id || "").toLowerCase();
+    const other = curId && p1Id === curId ? p2 : p1;
+    const avatar = extractAvatar(other);
     return {
-      id: other.id || other._id || "",
-      name:
-        other.shopName ||
-        other.shop_name ||
-        other.businessName ||
-        other.fullName ||
-        other.full_name ||
-        other.name ||
-        "User",
-      avatarUrl:
-        other.avatarUrl ||
-        other.avatar_url ||
-        other.avatar ||
-        other.imageUrl ||
-        null,
+      id: other.id || other._id || other.userId || (other === p1 ? conv.participant1_id : conv.participant2_id) || "",
+      name: extractPersonName(other, "User"),
+      avatarUrl: avatar,
+      avatar_url: avatar,
       role: other.role || "",
     };
   }
@@ -175,31 +171,47 @@ export function getOtherParticipant(conv: any, currentUserId?: string) {
         return !curId || pId !== curId;
       }) || conv.participants[0];
 
+    const avatar = extractAvatar(other);
     return {
       id: other.id || other._id || other.userId || other.user_id || "",
-      name:
-        other.shopName ||
-        other.shop_name ||
-        other.businessName ||
-        other.fullName ||
-        other.full_name ||
-        other.name ||
-        "User",
-      avatarUrl:
-        other.avatarUrl ||
-        other.avatar_url ||
-        other.avatar ||
-        other.imageUrl ||
-        null,
+      name: extractPersonName(other, "User"),
+      avatarUrl: avatar,
+      avatar_url: avatar,
       role: other.role || "",
     };
   }
 
   // 6. Fallback from generic properties
+  const fallbackAvatar =
+    conv.participantAvatar ||
+    conv.participant_avatar ||
+    conv.tailorAvatar ||
+    conv.tailor_avatar ||
+    conv.customerAvatar ||
+    conv.customer_avatar ||
+    conv.avatarUrl ||
+    conv.avatar_url ||
+    conv.avatar ||
+    conv.imageUrl ||
+    conv.image_url ||
+    conv.image ||
+    null;
+
   return {
     id: conv.participantId || conv.participant_id || conv.tailorId || conv.id || "",
-    name: conv.participantName || conv.tailorName || conv.title || conv.name || "Tailor",
-    avatarUrl: conv.participantAvatar || conv.tailorAvatar || conv.avatarUrl || null,
+    name:
+      conv.participantName ||
+      conv.participant_name ||
+      conv.userName ||
+      conv.user_name ||
+      conv.fullName ||
+      conv.full_name ||
+      conv.tailorName ||
+      conv.tailor_name ||
+      conv.name ||
+      "Tailor",
+    avatarUrl: fallbackAvatar,
+    avatar_url: fallbackAvatar,
     role: "",
   };
 }
@@ -223,6 +235,14 @@ export default function MessagesScreen() {
           item.user1_id,
           item.user2Id,
           item.user2_id,
+          item.participant1_id,
+          item.participant2_id,
+          item.participant1?.id,
+          item.participant1?._id,
+          item.participant1?.userId,
+          item.participant2?.id,
+          item.participant2?._id,
+          item.participant2?.userId,
           item.senderId,
           item.sender_id,
           item.receiverId,
@@ -308,6 +328,12 @@ export default function MessagesScreen() {
     return result;
   }, [conversations, searchQuery, currentUser?.id]);
 
+  const currentUserAvatar =
+    currentUser?.avatarUrl ||
+    (currentUser as any)?.avatar ||
+    (currentUser as any)?.imageUrl ||
+    null;
+
   return (
     <CustomerTabShell
       bottomTabs={<CustomerTabsPreview active="Messages" />}
@@ -320,7 +346,11 @@ export default function MessagesScreen() {
         />
       }
     >
-      <CustomerHeader title="Messages" rightIcon="settings-outline" />
+      <CustomerHeader
+        title="Messages"
+        rightIcon="settings-outline"
+        avatarUrl={currentUserAvatar}
+      />
 
       <View className="flex-1 px-5 pb-6">
         {/* Search Bar */}
@@ -430,21 +460,24 @@ export default function MessagesScreen() {
                   name={other.name}
                   message={lastMsgText}
                   time={msgTime}
-                  avatarUrl={other.avatarUrl || undefined}
+                  avatar_url={other.avatar_url || other.avatarUrl || undefined}
+                  avatarUrl={other.avatarUrl || other.avatar_url || undefined}
                   unread={item.unreadCount ?? (item as any).unread_count}
                   tone={tone}
                   onPress={() => {
-                    if (item.id) {
-                      router.push({
-                        pathname: "/messages/[conversationId]",
-                        params: {
-                          conversationId: item.id,
-                          recipientId: other.id,
-                          name: other.name,
-                          avatar: other.avatarUrl || "",
-                        },
-                      } as any);
-                    }
+                    const tailorId = item.participant2_id || item.tailorId || (item as any).tailor_id || other.id;
+                    const clientId = item.participant1_id || item.customerId || (item as any).customer_id || currentUser?.id;
+                    router.push({
+                      pathname: "/messages/[conversationId]",
+                      params: {
+                        conversationId: item.id || "new",
+                        tailorId,
+                        clientId,
+                        recipientId: other.id,
+                        name: other.name,
+                        avatar: other.avatar_url || other.avatarUrl || "",
+                      },
+                    } as any);
                   }}
                 />
               );

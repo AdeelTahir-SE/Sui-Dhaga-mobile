@@ -75,12 +75,31 @@ export default function TailorProfileScreen() {
         ? [tailor.specialty]
         : [];
 
-  const avatarSource =
-    tailor?.imageUrl || tailor?.image || tailor?.avatar
-      ? typeof (tailor.imageUrl || tailor.image || tailor.avatar) === "string"
-        ? { uri: tailor.imageUrl || tailor.image || tailor.avatar }
-        : tailor.imageUrl || tailor.image || tailor.avatar
-      : rekhaImage;
+  const rawAvatarUri =
+    tailor?.avatarUrl ||
+    tailor?.avatar ||
+    (tailor as any)?.profile?.avatar_url ||
+    (tailor as any)?.profile?.avatarUrl ||
+    (tailor as any)?.profile?.avatar ||
+    (tailor as any)?.user?.avatar_url ||
+    (tailor as any)?.user?.avatarUrl ||
+    (tailor as any)?.user?.avatar ||
+    null;
+
+  const avatarSource = rawAvatarUri
+    ? { uri: rawAvatarUri }
+    : rekhaImage;
+
+  const rawBannerUri =
+    tailor?.bannerUrl ||
+    tailor?.banner ||
+    (tailor as any)?.shop_banner ||
+    (tailor as any)?.shopBanner ||
+    null;
+
+  const bannerSource = rawBannerUri
+    ? { uri: rawBannerUri }
+    : profileHeroImage;
 
   const services = tailor?.services && tailor.services.length > 0 ? tailor.services : null;
 
@@ -129,102 +148,45 @@ export default function TailorProfileScreen() {
         ? avatarSource
         : "";
 
-    try {
-      const targets = [
-        targetUserId,
-        tailor?.userId,
-        (tailor as any)?.user_id,
-        (tailor as any)?.user?.id,
-        (tailor as any)?.profile?.id,
-        tailor?.id,
-        tailorId,
-      ].filter(Boolean) as string[];
+    const resolvedTailorId =
+      tailor?.userId ||
+      (tailor as any)?.user_id ||
+      (tailor as any)?.user?.id ||
+      tailor?.id ||
+      tailorId ||
+      targetUserId;
 
-      const targetNames = [
-        name,
-        tailor?.shopName,
-        tailor?.businessName,
-        tailor?.name,
-      ].filter(Boolean) as string[];
+    const personName =
+      (tailor as any)?.user?.fullName ||
+      (tailor as any)?.user?.full_name ||
+      (tailor as any)?.user?.name ||
+      (tailor as any)?.profile?.fullName ||
+      (tailor as any)?.profile?.full_name ||
+      (tailor as any)?.fullName ||
+      (tailor as any)?.full_name ||
+      tailor?.name ||
+      tailor?.shopName ||
+      name ||
+      "Tailor";
 
-      // 1. Check if an existing conversation already exists between current user & tailor
-      const existing = await conversationsApi.findExistingConversation(
-        targets,
-        currentUser.id,
-        targetNames
-      );
-
-      if (existing && (existing.id || (existing as any)._id)) {
-        const convId = existing.id || (existing as any)._id;
-        router.push({
-          pathname: "/messages/[conversationId]",
-          params: {
-            conversationId: convId,
-            recipientId: targetUserId,
-            name,
-            avatar: avatarUrl,
-          },
-        } as any);
-        return;
-      }
-
-      // 2. If conversation does not exist, create conversation first and then continue
-      const startRes = await conversationsApi.startConversation({
-        participantId: targetUserId,
-        participant_id: targetUserId,
-        tailorId: tailor?.id || tailorId || targetUserId,
-        tailor_id: tailor?.id || tailorId || targetUserId,
-        recipientId: targetUserId,
-        recipient_id: targetUserId,
-      } as any);
-
-      const createdConv = (startRes?.data as any)?.conversation || startRes?.data;
-      const createdId = createdConv?.id || (createdConv as any)?._id || (createdConv as any)?.data?.id;
-
-      if (createdId) {
-        router.push({
-          pathname: "/messages/[conversationId]",
-          params: {
-            conversationId: createdId,
-            recipientId: targetUserId,
-            name,
-            avatar: avatarUrl,
-          },
-        } as any);
-        return;
-      }
-
-      // Fallback if backend didn't return an id immediately
-      router.push({
-        pathname: "/messages/[conversationId]",
-        params: {
-          conversationId: "new",
-          recipientId: targetUserId,
-          name,
-          avatar: avatarUrl,
-        },
-      } as any);
-    } catch (err) {
-      console.warn("Failed to find or create conversation:", err);
-      router.push({
-        pathname: "/messages/[conversationId]",
-        params: {
-          conversationId: "new",
-          recipientId: targetUserId,
-          name,
-          avatar: avatarUrl,
-        },
-      } as any);
-    } finally {
-      setIsStartingChat(false);
-    }
+    router.push({
+      pathname: "/messages/[conversationId]",
+      params: {
+        conversationId: "new",
+        tailorId: resolvedTailorId,
+        clientId: currentUser.id,
+        recipientId: resolvedTailorId,
+        name: personName,
+        avatar: avatarUrl,
+      },
+    } as any);
   };
 
   return (
     <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
       <View className="relative">
         <TailorPlaceholder
-          image={profileHeroImage}
+          image={bannerSource}
           variant="map"
           size="wide"
           tone="cream"

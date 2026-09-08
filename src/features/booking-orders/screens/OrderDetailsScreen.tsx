@@ -12,10 +12,12 @@ import { StatusPill } from "../components/StatusPill";
 import { TimelineItem } from "../components/TimelineItem";
 import { useOrderDetails } from "../hooks/useOrders";
 import { conversationsApi } from "@/api/conversations.api";
+import { useAuthStore } from "@/stores/auth.store";
 
 export default function OrderDetailsScreen() {
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
   const { order, isLoading } = useOrderDetails(orderId || "1");
+  const currentUser = useAuthStore((state) => state.user);
 
   const orderNumber = order?.orderNumber || orderId || "#ORD12345";
   const itemName = order?.itemName || "Custom Lehenga";
@@ -24,55 +26,18 @@ export default function OrderDetailsScreen() {
   const delivery = order?.deliveryDate || "Expected Soon";
   const status = order?.status || "In Progress";
 
-  const handleMessage = async () => {
+  const handleMessage = () => {
     const targetUserId = order?.tailorId || "";
-    const targetNames = [tailorName].filter(Boolean);
-    try {
-      if (targetUserId || targetNames.length > 0) {
-        const existing = await conversationsApi.findExistingConversation(
-          targetUserId ? [targetUserId] : [],
-          undefined,
-          targetNames
-        );
-        if (existing && (existing.id || (existing as any)._id)) {
-          const convId = existing.id || (existing as any)._id;
-          router.push({
-            pathname: "/messages/[conversationId]",
-            params: {
-              conversationId: convId,
-              recipientId: targetUserId,
-              name: tailorName,
-            },
-          } as any);
-          return;
-        }
-
-        if (targetUserId) {
-          const startRes = await conversationsApi.startConversation({
-            participantId: targetUserId,
-            participant_id: targetUserId,
-            tailorId: targetUserId,
-            recipientId: targetUserId,
-          } as any);
-          const createdConv = (startRes?.data as any)?.conversation || startRes?.data;
-          const createdId = createdConv?.id || (createdConv as any)?._id;
-          if (createdId) {
-            router.push({
-              pathname: "/messages/[conversationId]",
-              params: {
-                conversationId: createdId,
-                recipientId: targetUserId,
-                name: tailorName,
-              },
-            } as any);
-            return;
-          }
-        }
-      }
-      router.push("/messages" as any);
-    } catch {
-      router.push("/messages" as any);
-    }
+    router.push({
+      pathname: "/messages/[conversationId]",
+      params: {
+        conversationId: "new",
+        tailorId: targetUserId,
+        clientId: currentUser?.id,
+        recipientId: targetUserId,
+        name: tailorName,
+      },
+    } as any);
   };
 
   return (

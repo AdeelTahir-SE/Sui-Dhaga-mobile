@@ -37,9 +37,12 @@ export default function TailorsMapScreen() {
       ? `Specializes in ${selectedTailor.specialties.join(", ")}`
       : selectedTailor?.bio || "Bespoke & Custom Tailoring";
   const tailorImage =
+    selectedTailor?.avatarUrl ||
+    selectedTailor?.avatar ||
+    (selectedTailor as any)?.profile?.avatar_url ||
+    (selectedTailor as any)?.user?.avatar_url ||
     selectedTailor?.imageUrl ||
-    selectedTailor?.image ||
-    selectedTailor?.avatar;
+    selectedTailor?.image;
 
   return (
     <View className="flex-1 bg-[#F4EFE3]">

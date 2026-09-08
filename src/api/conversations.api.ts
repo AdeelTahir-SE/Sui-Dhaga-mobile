@@ -16,6 +16,11 @@ export interface AddAttachmentPayload {
   fileType: string;
 }
 
+export interface CheckConversationResult {
+  exists: boolean;
+  conversation: ConversationItem | null;
+}
+
 export function extractConversationsList(resData: any): any[] {
   if (!resData) return [];
   if (Array.isArray(resData)) return resData;
@@ -52,10 +57,22 @@ export function isConversationWithTarget(
   const convParticipantIds: string[] = [
     conv.participantId,
     conv.participant_id,
+    conv.participant1_id,
+    conv.participant1Id,
+    conv.participant2_id,
+    conv.participant2Id,
     conv.participant?.id,
     conv.participant?._id,
     conv.participant?.userId,
     conv.participant?.user_id,
+    conv.participant1?.id,
+    conv.participant1?._id,
+    conv.participant1?.userId,
+    conv.participant1?.user_id,
+    conv.participant2?.id,
+    conv.participant2?._id,
+    conv.participant2?.userId,
+    conv.participant2?.user_id,
     conv.user1_id,
     conv.user1Id,
     conv.user_1?.id,
@@ -129,6 +146,16 @@ export function isConversationWithTarget(
       conv.participant?.full_name,
       conv.participant?.shopName,
       conv.participant?.shop_name,
+      conv.participant1?.name,
+      conv.participant1?.fullName,
+      conv.participant1?.full_name,
+      conv.participant1?.shopName,
+      conv.participant1?.shop_name,
+      conv.participant2?.name,
+      conv.participant2?.fullName,
+      conv.participant2?.full_name,
+      conv.participant2?.shopName,
+      conv.participant2?.shop_name,
       conv.participantName,
       conv.tailor?.name,
       conv.tailor?.shopName,
@@ -182,6 +209,93 @@ export const conversationsApi = {
       ...res,
       data: list as ConversationItem[],
     };
+  },
+
+  // GET /conversations/:tailorId/:clientId - Get or check conversation between tailor and client
+  async getConversationBetween(tailorId: string, clientId: string) {
+    try {
+      const res = await apiClient<any>(
+        `/conversations/${encodeURIComponent(tailorId)}/${encodeURIComponent(clientId)}`,
+        {
+          method: 'GET',
+        }
+      );
+
+      let resData = res.data;
+      let exists = false;
+      let conversation: ConversationItem | null = null;
+
+      if (resData) {
+        if (typeof resData.exists === 'boolean') {
+          exists = resData.exists;
+          conversation = resData.conversation || null;
+        } else if (resData.data && typeof resData.data.exists === 'boolean') {
+          exists = resData.data.exists;
+          conversation = resData.data.conversation || null;
+        } else if (resData.id) {
+          exists = true;
+          conversation = resData;
+        }
+      }
+
+      return {
+        ...res,
+        data: {
+          exists,
+          conversation,
+        },
+      };
+    } catch {
+      return {
+        success: false,
+        data: {
+          exists: false,
+          conversation: null,
+        },
+      };
+    }
+  },
+
+  // Alias for getConversationBetween
+  async checkConversation(tailorId: string, clientId: string) {
+    return this.getConversationBetween(tailorId, clientId);
+  },
+
+  // GET /conversations/:tailorId/:clientId/messages - Get messages in conversation between tailor and client
+  async getMessagesBetween(tailorId: string, clientId: string) {
+    const res = await apiClient<any>(
+      `/conversations/${encodeURIComponent(tailorId)}/${encodeURIComponent(clientId)}/messages`,
+      {
+        method: 'GET',
+      }
+    );
+    let list: MessageItem[] = [];
+    if (Array.isArray(res.data)) {
+      list = res.data;
+    } else if (Array.isArray((res.data as any)?.messages)) {
+      list = (res.data as any).messages;
+    } else if (Array.isArray((res.data as any)?.data)) {
+      list = (res.data as any).data;
+    } else if (Array.isArray((res.data as any)?.items)) {
+      list = (res.data as any).items;
+    } else if (Array.isArray((res.data as any)?.results)) {
+      list = (res.data as any).results;
+    }
+    return {
+      ...res,
+      data: list,
+    };
+  },
+
+  // POST /conversations/:tailorId/:clientId/messages - Send a message in conversation between tailor and client
+  async sendMessageBetween(tailorId: string, clientId: string, payload: SendMessagePayload) {
+    return apiClient<MessageItem>(
+      `/conversations/${encodeURIComponent(tailorId)}/${encodeURIComponent(clientId)}/messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
   },
 
   // POST /conversations - Start a new conversation
@@ -270,11 +384,34 @@ export const conversationsApi = {
   },
 
   // Helper: Find existing conversation matching target user/tailor IDs or names
+  // Uses GET /conversations/:tailorId/:clientId endpoint first, with fallback to conversation list search
   async findExistingConversation(
     targetIds: string[],
     currentUserId?: string,
     targetNames?: string[]
-  ) {
+  ): Promise<ConversationItem | null> {
+    // 1. Direct check using GET /conversations/:tailorId/:clientId if IDs are available
+    if (currentUserId && targetIds.length > 0) {
+      for (const targetId of targetIds) {
+        if (!targetId || targetId === currentUserId) continue;
+        try {
+          // Check targetId as tailor, currentUserId as client
+          const check1 = await this.checkConversation(targetId, currentUserId);
+          if (check1?.data?.exists && check1.data.conversation) {
+            return check1.data.conversation;
+          }
+          // Check currentUserId as tailor, targetId as client
+          const check2 = await this.checkConversation(currentUserId, targetId);
+          if (check2?.data?.exists && check2.data.conversation) {
+            return check2.data.conversation;
+          }
+        } catch {
+          // Ignore and continue
+        }
+      }
+    }
+
+    // 2. Fallback: search in user's conversations list
     try {
       const res = await this.getConversations();
       const list = extractConversationsList(res.data);
@@ -288,7 +425,7 @@ export const conversationsApi = {
     }
   },
 
-  // Helper: Get or create conversation safely
+  // Helper: Get or create conversation safely (ensures no duplicates are created)
   async getOrCreateConversation(
     targetUserId: string,
     targetTailorId?: string,

@@ -8,6 +8,7 @@ type MessageRowProps = {
   time: string;
   image?: ImageSource | string;
   avatarUrl?: string;
+  avatar_url?: string;
   unread?: string | number;
   onPress?: () => void;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
@@ -28,11 +29,14 @@ export function MessageRow({
   time,
   image,
   avatarUrl,
+  avatar_url,
   unread,
   onPress,
   tone = "teal",
 }: MessageRowProps) {
-  const imgSrc = avatarUrl || image;
+  const [imageError, setImageError] = React.useState(false);
+  const rawSrc = avatar_url || avatarUrl || image;
+  const imgSrc = !imageError && rawSrc ? rawSrc : undefined;
   const initial = (name || "U").charAt(0).toUpperCase();
   const unreadCount = typeof unread === "number" ? unread : unread ? parseInt(unread, 10) || 0 : 0;
 
@@ -43,23 +47,31 @@ export function MessageRow({
       className="flex-row items-center border-b border-brand-border py-3.5 px-0.5"
     >
       {/* Avatar / Initial */}
-      {imgSrc ? (
-        <Image
-          source={typeof imgSrc === "string" ? { uri: imgSrc } : imgSrc}
-          className="w-11 h-11 rounded-full border border-brand-border bg-brand-surface"
-          contentFit="cover"
-        />
-      ) : (
-        <View
-          className={`w-11 h-11 rounded-full items-center justify-center border border-brand-border ${
-            toneBg[tone] || "bg-[#E0F7F7]"
-          }`}
-        >
-          <Text className="text-[16px] font-black text-primary-dark">
-            {initial}
-          </Text>
-        </View>
-      )}
+      <View
+        style={{ width: 44, height: 44, borderRadius: 22 }}
+        className="overflow-hidden mr-3.5 items-center justify-center border border-brand-border bg-brand-surface"
+      >
+        {imgSrc ? (
+          <Image
+            source={typeof imgSrc === "string" ? { uri: imgSrc } : imgSrc}
+            style={{ width: 44, height: 44, borderRadius: 22 }}
+            contentFit="cover"
+            transition={200}
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <View
+            style={{ width: 44, height: 44, borderRadius: 22 }}
+            className={`w-full h-full items-center justify-center ${
+              toneBg[tone] || "bg-[#E0F7F7]"
+            }`}
+          >
+            <Text className="text-[16px] font-black text-primary-dark">
+              {initial}
+            </Text>
+          </View>
+        )}
+      </View>
 
       {/* Message Info */}
       <View className="ml-3.5 flex-1 pr-2">

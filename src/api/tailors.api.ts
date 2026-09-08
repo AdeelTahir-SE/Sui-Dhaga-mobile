@@ -1,5 +1,7 @@
+import { Platform } from 'react-native';
 import { apiClient } from './client';
 import { TailorItem } from '../types/api';
+import { ImageAssetInput } from './users.api';
 
 export interface TailorFilters {
   search?: string;
@@ -29,6 +31,51 @@ export interface UpdateTailorProfilePayload {
   address?: string;
   experienceYears?: number;
   bio?: string;
+}
+
+export async function buildBannerFormData(
+  input: ImageAssetInput | FormData
+): Promise<FormData> {
+  if (
+    (typeof FormData !== 'undefined' && input instanceof FormData) ||
+    (input && typeof (input as any).append === 'function')
+  ) {
+    return input as FormData;
+  }
+
+  const asset = input as ImageAssetInput;
+  const formData = new FormData();
+  const fileUri = asset.uri;
+
+  let filename = asset.fileName || asset.name || fileUri.split('/').pop() || 'banner.jpg';
+  if (!filename.includes('.')) {
+    filename = `${filename}.jpg`;
+  }
+
+  const match = /\.(\w+)$/.exec(filename);
+  const ext = match ? match[1].toLowerCase() : 'jpeg';
+  let mimeType = asset.mimeType || asset.type || `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+  if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
+
+  if (Platform.OS === 'web') {
+    try {
+      const response = await fetch(fileUri);
+      const blob = await response.blob();
+      formData.append('banner', blob, filename);
+      return formData;
+    } catch {
+      // Fallback
+    }
+  }
+
+  // Native React Native FormData object for XMLHttpRequest
+  formData.append('banner', {
+    uri: fileUri,
+    name: filename,
+    type: mimeType,
+  } as any);
+
+  return formData;
 }
 
 export function mapTailorFromBackend(raw: any): TailorItem {
@@ -82,10 +129,22 @@ export function mapTailorFromBackend(raw: any): TailorItem {
 
   const avatar =
     raw.profile?.avatar_url ||
+    raw.profile?.avatarUrl ||
+    raw.profile?.avatar ||
+    raw.user?.avatar_url ||
+    raw.user?.avatarUrl ||
+    raw.user?.avatar ||
     raw.avatar_url ||
-    raw.imageUrl ||
-    raw.image ||
+    raw.avatarUrl ||
     raw.avatar ||
+    null;
+
+  const banner =
+    raw.banner_url ||
+    raw.bannerUrl ||
+    raw.banner ||
+    raw.shop_banner ||
+    raw.shopBanner ||
     null;
 
   const bio = raw.bio || raw.profile?.bio || '';
@@ -121,9 +180,12 @@ export function mapTailorFromBackend(raw: any): TailorItem {
     startingPrice,
     bio,
     phone,
-    imageUrl: avatar,
-    image: avatar,
     avatar,
+    avatarUrl: avatar,
+    banner,
+    bannerUrl: banner,
+    imageUrl: avatar || raw.imageUrl || raw.image || null,
+    image: avatar || raw.imageUrl || raw.image || null,
     isVerified:
       raw.verified === true ||
       raw.verification_status === 'verified' ||
@@ -206,6 +268,18 @@ export const tailorsApi = {
 
   async getMyTailorProfile(userId?: string, userEmail?: string) {
     try {
+      // 1. Try /tailors/me endpoint if available
+      try {
+        const meRes = await apiClient<any>('/tailors/me', { method: 'GET' });
+        if (meRes.success && meRes.data) {
+          return {
+            ...meRes,
+            data: mapTailorFromBackend(meRes.data),
+          };
+        }
+      } catch {}
+
+      // 2. Query tailors list
       const listRes = await this.getTailors({ limit: 100, page: 1 });
       const tailorsArray: TailorItem[] = listRes.data || [];
 
@@ -274,8 +348,15 @@ export const tailorsApi = {
     });
   },
 
-  async saveTailorProfile(data: Partial<TailorItem> & { shopName?: string }) {
+  async saveTailorProfile(data: Partial<TailorItem> & { shopName?: string; businessName?: string }) {
     const raw = data as any;
+    const resolvedShopName =
+      raw.shopName?.trim() ||
+      raw.shop_name?.trim() ||
+      raw.businessName?.trim() ||
+      data.name?.trim() ||
+      'Tailor Shop';
+
     const city =
       raw.city ||
       (typeof data.location === 'object' && data.location?.city ? data.location.city : null) ||
@@ -300,7 +381,7 @@ export const tailorsApi = {
         : 0;
 
     const payload: CreateTailorProfilePayload = {
-      shopName: raw.shopName || raw.shop_name || raw.businessName || data.name || 'Tailor Shop',
+      shopName: resolvedShopName,
       specialties,
       city: city || 'Lahore',
       address: address || undefined,
@@ -308,15 +389,23 @@ export const tailorsApi = {
       bio: data.bio || '',
     };
 
-    // If we have an existing valid UUID tailorId, update via PATCH
-    const isUuid = data.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.id);
-    if (isUuid) {
+    // 1. If we have a valid UUID tailorId, update via PATCH
+    let targetId = data.id;
+    let isUuid = targetId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+
+    // 2. If not a UUID, check if this user already has an existing tailor profile in backend
+    if (!isUuid && (data.userId || (data as any).user_id)) {
       try {
-        const patchRes = await tailorsApi.updateTailorProfile(data.id!, payload);
-        if (patchRes.success && patchRes.data) {
-          return patchRes;
+        const existing = await tailorsApi.getMyTailorProfile(data.userId || (data as any).user_id);
+        if (existing?.data?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(existing.data.id)) {
+          targetId = existing.data.id;
+          isUuid = true;
         }
       } catch {}
+    }
+
+    if (isUuid && targetId) {
+      return await tailorsApi.updateTailorProfile(targetId, payload);
     }
 
     // Otherwise create new tailor profile in database via POST /tailors
@@ -334,5 +423,16 @@ export const tailorsApi = {
     }
 
     return createRes;
+  },
+
+  async uploadBanner(
+    tailorId: string,
+    fileOrFormData: ImageAssetInput | FormData
+  ) {
+    const body = await buildBannerFormData(fileOrFormData);
+    return apiClient<any>(`/tailors/${tailorId}/banner`, {
+      method: 'POST',
+      body,
+    });
   },
 };
