@@ -106,13 +106,19 @@ export interface OrderItem {
 
 export interface AppointmentItem {
   id: string;
-  tailorId: string;
+  tailorId?: string;
+  customerId?: string;
+  customerName?: string;
+  customerAvatar?: string;
+  clientName?: string;
+  clientAvatar?: string;
+  userName?: string;
   tailorName?: string;
   tailorAvatar?: string;
   serviceType: string;
   appointmentDate: string;
   appointmentTime: string;
-  status: 'Upcoming' | 'Completed' | 'Cancelled';
+  status: 'Pending' | 'Upcoming' | 'Confirmed' | 'Completed' | 'Cancelled' | string;
   notes?: string;
   location?: string;
   price?: number;

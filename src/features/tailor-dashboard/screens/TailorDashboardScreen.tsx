@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Text, View } from "react-native";
+import { Image } from "expo-image";
+import { router } from "expo-router";
 
 import { MetricCard } from "../components/MetricCard";
 import { SectionTitle } from "../components/SectionTitle";
 import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
-import { TailorDashPlaceholder } from "../components/TailorDashPlaceholder";
 import { useAuthStore } from "../../../stores/auth.store";
 import { useTailorProfile } from "../hooks/useTailorProfile";
+import { useOrders } from "../../booking-orders/hooks/useOrders";
+import { useAppointments } from "../../booking-orders/hooks/useAppointments";
 
 const dashboardHeroImage = require("@/assets/illustrations/tailor-dashboard/dashboard-hero.png");
 
@@ -38,6 +41,8 @@ function ActivityRow({
 export default function TailorDashboardScreen() {
   const user = useAuthStore((state) => state.user);
   const { profile } = useTailorProfile();
+  const { orders } = useOrders();
+  const { appointments } = useAppointments();
 
   const emailPrefix = user?.email ? user.email.split("@")[0] : "Tailor";
   const displayBusinessName =
@@ -46,49 +51,117 @@ export default function TailorDashboardScreen() {
     user?.name?.trim() ||
     emailPrefix;
 
+  const { newOrdersCount, pendingAppointmentsCount, totalEarnings } = useMemo(() => {
+    const validOrders = Array.isArray(orders) ? orders : [];
+    const validAppts = Array.isArray(appointments) ? appointments : [];
+
+    const newOrders = validOrders.filter(
+      (o) => (o.status || "").toLowerCase() === "pending"
+    ).length;
+
+    const pendingAppts = validAppts.filter(
+      (a) => (a.status || "").toLowerCase() !== "completed"
+    ).length;
+
+    const earned = validOrders.reduce((sum, o) => {
+      const s = (o.status || "").toLowerCase();
+      if (s === "completed" || s === "delivered") {
+        return sum + (Number(o.price) || 0);
+      }
+      return sum;
+    }, 0);
+
+    return {
+      newOrdersCount: newOrders,
+      pendingAppointmentsCount: pendingAppts,
+      totalEarnings: earned,
+    };
+  }, [orders, appointments]);
+
   return (
     <TailorDashboardShell
       bottomTabs={<TailorDashboardTabs active="Dashboard" />}
     >
       <TailorDashboardHeader title="Dashboard" />
       <View className="px-5 pb-8">
-        {/* Hero Card */}
-        <View className="overflow-hidden rounded-md bg-primary-50 border border-primary-light/60 p-5 shadow-sm">
+        {/* Hero Banner with increased height & no border */}
+        <View className="relative overflow-hidden rounded-md bg-primary-50 min-h-[175px] justify-center p-6 shadow-sm">
           <Text className="text-[13px] font-bold text-brand-gray tracking-wide">Good Morning,</Text>
-          <Text className="mt-1 text-[22px] font-black text-primary tracking-tight">
+          <Text className="mt-1 text-[23px] font-black text-primary tracking-tight">
             {displayBusinessName}
           </Text>
-          <Text className="mt-1.5 w-[58%] text-[13px] font-semibold text-brand-dark leading-[18px]">
-            Here's what's happening today.
+          <Text className="mt-2 w-[55%] text-[13px] font-semibold text-brand-dark leading-[19px]">
+            Here's what's happening with your boutique today.
           </Text>
-          <View className="absolute bottom-3 right-4">
-            <TailorDashPlaceholder
-              image={dashboardHeroImage}
-              variant="machine"
-              size="hero"
-              tone="cream"
-            />
-          </View>
+          <Image
+            source={dashboardHeroImage}
+            contentFit="contain"
+            style={{
+              position: "absolute",
+              bottom: 6,
+              right: 12,
+              height: 140,
+              width: 140,
+            }}
+          />
         </View>
 
         {/* Metrics Grid */}
         <View className="mt-5 flex-row flex-wrap justify-between gap-y-3">
-          <MetricCard title="New Orders" value="12" action="View all" icon="bag-add-outline" tone="coral" />
-          <MetricCard title="Appointments" value="5" action="View all" icon="calendar-outline" tone="gold" />
-          <MetricCard title="Messages" value="8" action="View all" icon="chatbubble-outline" tone="teal" />
-          <MetricCard title="Earnings" value="Rs. 48,650" action="View details" icon="cash-outline" tone="teal" />
+          <MetricCard
+            title="New Orders"
+            value={String(newOrdersCount)}
+            action="View all"
+            icon="bag-add-outline"
+            tone="coral"
+            onPress={() => router.push("/tailor-dashboard/orders" as never)}
+          />
+          <MetricCard
+            title="Appointments"
+            value={String(pendingAppointmentsCount)}
+            action="View all"
+            icon="calendar-outline"
+            tone="gold"
+            onPress={() => router.push("/tailor-dashboard/appointments" as never)}
+          />
+          <MetricCard
+            title="Messages"
+            value="0"
+            action="View all"
+            icon="chatbubble-outline"
+            tone="teal"
+            onPress={() => router.push("/messages" as never)}
+          />
+          <MetricCard
+            title="Earnings"
+            value={`Rs. ${totalEarnings.toLocaleString()}`}
+            action="View details"
+            icon="cash-outline"
+            tone="teal"
+            onPress={() => router.push("/tailor-dashboard/earnings" as never)}
+          />
         </View>
 
         {/* Recent Activity */}
         <SectionTitle title="Recent Activity" />
         <View className="rounded-md border border-brand-border bg-white px-3.5 shadow-xs">
-          <ActivityRow title="New order request" subtitle="#ORD1234" time="2m ago" />
-          <ActivityRow title="Appointment request" subtitle="Riya Sharma" time="10m ago" />
-          <ActivityRow title="New message" subtitle="From Neha Verma" time="20m ago" />
+          {orders?.length > 0 ? (
+            orders.slice(0, 3).map((o, idx) => (
+              <ActivityRow
+                key={o.id || idx}
+                title={`Order #${o.orderNumber || o.id}`}
+                subtitle={`${o.itemName || "Custom Garment"} • ${o.customerName || "Customer"}`}
+                time={o.status || "Active"}
+              />
+            ))
+          ) : (
+            <View className="py-6 items-center justify-center">
+              <Text className="text-[13px] font-medium text-brand-gray">
+                No recent activity to show
+              </Text>
+            </View>
+          )}
         </View>
-        <Text className="mt-4 text-center text-[13px] font-bold text-primary">
-          View all activity
-        </Text>
       </View>
     </TailorDashboardShell>
   );

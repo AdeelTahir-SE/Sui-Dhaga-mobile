@@ -12,8 +12,8 @@ export default function TailorAvailabilityScreen() {
     <TailorDashboardShell
       bottomTabs={<TailorDashboardTabs active="Availability" />}
     >
-      <TailorDashboardHeader title="Availability" showBack />
-      <View className="px-5">
+      <TailorDashboardHeader title="Availability" />
+      <View className="px-5 pb-8">
         <View className="mb-4 flex-row items-center justify-between">
           <Ionicons name="chevron-back" size={18} color="#1A1D1F" />
           <Text className="text-[14px] font-semibold text-brand-dark">May 2024</Text>

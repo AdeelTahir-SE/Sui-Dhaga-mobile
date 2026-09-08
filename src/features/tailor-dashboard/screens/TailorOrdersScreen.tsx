@@ -3,6 +3,7 @@ import {
   Text,
   View,
   ScrollView,
+  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
@@ -26,6 +27,7 @@ type TailorOrderTab = "requests" | "in_progress" | "completed" | "cancelled";
 export default function TailorOrdersScreen() {
   const { orders, isLoading, isRefreshing, refresh } = useOrders();
   const [selectedTab, setSelectedTab] = useState<TailorOrderTab>("requests");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const pendingRequests = useMemo(
     () => orders.filter((o) => (o.status || "").toLowerCase() === "pending"),
@@ -78,6 +80,17 @@ export default function TailorOrdersScreen() {
       ? completedOrders
       : cancelledOrders;
 
+  const filteredOrders = useMemo(() => {
+    if (!searchQuery.trim()) return currentList;
+    const q = searchQuery.toLowerCase().trim();
+    return currentList.filter((o) => {
+      const item = (o.itemName || "").toLowerCase();
+      const customer = (o.customerName || "").toLowerCase();
+      const num = (o.orderNumber || o.id || "").toLowerCase();
+      return item.includes(q) || customer.includes(q) || num.includes(q);
+    });
+  }, [currentList, searchQuery]);
+
   const tones: ("teal" | "coral" | "gold" | "blue" | "mint")[] = [
     "coral",
     "teal",
@@ -88,7 +101,7 @@ export default function TailorOrdersScreen() {
 
   return (
     <TailorDashboardShell bottomTabs={<TailorDashboardTabs active="Orders" />}>
-      <TailorDashboardHeader title="Orders" showBack rightIcon="cube-outline" />
+      <TailorDashboardHeader title="Orders" rightIcon="cube-outline" />
 
       <ScrollView
         className="flex-1 px-5"
@@ -103,6 +116,23 @@ export default function TailorOrdersScreen() {
           />
         }
       >
+        {/* Search Field */}
+        <View className="mb-3.5 h-[46px] flex-row items-center rounded-md border border-brand-border bg-white px-3.5 shadow-xs">
+          <Ionicons name="search-outline" size={17} color="#6F767E" />
+          <TextInput
+            className="ml-2.5 flex-1 text-[13px] font-medium text-brand-dark"
+            placeholder="Search orders by customer, garment, ID..."
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery("")} className="p-1">
+              <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+            </TouchableOpacity>
+          )}
+        </View>
+
         {/* Interactive Filter Tabs */}
         <ScrollView
           horizontal
@@ -137,14 +167,33 @@ export default function TailorOrdersScreen() {
         </ScrollView>
 
         {isLoading && !isRefreshing ? (
-          <View className="py-20 items-center justify-center">
+          <View className="py-20 items-center justify-center" style={{ minHeight: 380 }}>
             <ActivityIndicator size="large" color="#14919B" />
+            <Text className="mt-3 text-[13px] font-medium text-brand-gray">
+              Loading orders...
+            </Text>
           </View>
-        ) : currentList.length === 0 ? (
-          <View className="py-16 items-center justify-center px-4 rounded-md border border-brand-border bg-brand-surface/30">
-            <Ionicons name="cube-outline" size={36} color="#9CA3AF" />
-            <Text className="mt-3 text-[15px] font-bold text-brand-dark text-center">
-              {selectedTab === "requests"
+        ) : filteredOrders.length === 0 ? (
+          <View className="flex-1 items-center justify-center py-12 px-4" style={{ minHeight: 400 }}>
+            <View className="w-20 h-20 rounded-full bg-primary/10 items-center justify-center mb-4">
+              <Ionicons
+                name={
+                  selectedTab === "completed"
+                    ? "checkmark-done-circle-outline"
+                    : selectedTab === "cancelled"
+                    ? "close-circle-outline"
+                    : selectedTab === "in_progress"
+                    ? "hourglass-outline"
+                    : "bag-handle-outline"
+                }
+                size={38}
+                color="#14919B"
+              />
+            </View>
+            <Text className="text-[18px] font-bold text-brand-dark text-center tracking-tight">
+              {searchQuery.trim()
+                ? "No Matching Orders"
+                : selectedTab === "requests"
                 ? "No New Requests"
                 : selectedTab === "in_progress"
                 ? "No Orders in Progress"
@@ -152,18 +201,31 @@ export default function TailorOrdersScreen() {
                 ? "No Completed Orders"
                 : "No Cancelled Orders"}
             </Text>
-            <Text className="mt-1 text-[12px] text-brand-gray text-center leading-[18px]">
-              {selectedTab === "requests"
-                ? "New order requests from customers will show up here."
+            <Text className="mt-2 text-[13px] font-medium text-brand-gray text-center leading-[20px] max-w-[290px] mb-6">
+              {searchQuery.trim()
+                ? `We couldn't find any orders matching "${searchQuery}". Try searching by customer name, order number, or garment.`
+                : selectedTab === "requests"
+                ? "You're all caught up! New order requests from customers will appear here."
                 : selectedTab === "in_progress"
-                ? "Active orders you are currently working on will appear here."
+                ? "Active orders you are currently working on will be displayed here."
                 : selectedTab === "completed"
                 ? "Your completed tailoring orders will be listed here."
                 : "You do not have any cancelled orders."}
             </Text>
+            {searchQuery.trim() ? (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setSearchQuery("")}
+                className="h-[44px] px-6 rounded-md bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+              >
+                <Text className="text-[13px] font-bold text-white tracking-wide">
+                  Clear Search
+                </Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         ) : (
-          currentList.map((order, index) => {
+          filteredOrders.map((order, index) => {
             const fallbackImages = [orderImages.anarkali, orderImages.sherwani, orderImages.lehenga];
             const img = order.imageUrl ? { uri: order.imageUrl } : fallbackImages[index % fallbackImages.length];
 

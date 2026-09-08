@@ -19,8 +19,8 @@ export default function TailorServicesScreen() {
     <TailorDashboardShell
       bottomTabs={<TailorDashboardTabs active="Services" />}
     >
-      <TailorDashboardHeader title="Services" showBack rightIcon="chatbubble-ellipses-outline" />
-      <View className="px-5">
+      <TailorDashboardHeader title="Services" rightIcon="chatbubble-ellipses-outline" />
+      <View className="px-5 pb-8">
         <View className="mb-4 flex-row gap-3">
           <View className="h-[44px] flex-1 flex-row items-center rounded-md border border-brand-border px-3">
             <Ionicons name="search" size={17} color="#6F767E" />
