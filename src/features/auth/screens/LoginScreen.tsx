@@ -44,20 +44,22 @@ export default function LoginScreen() {
       const success = await login({ email: email.trim(), password });
       if (success) {
         const user = useAuthStore.getState().user;
-        let isTailor = user?.role === "tailor";
-
-        // Check if corresponding id exists in tailor table
-        let hasTailorProfile = false;
-        try {
-          const tailorRes = await tailorsApi?.getMyTailorProfile?.();
-          if (tailorRes?.data && tailorRes.data.id) {
-            hasTailorProfile = true;
-            isTailor = true;
-          }
-        } catch {}
+        const isTailor = user?.role === "tailor";
 
         if (isTailor) {
-          if (hasTailorProfile) {
+          // Check if tailor profile already exists in backend database
+          let hasExistingTailorProfile = false;
+          try {
+            const tailorRes = await tailorsApi.getMyTailorProfile(user?.id, user?.email);
+            const t = (tailorRes?.data || tailorRes) as any;
+            if (t && t.id) {
+              hasExistingTailorProfile = true;
+            }
+          } catch {}
+
+          // If tailor already has a profile in database, route directly to dashboard!
+          // Only if no profile exists at all, route to complete-profile setup.
+          if (hasExistingTailorProfile) {
             router.replace("/tailor-dashboard" as any);
           } else {
             router.replace("/tailor-dashboard/complete-profile" as any);

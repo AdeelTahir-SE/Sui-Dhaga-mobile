@@ -55,7 +55,7 @@ export default function TailorProfileScreen() {
   }
 
   const name = tailor?.shopName || tailor?.businessName || tailor?.name || "Tailor Profile";
-  const rating = tailor?.rating ? Number(tailor.rating).toFixed(1) : "5.0";
+  const rating = tailor?.rating ? Number(tailor.rating).toFixed(1) : "New";
   const reviewsCount = `${tailor?.reviewsCount ?? tailor?.reviews ?? 0} reviews`;
   const distance = tailor?.distance || "Nearby";
   const location = tailor?.address
@@ -63,17 +63,13 @@ export default function TailorProfileScreen() {
       ? `${tailor.address}, ${tailor.city}`
       : tailor.address
     : tailor?.city || tailor?.location?.address || "Location not specified";
-  const bio =
-    tailor?.bio ||
-    (tailor?.experienceYears
-      ? `${tailor.experienceYears}+ years of professional tailoring experience delivering premium bespoke garments.`
-      : "Professional tailoring and custom stitching services.");
+  const bio = tailor?.bio || "";
   const tags =
     tailor?.specialties && tailor.specialties.length > 0
       ? tailor.specialties
       : tailor?.specialty
         ? [tailor.specialty]
-        : ["Custom Tailoring", "Bridal Wear", "Alterations"];
+        : [];
 
   const avatarSource =
     tailor?.imageUrl || tailor?.image || tailor?.avatar
@@ -123,96 +119,63 @@ export default function TailorProfileScreen() {
           </View>
         ) : null}
 
-        <View className="mt-4 flex-row flex-wrap gap-2">
-          {tags.map((tag) => (
-            <View
-              key={tag}
-              className="rounded-md border border-brand-border px-3 py-2 bg-white shadow-xs"
-            >
-              <Text className="text-[11px] font-semibold text-brand-dark">
-                {tag}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        <SectionHeader title="Gallery" />
-        <View className="flex-row gap-2">
-          {["teal", "blue", "coral", "gold", "cream"].map((tone, index) => (
-            <View key={tone} className="flex-1">
-              <TailorPlaceholder
-                image={galleryImages[index]}
-                variant="garment"
-                size="sm"
-                tone={tone as "teal" | "blue" | "coral" | "gold" | "cream"}
-                label={`Look ${index + 1}`}
-              />
-            </View>
-          ))}
-        </View>
-
-        <Text className="mb-2 mt-5 text-[14px] font-semibold text-brand-dark">
-          About
-        </Text>
-        <Text className="text-[12px] leading-5 text-brand-gray">
-          {bio}
-        </Text>
-
-        <SectionHeader title="Services" />
-        {services ? (
-          <View className="flex-row flex-wrap gap-3">
-            {services.map((service, index) => (
+        {tags.length > 0 ? (
+          <View className="mt-4 flex-row flex-wrap gap-2">
+            {tags.map((tag) => (
               <View
-                key={service.id || service.title || index}
-                className="w-[48%] rounded-md border border-brand-border p-3 bg-white shadow-xs"
+                key={tag}
+                className="rounded-md border border-brand-border px-3 py-2 bg-white shadow-xs"
               >
-                <TailorPlaceholder
-                  image={serviceImages[index % serviceImages.length]}
-                  variant="garment"
-                  size="sm"
-                  tone={index % 2 === 0 ? "teal" : "coral"}
-                />
-                <Text className="mt-3 text-[12px] font-semibold text-brand-dark" numberOfLines={1}>
-                  {service.title}
+                <Text className="text-[11px] font-semibold text-brand-dark">
+                  {tag}
                 </Text>
-                <Text className="mt-1 text-[13px] font-bold text-brand-dark">
-                  Rs. {Number(service.price).toLocaleString()}
-                </Text>
-                {service.description ? (
-                  <Text className="mt-1 text-[10px] text-brand-gray" numberOfLines={2}>
-                    {service.description}
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {bio ? (
+          <>
+            <Text className="mb-2 mt-5 text-[14px] font-semibold text-brand-dark">
+              About
+            </Text>
+            <Text className="text-[12px] leading-5 text-brand-gray">
+              {bio}
+            </Text>
+          </>
+        ) : null}
+
+        {services && services.length > 0 ? (
+          <>
+            <SectionHeader title="Services" />
+            <View className="flex-row flex-wrap gap-3">
+              {services.map((service, index) => (
+                <View
+                  key={service.id || service.title || index}
+                  className="w-[48%] rounded-md border border-brand-border p-3 bg-white shadow-xs"
+                >
+                  <TailorPlaceholder
+                    image={serviceImages[index % serviceImages.length]}
+                    variant="garment"
+                    size="sm"
+                    tone={index % 2 === 0 ? "teal" : "coral"}
+                  />
+                  <Text className="mt-3 text-[12px] font-semibold text-brand-dark" numberOfLines={1}>
+                    {service.title}
                   </Text>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        ) : (
-          <View className="flex-row gap-3">
-            {[
-              ["Custom Anarkali Suit", "Rs. 4,500", "7 - 10 Days", "teal"],
-              ["Bridal Lehenga", "Rs. 15,000", "15 - 20 Days", "coral"],
-            ].map(([title, price, days, tone]) => (
-              <View
-                key={title}
-                className="flex-1 rounded-md border border-brand-border p-3 bg-white shadow-xs"
-              >
-                <TailorPlaceholder
-                  image={serviceImages[tone === "teal" ? 0 : 1]}
-                  variant="garment"
-                  size="sm"
-                  tone={tone as "teal" | "coral"}
-                />
-                <Text className="mt-3 text-[12px] font-semibold text-brand-dark">
-                  {title}
-                </Text>
-                <Text className="mt-1 text-[12px] font-bold text-brand-dark">
-                  {price}
-                </Text>
-                <Text className="mt-1 text-[10px] text-brand-gray">{days}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+                  <Text className="mt-1 text-[13px] font-bold text-brand-dark">
+                    Rs. {Number(service.price).toLocaleString()}
+                  </Text>
+                  {service.description ? (
+                    <Text className="mt-1 text-[10px] text-brand-gray" numberOfLines={2}>
+                      {service.description}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          </>
+        ) : null}
 
         <View className="mt-6 flex-row gap-3">
           <TouchableOpacity

@@ -47,6 +47,7 @@ export default function TailorDashboardScreen() {
 
   const emailPrefix = user?.email ? user.email.split("@")[0] : "Tailor";
   const displayBusinessName =
+    profile?.shopName?.trim() ||
     profile?.businessName?.trim() ||
     user?.fullName?.trim() ||
     user?.name?.trim() ||

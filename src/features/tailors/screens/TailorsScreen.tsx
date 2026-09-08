@@ -27,18 +27,33 @@ export default function TailorsScreen() {
 
         {isLoading ? (
           <View className="py-12 items-center justify-center">
-            <ActivityIndicator size="small" color="#FF6B6B" />
+            <ActivityIndicator size="small" color="#14919B" />
           </View>
         ) : (
           <View className="mt-5">
             {tailors.map((tailor, index) => (
               <TailorListCard
                 key={tailor.id || index}
-                image={tailor.image || tailor.imageUrl}
-                name={tailor.name || tailor.businessName || "Tailor"}
-                rating={`${tailor.rating || 4.8} (${tailor.reviews || tailor.reviewsCount || 0})`}
-                distance={tailor.distance || "2.1 km"}
-                specialty={tailor.specialty || tailor.specialties?.join(', ') || "Bespoke Tailoring"}
+                id={tailor.id}
+                image={tailor.imageUrl || tailor.image || tailor.avatar}
+                name={tailor.shopName || tailor.businessName || tailor.name || "Tailor Studio"}
+                rating={
+                  tailor.rating
+                    ? `${Number(tailor.rating).toFixed(1)} (${tailor.reviewsCount ?? tailor.reviews ?? 0})`
+                    : "New"
+                }
+                distance={
+                  tailor.city ||
+                  (typeof tailor.location === "object" ? tailor.location?.city : null) ||
+                  tailor.address ||
+                  tailor.distance ||
+                  "Nearby"
+                }
+                specialty={
+                  Array.isArray(tailor.specialties) && tailor.specialties.length > 0
+                    ? tailor.specialties.join(", ")
+                    : tailor.specialty || "Custom Tailoring"
+                }
                 topRated={tailor.topRated || tailor.isTopRated}
                 tone={getTone(index)}
               />

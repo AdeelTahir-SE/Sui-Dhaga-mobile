@@ -55,9 +55,10 @@ export default function TailorProfileSetupScreen() {
   useEffect(() => {
     if (profile) {
       const p = profile as any;
-      setBusinessName(p.shopName || p.businessName || "");
+      setBusinessName(p.shopName || p.shop_name || p.businessName || "");
       setOwnerName(
-        p.name ||
+        p.profile?.full_name ||
+          p.name ||
           p.user?.fullName ||
           p.user?.name ||
           user?.fullName ||
@@ -66,6 +67,7 @@ export default function TailorProfileSetupScreen() {
       );
       setPhone(
         p.phone ||
+          p.profile?.phone ||
           p.user?.phone ||
           user?.phone ||
           ""
@@ -80,19 +82,21 @@ export default function TailorProfileSetupScreen() {
         setCity(p.city || "");
         setAddress(p.address || "");
       }
-      setExperienceYears(
-        p.experienceYears !== undefined && p.experienceYears !== null
-          ? String(p.experienceYears)
-          : ""
-      );
+      const expVal =
+        p.experienceYears !== undefined && p.experienceYears !== null && p.experienceYears !== ""
+          ? p.experienceYears
+          : p.experience_years !== undefined && p.experience_years !== null && p.experience_years !== ""
+          ? p.experience_years
+          : "";
+      setExperienceYears(String(expVal));
       setStartingPrice(
-        p.startingPrice !== undefined && p.startingPrice !== null
+        p.startingPrice !== undefined && p.startingPrice !== null && p.startingPrice !== ""
           ? String(p.startingPrice)
           : p.services?.[0]?.price !== undefined
           ? String(p.services[0].price)
           : ""
       );
-      setBio(p.bio || "");
+      setBio(p.bio || p.profile?.bio || "");
       if (p.specialties && p.specialties.length > 0) {
         setSelectedSpecialties(p.specialties);
       } else if (p.specialty) {
@@ -110,6 +114,7 @@ export default function TailorProfileSetupScreen() {
           p.image ||
           p.avatar ||
           p.shopImage ||
+          p.profile?.avatar_url ||
           p.user?.avatarUrl ||
           p.user?.avatar ||
           user?.avatar ||

@@ -28,18 +28,19 @@ export default function MainTailorsScreen() {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter((t) => {
-        const name = (t.name || t.businessName || "").toLowerCase();
+        const name = (t.shopName || t.businessName || t.name || "").toLowerCase();
         const specialty = (
+          (Array.isArray(t.specialties) ? t.specialties.join(" ") : "") ||
           t.specialty ||
-          t.specialties?.join(" ") ||
           ""
         ).toLowerCase();
         const locationStr =
-          typeof t.location === "object"
+          t.city ||
+          (typeof t.location === "object"
             ? `${t.location?.address || ""} ${t.location?.city || ""}`
             : typeof t.location === "string"
             ? t.location
-            : t.distance || "";
+            : t.address || t.distance || "");
         return (
           name.includes(q) ||
           specialty.includes(q) ||
@@ -58,7 +59,8 @@ export default function MainTailorsScreen() {
       result = result.filter(
         (t) =>
           (t.distance || "").toLowerCase().includes("km") ||
-          (t.distance || "").toLowerCase().includes("nearby")
+          (t.distance || "").toLowerCase().includes("nearby") ||
+          !!t.city
       );
     }
 
@@ -91,7 +93,7 @@ export default function MainTailorsScreen() {
         />
       }
     >
-      <CustomerHeader title="Find Tailors" subtitle="Jaipur, Rajasthan" />
+      <CustomerHeader title="Find Tailors" subtitle="Explore bespoke master tailors" />
       <View className="flex-1 px-5 pb-6">
         {/* Search Bar */}
         <View className="h-[48px] flex-row items-center rounded-md border border-brand-border px-4 bg-white">
@@ -185,16 +187,32 @@ export default function MainTailorsScreen() {
             <MainTailorCard
               key={tailor.id || index}
               id={tailor.id}
-              name={tailor.name || tailor.businessName || "Tailor"}
-              rating={`${tailor.rating || 0} (${tailor.reviews || tailor.reviewsCount || 0})`}
-              distance={tailor.distance || "Nearby"}
-              specialty={
-                tailor.specialty ||
-                tailor.specialties?.join(", ") ||
-                "Bespoke Stitching"
+              name={tailor.shopName || tailor.businessName || tailor.name || "Tailor Studio"}
+              rating={
+                tailor.rating
+                  ? `${Number(tailor.rating).toFixed(1)} (${tailor.reviewsCount ?? tailor.reviews ?? 0} reviews)`
+                  : "New (0 reviews)"
               }
-              price={tailor.startingPrice || 1500}
-              image={tailor.image || tailor.imageUrl}
+              distance={
+                tailor.city ||
+                (typeof tailor.location === "object" ? tailor.location?.city : null) ||
+                tailor.address ||
+                tailor.distance ||
+                "Nearby"
+              }
+              specialty={
+                Array.isArray(tailor.specialties) && tailor.specialties.length > 0
+                  ? tailor.specialties.join(", ")
+                  : tailor.specialty || "Custom Tailoring"
+              }
+              price={
+                tailor.startingPrice && Number(tailor.startingPrice) > 0
+                  ? `Rs. ${Number(tailor.startingPrice).toLocaleString()}`
+                  : tailor.services?.[0]?.price
+                  ? `Rs. ${Number(tailor.services[0].price).toLocaleString()}`
+                  : "Price on request"
+              }
+              image={tailor.imageUrl || tailor.image || tailor.avatar}
               topRated={tailor.topRated || tailor.isTopRated}
               tone={getTone(index)}
             />

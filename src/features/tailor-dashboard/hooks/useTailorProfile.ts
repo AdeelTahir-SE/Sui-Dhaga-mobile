@@ -45,71 +45,28 @@ export function useTailorProfile() {
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Fetch from backend API /tailors/me
       let remoteProfile: TailorItem | null = null;
       try {
-        const res = await tailorsApi.getMyTailorProfile();
-        const raw = (res?.data && (res.data as any).id ? res.data : (res as any)?.id ? res : null) as any;
-        if (raw) {
-          remoteProfile = {
-            ...raw,
-            id: raw.id,
-            userId: raw.userId || user.id,
-            shopName: raw.shopName || raw.businessName || '',
-            businessName: raw.shopName || raw.businessName || '',
-            name: raw.name || raw.user?.fullName || raw.user?.name || user.fullName || user.name || (user.email ? user.email.split('@')[0] : 'Tailor'),
-            phone: raw.phone || raw.user?.phone || user.phone || '',
-            city: raw.city || raw.location?.city || '',
-            address: raw.address || raw.location?.address || '',
-            location: {
-              city: raw.city || raw.location?.city || '',
-              address: raw.address || raw.location?.address || '',
-            },
-            experienceYears: typeof raw.experienceYears === 'number' ? raw.experienceYears : 0,
-            startingPrice: typeof raw.startingPrice === 'number' ? raw.startingPrice : (raw.services?.[0]?.price ? Number(raw.services[0].price) : 0),
-            specialties: Array.isArray(raw.specialties) ? raw.specialties : (raw.specialty ? [raw.specialty] : []),
-            specialty: raw.specialty || (Array.isArray(raw.specialties) ? raw.specialties[0] : ''),
-            bio: raw.bio || '',
-            rating: typeof raw.rating === 'number' ? raw.rating : 5.0,
-            imageUrl: raw.imageUrl || raw.image || raw.avatar || user.avatar || user.avatarUrl,
-            image: raw.imageUrl || raw.image || raw.avatar || user.avatar || user.avatarUrl,
-            avatar: raw.avatar || raw.imageUrl || raw.image || user.avatar || user.avatarUrl,
-          };
+        const res = await tailorsApi.getMyTailorProfile(user.id, user.email);
+        if (res?.data && res.data.id) {
+          remoteProfile = res.data;
         }
       } catch (err) {
-        console.warn('Error fetching tailor profile via /tailors/me:', err);
+        console.warn('Error fetching tailor profile via getMyTailorProfile:', err);
       }
 
       // 2. Fallback: Search in tailors list for matching user.id
       if (!remoteProfile) {
         try {
-          const listRes = await tailorsApi.getTailors();
+          const listRes = await tailorsApi.getTailors({ limit: 100, page: 1 });
           if (listRes?.data && Array.isArray(listRes.data)) {
             const found = listRes.data.find(
-              (t: any) => t.userId === user.id || t.user?.id === user.id
-            ) as any;
+              (t: any) =>
+                String(t.userId || t.user_id || t.user?.id || t.profile?.id || '').toLowerCase() === String(user.id).toLowerCase() ||
+                (user.email && String(t.user?.email || t.email || '').toLowerCase() === String(user.email).toLowerCase())
+            );
             if (found) {
-              remoteProfile = {
-                ...found,
-                id: found.id,
-                userId: found.userId || user.id,
-                shopName: found.shopName || found.businessName || '',
-                businessName: found.shopName || found.businessName || '',
-                name: found.name || found.user?.fullName || user.fullName || user.name || 'Tailor',
-                phone: found.phone || found.user?.phone || user.phone || '',
-                city: found.city || found.location?.city || '',
-                address: found.address || found.location?.address || '',
-                location: {
-                  city: found.city || found.location?.city || '',
-                  address: found.address || found.location?.address || '',
-                },
-                experienceYears: typeof found.experienceYears === 'number' ? found.experienceYears : 0,
-                startingPrice: typeof found.startingPrice === 'number' ? found.startingPrice : (found.services?.[0]?.price ? Number(found.services[0].price) : 0),
-                specialties: Array.isArray(found.specialties) ? found.specialties : (found.specialty ? [found.specialty] : []),
-                bio: found.bio || '',
-                rating: typeof found.rating === 'number' ? found.rating : 5.0,
-                imageUrl: found.imageUrl || found.image || found.avatar || user.avatar || user.avatarUrl,
-              };
+              remoteProfile = found;
             }
           }
         } catch {}

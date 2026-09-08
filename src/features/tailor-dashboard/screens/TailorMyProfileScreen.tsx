@@ -16,8 +16,6 @@ import { useTailorProfile } from "../hooks/useTailorProfile";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 
-const defaultShopImage = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
-
 export default function TailorMyProfileScreen() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -60,57 +58,90 @@ export default function TailorMyProfileScreen() {
 
   const shopName =
     p.shopName ||
+    p.shop_name ||
     p.businessName ||
     user?.fullName ||
     user?.name ||
-    "My Tailor Studio";
+    "Shop Name Not Set";
 
   const ownerName =
+    p.profile?.full_name ||
     p.name ||
     p.user?.fullName ||
     p.user?.name ||
     user?.fullName ||
     user?.name ||
-    (user?.email ? user.email.split("@")[0] : "Master Tailor");
+    (user?.email ? user.email.split("@")[0] : "Name Not Set");
 
-  const phone = p.phone || p.user?.phone || user?.phone || "Phone not set";
+  const phone =
+    p.phone ||
+    p.profile?.phone ||
+    p.user?.phone ||
+    user?.phone ||
+    "Not set";
 
   const city =
-    (typeof p.location === "object" ? p.location?.city : null) ||
     p.city ||
+    (typeof p.location === "object" ? p.location?.city : null) ||
     (typeof p.location === "string" ? p.location : null) ||
-    "Location not specified";
-
-  const address =
-    (typeof p.location === "object" ? p.location?.address : null) ||
-    p.address ||
     "";
 
+  const address =
+    p.address ||
+    (typeof p.location === "object" ? p.location?.address : null) ||
+    "";
+
+  const locationText =
+    city && address
+      ? `${city} • ${address}`
+      : city || address || "Location not set";
+
   const startingPrice =
-    p.startingPrice !== undefined && p.startingPrice !== null
+    p.startingPrice !== undefined && p.startingPrice !== null && p.startingPrice !== "" && Number(p.startingPrice) > 0
       ? `Rs. ${Number(p.startingPrice).toLocaleString()}`
-      : p.services?.[0]?.price !== undefined
+      : p.services?.[0]?.price !== undefined && Number(p.services[0].price) > 0
       ? `Rs. ${Number(p.services[0].price).toLocaleString()}`
-      : "Rs. 500+";
+      : "Not set";
 
-  const experience =
+  const rawExp =
     p.experienceYears !== undefined && p.experienceYears !== null && p.experienceYears !== ""
-      ? `${p.experienceYears} Years`
-      : "5+ Years";
+      ? p.experienceYears
+      : p.experience_years !== undefined && p.experience_years !== null && p.experience_years !== ""
+      ? p.experience_years
+      : null;
 
-  const rating = p.rating ? Number(p.rating).toFixed(1) : "5.0";
-  const reviewsCount = `${p.reviewsCount ?? p.reviews ?? 12} reviews`;
+  const expNum = rawExp !== null ? Number(rawExp) : null;
+  const experience =
+    expNum !== null && !isNaN(expNum) && expNum > 0
+      ? `${expNum} Years`
+      : expNum !== null && !isNaN(expNum) && expNum === 0
+      ? "0 Years"
+      : "Not set";
+
+  const rating =
+    p.rating !== undefined && p.rating !== null && Number(p.rating) > 0
+      ? Number(p.rating).toFixed(1)
+      : "New";
+
+  const reviewsCount =
+    p.reviewsCount !== undefined && p.reviewsCount !== null
+      ? `${p.reviewsCount} reviews`
+      : p.review_count !== undefined && p.review_count !== null
+      ? `${p.review_count} reviews`
+      : p.reviews !== undefined && p.reviews !== null
+      ? `${p.reviews} reviews`
+      : "0 reviews";
 
   const specialties: string[] =
-    p.specialties && p.specialties.length > 0
+    Array.isArray(p.specialties) && p.specialties.length > 0
       ? p.specialties
       : p.specialty
       ? [p.specialty]
-      : ["Bridal Wear", "Custom Design", "Alterations"];
+      : Array.isArray(p.services) && p.services.length > 0
+      ? p.services.map((s: any) => s.title || s.name).filter(Boolean)
+      : [];
 
-  const bio =
-    p.bio ||
-    "Professional tailor dedicated to delivering bespoke clothing, custom fits, and traditional embroidery for all occasions.";
+  const bio = p.bio?.trim() || "";
 
   const shopImageUri =
     p.imageUrl ||
@@ -121,6 +152,8 @@ export default function TailorMyProfileScreen() {
     p.user?.avatar ||
     user?.avatar ||
     user?.avatarUrl;
+
+  const initials = (shopName || "T").charAt(0).toUpperCase();
 
   return (
     <TailorDashboardShell bottomTabs={<TailorDashboardTabs active="Profile" />}>
@@ -157,12 +190,14 @@ export default function TailorMyProfileScreen() {
                 resizeMode="cover"
               />
             ) : (
-              <Image
-                source={defaultShopImage}
-                className="h-18 w-18 rounded-md bg-brand-surface"
+              <View
+                className="items-center justify-center rounded-md bg-primary/10 border border-primary/20"
                 style={{ width: 72, height: 72 }}
-                resizeMode="cover"
-              />
+              >
+                <Text className="text-[24px] font-black text-primary">
+                  {initials}
+                </Text>
+              </View>
             )}
 
             <View className="ml-3.5 flex-1">
@@ -175,7 +210,7 @@ export default function TailorMyProfileScreen() {
                 </Text>
                 <View className="ml-1.5 rounded-md bg-emerald-50 px-2 py-0.5 border border-emerald-200">
                   <Text className="text-[10px] font-bold text-emerald-700">
-                    Verified
+                    Tailor
                   </Text>
                 </View>
               </View>
@@ -187,7 +222,7 @@ export default function TailorMyProfileScreen() {
               <View className="mt-1 flex-row items-center">
                 <Ionicons name="location-outline" size={13} color="#6F767E" />
                 <Text className="ml-1 text-[12px] font-medium text-brand-gray" numberOfLines={1}>
-                  {city}{address ? ` • ${address}` : ""}
+                  {locationText}
                 </Text>
               </View>
 
@@ -246,18 +281,26 @@ export default function TailorMyProfileScreen() {
           <Text className="mb-2 text-[15px] font-black tracking-tight text-brand-dark">
             Tailoring Specialties
           </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {specialties.map((spec) => (
-              <View
-                key={spec}
-                className="rounded-md border border-brand-border bg-white px-3 py-1.5 shadow-xs"
-              >
-                <Text className="text-[12px] font-semibold text-brand-dark">
-                  {spec}
-                </Text>
-              </View>
-            ))}
-          </View>
+          {specialties.length > 0 ? (
+            <View className="flex-row flex-wrap gap-2">
+              {specialties.map((spec) => (
+                <View
+                  key={spec}
+                  className="rounded-md border border-brand-border bg-white px-3 py-1.5 shadow-xs"
+                >
+                  <Text className="text-[12px] font-semibold text-brand-dark">
+                    {spec}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View className="rounded-md border border-dashed border-brand-border bg-brand-surface/30 p-3.5">
+              <Text className="text-[12px] font-medium text-brand-gray">
+                No specialties added yet. Tap "Edit" above to add what outfits you specialize in.
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* About Bio */}
@@ -266,9 +309,15 @@ export default function TailorMyProfileScreen() {
             About Workshop
           </Text>
           <View className="rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
-            <Text className="text-[13px] leading-5 font-medium text-brand-dark">
-              {bio}
-            </Text>
+            {bio ? (
+              <Text className="text-[13px] leading-5 font-medium text-brand-dark">
+                {bio}
+              </Text>
+            ) : (
+              <Text className="text-[12px] italic text-brand-gray">
+                No bio added yet. Tap "Edit" above to add details about your craftsmanship.
+              </Text>
+            )}
           </View>
         </View>
 

@@ -108,19 +108,8 @@ export default function TailorAppointmentsScreen() {
     >
       <TailorDashboardHeader title="Appointments" rightIcon="clipboard-outline" />
 
-      <ScrollView
-        className="flex-1 px-5"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
-            tintColor="#14919B"
-            colors={["#14919B"]}
-          />
-        }
-      >
+      {/* Fixed Search and Filter Tabs at top */}
+      <View className="px-5 pt-1">
         {/* Search Field */}
         <View className="mb-3.5 h-[46px] flex-row items-center rounded-md border border-brand-border bg-white px-3.5 shadow-xs">
           <Ionicons name="search-outline" size={17} color="#6F767E" />
@@ -139,7 +128,7 @@ export default function TailorAppointmentsScreen() {
         </View>
 
         {/* Interactive Filter Tabs */}
-        <View className="mb-4 flex-row border-b border-brand-border">
+        <View className="mb-3 flex-row border-b border-brand-border">
           {tabs.map((tab) => {
             const isActive = selectedTab === tab.key;
             return (
@@ -147,7 +136,7 @@ export default function TailorAppointmentsScreen() {
                 key={tab.key}
                 activeOpacity={0.7}
                 onPress={() => setSelectedTab(tab.key)}
-                className={`mr-6 pb-3 ${
+                className={`flex-1 items-center pb-3 ${
                   isActive ? "-mb-[1px] border-b-2 border-primary" : ""
                 }`}
               >
@@ -164,6 +153,21 @@ export default function TailorAppointmentsScreen() {
             );
           })}
         </View>
+      </View>
+
+      <ScrollView
+        className="flex-1 px-5"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refresh}
+            tintColor="#14919B"
+            colors={["#14919B"]}
+          />
+        }
+      >
 
         {isLoading && !isRefreshing ? (
           <View className="py-20 items-center justify-center" style={{ minHeight: 380 }}>

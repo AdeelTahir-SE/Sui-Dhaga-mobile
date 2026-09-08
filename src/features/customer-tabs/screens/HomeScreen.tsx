@@ -173,24 +173,48 @@ export default function HomeScreen() {
           onPressAction={() => router.push("/tailors" as never)}
         />
         {tailorsLoading ? (
+          <View className="py-8 items-center justify-center">
             <ActivityIndicator size="small" color="#14919B" />
+          </View>
         ) : recommendedTailor ? (
           <MainTailorCard
             id={recommendedTailor.id}
             name={
-              recommendedTailor.name ||
+              recommendedTailor.shopName ||
               recommendedTailor.businessName ||
-              "Tailor"
+              recommendedTailor.name ||
+              "Tailor Studio"
             }
-            rating={`${recommendedTailor.rating || 0} (${recommendedTailor.reviews || recommendedTailor.reviewsCount || 0} reviews)`}
-            distance={recommendedTailor.distance || "Nearby"}
+            rating={
+              recommendedTailor.rating
+                ? `${Number(recommendedTailor.rating).toFixed(1)} (${recommendedTailor.reviewsCount ?? recommendedTailor.reviews ?? 0} reviews)`
+                : "New (0 reviews)"
+            }
+            distance={
+              recommendedTailor.city ||
+              (typeof recommendedTailor.location === "object" ? recommendedTailor.location?.city : null) ||
+              recommendedTailor.address ||
+              recommendedTailor.distance ||
+              "Nearby"
+            }
             specialty={
-              recommendedTailor.specialty ||
-              recommendedTailor.specialties?.join(", ") ||
-              "Bespoke Tailoring"
+              Array.isArray(recommendedTailor.specialties) && recommendedTailor.specialties.length > 0
+                ? recommendedTailor.specialties.join(", ")
+                : recommendedTailor.specialty ||
+                  "Custom Tailoring"
             }
-            price={recommendedTailor.startingPrice || 1500}
-            image={recommendedTailor.image || recommendedTailor.imageUrl}
+            price={
+              recommendedTailor.startingPrice && Number(recommendedTailor.startingPrice) > 0
+                ? `Rs. ${Number(recommendedTailor.startingPrice).toLocaleString()}`
+                : recommendedTailor.services?.[0]?.price
+                ? `Rs. ${Number(recommendedTailor.services[0].price).toLocaleString()}`
+                : "Price on request"
+            }
+            image={
+              recommendedTailor.imageUrl ||
+              recommendedTailor.image ||
+              recommendedTailor.avatar
+            }
             topRated={
               recommendedTailor.topRated ||
               recommendedTailor.isTopRated ||

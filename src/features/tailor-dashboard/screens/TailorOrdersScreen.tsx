@@ -22,7 +22,7 @@ const orderImages = {
   lehenga: require("@/assets/illustrations/tailor-dashboard/orders/lehenga-choli.png"),
 };
 
-type TailorOrderTab = "requests" | "in_progress" | "completed" | "cancelled";
+type TailorOrderTab = "requests" | "in_progress" | "completed";
 
 export default function TailorOrdersScreen() {
   const { orders, isLoading, isRefreshing, refresh } = useOrders();
@@ -30,7 +30,12 @@ export default function TailorOrdersScreen() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const pendingRequests = useMemo(
-    () => orders.filter((o) => (o.status || "").toLowerCase() === "pending"),
+    () =>
+      orders.filter(
+        (o) =>
+          (o.status || "").toLowerCase() === "pending" ||
+          (o.status || "").toLowerCase() === "new"
+      ),
     [orders]
   );
 
@@ -39,7 +44,9 @@ export default function TailorOrdersScreen() {
       orders.filter(
         (o) =>
           (o.status || "").toLowerCase() === "in progress" ||
-          (o.status || "").toLowerCase() === "confirmed"
+          (o.status || "").toLowerCase() === "confirmed" ||
+          (o.status || "").toLowerCase() === "processing" ||
+          (o.status || "").toLowerCase() === "accepted"
       ),
     [orders]
   );
@@ -54,21 +61,10 @@ export default function TailorOrdersScreen() {
     [orders]
   );
 
-  const cancelledOrders = useMemo(
-    () =>
-      orders.filter(
-        (o) =>
-          (o.status || "").toLowerCase() === "cancelled" ||
-          (o.status || "").toLowerCase() === "canceled"
-      ),
-    [orders]
-  );
-
   const tabs: { key: TailorOrderTab; label: string; count: number }[] = [
     { key: "requests", label: "Requests", count: pendingRequests.length },
     { key: "in_progress", label: "In Progress", count: inProgressOrders.length },
     { key: "completed", label: "Completed", count: completedOrders.length },
-    { key: "cancelled", label: "Cancelled", count: cancelledOrders.length },
   ];
 
   const currentList =
@@ -76,9 +72,7 @@ export default function TailorOrdersScreen() {
       ? pendingRequests
       : selectedTab === "in_progress"
       ? inProgressOrders
-      : selectedTab === "completed"
-      ? completedOrders
-      : cancelledOrders;
+      : completedOrders;
 
   const filteredOrders = useMemo(() => {
     if (!searchQuery.trim()) return currentList;
@@ -103,19 +97,8 @@ export default function TailorOrdersScreen() {
     <TailorDashboardShell bottomTabs={<TailorDashboardTabs active="Orders" />}>
       <TailorDashboardHeader title="Orders" rightIcon="cube-outline" />
 
-      <ScrollView
-        className="flex-1 px-5"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
-            tintColor="#14919B"
-            colors={["#14919B"]}
-          />
-        }
-      >
+      {/* Fixed Search and Filter Tabs at top */}
+      <View className="px-5 pt-1">
         {/* Search Field */}
         <View className="mb-3.5 h-[46px] flex-row items-center rounded-md border border-brand-border bg-white px-3.5 shadow-xs">
           <Ionicons name="search-outline" size={17} color="#6F767E" />
@@ -133,38 +116,47 @@ export default function TailorOrdersScreen() {
           )}
         </View>
 
-        {/* Interactive Filter Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-4 border-b border-brand-border"
-        >
-          <View className="flex-row">
-            {tabs.map((tab) => {
-              const isActive = selectedTab === tab.key;
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  onPress={() => setSelectedTab(tab.key)}
-                  activeOpacity={0.7}
-                  className={`mr-6 pb-3 ${
-                    isActive ? "-mb-[1px] border-b-2 border-primary" : ""
+        {/* Requests, In Progress, Completed Tabs */}
+        <View className="mb-3 flex-row border-b border-brand-border">
+          {tabs.map((tab) => {
+            const isActive = selectedTab === tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => setSelectedTab(tab.key)}
+                activeOpacity={0.7}
+                className={`flex-1 items-center pb-3 ${
+                  isActive ? "-mb-[1px] border-b-2 border-primary" : ""
+                }`}
+              >
+                <Text
+                  className={`text-[13px] ${
+                    isActive
+                      ? "font-bold text-primary"
+                      : "font-semibold text-brand-gray"
                   }`}
                 >
-                  <Text
-                    className={`text-[13px] ${
-                      isActive
-                        ? "font-bold text-primary"
-                        : "font-semibold text-brand-gray"
-                    }`}
-                  >
-                    {tab.label} ({tab.count})
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </ScrollView>
+                  {tab.label} ({tab.count})
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      <ScrollView
+        className="flex-1 px-5"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refresh}
+            tintColor="#14919B"
+            colors={["#14919B"]}
+          />
+        }
+      >
 
         {isLoading && !isRefreshing ? (
           <View className="py-20 items-center justify-center" style={{ minHeight: 380 }}>
@@ -180,8 +172,6 @@ export default function TailorOrdersScreen() {
                 name={
                   selectedTab === "completed"
                     ? "checkmark-done-circle-outline"
-                    : selectedTab === "cancelled"
-                    ? "close-circle-outline"
                     : selectedTab === "in_progress"
                     ? "hourglass-outline"
                     : "bag-handle-outline"
@@ -197,9 +187,7 @@ export default function TailorOrdersScreen() {
                 ? "No New Requests"
                 : selectedTab === "in_progress"
                 ? "No Orders in Progress"
-                : selectedTab === "completed"
-                ? "No Completed Orders"
-                : "No Cancelled Orders"}
+                : "No Completed Orders"}
             </Text>
             <Text className="mt-2 text-[13px] font-medium text-brand-gray text-center leading-[20px] max-w-[290px] mb-6">
               {searchQuery.trim()
@@ -208,9 +196,7 @@ export default function TailorOrdersScreen() {
                 ? "You're all caught up! New order requests from customers will appear here."
                 : selectedTab === "in_progress"
                 ? "Active orders you are currently working on will be displayed here."
-                : selectedTab === "completed"
-                ? "Your completed tailoring orders will be listed here."
-                : "You do not have any cancelled orders."}
+                : "Your completed tailoring orders will be listed here."}
             </Text>
             {searchQuery.trim() ? (
               <TouchableOpacity
