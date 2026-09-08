@@ -139,7 +139,7 @@ export default function TailorAppointmentsScreen() {
         </View>
 
         {/* Interactive Filter Tabs */}
-        <View className="mb-4 flex-row gap-2">
+        <View className="mb-4 flex-row border-b border-brand-border">
           {tabs.map((tab) => {
             const isActive = selectedTab === tab.key;
             return (
@@ -147,15 +147,15 @@ export default function TailorAppointmentsScreen() {
                 key={tab.key}
                 activeOpacity={0.7}
                 onPress={() => setSelectedTab(tab.key)}
-                className={`rounded-md px-4 py-2 border shadow-xs ${
-                  isActive
-                    ? "bg-primary border-primary"
-                    : "bg-white border-brand-border"
+                className={`mr-6 pb-3 ${
+                  isActive ? "-mb-[1px] border-b-2 border-primary" : ""
                 }`}
               >
                 <Text
-                  className={`text-[13px] font-bold ${
-                    isActive ? "text-white" : "text-brand-dark"
+                  className={`text-[13px] ${
+                    isActive
+                      ? "font-bold text-primary"
+                      : "font-semibold text-brand-gray"
                   }`}
                 >
                   {tab.label} ({tab.count})

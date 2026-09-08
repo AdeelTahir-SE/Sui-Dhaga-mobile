@@ -235,8 +235,8 @@ export default function TailorProfileSetupScreen() {
         "Your tailor profile has been updated successfully!",
         [
           {
-            text: "Go to Dashboard",
-            onPress: () => router.replace("/tailor-dashboard" as any),
+            text: "View Profile",
+            onPress: () => router.replace("/tailor-dashboard/profile" as any),
           },
         ]
       );
@@ -272,13 +272,19 @@ export default function TailorProfileSetupScreen() {
         <View className="h-14 flex-row items-center justify-between border-b border-brand-border px-4">
           <TouchableOpacity
             accessibilityRole="button"
-            onPress={() => router.replace("/tailor-dashboard" as any)}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/tailor-dashboard/profile" as any);
+              }
+            }}
             className="h-10 w-10 items-center justify-center rounded-md"
           >
             <Ionicons name="arrow-back" size={22} color="#1A1D1F" />
           </TouchableOpacity>
           <Text className="text-[17px] font-black tracking-tight text-brand-dark">
-            Tailor Profile & Details
+            Edit Tailor Profile
           </Text>
           <View className="h-10 w-10" />
         </View>

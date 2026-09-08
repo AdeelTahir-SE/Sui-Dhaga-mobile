@@ -1,3 +1,3 @@
-import TailorProfileSetupScreen from "@/features/tailor-dashboard/screens/TailorProfileSetupScreen";
+import TailorMyProfileScreen from "@/features/tailor-dashboard/screens/TailorMyProfileScreen";
 
-export default TailorProfileSetupScreen;
+export default TailorMyProfileScreen;
