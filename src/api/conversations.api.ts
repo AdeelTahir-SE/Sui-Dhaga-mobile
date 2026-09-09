@@ -9,8 +9,11 @@ export interface StartConversationPayload {
 }
 
 export interface SendMessagePayload {
-  text: string;
+  text?: string;
   attachments?: string[];
+  file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string };
+  files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string } | string)[];
+  senderId?: string;
 }
 
 export interface MessageAttachmentUploadInput {
@@ -20,6 +23,97 @@ export interface MessageAttachmentUploadInput {
   type?: string | null;
   mimeType?: string | null;
   fileType?: string;
+}
+
+export async function buildMessageFormData(
+  input: {
+    file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string } | string;
+    files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string } | string)[];
+    text?: string;
+    senderId?: string;
+  } | FormData
+): Promise<FormData> {
+  if (
+    (typeof FormData !== 'undefined' && input instanceof FormData) ||
+    (input && typeof (input as any).append === 'function')
+  ) {
+    return input as FormData;
+  }
+
+  const payload = input as {
+    file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string } | string;
+    files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string } | string)[];
+    text?: string;
+    senderId?: string;
+  };
+
+  const formData = new FormData();
+
+  if (payload.text) {
+    formData.append('text', payload.text);
+  }
+
+  if (payload.senderId) {
+    formData.append('senderId', payload.senderId);
+  }
+
+  const fileItems: any[] = [];
+  if (payload.file) {
+    fileItems.push(payload.file);
+  }
+  if (Array.isArray(payload.files)) {
+    fileItems.push(...payload.files);
+  }
+
+
+  for (let i = 0; i < fileItems.length; i++) {
+    const item = fileItems[i];
+    const fileUri = typeof item === 'string' ? item : item?.uri;
+    if (!fileUri) continue;
+
+    let filename =
+      (typeof item === 'object' && (item.fileName || item.name)) ||
+      fileUri.split('/').pop() ||
+      `attachment_${i + 1}.jpg`;
+
+    if (!filename.includes('.')) {
+      filename = `${filename}.jpg`;
+    }
+
+    const match = /\.(\w+)$/.exec(filename);
+    const ext = match ? match[1].toLowerCase() : 'jpeg';
+    let mimeType =
+      (typeof item === 'object' && (item.mimeType || item.type || item.fileType)) ||
+      `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+    if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
+
+    const fileObj = {
+      uri: fileUri,
+      name: filename,
+      type: mimeType,
+    };
+
+    if (Platform.OS === 'web') {
+      try {
+        const response = await fetch(fileUri);
+        const blob = await response.blob();
+        formData.append('file', blob, filename);
+        formData.append('files', blob, filename);
+        formData.append('attachments', blob, filename);
+        formData.append('attachment', blob, filename);
+        continue;
+      } catch {
+        // Fallback to RN object
+      }
+    }
+
+    formData.append('file', fileObj as any);
+    formData.append('files', fileObj as any);
+    formData.append('attachments', fileObj as any);
+    formData.append('attachment', fileObj as any);
+  }
+
+  return formData;
 }
 
 export async function buildMessageAttachmentFormData(
@@ -46,11 +140,20 @@ export async function buildMessageAttachmentFormData(
   let mimeType = asset.mimeType || asset.type || `image/${ext === 'jpg' ? 'jpeg' : ext}`;
   if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
 
+  const fileObj = {
+    uri: fileUri,
+    name: filename,
+    type: mimeType,
+  };
+
   if (Platform.OS === 'web') {
     try {
       const response = await fetch(fileUri);
       const blob = await response.blob();
       formData.append('file', blob, filename);
+      formData.append('files', blob, filename);
+      formData.append('attachments', blob, filename);
+      formData.append('attachment', blob, filename);
       if (asset.fileType) {
         formData.append('fileType', asset.fileType);
       }
@@ -61,11 +164,10 @@ export async function buildMessageAttachmentFormData(
   }
 
   // Native React Native FormData object
-  formData.append('file', {
-    uri: fileUri,
-    name: filename,
-    type: mimeType,
-  } as any);
+  formData.append('file', fileObj as any);
+  formData.append('files', fileObj as any);
+  formData.append('attachments', fileObj as any);
+  formData.append('attachment', fileObj as any);
 
   if (asset.fileType) {
     formData.append('fileType', asset.fileType);
@@ -73,6 +175,7 @@ export async function buildMessageAttachmentFormData(
 
   return formData;
 }
+
 
 
 export interface CheckConversationResult {
@@ -347,7 +450,21 @@ export const conversationsApi = {
   },
 
   // POST /conversations/:tailorId/:clientId/messages - Send a message in conversation between tailor and client
-  async sendMessageBetween(tailorId: string, clientId: string, payload: SendMessagePayload) {
+  async sendMessageBetween(tailorId: string, clientId: string, payload: SendMessagePayload | FormData) {
+    if (
+      (typeof FormData !== 'undefined' && payload instanceof FormData) ||
+      Boolean((payload as any)?.file || (payload as any)?.files)
+    ) {
+      const body = await buildMessageFormData(payload as any);
+      return apiClient<MessageItem>(
+        `/conversations/${encodeURIComponent(tailorId)}/${encodeURIComponent(clientId)}/messages`,
+        {
+          method: 'POST',
+          body,
+        }
+      );
+    }
+
     return apiClient<MessageItem>(
       `/conversations/${encodeURIComponent(tailorId)}/${encodeURIComponent(clientId)}/messages`,
       {
@@ -356,6 +473,7 @@ export const conversationsApi = {
       }
     );
   },
+
 
   // POST /conversations - Start a new conversation
   async startConversation(payload: StartConversationPayload | any) {
@@ -420,12 +538,24 @@ export const conversationsApi = {
   },
 
   // POST /conversations/{conversationId}/messages - Send a message in a conversation
-  async sendMessage(conversationId: string, payload: SendMessagePayload) {
+  async sendMessage(conversationId: string, payload: SendMessagePayload | FormData) {
+    if (
+      (typeof FormData !== 'undefined' && payload instanceof FormData) ||
+      Boolean((payload as any)?.file || (payload as any)?.files)
+    ) {
+      const body = await buildMessageFormData(payload as any);
+      return apiClient<MessageItem>(`/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        body,
+      });
+    }
+
     return apiClient<MessageItem>(`/conversations/${conversationId}/messages`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   },
+
 
   // PATCH /messages/{messageId}/read - Mark a message as read
   async markAsRead(messageId: string) {

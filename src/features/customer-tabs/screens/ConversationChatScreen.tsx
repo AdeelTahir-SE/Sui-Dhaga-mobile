@@ -21,6 +21,95 @@ import * as ImagePicker from "expo-image-picker";
 import { conversationsApi } from "../../../api/conversations.api";
 import { useAuthStore } from "../../../stores/auth.store";
 import { MessageItem, ConversationItem } from "../../../types/api";
+import { CONFIG } from "../../../constants/config";
+
+export function resolveMediaUrl(uri?: any): string | null {
+  if (!uri) return null;
+  if (typeof uri === "object") {
+    uri =
+      uri.url ||
+      uri.uri ||
+      uri.fileUrl ||
+      uri.file_url ||
+      uri.imageUrl ||
+      uri.image_url ||
+      uri.path ||
+      uri.src ||
+      uri.filePath ||
+      uri.file_path ||
+      "";
+  }
+  if (typeof uri !== "string" || !uri.trim()) return null;
+  uri = uri.trim();
+
+  // If already absolute URL or local file URI
+  if (
+    uri.startsWith("http://") ||
+    uri.startsWith("https://") ||
+    uri.startsWith("file://") ||
+    uri.startsWith("data:") ||
+    uri.startsWith("content://") ||
+    uri.startsWith("ph://")
+  ) {
+    return uri;
+  }
+
+  const base = (CONFIG.BACKEND_URL || CONFIG.API_URL || "").replace(/\/+$/, "");
+  const cleanPath = uri.startsWith("/") ? uri : `/${uri}`;
+  return `${base}${cleanPath}`;
+}
+
+export function extractMessageAttachments(item: any): string[] {
+  if (!item) return [];
+  const rawList: any[] = [];
+
+  const candidates = [
+    item.attachments,
+    item.attachment,
+    item.attachmentUrl,
+    item.attachment_url,
+    item.attachmentUrls,
+    item.attachment_urls,
+    item.files,
+    item.file,
+    item.fileUrl,
+    item.file_url,
+    item.media,
+    item.images,
+    item.image,
+    item.imageUrl,
+    item.image_url,
+    item.photos,
+    item.photo,
+  ];
+
+  candidates.forEach((cand) => {
+    if (!cand) return;
+    if (Array.isArray(cand)) {
+      rawList.push(...cand);
+    } else if (typeof cand === "string") {
+      const trimmed = cand.trim();
+      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            rawList.push(...parsed);
+            return;
+          }
+        } catch {}
+      }
+      rawList.push(trimmed);
+    } else if (typeof cand === "object") {
+      rawList.push(cand);
+    }
+  });
+
+  const resolved = rawList
+    .map(resolveMediaUrl)
+    .filter((url): url is string => Boolean(url && typeof url === "string" && url.length > 0));
+
+  return Array.from(new Set(resolved));
+}
 
 export default function ConversationChatScreen() {
   const insets = useSafeAreaInsets();
@@ -237,27 +326,32 @@ export default function ConversationChatScreen() {
 
     try {
       let createdMessage: MessageItem | null = null;
+      const firstFileUri = attachmentsToSend[0];
 
-      // 1. Primary path: Send message using tailorId and clientId
-      if (resolvedTailorId && resolvedClientId) {
-        const res = await conversationsApi.sendMessageBetween(resolvedTailorId, resolvedClientId, {
-          text: textToSend || (attachmentsToSend.length > 0 ? "Attachment" : "Hello"),
-          attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
-        });
-        if (res?.data) {
-          createdMessage = res.data;
-          if ((res.data as any).conversationId && !activeConvId) {
-            setActiveConvId((res.data as any).conversationId);
-          }
+      // Prepare payload with files for multipart/form-data
+      const messagePayload = {
+        text: textToSend || (attachmentsToSend.length > 0 ? "Check out this attachment" : "Hello"),
+        file: firstFileUri ? { uri: firstFileUri } : undefined,
+        files: attachmentsToSend.map((u) => ({ uri: u })),
+        senderId: currentUser?.id,
+      };
+
+      // 1. If conversationId is known, send directly to POST /conversations/:conversationId/messages with multipart/form-data
+      if (activeConvId && activeConvId !== "new") {
+        const res = await conversationsApi.sendMessage(activeConvId, messagePayload);
+        let rawData: any = res?.data;
+        if (rawData && typeof rawData === "object") {
+          createdMessage = rawData.message || rawData.data || rawData;
         }
-      } else if (activeConvId && activeConvId !== "new") {
-        // 2. Fallback: Send message using conversationId
-        const res = await conversationsApi.sendMessage(activeConvId, {
-          text: textToSend || (attachmentsToSend.length > 0 ? "Attachment" : "Hello"),
-          attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
-        });
-        if (res?.data) {
-          createdMessage = res.data;
+      } else if (resolvedTailorId && resolvedClientId) {
+        // 2. Send using tailorId and clientId
+        const res = await conversationsApi.sendMessageBetween(resolvedTailorId, resolvedClientId, messagePayload);
+        let rawData: any = res?.data;
+        if (rawData && typeof rawData === "object") {
+          createdMessage = rawData.message || rawData.data || rawData;
+          if ((createdMessage as any)?.conversationId && !activeConvId) {
+            setActiveConvId((createdMessage as any).conversationId);
+          }
         }
       } else if (params.recipientId) {
         // 3. Fallback: getOrCreateConversation
@@ -266,7 +360,7 @@ export default function ConversationChatScreen() {
           params.recipientId,
           undefined,
           currentUser?.id,
-          textToSend || (attachmentsToSend.length > 0 ? "Attachment" : "Hello"),
+          textToSend || "Hello",
           targetNames
         );
         const createdConv = (startRes?.data as any)?.conversation || startRes?.data;
@@ -274,69 +368,33 @@ export default function ConversationChatScreen() {
         if (newId) {
           setActiveConvId(newId);
           if (createdConv) setConversation(createdConv);
-          try {
-            const msgs = await conversationsApi.getMessages(newId);
-            if (msgs?.data && Array.isArray(msgs.data) && msgs.data.length > 0) {
-              setMessages(msgs.data);
-              createdMessage = msgs.data[msgs.data.length - 1];
+          if (attachmentsToSend.length > 0) {
+            const sendRes = await conversationsApi.sendMessage(newId, messagePayload);
+            let rawData: any = sendRes?.data;
+            if (rawData && typeof rawData === "object") {
+              createdMessage = rawData.message || rawData.data || rawData;
             }
-          } catch {}
+          }
         }
       }
 
-      // 4. Upload each attachment file to storage via POST /messages/{messageId}/attachments
-      if (createdMessage && createdMessage.id && attachmentsToSend.length > 0) {
-        const msgId = String(createdMessage.id);
-        const uploadedAttachments: string[] = [];
+      // If backend message response has attachments, use them; otherwise fallback to local previews
+      if (createdMessage) {
+        const backendAttachments = extractMessageAttachments(createdMessage);
 
-        for (const fileUri of attachmentsToSend) {
-          try {
-            const ext = fileUri.split('.').pop()?.toLowerCase() || 'jpg';
-            const uploadRes = await conversationsApi.addAttachment(msgId, {
-              uri: fileUri,
-              fileType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
-            });
-
-            const uploadedUrl =
-              (uploadRes?.data as any)?.url ||
-              (uploadRes?.data as any)?.fileUrl ||
-              (uploadRes?.data as any)?.attachmentUrl ||
-              (uploadRes?.data as any)?.path ||
-              (uploadRes?.data as any)?.attachment?.url ||
-              (uploadRes?.data as any)?.attachment?.fileUrl;
-
-            if (uploadedUrl) {
-              uploadedAttachments.push(uploadedUrl);
-            }
-          } catch (uploadErr) {
-            console.warn("Failed to upload attachment file:", uploadErr);
-          }
-        }
-
-        // Merge uploaded remote URLs with local fallback
         const finalAttachments =
-          uploadedAttachments.length > 0 ? uploadedAttachments : attachmentsToSend;
+          backendAttachments.length > 0
+            ? backendAttachments
+            : attachmentsToSend.length > 0
+            ? attachmentsToSend
+            : undefined;
 
-        const updatedMsg: MessageItem = {
+        const finalMsg: MessageItem = {
           ...createdMessage,
+          id: createdMessage.id || (createdMessage as any)._id || tempMessage.id,
           attachments: finalAttachments,
         };
 
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === tempMessage.id || m.id === createdMessage!.id ? updatedMsg : m
-          )
-        );
-      } else if (createdMessage) {
-        const finalMsg: MessageItem = {
-          ...createdMessage,
-          attachments:
-            createdMessage.attachments && createdMessage.attachments.length > 0
-              ? createdMessage.attachments
-              : attachmentsToSend.length > 0
-              ? attachmentsToSend
-              : undefined,
-        };
         setMessages((prev) =>
           prev.map((m) => (m.id === tempMessage.id ? finalMsg : m))
         );
@@ -347,6 +405,7 @@ export default function ConversationChatScreen() {
       setIsSending(false);
     }
   };
+
 
   const curUserId = currentUser?.id ? String(currentUser.id).toLowerCase() : "";
   const resolvedOtherParticipant =
@@ -491,11 +550,7 @@ export default function ConversationChatScreen() {
                 (item as any).body ||
                 "";
 
-              const attachments =
-                item.attachments ||
-                (item as any).media ||
-                (item as any).images ||
-                [];
+              const attachments = extractMessageAttachments(item);
 
               const messageAvatar =
                 (item as any).senderAvatar ||
@@ -508,9 +563,11 @@ export default function ConversationChatScreen() {
               return (
                 <View
                   key={item.id || idx}
-                  className={`mb-3 flex-row items-end ${
-                    isOutgoing ? "justify-end self-end max-w-[85%]" : "justify-start self-start max-w-[85%]"
-                  }`}
+                  className={
+                    isOutgoing
+                      ? "mb-3 flex-row items-end justify-end self-end max-w-[85%]"
+                      : "mb-3 flex-row items-end justify-start self-start max-w-[85%]"
+                  }
                 >
                   {/* Incoming person avatar */}
                   {!isOutgoing && (
@@ -540,24 +597,30 @@ export default function ConversationChatScreen() {
 
                   {/* Message Bubble */}
                   <View
-                    className={`rounded-2xl px-4 py-3 ${
+                    className={
                       isOutgoing
-                        ? "bg-primary rounded-br-none"
-                        : "bg-brand-surface border border-brand-border rounded-bl-none"
-                    }`}
+                        ? "rounded-2xl px-4 py-3 bg-primary rounded-br-none"
+                        : "rounded-2xl px-4 py-3 bg-brand-surface border border-brand-border rounded-bl-none"
+                    }
                   >
-                    {Array.isArray(attachments) && attachments.length > 0 && (
+                    {attachments.length > 0 && (
                       <View className="mb-2 gap-2">
                         {attachments.map((attUri: string, attIdx: number) => (
                           <TouchableOpacity
                             key={attIdx}
                             activeOpacity={0.9}
                             onPress={() => setPreviewImageUri(attUri)}
+                            style={{
+                              borderRadius: 12,
+                              overflow: "hidden",
+                              backgroundColor: isOutgoing ? "rgba(255,255,255,0.15)" : "#F3F4F6",
+                            }}
                           >
                             <Image
                               source={{ uri: attUri }}
-                              className="h-44 w-56 rounded-xl bg-black/10"
+                              style={{ width: 220, height: 160, borderRadius: 12 }}
                               contentFit="cover"
+                              transition={200}
                             />
                           </TouchableOpacity>
                         ))}
@@ -565,9 +628,11 @@ export default function ConversationChatScreen() {
                     )}
                     {text ? (
                       <Text
-                        className={`text-[13px] leading-5 ${
-                          isOutgoing ? "text-white font-medium" : "text-brand-dark"
-                        }`}
+                        className={
+                          isOutgoing
+                            ? "text-[13px] leading-5 text-white font-medium"
+                            : "text-[13px] leading-5 text-brand-dark"
+                        }
                       >
                         {text}
                       </Text>
@@ -608,7 +673,7 @@ export default function ConversationChatScreen() {
                   <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={() => setPreviewImageUri(uri)}
-                    className="overflow-hidden rounded-xl border-2 border-primary/40 shadow-xs bg-white"
+                    className="overflow-hidden rounded-xl border-2 border-primary/40 bg-white"
                   >
                     <Image
                       source={{ uri }}
@@ -620,7 +685,8 @@ export default function ConversationChatScreen() {
                   <TouchableOpacity
                     onPress={() => handleRemoveAttachment(idx)}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-red-500 border-2 border-white items-center justify-center shadow-sm"
+                    style={{ elevation: 2 }}
+                    className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-red-500 border-2 border-white items-center justify-center"
                   >
                     <Ionicons name="close" size={13} color="#FFFFFF" />
                   </TouchableOpacity>
@@ -654,9 +720,16 @@ export default function ConversationChatScreen() {
           <TouchableOpacity
             onPress={handleSend}
             disabled={!canSend}
-            className={`w-11 h-11 rounded-full items-center justify-center ${
-              canSend ? "bg-primary shadow-sm" : "bg-gray-200"
-            }`}
+            activeOpacity={0.8}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: canSend ? "#14919B" : "#E5E7EB",
+              elevation: canSend ? 2 : 0,
+            }}
           >
             {isSending ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
