@@ -1,5 +1,7 @@
+import { Platform } from 'react-native';
 import { apiClient } from './client';
 import { ConversationItem, MessageItem } from '../types/api';
+
 
 export interface StartConversationPayload {
   participantId: string;
@@ -11,10 +13,67 @@ export interface SendMessagePayload {
   attachments?: string[];
 }
 
-export interface AddAttachmentPayload {
-  fileUrl: string;
-  fileType: string;
+export interface MessageAttachmentUploadInput {
+  uri: string;
+  name?: string | null;
+  fileName?: string | null;
+  type?: string | null;
+  mimeType?: string | null;
+  fileType?: string;
 }
+
+export async function buildMessageAttachmentFormData(
+  input: MessageAttachmentUploadInput | FormData | { uri: string; fileType?: string }
+): Promise<FormData> {
+  if (
+    (typeof FormData !== 'undefined' && input instanceof FormData) ||
+    (input && typeof (input as any).append === 'function')
+  ) {
+    return input as FormData;
+  }
+
+  const asset = input as MessageAttachmentUploadInput;
+  const formData = new FormData();
+  const fileUri = asset.uri;
+
+  let filename = asset.fileName || asset.name || fileUri.split('/').pop() || 'attachment.jpg';
+  if (!filename.includes('.')) {
+    filename = `${filename}.jpg`;
+  }
+
+  const match = /\.(\w+)$/.exec(filename);
+  const ext = match ? match[1].toLowerCase() : 'jpeg';
+  let mimeType = asset.mimeType || asset.type || `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+  if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
+
+  if (Platform.OS === 'web') {
+    try {
+      const response = await fetch(fileUri);
+      const blob = await response.blob();
+      formData.append('file', blob, filename);
+      if (asset.fileType) {
+        formData.append('fileType', asset.fileType);
+      }
+      return formData;
+    } catch {
+      // Fallback
+    }
+  }
+
+  // Native React Native FormData object
+  formData.append('file', {
+    uri: fileUri,
+    name: filename,
+    type: mimeType,
+  } as any);
+
+  if (asset.fileType) {
+    formData.append('fileType', asset.fileType);
+  }
+
+  return formData;
+}
+
 
 export interface CheckConversationResult {
   exists: boolean;
@@ -376,12 +435,29 @@ export const conversationsApi = {
   },
 
   // POST /messages/{messageId}/attachments - Add an attachment to a message
-  async addAttachment(messageId: string, payload: AddAttachmentPayload) {
+  async addAttachment(
+    messageId: string,
+    fileOrPayload: MessageAttachmentUploadInput | FormData | { uri: string; fileType?: string } | { fileUrl: string; fileType?: string }
+  ) {
+    if (
+      fileOrPayload &&
+      ('fileUrl' in fileOrPayload || 'url' in (fileOrPayload as any)) &&
+      !('uri' in fileOrPayload) &&
+      !(typeof FormData !== 'undefined' && fileOrPayload instanceof FormData)
+    ) {
+      return apiClient(`/messages/${messageId}/attachments`, {
+        method: 'POST',
+        body: JSON.stringify(fileOrPayload),
+      });
+    }
+
+    const body = await buildMessageAttachmentFormData(fileOrPayload as any);
     return apiClient(`/messages/${messageId}/attachments`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body,
     });
   },
+
 
   // Helper: Find existing conversation matching target user/tailor IDs or names
   // Uses GET /conversations/:tailorId/:clientId endpoint first, with fallback to conversation list search

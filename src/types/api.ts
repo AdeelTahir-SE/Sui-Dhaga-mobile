@@ -15,6 +15,8 @@ export interface User {
   name?: string;
   role: UserRole;
   phone?: string;
+  address?: string;
+  city?: string;
   avatarUrl?: string;
   avatar_url?: string;
   avatar?: string;
@@ -22,6 +24,7 @@ export interface User {
   createdAt?: string;
   updatedAt?: string;
 }
+
 
 export interface AuthSession {
   accessToken?: string;

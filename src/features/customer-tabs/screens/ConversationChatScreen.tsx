@@ -9,7 +9,9 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native";
+
 import { Image } from "expo-image";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -126,9 +128,48 @@ export default function ConversationChatScreen() {
     loadData();
   }, [loadData]);
 
-  const handlePickAttachment = async () => {
+  const [previewImageUri, setPreviewImageUri] = useState<string | null>(null);
+
+  const handlePickFromGallery = async () => {
     try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access your gallery is required to send images."
+        );
+        return;
+      }
+
       const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const uris = result.assets.map((a) => a.uri).filter(Boolean);
+        if (uris.length > 0) {
+          setPendingAttachments((prev) => [...prev, ...uris]);
+        }
+      }
+    } catch {
+      Alert.alert("Attachment", "Unable to open photo library.");
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access your camera is required to take photos."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
         quality: 0.8,
@@ -141,13 +182,35 @@ export default function ConversationChatScreen() {
         }
       }
     } catch {
-      Alert.alert("Attachment", "Unable to open image gallery.");
+      Alert.alert("Camera", "Unable to launch camera.");
     }
+  };
+
+  const handlePickAttachment = () => {
+    Alert.alert("Send Image / Design File", "Choose an option to attach photos or design references:", [
+      {
+        text: "Take Photo",
+        onPress: handleTakePhoto,
+      },
+      {
+        text: "Choose from Gallery",
+        onPress: handlePickFromGallery,
+      },
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+    ]);
   };
 
   const handleRemoveAttachment = (index: number) => {
     setPendingAttachments((prev) => prev.filter((_, i) => i !== index));
   };
+
+  const handleClearAllAttachments = () => {
+    setPendingAttachments([]);
+  };
+
 
   const handleSend = async () => {
     const textToSend = inputText.trim();
@@ -173,16 +236,16 @@ export default function ConversationChatScreen() {
     }, 100);
 
     try {
+      let createdMessage: MessageItem | null = null;
+
       // 1. Primary path: Send message using tailorId and clientId
       if (resolvedTailorId && resolvedClientId) {
         const res = await conversationsApi.sendMessageBetween(resolvedTailorId, resolvedClientId, {
-          text: textToSend || "Attachment",
+          text: textToSend || (attachmentsToSend.length > 0 ? "Attachment" : "Hello"),
           attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
         });
         if (res?.data) {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === tempMessage.id ? res.data! : m))
-          );
+          createdMessage = res.data;
           if ((res.data as any).conversationId && !activeConvId) {
             setActiveConvId((res.data as any).conversationId);
           }
@@ -190,13 +253,11 @@ export default function ConversationChatScreen() {
       } else if (activeConvId && activeConvId !== "new") {
         // 2. Fallback: Send message using conversationId
         const res = await conversationsApi.sendMessage(activeConvId, {
-          text: textToSend || "Attachment",
+          text: textToSend || (attachmentsToSend.length > 0 ? "Attachment" : "Hello"),
           attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
         });
         if (res?.data) {
-          setMessages((prev) =>
-            prev.map((m) => (m.id === tempMessage.id ? res.data! : m))
-          );
+          createdMessage = res.data;
         }
       } else if (params.recipientId) {
         // 3. Fallback: getOrCreateConversation
@@ -205,7 +266,7 @@ export default function ConversationChatScreen() {
           params.recipientId,
           undefined,
           currentUser?.id,
-          textToSend || "Attachment",
+          textToSend || (attachmentsToSend.length > 0 ? "Attachment" : "Hello"),
           targetNames
         );
         const createdConv = (startRes?.data as any)?.conversation || startRes?.data;
@@ -217,9 +278,68 @@ export default function ConversationChatScreen() {
             const msgs = await conversationsApi.getMessages(newId);
             if (msgs?.data && Array.isArray(msgs.data) && msgs.data.length > 0) {
               setMessages(msgs.data);
+              createdMessage = msgs.data[msgs.data.length - 1];
             }
           } catch {}
         }
+      }
+
+      // 4. Upload each attachment file to storage via POST /messages/{messageId}/attachments
+      if (createdMessage && createdMessage.id && attachmentsToSend.length > 0) {
+        const msgId = String(createdMessage.id);
+        const uploadedAttachments: string[] = [];
+
+        for (const fileUri of attachmentsToSend) {
+          try {
+            const ext = fileUri.split('.').pop()?.toLowerCase() || 'jpg';
+            const uploadRes = await conversationsApi.addAttachment(msgId, {
+              uri: fileUri,
+              fileType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+            });
+
+            const uploadedUrl =
+              (uploadRes?.data as any)?.url ||
+              (uploadRes?.data as any)?.fileUrl ||
+              (uploadRes?.data as any)?.attachmentUrl ||
+              (uploadRes?.data as any)?.path ||
+              (uploadRes?.data as any)?.attachment?.url ||
+              (uploadRes?.data as any)?.attachment?.fileUrl;
+
+            if (uploadedUrl) {
+              uploadedAttachments.push(uploadedUrl);
+            }
+          } catch (uploadErr) {
+            console.warn("Failed to upload attachment file:", uploadErr);
+          }
+        }
+
+        // Merge uploaded remote URLs with local fallback
+        const finalAttachments =
+          uploadedAttachments.length > 0 ? uploadedAttachments : attachmentsToSend;
+
+        const updatedMsg: MessageItem = {
+          ...createdMessage,
+          attachments: finalAttachments,
+        };
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === tempMessage.id || m.id === createdMessage!.id ? updatedMsg : m
+          )
+        );
+      } else if (createdMessage) {
+        const finalMsg: MessageItem = {
+          ...createdMessage,
+          attachments:
+            createdMessage.attachments && createdMessage.attachments.length > 0
+              ? createdMessage.attachments
+              : attachmentsToSend.length > 0
+              ? attachmentsToSend
+              : undefined,
+        };
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempMessage.id ? finalMsg : m))
+        );
       }
     } catch (err) {
       console.warn("Failed to send message:", err);
@@ -429,12 +549,17 @@ export default function ConversationChatScreen() {
                     {Array.isArray(attachments) && attachments.length > 0 && (
                       <View className="mb-2 gap-2">
                         {attachments.map((attUri: string, attIdx: number) => (
-                          <Image
+                          <TouchableOpacity
                             key={attIdx}
-                            source={{ uri: attUri }}
-                            className="h-40 w-52 rounded-xl bg-black/10"
-                            contentFit="cover"
-                          />
+                            activeOpacity={0.9}
+                            onPress={() => setPreviewImageUri(attUri)}
+                          >
+                            <Image
+                              source={{ uri: attUri }}
+                              className="h-44 w-56 rounded-xl bg-black/10"
+                              contentFit="cover"
+                            />
+                          </TouchableOpacity>
                         ))}
                       </View>
                     )}
@@ -454,24 +579,54 @@ export default function ConversationChatScreen() {
           )}
         </ScrollView>
 
-        {/* Pending Attachments Preview */}
+        {/* Enhanced Pending Attachments Preview Bar */}
         {pendingAttachments.length > 0 && (
-          <View className="flex-row flex-wrap gap-2 px-4 py-2 border-t border-brand-border bg-brand-surface">
-            {pendingAttachments.map((uri, idx) => (
-              <View key={idx} className="relative">
-                <Image
-                  source={{ uri }}
-                  className="w-16 h-16 rounded-lg border border-brand-border"
-                  contentFit="cover"
-                />
-                <TouchableOpacity
-                  onPress={() => handleRemoveAttachment(idx)}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-brand-dark rounded-full items-center justify-center"
-                >
-                  <Ionicons name="close" size={12} color="#FFFFFF" />
-                </TouchableOpacity>
+          <View className="border-t border-brand-border bg-[#F8FAFB] px-4 py-2.5">
+            <View className="flex-row items-center justify-between mb-2">
+              <View className="flex-row items-center">
+                <Ionicons name="images" size={15} color="#14919B" />
+                <Text className="ml-1.5 text-[12px] font-bold text-brand-dark">
+                  Attached Files ({pendingAttachments.length})
+                </Text>
               </View>
-            ))}
+              <TouchableOpacity
+                onPress={handleClearAllAttachments}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                className="flex-row items-center"
+              >
+                <Text className="text-[11px] font-bold text-red-500">Clear All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 10, paddingVertical: 2 }}
+            >
+              {pendingAttachments.map((uri, idx) => (
+                <View key={idx} className="relative">
+                  <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => setPreviewImageUri(uri)}
+                    className="overflow-hidden rounded-xl border-2 border-primary/40 shadow-xs bg-white"
+                  >
+                    <Image
+                      source={{ uri }}
+                      style={{ width: 68, height: 68 }}
+                      contentFit="cover"
+                      transition={150}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleRemoveAttachment(idx)}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-red-500 border-2 border-white items-center justify-center shadow-sm"
+                  >
+                    <Ionicons name="close" size={13} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
           </View>
         )}
 
@@ -480,13 +635,16 @@ export default function ConversationChatScreen() {
           className="flex-row items-center border-t border-brand-border px-4 py-3 bg-white"
           style={{ paddingBottom: Math.max(insets.bottom, 12) }}
         >
-          <TouchableOpacity onPress={handlePickAttachment} className="p-2 mr-1">
-            <Ionicons name="attach-outline" size={22} color="#6F767E" />
+          <TouchableOpacity
+            onPress={handlePickAttachment}
+            className="h-11 w-11 items-center justify-center rounded-full bg-primary/10 mr-2 border border-primary/20"
+          >
+            <Ionicons name="attach" size={22} color="#14919B" />
           </TouchableOpacity>
 
           <TextInput
             className="flex-1 min-h-[44px] max-h-[100px] rounded-2xl bg-brand-surface px-4 text-[14px] text-brand-dark border border-brand-border mr-2"
-            placeholder="Type a message..."
+            placeholder="Type a message or note..."
             placeholderTextColor="#9CA3AF"
             value={inputText}
             onChangeText={setInputText}
@@ -497,7 +655,7 @@ export default function ConversationChatScreen() {
             onPress={handleSend}
             disabled={!canSend}
             className={`w-11 h-11 rounded-full items-center justify-center ${
-              canSend ? "bg-primary" : "bg-gray-200"
+              canSend ? "bg-primary shadow-sm" : "bg-gray-200"
             }`}
           >
             {isSending ? (
@@ -512,7 +670,34 @@ export default function ConversationChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Full-screen Image Preview Modal */}
+      <Modal
+        visible={Boolean(previewImageUri)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewImageUri(null)}
+      >
+        <View className="flex-1 bg-black/95 items-center justify-center relative">
+          <TouchableOpacity
+            onPress={() => setPreviewImageUri(null)}
+            className="absolute top-12 right-6 z-10 w-10 h-10 rounded-full bg-white/20 items-center justify-center"
+          >
+            <Ionicons name="close" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {previewImageUri && (
+            <Image
+              source={{ uri: previewImageUri }}
+              style={{ width: "90%", height: "80%" }}
+              contentFit="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
+
+
 
