@@ -19,9 +19,33 @@ import { useAppointments } from "../../booking-orders/hooks/useAppointments";
 type AppointmentTab = "requests" | "upcoming" | "completed";
 
 export default function TailorAppointmentsScreen() {
-  const { appointments, isLoading, isRefreshing, refresh } = useAppointments();
+  const { appointments, isLoading, isRefreshing, refresh, updateStatus, cancelAppointment } =
+    useAppointments();
   const [selectedTab, setSelectedTab] = useState<AppointmentTab>("requests");
   const [searchQuery, setSearchQuery] = useState("");
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
+  const handleAccept = async (id: string, name: string) => {
+    setProcessingId(id);
+    try {
+      await updateStatus(id, "Upcoming");
+    } catch {
+      // Handled
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (id: string, name: string) => {
+    setProcessingId(id);
+    try {
+      await cancelAppointment(id, "Declined by tailor");
+    } catch {
+      // Handled
+    } finally {
+      setProcessingId(null);
+    }
+  };
 
   const allAppointments = useMemo(() => {
     if (!appointments || !Array.isArray(appointments)) return [];
@@ -168,7 +192,6 @@ export default function TailorAppointmentsScreen() {
           />
         }
       >
-
         {isLoading && !isRefreshing ? (
           <View className="py-20 items-center justify-center" style={{ minHeight: 380 }}>
             <ActivityIndicator size="large" color="#14919B" />
@@ -232,6 +255,9 @@ export default function TailorAppointmentsScreen() {
               time={apt.time}
               newRequest={apt.newRequest}
               tone={apt.tone}
+              isProcessing={processingId === apt.id}
+              onAccept={() => handleAccept(apt.id, apt.name)}
+              onReject={() => handleReject(apt.id, apt.name)}
             />
           ))
         )}

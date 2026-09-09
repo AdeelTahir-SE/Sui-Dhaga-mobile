@@ -7,6 +7,8 @@ type BookingOrdersHeaderProps = {
   leftIcon?: keyof typeof Ionicons.glyphMap;
   rightIcon?: keyof typeof Ionicons.glyphMap;
   rightLabel?: string;
+  onPressLeft?: () => void;
+  onPressRight?: () => void;
 };
 
 export function BookingOrdersHeader({
@@ -14,13 +16,23 @@ export function BookingOrdersHeader({
   leftIcon = "arrow-back",
   rightIcon = "ellipsis-vertical",
   rightLabel = "More options",
+  onPressLeft,
+  onPressRight,
 }: BookingOrdersHeaderProps) {
+  const handleLeftPress = () => {
+    if (onPressLeft) {
+      onPressLeft();
+    } else if (leftIcon === "arrow-back") {
+      router.back();
+    }
+  };
+
   return (
     <View className="h-14 flex-row items-center justify-between px-4">
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={leftIcon === "arrow-back" ? "Go back" : "Menu"}
-        onPress={() => (leftIcon === "arrow-back" ? router.back() : undefined)}
+        onPress={handleLeftPress}
         className="h-10 w-10 items-center justify-center"
       >
         <Ionicons name={leftIcon} size={22} color="#1A1D1F" />
@@ -31,6 +43,7 @@ export function BookingOrdersHeader({
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={rightLabel}
+        onPress={onPressRight}
         className="h-10 w-10 items-center justify-center"
       >
         <Ionicons name={rightIcon} size={20} color="#1A1D1F" />

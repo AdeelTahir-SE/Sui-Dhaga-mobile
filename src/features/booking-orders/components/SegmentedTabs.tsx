@@ -28,14 +28,14 @@ export function SegmentedTabs({
             key={tab}
             onPress={() => handlePress(index)}
             activeOpacity={0.7}
-            className={`rounded-xl border px-4 py-2 ${
+            className={`rounded-md border px-3.5 py-2 shadow-xs ${
               isActive
-                ? "border-primary bg-primary shadow-sm"
+                ? "border-primary bg-primary"
                 : "border-brand-border bg-white"
             }`}
           >
             <Text
-              className={`text-[12px] font-semibold ${
+              className={`text-[12px] font-bold ${
                 isActive ? "text-white" : "text-brand-dark"
               }`}
             >

@@ -111,22 +111,42 @@ export interface OrderItem {
 export interface AppointmentItem {
   id: string;
   tailorId?: string;
+  tailor_id?: string;
   customerId?: string;
+  customer_id?: string;
+  serviceId?: string;
+  service_id?: string;
   customerName?: string;
+  customer_name?: string;
   customerAvatar?: string;
+  customer_avatar?: string;
   clientName?: string;
   clientAvatar?: string;
   userName?: string;
   tailorName?: string;
+  tailor_name?: string;
   tailorAvatar?: string;
-  serviceType: string;
-  appointmentDate: string;
-  appointmentTime: string;
-  status: 'Pending' | 'Upcoming' | 'Confirmed' | 'Completed' | 'Cancelled' | string;
+  tailor_avatar?: string;
+  serviceType?: string;
+  service_type?: string;
+  appointmentDate?: string;
+  appointmentTime?: string;
+  appointment_date?: string;
+  appointment_time?: string;
+  date?: string;
+  time?: string;
+  status: 'Pending' | 'Upcoming' | 'Confirmed' | 'Completed' | 'Cancelled' | 'Rejected' | string;
   notes?: string;
   location?: string;
   price?: number;
+  duration?: string;
   createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
+  tailor?: any;
+  customer?: any;
+  service?: any;
 }
 
 export interface DesignItem {

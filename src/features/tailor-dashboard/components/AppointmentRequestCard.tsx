@@ -14,6 +14,9 @@ type AppointmentRequestCardProps = {
   time: string;
   newRequest?: boolean;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
+  onAccept?: () => void;
+  onReject?: () => void;
+  isProcessing?: boolean;
 };
 
 export function AppointmentRequestCard({
@@ -24,6 +27,9 @@ export function AppointmentRequestCard({
   time,
   newRequest,
   tone = "coral",
+  onAccept,
+  onReject,
+  isProcessing,
 }: AppointmentRequestCardProps) {
   return (
     <View className="mb-3.5 rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
@@ -48,8 +54,18 @@ export function AppointmentRequestCard({
       </View>
       {newRequest ? (
         <View className="mt-3 flex-row gap-3">
-          <DashActionButton title="Reject" variant="outline" />
-          <DashActionButton title="Accept" />
+          <DashActionButton
+            title="Reject"
+            variant="outline"
+            onPress={onReject}
+            disabled={isProcessing}
+          />
+          <DashActionButton
+            title="Accept"
+            variant="primary"
+            onPress={onAccept}
+            disabled={isProcessing}
+          />
         </View>
       ) : null}
     </View>

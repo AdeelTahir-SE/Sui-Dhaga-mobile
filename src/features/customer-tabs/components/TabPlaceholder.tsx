@@ -8,7 +8,7 @@ type TabPlaceholderProps = {
   image?: any;
   label?: string;
   variant?: "person" | "garment" | "machine" | "card";
-  size?: "xs" | "sm" | "md" | "wide" | "hero";
+  size?: "xs" | "sm" | "md" | "lg" | "wide" | "hero";
   tone?: Tone;
 };
 

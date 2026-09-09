@@ -5,32 +5,48 @@ import { StatusPill } from "./StatusPill";
 
 type AppointmentCardProps = {
   tailor: string;
+  avatar?: string | any;
+  image?: string | any;
   service: string;
   date: string;
   time: string;
   status: string;
-  tone?: "teal" | "green" | "red";
+  tone?: "teal" | "green" | "red" | "blue" | "gold";
   placeholderTone?: "teal" | "coral" | "gold" | "blue";
+  onPress?: () => void;
 };
 
 export function AppointmentCard({
   tailor,
+  avatar,
+  image,
   service,
   date,
   time,
   status,
   tone = "teal",
   placeholderTone = "teal",
+  onPress,
 }: AppointmentCardProps) {
+  const avatarSource = avatar || image;
+
   return (
-    <TouchableOpacity className="mb-3 flex-row items-center rounded-xl border border-brand-border bg-white p-3">
-      <PlaceholderImage size="sm" tone={placeholderTone} />
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={onPress}
+      className="mb-3 flex-row items-center rounded-md border border-brand-border bg-white p-3.5 shadow-xs active:bg-gray-50"
+    >
+      <PlaceholderImage
+        size="sm"
+        image={avatarSource}
+        tone={placeholderTone}
+      />
       <View className="ml-3 flex-1">
-        <Text className="text-[13px] font-semibold text-brand-dark">
+        <Text className="text-[14px] font-bold text-brand-dark">
           {tailor}
         </Text>
-        <Text className="mt-1 text-[11px] text-brand-dark">{service}</Text>
-        <Text className="mt-2 text-[11px] text-brand-gray">
+        <Text className="mt-0.5 text-[12px] font-medium text-brand-dark">{service}</Text>
+        <Text className="mt-2 text-[11px] font-medium text-brand-gray">
           {date}  •  {time}
         </Text>
       </View>

@@ -42,17 +42,28 @@ export function PlaceholderImage({
   size = "md",
   tone = "teal",
 }: PlaceholderImageProps) {
+  const hasCustomImage = Boolean(
+    image &&
+      (typeof image === "string"
+        ? image.trim().length > 0
+        : typeof image === "object" && image.uri
+        ? String(image.uri).trim().length > 0
+        : true)
+  );
+
+  const imageSource =
+    typeof image === "string" ? { uri: image } : image || generatedAssets[variant];
+
   return (
     <View
-      className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-xl ${toneClasses[tone]}`}
+      className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-md ${toneClasses[tone]}`}
     >
       <Image
-        source={image || generatedAssets[variant]}
-        contentFit="contain"
+        source={imageSource}
+        contentFit="cover"
         style={StyleSheet.absoluteFill}
       />
-      <View className="absolute inset-0 bg-white/10" />
-      {size === "sm" ? (
+      {!hasCustomImage && size === "sm" ? (
         <Ionicons
           name={variant === "person" ? "person" : "shirt-outline"}
           size={14}
