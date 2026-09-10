@@ -37,7 +37,6 @@ The Expo Router structure must follow these routes.
 | --------------------- | ------------------------------------------------------------------------------------------------------- |
 | `/tailors/map`        | Map View, Nearby Tailor Pins, Tailor Preview Card, Search This Area, Filter Button                      |
 | `/tailors/[tailorId]` | Tailor Header, Rating, Specialties, Gallery, Services, Reviews, Message Button, Book Appointment Button |
-| `/tailors/compare`    | Selected Tailors, Comparison Table, Price, Rating, Experience, Book Button                              |
 
 ---
 

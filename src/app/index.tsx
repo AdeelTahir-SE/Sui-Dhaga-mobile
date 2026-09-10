@@ -40,7 +40,6 @@ const routeGroups: RouteGroup[] = [
     items: [
       { label: "Tailor Map", href: "/tailors/map" },
       { label: "Tailor Profile", href: "/tailors/rekha-tailors" },
-      { label: "Compare Tailors", href: "/tailors/compare" },
     ],
   },
   {

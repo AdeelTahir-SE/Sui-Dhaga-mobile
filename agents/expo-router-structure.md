@@ -112,8 +112,7 @@ sui-dhaga-mobile/
 │   │   │   ├── _layout.tsx                     # STACK
 │   │   │   ├── index.tsx                       # CUSTOMER
 │   │   │   ├── map.tsx                         # CUSTOMER
-│   │   │   ├── [tailorId].tsx                  # CUSTOMER
-│   │   │   └── compare.tsx                     # CUSTOMER
+│   │   │   └── [tailorId].tsx                  # CUSTOMER
 │   │   │
 │   │   ├── booking/
 │   │   │   ├── _layout.tsx                     # STACK
@@ -389,7 +388,6 @@ Routes:
 
 ```txt
 /tailors/map
-/tailors/compare
 /tailors/[tailorId]
 ```
 

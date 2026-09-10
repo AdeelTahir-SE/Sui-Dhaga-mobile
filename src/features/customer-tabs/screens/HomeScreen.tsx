@@ -174,13 +174,6 @@ export default function HomeScreen() {
       icon: "map-outline" as const,
       route: "/tailors/map",
     },
-    {
-      id: "qa-8",
-      title: "Compare Tailors",
-      description: "Side-by-side pricing & rating comparison",
-      icon: "git-compare-outline" as const,
-      route: "/tailors/compare",
-    },
   ];
 
   return (
