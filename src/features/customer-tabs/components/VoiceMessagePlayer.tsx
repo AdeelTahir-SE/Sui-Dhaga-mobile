@@ -22,7 +22,7 @@ export function VoiceMessagePlayer({
   duration: initialDuration,
 }: VoiceMessagePlayerProps) {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
-  const player = useAudioPlayer(uri);
+  const player = useAudioPlayer(uri, { downloadFirst: true, updateInterval: 100 });
   const status = useAudioPlayerStatus(player);
 
   const isPlaying = status.playing;
@@ -39,10 +39,12 @@ export function VoiceMessagePlayer({
 
   const handleTogglePlay = async () => {
     try {
-      // Ensure speaker playback (not earpiece receiver) and unmute
+      // Ensure speaker playback (not earpiece receiver), unmute, and allow ducking
       await setAudioModeAsync({
         playsInSilentMode: true,
         allowsRecording: false,
+        shouldRouteThroughEarpiece: false,
+        interruptionMode: 'duckOthers',
       });
 
       if (isPlaying) {

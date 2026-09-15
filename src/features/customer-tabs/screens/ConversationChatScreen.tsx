@@ -1,34 +1,37 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Alert,
-  Modal,
+  View,
 } from "react-native";
 
-import { Image } from "expo-image";
-import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
 import {
-  useAudioRecorder,
-  useAudioRecorderState,
   AudioModule,
   RecordingPresets,
   setAudioModeAsync,
+  useAudioRecorder,
+  useAudioRecorderState,
 } from "expo-audio";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import { router, useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { conversationsApi, isAudioAttachment, isImageAttachment } from "../../../api/conversations.api";
-import { useAuthStore } from "../../../stores/auth.store";
-import { MessageItem, ConversationItem } from "../../../types/api";
+import {
+  conversationsApi,
+  isAudioAttachment,
+} from "../../../api/conversations.api";
 import { CONFIG } from "../../../constants/config";
+import { useAuthStore } from "../../../stores/auth.store";
+import { ConversationItem, MessageItem } from "../../../types/api";
 import { VoiceMessagePlayer } from "../components/VoiceMessagePlayer";
 import { VoiceRecorderBar } from "../components/VoiceRecorderBar";
 
@@ -51,20 +54,43 @@ export function resolveMediaUrl(uri?: any): string | null {
   if (typeof uri !== "string" || !uri.trim()) return null;
   uri = uri.trim();
 
-  // If already absolute URL or local file URI
+  // If already local file URI, data URI, content URI, or blob URI
   if (
-    uri.startsWith("http://") ||
-    uri.startsWith("https://") ||
     uri.startsWith("file://") ||
     uri.startsWith("data:") ||
     uri.startsWith("content://") ||
-    uri.startsWith("ph://")
+    uri.startsWith("ph://") ||
+    uri.startsWith("blob:")
   ) {
     return uri;
   }
 
-  const base = (CONFIG.BACKEND_URL || CONFIG.API_URL || "").replace(/\/+$/, "");
+  const base = (CONFIG.API_URL || CONFIG.BACKEND_URL || "").replace(/\/+$/, "");
+  const apiPrefix = base.endsWith("/api/v1") ? base : `${base}/api/v1`;
+
+  // If Supabase storage public URL for message-attachments or other buckets
+  const supabaseStorageMatch = uri.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+  if (supabaseStorageMatch) {
+    const bucket = supabaseStorageMatch[1];
+    const filePath = supabaseStorageMatch[2];
+    return `${apiPrefix}/media/${bucket}/${filePath}`;
+  }
+
+  // If signed URL or other absolute http/https URL
+  if (uri.startsWith("http://") || uri.startsWith("https://")) {
+    return uri;
+  }
+
   const cleanPath = uri.startsWith("/") ? uri : `/${uri}`;
+  if (
+    uri.startsWith("message-attachments/") ||
+    uri.startsWith("avatars/") ||
+    uri.startsWith("designs/") ||
+    uri.startsWith("community-posts/")
+  ) {
+    return `${apiPrefix}/media/${uri}`;
+  }
+
   return `${base}${cleanPath}`;
 }
 
@@ -98,6 +124,7 @@ export function extractMessageAttachments(item: any): string[] {
       rawList.push(...cand);
     } else if (typeof cand === "string") {
       const trimmed = cand.trim();
+      // Handle JSON array string
       if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
         try {
           const parsed = JSON.parse(trimmed);
@@ -107,15 +134,40 @@ export function extractMessageAttachments(item: any): string[] {
           }
         } catch {}
       }
+      // Handle PostgreSQL array format: {url1,url2}
+      if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+        const inner = trimmed.slice(1, -1).trim();
+        if (inner) {
+          const items = inner
+            .split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+            .map((s) => s.replace(/^"|"$/g, "").trim())
+            .filter(Boolean);
+          rawList.push(...items);
+          return;
+        }
+      }
       rawList.push(trimmed);
     } else if (typeof cand === "object") {
-      rawList.push(cand);
+      const objUri =
+        cand.url ||
+        cand.uri ||
+        cand.fileUrl ||
+        cand.file_url ||
+        cand.imageUrl ||
+        cand.image_url ||
+        cand.path ||
+        cand.src;
+      if (objUri) {
+        rawList.push(objUri);
+      }
     }
   });
 
   const resolved = rawList
     .map(resolveMediaUrl)
-    .filter((url): url is string => Boolean(url && typeof url === "string" && url.length > 0));
+    .filter((url): url is string =>
+      Boolean(url && typeof url === "string" && url.length > 0),
+    );
 
   return Array.from(new Set(resolved));
 }
@@ -135,22 +187,20 @@ export default function ConversationChatScreen() {
   const isTailor = currentUser?.role === "tailor";
 
   const resolvedTailorId =
-    params.tailorId ||
-    (isTailor ? currentUser?.id : params.recipientId) ||
-    "";
+    params.tailorId || (isTailor ? currentUser?.id : params.recipientId) || "";
 
   const resolvedClientId =
-    params.clientId ||
-    (!isTailor ? currentUser?.id : params.recipientId) ||
-    "";
+    params.clientId || (!isTailor ? currentUser?.id : params.recipientId) || "";
 
   const [activeConvId, setActiveConvId] = useState<string | null>(
     params.conversationId && params.conversationId !== "new"
       ? params.conversationId
-      : null
+      : null,
   );
 
-  const [conversation, setConversation] = useState<ConversationItem | null>(null);
+  const [conversation, setConversation] = useState<ConversationItem | null>(
+    null,
+  );
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [inputText, setInputText] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<string[]>([]);
@@ -173,7 +223,7 @@ export default function ConversationChatScreen() {
         }
       });
     },
-    [currentUser?.id]
+    [currentUser?.id],
   );
 
   const loadData = useCallback(async () => {
@@ -182,8 +232,12 @@ export default function ConversationChatScreen() {
       // 1. Primary path: Use tailorId and clientId
       if (resolvedTailorId && resolvedClientId) {
         const [convRes, msgsRes] = await Promise.all([
-          conversationsApi.getConversationBetween(resolvedTailorId, resolvedClientId).catch(() => null),
-          conversationsApi.getMessagesBetween(resolvedTailorId, resolvedClientId).catch(() => null),
+          conversationsApi
+            .getConversationBetween(resolvedTailorId, resolvedClientId)
+            .catch(() => null),
+          conversationsApi
+            .getMessagesBetween(resolvedTailorId, resolvedClientId)
+            .catch(() => null),
         ]);
 
         if (convRes?.data?.conversation) {
@@ -193,6 +247,7 @@ export default function ConversationChatScreen() {
           }
         }
         if (msgsRes?.data && Array.isArray(msgsRes.data)) {
+          alert(JSON.stringify(msgsRes.data));
           setMessages(msgsRes.data);
           markUnreadMessagesAsRead(msgsRes.data);
         }
@@ -200,7 +255,9 @@ export default function ConversationChatScreen() {
       }
 
       // 2. Fallback: If only activeConvId is known
-      const convId = activeConvId || (params.conversationId !== "new" ? params.conversationId : null);
+      const convId =
+        activeConvId ||
+        (params.conversationId !== "new" ? params.conversationId : null);
       if (convId) {
         const [convRes, msgsRes] = await Promise.all([
           conversationsApi.getConversationById(convId).catch(() => null),
@@ -234,17 +291,18 @@ export default function ConversationChatScreen() {
 
   const handlePickFromGallery = async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(
           "Permission Required",
-          "Permission to access your gallery is required to send images."
+          "Permission to access your gallery is required to send images.",
         );
         return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsMultipleSelection: true,
         quality: 0.8,
       });
@@ -266,13 +324,13 @@ export default function ConversationChatScreen() {
       if (!permission.granted) {
         Alert.alert(
           "Permission Required",
-          "Permission to access your camera is required to take photos."
+          "Permission to access your camera is required to take photos.",
         );
         return;
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         quality: 0.8,
       });
@@ -289,20 +347,24 @@ export default function ConversationChatScreen() {
   };
 
   const handlePickAttachment = () => {
-    Alert.alert("Send Image / Design File", "Choose an option to attach photos or design references:", [
-      {
-        text: "Take Photo",
-        onPress: handleTakePhoto,
-      },
-      {
-        text: "Choose from Gallery",
-        onPress: handlePickFromGallery,
-      },
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-    ]);
+    Alert.alert(
+      "Send Image / Design File",
+      "Choose an option to attach photos or design references:",
+      [
+        {
+          text: "Take Photo",
+          onPress: handleTakePhoto,
+        },
+        {
+          text: "Choose from Gallery",
+          onPress: handlePickFromGallery,
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ],
+    );
   };
 
   const handleRemoveAttachment = (index: number) => {
@@ -330,7 +392,7 @@ export default function ConversationChatScreen() {
       if (!perm.granted) {
         Alert.alert(
           "Microphone Permission Required",
-          "Permission to access the microphone is required to record voice messages."
+          "Permission to access the microphone is required to record voice messages.",
         );
         return;
       }
@@ -353,7 +415,8 @@ export default function ConversationChatScreen() {
       console.warn("Failed to start voice recording:", err);
       Alert.alert(
         "Recording Error",
-        err?.message || "Unable to start voice recording. Please verify microphone permissions."
+        err?.message ||
+          "Unable to start voice recording. Please verify microphone permissions.",
       );
       setIsRecording(false);
       try {
@@ -414,13 +477,20 @@ export default function ConversationChatScreen() {
       };
 
       if (activeConvId && activeConvId !== "new") {
-        const res = await conversationsApi.sendMessage(activeConvId, messagePayload);
+        const res = await conversationsApi.sendMessage(
+          activeConvId,
+          messagePayload,
+        );
         let rawData: any = res?.data;
         if (rawData && typeof rawData === "object") {
           createdMessage = rawData.message || rawData.data || rawData;
         }
       } else if (resolvedTailorId && resolvedClientId) {
-        const res = await conversationsApi.sendMessageBetween(resolvedTailorId, resolvedClientId, messagePayload);
+        const res = await conversationsApi.sendMessageBetween(
+          resolvedTailorId,
+          resolvedClientId,
+          messagePayload,
+        );
         let rawData: any = res?.data;
         if (rawData && typeof rawData === "object") {
           createdMessage = rawData.message || rawData.data || rawData;
@@ -435,14 +505,18 @@ export default function ConversationChatScreen() {
           undefined,
           currentUser?.id,
           "Voice message",
-          targetNames
+          targetNames,
         );
-        const createdConv = (startRes?.data as any)?.conversation || startRes?.data;
+        const createdConv =
+          (startRes?.data as any)?.conversation || startRes?.data;
         const newId = createdConv?.id || (createdConv as any)?._id;
         if (newId) {
           setActiveConvId(newId);
           if (createdConv) setConversation(createdConv);
-          const sendRes = await conversationsApi.sendMessage(newId, messagePayload);
+          const sendRes = await conversationsApi.sendMessage(
+            newId,
+            messagePayload,
+          );
           let rawData: any = sendRes?.data;
           if (rawData && typeof rawData === "object") {
             createdMessage = rawData.message || rawData.data || rawData;
@@ -457,19 +531,24 @@ export default function ConversationChatScreen() {
 
         const finalMsg: MessageItem = {
           ...createdMessage,
-          id: createdMessage.id || (createdMessage as any)._id || tempMessage.id,
+          id:
+            createdMessage.id || (createdMessage as any)._id || tempMessage.id,
           attachments: finalAttachments,
         };
 
         setMessages((prev) =>
-          prev.map((m) => (m.id === tempMessage.id ? finalMsg : m))
+          prev.map((m) => (m.id === tempMessage.id ? finalMsg : m)),
         );
       }
     } catch (err: any) {
       console.warn("Failed to send voice message:", err);
       // Rollback optimistic message on error
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      Alert.alert("Upload Failed", err?.message || "Failed to send voice message. Please check your internet connection.");
+      Alert.alert(
+        "Upload Failed",
+        err?.message ||
+          "Failed to send voice message. Please check your internet connection.",
+      );
     } finally {
       setIsSending(false);
     }
@@ -486,7 +565,10 @@ export default function ConversationChatScreen() {
           allowsRecording: false,
         });
       } catch {}
-      const recordedUri = audioRecorder.uri || (stopResult as any)?.uri || (stopResult as any)?.url;
+      const recordedUri =
+        audioRecorder.uri ||
+        (stopResult as any)?.uri ||
+        (stopResult as any)?.url;
       if (recordedUri) {
         await sendVoiceMessage(recordedUri);
       } else {
@@ -501,10 +583,12 @@ export default function ConversationChatScreen() {
           allowsRecording: false,
         });
       } catch {}
-      Alert.alert("Voice Recording", err?.message || "Unable to save audio recording.");
+      Alert.alert(
+        "Voice Recording",
+        err?.message || "Unable to save audio recording.",
+      );
     }
   };
-
 
   const handleSend = async () => {
     const textToSend = inputText.trim();
@@ -521,7 +605,9 @@ export default function ConversationChatScreen() {
       id: tempId,
       conversationId: activeConvId || "temp",
       senderId: currentUser?.id,
-      text: textToSend || (attachmentsToSend.length > 0 ? "Sent an attachment" : ""),
+      text:
+        textToSend ||
+        (attachmentsToSend.length > 0 ? "Sent an attachment" : ""),
       attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
       createdAt: new Date().toISOString(),
     };
@@ -536,7 +622,11 @@ export default function ConversationChatScreen() {
 
       // Prepare payload with files for multipart/form-data
       const messagePayload = {
-        text: textToSend || (attachmentsToSend.length > 0 ? "Check out this attachment" : "Hello"),
+        text:
+          textToSend ||
+          (attachmentsToSend.length > 0
+            ? "Check out this attachment"
+            : "Hello"),
         file: firstFileUri ? { uri: firstFileUri } : undefined,
         files: attachmentsToSend.map((u) => ({ uri: u })),
         senderId: currentUser?.id,
@@ -544,14 +634,21 @@ export default function ConversationChatScreen() {
 
       // 1. If conversationId is known, send directly to POST /conversations/:conversationId/messages with multipart/form-data
       if (activeConvId && activeConvId !== "new") {
-        const res = await conversationsApi.sendMessage(activeConvId, messagePayload);
+        const res = await conversationsApi.sendMessage(
+          activeConvId,
+          messagePayload,
+        );
         let rawData: any = res?.data;
         if (rawData && typeof rawData === "object") {
           createdMessage = rawData.message || rawData.data || rawData;
         }
       } else if (resolvedTailorId && resolvedClientId) {
         // 2. Send using tailorId and clientId
-        const res = await conversationsApi.sendMessageBetween(resolvedTailorId, resolvedClientId, messagePayload);
+        const res = await conversationsApi.sendMessageBetween(
+          resolvedTailorId,
+          resolvedClientId,
+          messagePayload,
+        );
         let rawData: any = res?.data;
         if (rawData && typeof rawData === "object") {
           createdMessage = rawData.message || rawData.data || rawData;
@@ -567,15 +664,19 @@ export default function ConversationChatScreen() {
           undefined,
           currentUser?.id,
           textToSend || "Hello",
-          targetNames
+          targetNames,
         );
-        const createdConv = (startRes?.data as any)?.conversation || startRes?.data;
+        const createdConv =
+          (startRes?.data as any)?.conversation || startRes?.data;
         const newId = createdConv?.id || (createdConv as any)?._id;
         if (newId) {
           setActiveConvId(newId);
           if (createdConv) setConversation(createdConv);
           if (attachmentsToSend.length > 0) {
-            const sendRes = await conversationsApi.sendMessage(newId, messagePayload);
+            const sendRes = await conversationsApi.sendMessage(
+              newId,
+              messagePayload,
+            );
             let rawData: any = sendRes?.data;
             if (rawData && typeof rawData === "object") {
               createdMessage = rawData.message || rawData.data || rawData;
@@ -592,17 +693,18 @@ export default function ConversationChatScreen() {
           backendAttachments.length > 0
             ? backendAttachments
             : attachmentsToSend.length > 0
-            ? attachmentsToSend
-            : undefined;
+              ? attachmentsToSend
+              : undefined;
 
         const finalMsg: MessageItem = {
           ...createdMessage,
-          id: createdMessage.id || (createdMessage as any)._id || tempMessage.id,
+          id:
+            createdMessage.id || (createdMessage as any)._id || tempMessage.id,
           attachments: finalAttachments,
         };
 
         setMessages((prev) =>
-          prev.map((m) => (m.id === tempMessage.id ? finalMsg : m))
+          prev.map((m) => (m.id === tempMessage.id ? finalMsg : m)),
         );
       }
     } catch (err: any) {
@@ -610,19 +712,28 @@ export default function ConversationChatScreen() {
       // Rollback optimistic message on error and restore input
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       if (textToSend) setInputText(textToSend);
-      if (attachmentsToSend.length > 0) setPendingAttachments(attachmentsToSend);
-      Alert.alert("Upload Failed", err?.message || "Failed to upload attachments. Please check your internet connection.");
+      if (attachmentsToSend.length > 0)
+        setPendingAttachments(attachmentsToSend);
+      Alert.alert(
+        "Upload Failed",
+        err?.message ||
+          "Failed to upload attachments. Please check your internet connection.",
+      );
     } finally {
       setIsSending(false);
     }
   };
 
-
   const curUserId = currentUser?.id ? String(currentUser.id).toLowerCase() : "";
   const resolvedOtherParticipant =
     conversation?.participant ||
     (conversation?.participant1 && conversation?.participant2
-      ? String(conversation.participant1.id || conversation.participant1._id || conversation.participant1_id || "").toLowerCase() === curUserId
+      ? String(
+          conversation.participant1.id ||
+            conversation.participant1._id ||
+            conversation.participant1_id ||
+            "",
+        ).toLowerCase() === curUserId
         ? conversation.participant2
         : conversation.participant1
       : null) ||
@@ -657,7 +768,9 @@ export default function ConversationChatScreen() {
     participant.profileImage ||
     params.avatar;
 
-  const canSend = (inputText.trim().length > 0 || pendingAttachments.length > 0) && !isSending;
+  const canSend =
+    (inputText.trim().length > 0 || pendingAttachments.length > 0) &&
+    !isSending;
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
@@ -695,10 +808,15 @@ export default function ConversationChatScreen() {
           </View>
 
           <View className="flex-1">
-            <Text numberOfLines={1} className="text-[15px] font-bold text-brand-dark">
+            <Text
+              numberOfLines={1}
+              className="text-[15px] font-bold text-brand-dark"
+            >
               {participantName}
             </Text>
-            <Text className="text-[11px] text-emerald-600 font-medium">Online</Text>
+            <Text className="text-[11px] text-emerald-600 font-medium">
+              Online
+            </Text>
           </View>
         </View>
 
@@ -717,7 +835,9 @@ export default function ConversationChatScreen() {
           className="flex-1 px-4 py-4"
           contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
+          onContentSizeChange={() =>
+            scrollViewRef.current?.scrollToEnd({ animated: false })
+          }
         >
           {isLoading ? (
             <View className="py-20 items-center justify-center">
@@ -726,18 +846,25 @@ export default function ConversationChatScreen() {
           ) : messages.length === 0 ? (
             <View className="py-12 items-center justify-center px-6">
               <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center mb-3">
-                <Ionicons name="chatbubble-ellipses-outline" size={28} color="#14919B" />
+                <Ionicons
+                  name="chatbubble-ellipses-outline"
+                  size={28}
+                  color="#14919B"
+                />
               </View>
               <Text className="text-[15px] font-bold text-brand-dark text-center">
                 Start a conversation
               </Text>
               <Text className="text-[12px] text-brand-gray text-center mt-1">
-                Say hello and discuss your outfit designs, fittings, or timelines.
+                Say hello and discuss your outfit designs, fittings, or
+                timelines.
               </Text>
             </View>
           ) : (
             messages.map((item, idx) => {
-              const curId = currentUser?.id ? String(currentUser.id).toLowerCase() : "";
+              const curId = currentUser?.id
+                ? String(currentUser.id).toLowerCase()
+                : "";
               const senderId = (
                 item.senderId ||
                 (item as any).sender_id ||
@@ -746,7 +873,9 @@ export default function ConversationChatScreen() {
                 (item as any).userId ||
                 (item as any).user_id ||
                 ""
-              ).toString().toLowerCase();
+              )
+                .toString()
+                .toLowerCase();
 
               const isOutgoing =
                 (curId && senderId === curId) ||
@@ -835,12 +964,18 @@ export default function ConversationChatScreen() {
                               style={{
                                 borderRadius: 12,
                                 overflow: "hidden",
-                                backgroundColor: isOutgoing ? "rgba(255,255,255,0.15)" : "#F3F4F6",
+                                backgroundColor: isOutgoing
+                                  ? "rgba(255,255,255,0.15)"
+                                  : "#F3F4F6",
                               }}
                             >
                               <Image
                                 source={{ uri: attUri }}
-                                style={{ width: 220, height: 160, borderRadius: 12 }}
+                                style={{
+                                  width: 220,
+                                  height: 160,
+                                  borderRadius: 12,
+                                }}
                                 contentFit="cover"
                                 transition={200}
                                 cachePolicy="memory-disk"
@@ -850,7 +985,10 @@ export default function ConversationChatScreen() {
                         })}
                       </View>
                     )}
-                    {text && (!attachments.some(isAudioAttachment) || (text !== "Voice message" && text !== "Sent an attachment")) ? (
+                    {text &&
+                    (!attachments.some(isAudioAttachment) ||
+                      (text !== "Voice message" &&
+                        text !== "Sent an attachment")) ? (
                       <Text
                         className={
                           isOutgoing
@@ -883,7 +1021,9 @@ export default function ConversationChatScreen() {
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 className="flex-row items-center"
               >
-                <Text className="text-[11px] font-bold text-red-500">Clear All</Text>
+                <Text className="text-[11px] font-bold text-red-500">
+                  Clear All
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -1025,6 +1165,3 @@ export default function ConversationChatScreen() {
     </View>
   );
 }
-
-
-

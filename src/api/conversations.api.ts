@@ -30,18 +30,16 @@ export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp
 
 export function isAudioAttachment(urlOrPath?: string | null): boolean {
   if (!urlOrPath || typeof urlOrPath !== 'string') return false;
-  const clean = urlOrPath.split('?')[0].split('#')[0].toLowerCase();
-  if (AUDIO_EXTENSIONS.some((ext) => clean.endsWith(ext))) return true;
-  if (clean.includes('/audio/') || clean.includes('voice_message') || clean.includes('voicenote') || clean.includes('recording')) return true;
-  return false;
+  const clean = urlOrPath.split('?')[0].split('#')[0].toLowerCase().trim();
+  if (clean.startsWith('data:audio/')) return true;
+  return AUDIO_EXTENSIONS.some((ext) => clean.endsWith(ext));
 }
 
 export function isImageAttachment(urlOrPath?: string | null): boolean {
   if (!urlOrPath || typeof urlOrPath !== 'string') return false;
-  const clean = urlOrPath.split('?')[0].split('#')[0].toLowerCase();
-  if (IMAGE_EXTENSIONS.some((ext) => clean.endsWith(ext))) return true;
-  if (clean.includes('/image/') || clean.includes('/photos/') || clean.includes('photo') || clean.includes('avatar')) return true;
-  return !isAudioAttachment(urlOrPath);
+  const clean = urlOrPath.split('?')[0].split('#')[0].toLowerCase().trim();
+  if (clean.startsWith('data:image/')) return true;
+  return IMAGE_EXTENSIONS.some((ext) => clean.endsWith(ext));
 }
 
 function resolveAttachmentMimeType(filename: string, explicitType?: string | null): { filename: string; mimeType: string } {
