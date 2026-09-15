@@ -318,7 +318,7 @@ export default function ConversationChatScreen() {
       try {
         await setAudioModeAsync({
           playsInSilentMode: true,
-          allowsRecording: true,
+          allowsRecording: false,
         });
       } catch {}
     })();
@@ -356,6 +356,12 @@ export default function ConversationChatScreen() {
         err?.message || "Unable to start voice recording. Please verify microphone permissions."
       );
       setIsRecording(false);
+      try {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: false,
+        });
+      } catch {}
     }
   };
 
@@ -364,14 +370,21 @@ export default function ConversationChatScreen() {
       await audioRecorder.stop();
     } catch {}
     setIsRecording(false);
+    try {
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: false,
+      });
+    } catch {}
   };
 
   const sendVoiceMessage = async (voiceUri: string) => {
     if (isSending) return;
     setIsSending(true);
 
+    const tempId = "temp_" + Date.now();
     const tempMessage: MessageItem = {
-      id: "temp_" + Date.now(),
+      id: tempId,
       conversationId: activeConvId || "temp",
       senderId: currentUser?.id,
       text: "Voice message",
@@ -397,16 +410,6 @@ export default function ConversationChatScreen() {
           mimeType: "audio/m4a",
           fileType: "audio",
         },
-        files: [
-          {
-            uri: voiceUri,
-            name: voiceFileName,
-            fileName: voiceFileName,
-            type: "audio/m4a",
-            mimeType: "audio/m4a",
-            fileType: "audio",
-          },
-        ],
         senderId: currentUser?.id,
       };
 
@@ -462,8 +465,11 @@ export default function ConversationChatScreen() {
           prev.map((m) => (m.id === tempMessage.id ? finalMsg : m))
         );
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn("Failed to send voice message:", err);
+      // Rollback optimistic message on error
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      Alert.alert("Upload Failed", err?.message || "Failed to send voice message. Please check your internet connection.");
     } finally {
       setIsSending(false);
     }
@@ -473,14 +479,29 @@ export default function ConversationChatScreen() {
     if (!isRecording) return;
     try {
       setIsRecording(false);
-      await audioRecorder.stop();
-      const recordedUri = audioRecorder.uri;
+      const stopResult = await audioRecorder.stop();
+      try {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: false,
+        });
+      } catch {}
+      const recordedUri = audioRecorder.uri || (stopResult as any)?.uri || (stopResult as any)?.url;
       if (recordedUri) {
         await sendVoiceMessage(recordedUri);
+      } else {
+        Alert.alert("Voice Recording", "No audio recorded. Please try again.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn("Failed to stop and send recording:", err);
       setIsRecording(false);
+      try {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: false,
+        });
+      } catch {}
+      Alert.alert("Voice Recording", err?.message || "Unable to save audio recording.");
     }
   };
 
@@ -494,9 +515,10 @@ export default function ConversationChatScreen() {
     setPendingAttachments([]);
     setIsSending(true);
 
+    const tempId = "temp_" + Date.now();
     // Optimistic message
     const tempMessage: MessageItem = {
-      id: "temp_" + Date.now(),
+      id: tempId,
       conversationId: activeConvId || "temp",
       senderId: currentUser?.id,
       text: textToSend || (attachmentsToSend.length > 0 ? "Sent an attachment" : ""),
@@ -583,8 +605,13 @@ export default function ConversationChatScreen() {
           prev.map((m) => (m.id === tempMessage.id ? finalMsg : m))
         );
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn("Failed to send message:", err);
+      // Rollback optimistic message on error and restore input
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      if (textToSend) setInputText(textToSend);
+      if (attachmentsToSend.length > 0) setPendingAttachments(attachmentsToSend);
+      Alert.alert("Upload Failed", err?.message || "Failed to upload attachments. Please check your internet connection.");
     } finally {
       setIsSending(false);
     }
@@ -816,6 +843,7 @@ export default function ConversationChatScreen() {
                                 style={{ width: 220, height: 160, borderRadius: 12 }}
                                 contentFit="cover"
                                 transition={200}
+                                cachePolicy="memory-disk"
                               />
                             </TouchableOpacity>
                           );

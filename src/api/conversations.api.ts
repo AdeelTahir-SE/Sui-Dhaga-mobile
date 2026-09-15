@@ -85,6 +85,9 @@ export async function buildMessageFormData(
   input: {
     file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string;
     files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string)[];
+    attachments?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string)[];
+    attachment?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string;
+    fieldName?: string;
     text?: string;
     senderId?: string;
   } | FormData
@@ -99,6 +102,9 @@ export async function buildMessageFormData(
   const payload = input as {
     file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string;
     files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string)[];
+    attachments?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string)[];
+    attachment?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string;
+    fieldName?: string;
     text?: string;
     senderId?: string;
   };
@@ -113,13 +119,29 @@ export async function buildMessageFormData(
     formData.append('senderId', payload.senderId);
   }
 
+  // Collect unique file items
+  const rawItems: any[] = [];
+  if (Array.isArray(payload.files) && payload.files.length > 0) {
+    rawItems.push(...payload.files);
+  } else if (Array.isArray(payload.attachments) && payload.attachments.length > 0) {
+    rawItems.push(...payload.attachments);
+  } else if (payload.file) {
+    rawItems.push(payload.file);
+  } else if (payload.attachment) {
+    rawItems.push(payload.attachment);
+  }
+
+  const seenUris = new Set<string>();
   const fileItems: any[] = [];
-  if (payload.file) {
-    fileItems.push(payload.file);
+  for (const it of rawItems) {
+    const uri = typeof it === 'string' ? it : it?.uri;
+    if (uri && !seenUris.has(uri)) {
+      seenUris.add(uri);
+      fileItems.push(it);
+    }
   }
-  if (Array.isArray(payload.files)) {
-    fileItems.push(...payload.files);
-  }
+
+  const primaryField = payload.fieldName || (payload.attachment ? 'attachment' : 'file');
 
   for (let i = 0; i < fileItems.length; i++) {
     const item = fileItems[i];
@@ -144,20 +166,14 @@ export async function buildMessageFormData(
       try {
         const response = await fetch(fileUri);
         const blob = await response.blob();
-        formData.append('file', blob, filename);
-        formData.append('files', blob, filename);
-        formData.append('attachments', blob, filename);
-        formData.append('attachment', blob, filename);
+        formData.append(primaryField, blob, filename);
         continue;
       } catch {
         // Fallback to RN object
       }
     }
 
-    formData.append('file', fileObj as any);
-    formData.append('files', fileObj as any);
-    formData.append('attachments', fileObj as any);
-    formData.append('attachment', fileObj as any);
+    formData.append(primaryField, fileObj as any);
   }
 
   return formData;
@@ -192,9 +208,6 @@ export async function buildMessageAttachmentFormData(
       const response = await fetch(fileUri);
       const blob = await response.blob();
       formData.append('file', blob, filename);
-      formData.append('files', blob, filename);
-      formData.append('attachments', blob, filename);
-      formData.append('attachment', blob, filename);
       if (asset.fileType) {
         formData.append('fileType', asset.fileType);
       }
@@ -206,9 +219,6 @@ export async function buildMessageAttachmentFormData(
 
   // Native React Native FormData object
   formData.append('file', fileObj as any);
-  formData.append('files', fileObj as any);
-  formData.append('attachments', fileObj as any);
-  formData.append('attachment', fileObj as any);
 
   if (asset.fileType) {
     formData.append('fileType', asset.fileType);

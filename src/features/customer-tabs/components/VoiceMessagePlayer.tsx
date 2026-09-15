@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
+import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from "expo-audio";
 
 interface VoiceMessagePlayerProps {
   uri: string;
@@ -39,6 +39,12 @@ export function VoiceMessagePlayer({
 
   const handleTogglePlay = async () => {
     try {
+      // Ensure speaker playback (not earpiece receiver) and unmute
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: false,
+      });
+
       if (isPlaying) {
         player.pause();
       } else {
