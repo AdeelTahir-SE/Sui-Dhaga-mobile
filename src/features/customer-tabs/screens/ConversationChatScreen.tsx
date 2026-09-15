@@ -69,7 +69,9 @@ export function resolveMediaUrl(uri?: any): string | null {
   const apiPrefix = base.endsWith("/api/v1") ? base : `${base}/api/v1`;
 
   // If Supabase storage public URL for message-attachments or other buckets
-  const supabaseStorageMatch = uri.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+  const supabaseStorageMatch = uri.match(
+    /\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/,
+  );
   if (supabaseStorageMatch) {
     const bucket = supabaseStorageMatch[1];
     const filePath = supabaseStorageMatch[2];
@@ -247,7 +249,6 @@ export default function ConversationChatScreen() {
           }
         }
         if (msgsRes?.data && Array.isArray(msgsRes.data)) {
-          alert(JSON.stringify(msgsRes.data));
           setMessages(msgsRes.data);
           markUnreadMessagesAsRead(msgsRes.data);
         }
