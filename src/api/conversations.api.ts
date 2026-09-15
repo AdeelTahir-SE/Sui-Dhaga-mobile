@@ -11,8 +11,8 @@ export interface StartConversationPayload {
 export interface SendMessagePayload {
   text?: string;
   attachments?: string[];
-  file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string };
-  files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string } | string)[];
+  file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string };
+  files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string)[];
   senderId?: string;
 }
 
@@ -25,10 +25,66 @@ export interface MessageAttachmentUploadInput {
   fileType?: string;
 }
 
+export const AUDIO_EXTENSIONS = ['.m4a', '.mp3', '.wav', '.aac', '.webm', '.ogg', '.caf', '.3gp', '.mp4', '.opus', '.flac', '.amr'];
+export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.heic', '.heif', '.svg'];
+
+export function isAudioAttachment(urlOrPath?: string | null): boolean {
+  if (!urlOrPath || typeof urlOrPath !== 'string') return false;
+  const clean = urlOrPath.split('?')[0].split('#')[0].toLowerCase();
+  if (AUDIO_EXTENSIONS.some((ext) => clean.endsWith(ext))) return true;
+  if (clean.includes('/audio/') || clean.includes('voice_message') || clean.includes('voicenote') || clean.includes('recording')) return true;
+  return false;
+}
+
+export function isImageAttachment(urlOrPath?: string | null): boolean {
+  if (!urlOrPath || typeof urlOrPath !== 'string') return false;
+  const clean = urlOrPath.split('?')[0].split('#')[0].toLowerCase();
+  if (IMAGE_EXTENSIONS.some((ext) => clean.endsWith(ext))) return true;
+  if (clean.includes('/image/') || clean.includes('/photos/') || clean.includes('photo') || clean.includes('avatar')) return true;
+  return !isAudioAttachment(urlOrPath);
+}
+
+function resolveAttachmentMimeType(filename: string, explicitType?: string | null): { filename: string; mimeType: string } {
+  let finalName = filename;
+  const match = /\.(\w+)$/.exec(finalName);
+  const ext = match ? match[1].toLowerCase() : '';
+
+  if (explicitType && explicitType.includes('/')) {
+    if (!ext) {
+      if (explicitType.includes('m4a')) finalName = `${finalName}.m4a`;
+      else if (explicitType.includes('mp4') || explicitType.includes('aac')) finalName = `${finalName}.m4a`;
+      else if (explicitType.includes('mpeg') || explicitType.includes('mp3')) finalName = `${finalName}.mp3`;
+      else if (explicitType.includes('wav')) finalName = `${finalName}.wav`;
+      else if (explicitType.includes('webm')) finalName = `${finalName}.webm`;
+      else if (explicitType.includes('png')) finalName = `${finalName}.png`;
+      else finalName = `${finalName}.jpg`;
+    }
+    return { filename: finalName, mimeType: explicitType };
+  }
+
+  if (ext === 'm4a') return { filename: finalName, mimeType: 'audio/m4a' };
+  if (ext === 'mp3') return { filename: finalName, mimeType: 'audio/mpeg' };
+  if (ext === 'aac') return { filename: finalName, mimeType: 'audio/aac' };
+  if (ext === 'wav') return { filename: finalName, mimeType: 'audio/wav' };
+  if (ext === 'webm') return { filename: finalName, mimeType: 'audio/webm' };
+  if (ext === 'ogg' || ext === 'opus') return { filename: finalName, mimeType: 'audio/ogg' };
+  if (ext === 'caf') return { filename: finalName, mimeType: 'audio/x-caf' };
+  if (ext === '3gp' || ext === '3gpp') return { filename: finalName, mimeType: 'audio/3gpp' };
+  if (ext === 'png') return { filename: finalName, mimeType: 'image/png' };
+  if (ext === 'gif') return { filename: finalName, mimeType: 'image/gif' };
+  if (ext === 'webp') return { filename: finalName, mimeType: 'image/webp' };
+  if (ext === 'svg') return { filename: finalName, mimeType: 'image/svg+xml' };
+
+  if (!ext) {
+    finalName = `${finalName}.jpg`;
+  }
+  return { filename: finalName, mimeType: 'image/jpeg' };
+}
+
 export async function buildMessageFormData(
   input: {
-    file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string } | string;
-    files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string } | string)[];
+    file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string;
+    files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string)[];
     text?: string;
     senderId?: string;
   } | FormData
@@ -41,8 +97,8 @@ export async function buildMessageFormData(
   }
 
   const payload = input as {
-    file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string } | string;
-    files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string } | string)[];
+    file?: MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string;
+    files?: (MessageAttachmentUploadInput | { uri: string; name?: string; fileType?: string; type?: string; mimeType?: string } | string)[];
     text?: string;
     senderId?: string;
   };
@@ -65,27 +121,18 @@ export async function buildMessageFormData(
     fileItems.push(...payload.files);
   }
 
-
   for (let i = 0; i < fileItems.length; i++) {
     const item = fileItems[i];
     const fileUri = typeof item === 'string' ? item : item?.uri;
     if (!fileUri) continue;
 
-    let filename =
+    const rawName =
       (typeof item === 'object' && (item.fileName || item.name)) ||
       fileUri.split('/').pop() ||
-      `attachment_${i + 1}.jpg`;
+      `attachment_${i + 1}`;
 
-    if (!filename.includes('.')) {
-      filename = `${filename}.jpg`;
-    }
-
-    const match = /\.(\w+)$/.exec(filename);
-    const ext = match ? match[1].toLowerCase() : 'jpeg';
-    let mimeType =
-      (typeof item === 'object' && (item.mimeType || item.type || item.fileType)) ||
-      `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-    if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
+    const explicitType = typeof item === 'object' ? item.mimeType || item.type || item.fileType : undefined;
+    const { filename, mimeType } = resolveAttachmentMimeType(rawName, explicitType);
 
     const fileObj = {
       uri: fileUri,
@@ -117,7 +164,7 @@ export async function buildMessageFormData(
 }
 
 export async function buildMessageAttachmentFormData(
-  input: MessageAttachmentUploadInput | FormData | { uri: string; fileType?: string }
+  input: MessageAttachmentUploadInput | FormData | { uri: string; fileType?: string; type?: string; mimeType?: string }
 ): Promise<FormData> {
   if (
     (typeof FormData !== 'undefined' && input instanceof FormData) ||
@@ -130,15 +177,9 @@ export async function buildMessageAttachmentFormData(
   const formData = new FormData();
   const fileUri = asset.uri;
 
-  let filename = asset.fileName || asset.name || fileUri.split('/').pop() || 'attachment.jpg';
-  if (!filename.includes('.')) {
-    filename = `${filename}.jpg`;
-  }
-
-  const match = /\.(\w+)$/.exec(filename);
-  const ext = match ? match[1].toLowerCase() : 'jpeg';
-  let mimeType = asset.mimeType || asset.type || `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-  if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
+  const rawName = asset.fileName || asset.name || fileUri.split('/').pop() || 'attachment';
+  const explicitType = asset.mimeType || asset.type || asset.fileType;
+  const { filename, mimeType } = resolveAttachmentMimeType(rawName, explicitType);
 
   const fileObj = {
     uri: fileUri,

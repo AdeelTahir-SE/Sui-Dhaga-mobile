@@ -17,11 +17,20 @@ import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import {
+  useAudioRecorder,
+  useAudioRecorderState,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+} from "expo-audio";
 
-import { conversationsApi } from "../../../api/conversations.api";
+import { conversationsApi, isAudioAttachment, isImageAttachment } from "../../../api/conversations.api";
 import { useAuthStore } from "../../../stores/auth.store";
 import { MessageItem, ConversationItem } from "../../../types/api";
 import { CONFIG } from "../../../constants/config";
+import { VoiceMessagePlayer } from "../components/VoiceMessagePlayer";
+import { VoiceRecorderBar } from "../components/VoiceRecorderBar";
 
 export function resolveMediaUrl(uri?: any): string | null {
   if (!uri) return null;
@@ -147,7 +156,11 @@ export default function ConversationChatScreen() {
   const [pendingAttachments, setPendingAttachments] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(audioRecorder, 200);
 
   const markUnreadMessagesAsRead = useCallback(
     (msgs: MessageItem[]) => {
@@ -298,6 +311,177 @@ export default function ConversationChatScreen() {
 
   const handleClearAllAttachments = () => {
     setPendingAttachments([]);
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: true,
+        });
+      } catch {}
+    })();
+  }, []);
+
+  const handleStartRecording = async () => {
+    try {
+      const perm = await AudioModule.requestRecordingPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          "Microphone Permission Required",
+          "Permission to access the microphone is required to record voice messages."
+        );
+        return;
+      }
+
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: true,
+      });
+
+      try {
+        await audioRecorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
+      } catch (prepErr) {
+        // If already prepared, proceed to record
+        console.log("prepareToRecordAsync note:", prepErr);
+      }
+
+      audioRecorder.record();
+      setIsRecording(true);
+    } catch (err: any) {
+      console.warn("Failed to start voice recording:", err);
+      Alert.alert(
+        "Recording Error",
+        err?.message || "Unable to start voice recording. Please verify microphone permissions."
+      );
+      setIsRecording(false);
+    }
+  };
+
+  const handleCancelRecording = async () => {
+    try {
+      await audioRecorder.stop();
+    } catch {}
+    setIsRecording(false);
+  };
+
+  const sendVoiceMessage = async (voiceUri: string) => {
+    if (isSending) return;
+    setIsSending(true);
+
+    const tempMessage: MessageItem = {
+      id: "temp_" + Date.now(),
+      conversationId: activeConvId || "temp",
+      senderId: currentUser?.id,
+      text: "Voice message",
+      attachments: [voiceUri],
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, tempMessage]);
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+
+    try {
+      let createdMessage: MessageItem | null = null;
+      const voiceFileName = `voice_message_${Date.now()}.m4a`;
+
+      const messagePayload = {
+        text: "Voice message",
+        file: {
+          uri: voiceUri,
+          name: voiceFileName,
+          fileName: voiceFileName,
+          type: "audio/m4a",
+          mimeType: "audio/m4a",
+          fileType: "audio",
+        },
+        files: [
+          {
+            uri: voiceUri,
+            name: voiceFileName,
+            fileName: voiceFileName,
+            type: "audio/m4a",
+            mimeType: "audio/m4a",
+            fileType: "audio",
+          },
+        ],
+        senderId: currentUser?.id,
+      };
+
+      if (activeConvId && activeConvId !== "new") {
+        const res = await conversationsApi.sendMessage(activeConvId, messagePayload);
+        let rawData: any = res?.data;
+        if (rawData && typeof rawData === "object") {
+          createdMessage = rawData.message || rawData.data || rawData;
+        }
+      } else if (resolvedTailorId && resolvedClientId) {
+        const res = await conversationsApi.sendMessageBetween(resolvedTailorId, resolvedClientId, messagePayload);
+        let rawData: any = res?.data;
+        if (rawData && typeof rawData === "object") {
+          createdMessage = rawData.message || rawData.data || rawData;
+          if ((createdMessage as any)?.conversationId && !activeConvId) {
+            setActiveConvId((createdMessage as any).conversationId);
+          }
+        }
+      } else if (params.recipientId) {
+        const targetNames = [params.name].filter(Boolean) as string[];
+        const startRes = await conversationsApi.getOrCreateConversation(
+          params.recipientId,
+          undefined,
+          currentUser?.id,
+          "Voice message",
+          targetNames
+        );
+        const createdConv = (startRes?.data as any)?.conversation || startRes?.data;
+        const newId = createdConv?.id || (createdConv as any)?._id;
+        if (newId) {
+          setActiveConvId(newId);
+          if (createdConv) setConversation(createdConv);
+          const sendRes = await conversationsApi.sendMessage(newId, messagePayload);
+          let rawData: any = sendRes?.data;
+          if (rawData && typeof rawData === "object") {
+            createdMessage = rawData.message || rawData.data || rawData;
+          }
+        }
+      }
+
+      if (createdMessage) {
+        const backendAttachments = extractMessageAttachments(createdMessage);
+        const finalAttachments =
+          backendAttachments.length > 0 ? backendAttachments : [voiceUri];
+
+        const finalMsg: MessageItem = {
+          ...createdMessage,
+          id: createdMessage.id || (createdMessage as any)._id || tempMessage.id,
+          attachments: finalAttachments,
+        };
+
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempMessage.id ? finalMsg : m))
+        );
+      }
+    } catch (err) {
+      console.warn("Failed to send voice message:", err);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleSendRecording = async () => {
+    if (!isRecording) return;
+    try {
+      setIsRecording(false);
+      await audioRecorder.stop();
+      const recordedUri = audioRecorder.uri;
+      if (recordedUri) {
+        await sendVoiceMessage(recordedUri);
+      }
+    } catch (err) {
+      console.warn("Failed to stop and send recording:", err);
+      setIsRecording(false);
+    }
   };
 
 
@@ -604,29 +788,41 @@ export default function ConversationChatScreen() {
                     }
                   >
                     {attachments.length > 0 && (
-                      <View className="mb-2 gap-2">
-                        {attachments.map((attUri: string, attIdx: number) => (
-                          <TouchableOpacity
-                            key={attIdx}
-                            activeOpacity={0.9}
-                            onPress={() => setPreviewImageUri(attUri)}
-                            style={{
-                              borderRadius: 12,
-                              overflow: "hidden",
-                              backgroundColor: isOutgoing ? "rgba(255,255,255,0.15)" : "#F3F4F6",
-                            }}
-                          >
-                            <Image
-                              source={{ uri: attUri }}
-                              style={{ width: 220, height: 160, borderRadius: 12 }}
-                              contentFit="cover"
-                              transition={200}
-                            />
-                          </TouchableOpacity>
-                        ))}
+                      <View className="mb-1 gap-2">
+                        {attachments.map((attUri: string, attIdx: number) => {
+                          const isAudio = isAudioAttachment(attUri);
+                          if (isAudio) {
+                            return (
+                              <VoiceMessagePlayer
+                                key={attIdx}
+                                uri={attUri}
+                                isOutgoing={isOutgoing}
+                              />
+                            );
+                          }
+                          return (
+                            <TouchableOpacity
+                              key={attIdx}
+                              activeOpacity={0.9}
+                              onPress={() => setPreviewImageUri(attUri)}
+                              style={{
+                                borderRadius: 12,
+                                overflow: "hidden",
+                                backgroundColor: isOutgoing ? "rgba(255,255,255,0.15)" : "#F3F4F6",
+                              }}
+                            >
+                              <Image
+                                source={{ uri: attUri }}
+                                style={{ width: 220, height: 160, borderRadius: 12 }}
+                                contentFit="cover"
+                                transition={200}
+                              />
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
                     )}
-                    {text ? (
+                    {text && (!attachments.some(isAudioAttachment) || (text !== "Voice message" && text !== "Sent an attachment")) ? (
                       <Text
                         className={
                           isOutgoing
@@ -701,46 +897,76 @@ export default function ConversationChatScreen() {
           className="flex-row items-center border-t border-brand-border px-4 py-3 bg-white"
           style={{ paddingBottom: Math.max(insets.bottom, 12) }}
         >
-          <TouchableOpacity
-            onPress={handlePickAttachment}
-            className="h-11 w-11 items-center justify-center rounded-full bg-primary/10 mr-2 border border-primary/20"
-          >
-            <Ionicons name="attach" size={22} color="#14919B" />
-          </TouchableOpacity>
+          {isRecording ? (
+            <VoiceRecorderBar
+              durationMillis={recorderState.durationMillis}
+              onCancel={handleCancelRecording}
+              onSend={handleSendRecording}
+              isSending={isSending}
+            />
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={handlePickAttachment}
+                className="h-11 w-11 items-center justify-center rounded-full bg-primary/10 mr-2 border border-primary/20"
+              >
+                <Ionicons name="attach" size={22} color="#14919B" />
+              </TouchableOpacity>
 
-          <TextInput
-            className="flex-1 min-h-[44px] max-h-[100px] rounded-2xl bg-brand-surface px-4 text-[14px] text-brand-dark border border-brand-border mr-2"
-            placeholder="Type a message or note..."
-            placeholderTextColor="#9CA3AF"
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-          />
-
-          <TouchableOpacity
-            onPress={handleSend}
-            disabled={!canSend}
-            activeOpacity={0.8}
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: canSend ? "#14919B" : "#E5E7EB",
-              elevation: canSend ? 2 : 0,
-            }}
-          >
-            {isSending ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Ionicons
-                name="send"
-                size={18}
-                color={canSend ? "#FFFFFF" : "#9CA3AF"}
+              <TextInput
+                className="flex-1 min-h-[44px] max-h-[100px] rounded-2xl bg-brand-surface px-4 text-[14px] text-brand-dark border border-brand-border mr-2"
+                placeholder="Type a message or note..."
+                placeholderTextColor="#9CA3AF"
+                value={inputText}
+                onChangeText={setInputText}
+                multiline
               />
-            )}
-          </TouchableOpacity>
+
+              {!inputText.trim() && pendingAttachments.length === 0 ? (
+                <TouchableOpacity
+                  onPress={handleStartRecording}
+                  disabled={isSending}
+                  activeOpacity={0.8}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#14919B",
+                    elevation: 2,
+                  }}
+                >
+                  <Ionicons name="mic" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={handleSend}
+                  disabled={!canSend}
+                  activeOpacity={0.8}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: canSend ? "#14919B" : "#E5E7EB",
+                    elevation: canSend ? 2 : 0,
+                  }}
+                >
+                  {isSending ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons
+                      name="send"
+                      size={18}
+                      color={canSend ? "#FFFFFF" : "#9CA3AF"}
+                    />
+                  )}
+                </TouchableOpacity>
+              )}
+            </>
+          )}
         </View>
       </KeyboardAvoidingView>
 

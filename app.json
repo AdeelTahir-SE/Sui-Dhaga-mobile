@@ -45,7 +45,13 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Sui Dhaga to access your microphone to record and send voice messages."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

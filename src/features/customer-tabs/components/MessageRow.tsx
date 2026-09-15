@@ -1,6 +1,7 @@
 import React from "react";
 import { Text, View, TouchableOpacity } from "react-native";
 import { Image, type ImageSource } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
 
 type MessageRowProps = {
   name: string;
@@ -81,14 +82,30 @@ export function MessageRow({
         >
           {name}
         </Text>
-        <Text
-          numberOfLines={1}
-          className={`mt-1 text-[13px] ${
-            unreadCount > 0 ? "font-bold text-brand-dark" : "font-medium text-brand-gray"
-          }`}
-        >
-          {message || "No messages yet"}
-        </Text>
+        <View className="flex-row items-center mt-1">
+          {message && (message.toLowerCase().includes("voice message") || message.toLowerCase().includes("voice_message")) ? (
+            <View className="flex-row items-center mr-1">
+              <Ionicons name="mic" size={13} color="#14919B" />
+              <Text
+                numberOfLines={1}
+                className={`ml-1 text-[13px] ${
+                  unreadCount > 0 ? "font-bold text-primary" : "font-medium text-primary"
+                }`}
+              >
+                Voice message
+              </Text>
+            </View>
+          ) : (
+            <Text
+              numberOfLines={1}
+              className={`flex-1 text-[13px] ${
+                unreadCount > 0 ? "font-bold text-brand-dark" : "font-medium text-brand-gray"
+              }`}
+            >
+              {message || "No messages yet"}
+            </Text>
+          )}
+        </View>
       </View>
 
       {/* Time & Unread Badge */}
