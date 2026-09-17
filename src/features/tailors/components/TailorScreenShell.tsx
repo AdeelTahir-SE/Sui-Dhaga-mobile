@@ -1,10 +1,10 @@
+import {
+  FIXED_BOTTOM_TABS_HEIGHT,
+  FixedBottomTabs,
+} from "@/components/layout/FixedBottomTabs";
 import React from "react";
 import { ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  FixedBottomTabs,
-  FIXED_BOTTOM_TABS_HEIGHT,
-} from "@/components/layout/FixedBottomTabs";
 
 type TailorScreenShellProps = {
   children: React.ReactNode;

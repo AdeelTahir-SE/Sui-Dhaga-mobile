@@ -12,8 +12,8 @@ import {
   View,
 } from "react-native";
 
-import { useAuthStore } from "@/stores/auth.store";
 import { CustomerTabsPreview } from "@/features/customer-tabs/components/CustomerTabsPreview";
+import { useAuthStore } from "@/stores/auth.store";
 import { RatingLine } from "../components/RatingLine";
 import { TailorHeader } from "../components/TailorHeader";
 import { TailorLeafletMap } from "../components/TailorLeafletMap";
@@ -276,14 +276,14 @@ export default function TailorProfileScreen() {
             floating
           />
         </View>
+        <View className="overflow-hidden rounded-2xl border-[3.5px] border-white bg-white shadow-md">
+          <TailorPlaceholder image={avatarSource} size="md" tone="coral" />
+        </View>
       </View>
 
       {/* Main Content Container below banner */}
       <View className="bg-white px-5 pb-6">
         <View className="-mt-12 flex-row items-end">
-          <View className="overflow-hidden rounded-2xl border-[3.5px] border-white bg-white shadow-md">
-            <TailorPlaceholder image={avatarSource} size="md" tone="coral" />
-          </View>
           <View className="ml-4 flex-1 pb-1">
             <Text className="text-[23px] font-black text-brand-dark leading-[28px]">
               {name}
