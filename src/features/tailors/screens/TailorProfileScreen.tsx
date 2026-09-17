@@ -47,9 +47,8 @@ export default function TailorProfileScreen() {
 
   if (isLoading && !tailor) {
     return (
-      // <TailorScreenShell bottomTabs={<CustomerTabsPreview active="Tailors" />}>
       <View
-        className="flex-1 items-center justify-center py-20"
+        className="flex-1 items-center justify-center py-20 bg-white"
         style={{ minHeight: 520 }}
       >
         <ActivityIndicator size="large" color="#14919B" />
@@ -57,7 +56,6 @@ export default function TailorProfileScreen() {
           Loading tailor profile...
         </Text>
       </View>
-      // </TailorScreenShell>
     );
   }
 
@@ -281,23 +279,28 @@ export default function TailorProfileScreen() {
 
       {/* Main Content Container below banner */}
       <View className="bg-white px-5 pb-6">
-        <View className="-mt-12 flex-row items-end">
-          {/* <View className="overflow-hidden rounded-2xl border-[3.5px] border-white bg-white shadow-md"> */}
-          <TailorPlaceholder image={avatarSource} size="md" tone="teal" />
-          {/* </View> */}
-          <View className="ml-4 flex-1 pb-1">
-            <Text className="text-[23px] font-black text-brand-dark leading-[28px]">
-              {name}
-            </Text>
+        {/* Tailor Avatar positioned over banner bottom */}
+        <View className="-mt-11 flex-row items-end justify-between">
+          <View className="overflow-hidden rounded-2xl border-[3.5px] border-white bg-white shadow-md">
+            <TailorPlaceholder image={avatarSource} size="md" tone="teal" />
+          </View>
+        </View>
+
+        {/* Tailor Name, Rating & Details clearly below the banner */}
+        <View className="mt-3">
+          <Text className="text-[23px] font-black text-brand-dark leading-[28px]">
+            {name}
+          </Text>
+          <View className="mt-1">
             <RatingLine
               rating={rating}
               reviews={reviewsCount}
               distance={distance}
             />
-            <Text className="mt-1 text-[13px] font-medium text-brand-gray">
-              {location}
-            </Text>
           </View>
+          <Text className="mt-1 text-[13.5px] font-medium text-brand-gray">
+            {location}
+          </Text>
         </View>
 
         {tailor?.experienceYears ? (
