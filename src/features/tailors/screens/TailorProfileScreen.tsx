@@ -1,28 +1,25 @@
-import React, { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Linking,
   Modal,
   Share,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 
+import { useAuthStore } from "@/stores/auth.store";
+import { CustomerTabsPreview } from "@/features/customer-tabs/components/CustomerTabsPreview";
 import { RatingLine } from "../components/RatingLine";
-import { TailorBottomTabs } from "../components/TailorBottomTabs";
 import { TailorHeader } from "../components/TailorHeader";
 import { TailorLeafletMap } from "../components/TailorLeafletMap";
 import { TailorPlaceholder } from "../components/TailorPlaceholder";
 import { TailorScreenShell } from "../components/TailorScreenShell";
 import { useTailorDetails } from "../hooks/useTailors";
-import { useAuthStore } from "@/stores/auth.store";
-import { conversationsApi } from "@/api/conversations.api";
 
 const profileHeroImage = require("@/assets/illustrations/tailor-discovery/profile-hero.png");
 const rekhaImage = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
@@ -37,8 +34,11 @@ const galleryImages = [
 ];
 
 export default function TailorProfileScreen() {
-  const params = useLocalSearchParams<{ tailorId?: string; id?: string }>();
-  const tailorId = params.tailorId || params.id || "";
+  const { tailorId: rawTailorId, id: rawId } = useLocalSearchParams<{
+    tailorId?: string;
+    id?: string;
+  }>();
+  const tailorId = rawTailorId || rawId || "";
   const { tailor, isLoading } = useTailorDetails(tailorId);
   const currentUser = useAuthStore((state) => state.user);
   const [isStartingChat, setIsStartingChat] = useState(false);
@@ -47,8 +47,11 @@ export default function TailorProfileScreen() {
 
   if (isLoading && !tailor) {
     return (
-      <TailorScreenShell bottomTabs={<TailorBottomTabs />}>
-        <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 520 }}>
+      <TailorScreenShell bottomTabs={<CustomerTabsPreview active="Tailors" />}>
+        <View
+          className="flex-1 items-center justify-center py-20"
+          style={{ minHeight: 520 }}
+        >
           <ActivityIndicator size="large" color="#14919B" />
           <Text className="mt-4 text-[14px] font-medium text-brand-gray">
             Loading tailor profile...
@@ -58,7 +61,11 @@ export default function TailorProfileScreen() {
     );
   }
 
-  const name = tailor?.shopName || tailor?.businessName || tailor?.name || "Tailor Profile";
+  const name =
+    tailor?.shopName ||
+    tailor?.businessName ||
+    tailor?.name ||
+    "Tailor Profile";
   const rating = tailor?.rating ? Number(tailor.rating).toFixed(1) : "New";
   const reviewsCount = `${tailor?.reviewsCount ?? tailor?.reviews ?? 0} reviews`;
   const distance = tailor?.distance || "Nearby";
@@ -86,9 +93,7 @@ export default function TailorProfileScreen() {
     (tailor as any)?.user?.avatar ||
     null;
 
-  const avatarSource = rawAvatarUri
-    ? { uri: rawAvatarUri }
-    : rekhaImage;
+  const avatarSource = rawAvatarUri ? { uri: rawAvatarUri } : rekhaImage;
 
   const rawBannerUri =
     tailor?.bannerUrl ||
@@ -97,12 +102,14 @@ export default function TailorProfileScreen() {
     (tailor as any)?.shopBanner ||
     null;
 
-  const bannerSource = rawBannerUri
-    ? { uri: rawBannerUri }
-    : profileHeroImage;
+  const bannerSource = rawBannerUri ? { uri: rawBannerUri } : profileHeroImage;
 
-
-  const cityLower = (tailor?.city || tailor?.address || location || "").toLowerCase();
+  const cityLower = (
+    tailor?.city ||
+    tailor?.address ||
+    location ||
+    ""
+  ).toLowerCase();
   let defaultLat = 31.5204;
   let defaultLng = 74.3587;
   if (cityLower.includes("karachi")) {
@@ -116,10 +123,14 @@ export default function TailorProfileScreen() {
     defaultLng = 73.0169;
   } else if (cityLower.includes("faisalabad")) {
     defaultLat = 31.4504;
-    defaultLng = 73.1350;
+    defaultLng = 73.135;
   }
-  const latitude = Number((tailor as any)?.latitude || (tailor as any)?.lat || defaultLat);
-  const longitude = Number((tailor as any)?.longitude || (tailor as any)?.lng || defaultLng);
+  const latitude = Number(
+    (tailor as any)?.latitude || (tailor as any)?.lat || defaultLat,
+  );
+  const longitude = Number(
+    (tailor as any)?.longitude || (tailor as any)?.lng || defaultLng,
+  );
 
   const profileUrl = `https://suidhaga.app/tailors/${tailorId || "1"}`;
 
@@ -137,17 +148,13 @@ export default function TailorProfileScreen() {
 
   const handleMessageTailor = async () => {
     if (!currentUser) {
-      Alert.alert(
-        "Sign In Required",
-        "Please log in to message this tailor.",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Log In",
-            onPress: () => router.push("/auth/login" as any),
-          },
-        ]
-      );
+      Alert.alert("Sign In Required", "Please log in to message this tailor.", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log In",
+          onPress: () => router.push("/auth/login" as any),
+        },
+      ]);
       return;
     }
 
@@ -166,7 +173,8 @@ export default function TailorProfileScreen() {
 
     if (
       currentUser.id &&
-      String(currentUser.id).toLowerCase() === String(targetUserId).toLowerCase()
+      String(currentUser.id).toLowerCase() ===
+        String(targetUserId).toLowerCase()
     ) {
       Alert.alert("Note", "This is your own tailor profile.");
       return;
@@ -177,8 +185,8 @@ export default function TailorProfileScreen() {
       typeof avatarSource === "object" && avatarSource && "uri" in avatarSource
         ? (avatarSource as any).uri
         : typeof avatarSource === "string"
-        ? avatarSource
-        : "";
+          ? avatarSource
+          : "";
 
     const resolvedTailorId =
       tailor?.userId ||
@@ -216,7 +224,7 @@ export default function TailorProfileScreen() {
 
   return (
     <TailorScreenShell
-      bottomTabs={<TailorBottomTabs />}
+      bottomTabs={<CustomerTabsPreview active="Tailors" />}
       fixedBottomAction={
         <View className="flex-row gap-3">
           <TouchableOpacity
@@ -247,12 +255,17 @@ export default function TailorProfileScreen() {
         </View>
       }
     >
-      <View className="relative">
+      {/* Tailor Cover Banner with rounded bottom corners */}
+      <View
+        className="relative overflow-hidden shadow-sm"
+        style={{ borderBottomLeftRadius: 30, borderBottomRightRadius: 30 }}
+      >
         <TailorPlaceholder
           image={bannerSource}
           variant="map"
           size="wide"
           tone="cream"
+          style={{ borderBottomLeftRadius: 30, borderBottomRightRadius: 30 }}
         />
         <View className="absolute left-0 right-0 top-0">
           <TailorHeader
@@ -265,14 +278,21 @@ export default function TailorProfileScreen() {
         </View>
       </View>
 
-      <View className="px-5 pb-6">
-        <View className="-mt-9 flex-row items-end">
-          <TailorPlaceholder image={avatarSource} size="md" tone="coral" />
+      {/* Main Content Container below banner */}
+      <View className="bg-white px-5 pb-6">
+        <View className="-mt-12 flex-row items-end">
+          <View className="overflow-hidden rounded-2xl border-[3.5px] border-white bg-white shadow-md">
+            <TailorPlaceholder image={avatarSource} size="md" tone="coral" />
+          </View>
           <View className="ml-4 flex-1 pb-1">
             <Text className="text-[23px] font-black text-brand-dark leading-[28px]">
               {name}
             </Text>
-            <RatingLine rating={rating} reviews={reviewsCount} distance={distance} />
+            <RatingLine
+              rating={rating}
+              reviews={reviewsCount}
+              distance={distance}
+            />
             <Text className="mt-1 text-[13px] font-medium text-brand-gray">
               {location}
             </Text>
@@ -304,9 +324,7 @@ export default function TailorProfileScreen() {
 
         {bio ? (
           <View className="mt-6">
-            <Text className="text-[18px] font-bold text-brand-dark">
-              About
-            </Text>
+            <Text className="text-[18px] font-bold text-brand-dark">About</Text>
             <Text className="mt-2 text-[14px] leading-[22px] font-normal text-brand-dark/85">
               {bio}
             </Text>
@@ -337,14 +355,6 @@ export default function TailorProfileScreen() {
               zoom={15}
               interactive={false}
             />
-
-            {/* Tap to expand badge overlay */}
-            <View className="absolute right-2.5 top-2.5 flex-row items-center rounded-lg bg-white/95 px-2.5 py-1 shadow-sm">
-              <Ionicons name="expand-outline" size={13} color="#14919B" />
-              <Text className="ml-1.5 text-[11px] font-bold text-brand-dark">
-                Tap for Full Screen
-              </Text>
-            </View>
           </TouchableOpacity>
 
           {/* Bottom address row & Full Screen action button */}
@@ -383,12 +393,21 @@ export default function TailorProfileScreen() {
           {/* Modal Header */}
           <View className="flex-row items-center justify-between border-b border-brand-border bg-white px-5 pb-3.5 pt-12 shadow-xs">
             <View className="flex-1 pr-3">
-              <Text className="text-[18px] font-bold text-brand-dark" numberOfLines={1}>
+              <Text
+                className="text-[19px] font-extrabold text-brand-dark"
+                numberOfLines={1}
+              >
                 {name}
               </Text>
-              <Text className="mt-0.5 text-[13px] font-medium text-brand-gray" numberOfLines={1}>
-                📍 {location}
-              </Text>
+              <View className="mt-0.5 flex-row items-center">
+                <Ionicons name="location-sharp" size={14} color="#14919B" />
+                <Text
+                  className="ml-1 text-[13px] font-medium text-brand-gray"
+                  numberOfLines={1}
+                >
+                  {location}
+                </Text>
+              </View>
             </View>
             <TouchableOpacity
               onPress={() => setIsMapModalVisible(false)}
@@ -410,28 +429,41 @@ export default function TailorProfileScreen() {
               interactive={true}
             />
 
-            {/* Floating Bottom Directions Card */}
-            <View className="absolute bottom-8 left-5 right-5 rounded-2xl border border-brand-border bg-white p-4 shadow-xl">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1 pr-3">
-                  <Text className="text-[16px] font-bold text-brand-dark">
+            {/* Floating Bottom Shop Info & Directions Card */}
+            <View className="absolute bottom-8 left-4 right-4 rounded-2xl border border-brand-border bg-white/95 p-4 shadow-2xl backdrop-blur-md">
+              <View className="flex-row items-center">
+                <TailorPlaceholder
+                  image={avatarSource}
+                  size="sm"
+                  tone="coral"
+                />
+                <View className="ml-3 flex-1 pr-2">
+                  <Text
+                    className="text-[17px] font-black text-brand-dark leading-[22px]"
+                    numberOfLines={1}
+                  >
                     {name}
                   </Text>
-                  <Text className="mt-0.5 text-[13px] text-brand-gray" numberOfLines={2}>
-                    {location}
-                  </Text>
-                  <Text className="mt-1 text-[12px] font-semibold text-primary">
+                  <Text className="mt-0.5 text-[12.5px] font-semibold text-primary">
                     ⭐ {rating} ({reviewsCount}) • {distance}
+                  </Text>
+                  <Text
+                    className="mt-0.5 text-[12px] font-medium text-brand-gray"
+                    numberOfLines={1}
+                  >
+                    {location}
                   </Text>
                 </View>
                 <TouchableOpacity
                   onPress={() => {
                     const query = encodeURIComponent(`${name} ${location}`);
-                    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`).catch(() => {});
+                    Linking.openURL(
+                      `https://www.google.com/maps/search/?api=1&query=${query}`,
+                    ).catch(() => {});
                   }}
-                  className="flex-row items-center rounded-xl bg-primary px-4 py-3 shadow-sm active:bg-primary-600"
+                  className="flex-row items-center justify-center rounded-xl bg-primary px-4 py-3 shadow-md active:bg-primary-600"
                 >
-                  <Ionicons name="navigate-outline" size={17} color="#FFFFFF" />
+                  <Ionicons name="navigate-sharp" size={16} color="#FFFFFF" />
                   <Text className="ml-1.5 text-[13.5px] font-bold text-white">
                     Directions
                   </Text>

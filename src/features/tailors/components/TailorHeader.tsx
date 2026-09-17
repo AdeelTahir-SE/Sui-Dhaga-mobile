@@ -27,7 +27,13 @@ export function TailorHeader({
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="Go back"
-              onPress={() => router.back()}
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/tailors" as never);
+                }
+              }}
               className={`h-10 w-10 items-center justify-center ${
                 floating ? "rounded-full bg-white/90 shadow-sm" : "-ml-2 mr-2"
               }`}

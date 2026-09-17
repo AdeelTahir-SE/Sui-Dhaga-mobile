@@ -10,6 +10,7 @@ type TailorPlaceholderProps = {
   variant?: "person" | "garment" | "map";
   size?: "xs" | "sm" | "md" | "lg" | "wide";
   tone?: PlaceholderTone;
+  style?: any;
 };
 
 const toneClasses: Record<PlaceholderTone, string> = {
@@ -48,6 +49,7 @@ export function TailorPlaceholder({
   variant = "person",
   size = "md",
   tone = "teal",
+  style,
 }: TailorPlaceholderProps) {
   const icon =
     variant === "map"
@@ -59,6 +61,7 @@ export function TailorPlaceholder({
   return (
     <View
       className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-md ${toneClasses[tone]}`}
+      style={style}
     >
       <Image
         source={image ?? generatedAssets[variant]}
