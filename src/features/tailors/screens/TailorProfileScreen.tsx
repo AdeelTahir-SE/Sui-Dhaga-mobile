@@ -118,8 +118,8 @@ export default function TailorProfileScreen() {
     defaultLat = 31.4504;
     defaultLng = 73.1350;
   }
-  const latitude = Number(tailor?.latitude || (tailor as any)?.lat || defaultLat);
-  const longitude = Number(tailor?.longitude || (tailor as any)?.lng || defaultLng);
+  const latitude = Number((tailor as any)?.latitude || (tailor as any)?.lat || defaultLat);
+  const longitude = Number((tailor as any)?.longitude || (tailor as any)?.lng || defaultLng);
 
   const profileUrl = `https://suidhaga.app/tailors/${tailorId || "1"}`;
 

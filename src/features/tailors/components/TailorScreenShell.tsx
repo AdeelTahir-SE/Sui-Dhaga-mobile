@@ -42,16 +42,9 @@ export function TailorScreenShell({
             bottom: insets.bottom + tabsHeight,
             left: 0,
             right: 0,
-            backgroundColor: "#FFFFFF",
-            borderTopWidth: 1,
-            borderTopColor: "#F3F4F6",
+            backgroundColor: "transparent",
             paddingHorizontal: 20,
-            paddingVertical: 12,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: -3 },
-            shadowOpacity: 0.08,
-            shadowRadius: 6,
-            elevation: 10,
+            paddingVertical: 10,
             zIndex: 30,
           }}
         >

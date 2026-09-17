@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { DimensionValue, Platform, StyleSheet, View } from "react-native";
 import { WebView } from "react-native-webview";
 
 interface TailorLeafletMapProps {
@@ -9,7 +9,7 @@ interface TailorLeafletMapProps {
   locationText: string;
   zoom?: number;
   interactive?: boolean;
-  height?: number | string;
+  height?: DimensionValue;
 }
 
 export function TailorLeafletMap({
