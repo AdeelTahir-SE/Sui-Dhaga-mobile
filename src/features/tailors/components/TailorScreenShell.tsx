@@ -50,7 +50,9 @@ export function TailorScreenShell({
         >
           {fixedBottomAction}
         </View>
-      ) : null}
+      ) : (
+        <View></View>
+      )}
 
       {bottomTabs ? <FixedBottomTabs>{bottomTabs}</FixedBottomTabs> : null}
     </View>

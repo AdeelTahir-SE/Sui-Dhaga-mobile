@@ -47,17 +47,17 @@ export default function TailorProfileScreen() {
 
   if (isLoading && !tailor) {
     return (
-      <TailorScreenShell bottomTabs={<CustomerTabsPreview active="Tailors" />}>
-        <View
-          className="flex-1 items-center justify-center py-20"
-          style={{ minHeight: 520 }}
-        >
-          <ActivityIndicator size="large" color="#14919B" />
-          <Text className="mt-4 text-[14px] font-medium text-brand-gray">
-            Loading tailor profile...
-          </Text>
-        </View>
-      </TailorScreenShell>
+      // <TailorScreenShell bottomTabs={<CustomerTabsPreview active="Tailors" />}>
+      <View
+        className="flex-1 items-center justify-center py-20"
+        style={{ minHeight: 520 }}
+      >
+        <ActivityIndicator size="large" color="#14919B" />
+        <Text className="mt-4 text-[14px] font-medium text-brand-gray">
+          Loading tailor profile...
+        </Text>
+      </View>
+      // </TailorScreenShell>
     );
   }
 
@@ -267,6 +267,7 @@ export default function TailorProfileScreen() {
           tone="cream"
           style={{ borderBottomLeftRadius: 30, borderBottomRightRadius: 30 }}
         />
+
         <View className="absolute left-0 right-0 top-0">
           <TailorHeader
             title=""
@@ -276,14 +277,14 @@ export default function TailorProfileScreen() {
             floating
           />
         </View>
-        <View className="overflow-hidden rounded-2xl border-[3.5px] border-white bg-white shadow-md">
-          <TailorPlaceholder image={avatarSource} size="md" tone="coral" />
-        </View>
       </View>
 
       {/* Main Content Container below banner */}
       <View className="bg-white px-5 pb-6">
         <View className="-mt-12 flex-row items-end">
+          {/* <View className="overflow-hidden rounded-2xl border-[3.5px] border-white bg-white shadow-md"> */}
+          <TailorPlaceholder image={avatarSource} size="md" tone="teal" />
+          {/* </View> */}
           <View className="ml-4 flex-1 pb-1">
             <Text className="text-[23px] font-black text-brand-dark leading-[28px]">
               {name}
