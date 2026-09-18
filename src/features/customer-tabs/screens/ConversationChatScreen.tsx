@@ -27,7 +27,6 @@ import {
   RecordingPresets,
   setAudioModeAsync,
   useAudioRecorder,
-  useAudioRecorderState,
 } from "expo-audio";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -44,6 +43,7 @@ import { ConversationItem, MessageItem } from "../../../types/api";
 import { VoiceMessagePlayer } from "../components/VoiceMessagePlayer";
 import { AnimatedDustbin } from "../components/AnimatedDustbin";
 import { AudioWaveformBar } from "../components/AudioWaveformBar";
+import { RecordingTimer } from "../components/RecordingTimer";
 import {
   subscribeToConversation,
   unsubscribeChannel,
@@ -297,7 +297,6 @@ export default function ConversationChatScreen() {
   const hasInitiallyScrolledRef = useRef<boolean>(false);
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const recorderState = useAudioRecorderState(audioRecorder, 200);
 
   // WhatsApp-style Voice Recording Refs & Animated Values
   const isHoldingVoiceRef = useRef(false);
@@ -887,11 +886,7 @@ export default function ConversationChatScreen() {
           "Microphone Permission Required",
           "Permission to access the microphone is required to record voice messages.",
         );
-        isHoldingVoiceRef.current = false;
-        Animated.spring(micScaleAnim, {
-          toValue: 1,
-          useNativeDriver: true,
-        }).start();
+        handleCancelRecording();
         return;
       }
 
@@ -917,19 +912,12 @@ export default function ConversationChatScreen() {
       }
 
       audioRecorder.record();
-      setIsRecording(true);
       try {
-        Vibration.vibrate(40);
+        Vibration.vibrate(35);
       } catch {}
     } catch (err: any) {
       console.warn("Failed to start voice recording:", err);
-      setIsRecording(false);
-      try {
-        await setAudioModeAsync({
-          playsInSilentMode: true,
-          allowsRecording: false,
-        });
-      } catch {}
+      handleCancelRecording();
     } finally {
       isStartingRecordingRef.current = false;
     }
@@ -1009,24 +997,24 @@ export default function ConversationChatScreen() {
   const triggerDeleteAnimation = (onComplete: () => void) => {
     isCancelingRef.current = true;
     try {
-      Vibration.vibrate([0, 35, 45, 60]);
+      Vibration.vibrate([0, 30, 40, 50]);
     } catch {}
 
-    // 1. Mic drops/flies into dustbin while shrinking
+    // 1. Mic drops/flies into dustbin while shrinking fast
     Animated.parallel([
       Animated.timing(micTranslateX, {
-        toValue: -130,
-        duration: 220,
+        toValue: -135,
+        duration: 180,
         useNativeDriver: true,
       }),
       Animated.timing(micTranslateY, {
         toValue: 0,
-        duration: 220,
+        duration: 180,
         useNativeDriver: true,
       }),
       Animated.timing(micScaleAnim, {
-        toValue: 0.15,
-        duration: 220,
+        toValue: 0.1,
+        duration: 180,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -1034,17 +1022,17 @@ export default function ConversationChatScreen() {
       Animated.spring(trashLidAnim, {
         toValue: 0,
         friction: 8,
-        tension: 130,
+        tension: 140,
         useNativeDriver: true,
       }).start();
 
       // 3. Dustbin shakes left-right to confirm trash eaten
       Animated.sequence([
-        Animated.timing(trashShakeAnim, { toValue: -6, duration: 40, useNativeDriver: true }),
-        Animated.timing(trashShakeAnim, { toValue: 6, duration: 40, useNativeDriver: true }),
-        Animated.timing(trashShakeAnim, { toValue: -4, duration: 40, useNativeDriver: true }),
-        Animated.timing(trashShakeAnim, { toValue: 4, duration: 40, useNativeDriver: true }),
-        Animated.timing(trashShakeAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
+        Animated.timing(trashShakeAnim, { toValue: -6, duration: 35, useNativeDriver: true }),
+        Animated.timing(trashShakeAnim, { toValue: 6, duration: 35, useNativeDriver: true }),
+        Animated.timing(trashShakeAnim, { toValue: -3, duration: 35, useNativeDriver: true }),
+        Animated.timing(trashShakeAnim, { toValue: 3, duration: 35, useNativeDriver: true }),
+        Animated.timing(trashShakeAnim, { toValue: 0, duration: 35, useNativeDriver: true }),
       ]).start(() => {
         onComplete();
       });
@@ -1060,6 +1048,7 @@ export default function ConversationChatScreen() {
         isHoldingVoiceRef.current = true;
         isNearTrashRef.current = false;
         setIsNearTrash(false);
+        setIsRecording(true);
         recordingStartTimeRef.current = Date.now();
 
         micTranslateX.setValue(0);
@@ -1068,11 +1057,11 @@ export default function ConversationChatScreen() {
         trashScaleAnim.setValue(1);
         trashShakeAnim.setValue(0);
 
-        // Substantial spring scale up (1.75x) with bounciness
+        // Fast, snappy, bouncy scale up (1.7x) with zero lag
         Animated.spring(micScaleAnim, {
-          toValue: 1.75,
-          friction: 4,
-          tension: 70,
+          toValue: 1.7,
+          friction: 6,
+          tension: 120,
           useNativeDriver: true,
         }).start();
 
@@ -1081,31 +1070,34 @@ export default function ConversationChatScreen() {
       onPanResponderMove: (_, gestureState) => {
         if (!isHoldingVoiceRef.current || isLockedRef.current || isCancelingRef.current) return;
 
-        // 1. Check Scroll UP to LOCK (dy <= -70)
-        if (gestureState.dy <= -70) {
+        // 1. Check Scroll UP to LOCK (dy <= -60)
+        if (gestureState.dy <= -60) {
           isLockedRef.current = true;
           isHoldingVoiceRef.current = false;
           setIsLocked(true);
 
           try {
-            Vibration.vibrate(60);
+            Vibration.vibrate(50);
           } catch {}
 
-          // Smoothly snap mic back to normal position and scale
+          // Snappy snap of mic back to normal position and scale
           Animated.parallel([
             Animated.spring(micScaleAnim, {
               toValue: 1,
               friction: 6,
+              tension: 120,
               useNativeDriver: true,
             }),
             Animated.spring(micTranslateX, {
               toValue: 0,
               friction: 6,
+              tension: 120,
               useNativeDriver: true,
             }),
             Animated.spring(micTranslateY, {
               toValue: 0,
               friction: 6,
+              tension: 120,
               useNativeDriver: true,
             }),
           ]).start();
@@ -1113,7 +1105,7 @@ export default function ConversationChatScreen() {
         }
 
         // Track vertical move slightly upwards if dy < 0
-        const clampedDy = Math.max(-65, Math.min(0, gestureState.dy));
+        const clampedDy = Math.max(-55, Math.min(0, gestureState.dy));
         micTranslateY.setValue(clampedDy);
 
         // 2. Check Slide LEFT towards DUSTBIN (dx < 0)
@@ -1122,39 +1114,40 @@ export default function ConversationChatScreen() {
         slideAnim.setValue(clampedDx);
 
         // Dustbin proximity threshold: lid opens!
-        if (gestureState.dx <= -60) {
+        if (gestureState.dx <= -55) {
           if (!isNearTrashRef.current) {
             isNearTrashRef.current = true;
             setIsNearTrash(true);
             try {
-              Vibration.vibrate(35);
+              Vibration.vibrate(30);
             } catch {}
-            // Dustbin lid opens up!
             Animated.spring(trashLidAnim, {
               toValue: 1,
-              friction: 5,
-              tension: 75,
+              friction: 6,
+              tension: 110,
               useNativeDriver: true,
             }).start();
             Animated.spring(trashScaleAnim, {
               toValue: 1.35,
-              friction: 4,
+              friction: 5,
+              tension: 110,
               useNativeDriver: true,
             }).start();
           }
-        } else if (gestureState.dx > -45) {
+        } else if (gestureState.dx > -40) {
           if (isNearTrashRef.current) {
             isNearTrashRef.current = false;
             setIsNearTrash(false);
-            // Dustbin lid closes
             Animated.spring(trashLidAnim, {
               toValue: 0,
               friction: 6,
+              tension: 110,
               useNativeDriver: true,
             }).start();
             Animated.spring(trashScaleAnim, {
               toValue: 1,
               friction: 5,
+              tension: 110,
               useNativeDriver: true,
             }).start();
           }
@@ -1162,15 +1155,12 @@ export default function ConversationChatScreen() {
       },
       onPanResponderRelease: (_, gestureState) => {
         if (isCancelingRef.current) return;
-
-        // If user already locked, release is hands-free, do nothing
         if (isLockedRef.current) return;
-
         if (!isHoldingVoiceRef.current) return;
         isHoldingVoiceRef.current = false;
 
         // Check if released near dustbin -> delete animation!
-        if (isNearTrashRef.current || gestureState.dx <= -70) {
+        if (isNearTrashRef.current || gestureState.dx <= -65) {
           triggerDeleteAnimation(() => {
             handleCancelRecording();
           });
@@ -1179,10 +1169,10 @@ export default function ConversationChatScreen() {
 
         // Tap vs hold duration check
         const duration = Date.now() - recordingStartTimeRef.current;
-        if (duration < 500) {
-          Animated.spring(micScaleAnim, { toValue: 1, useNativeDriver: true }).start();
-          Animated.spring(micTranslateX, { toValue: 0, useNativeDriver: true }).start();
-          Animated.spring(micTranslateY, { toValue: 0, useNativeDriver: true }).start();
+        if (duration < 450) {
+          Animated.spring(micScaleAnim, { toValue: 1, friction: 6, tension: 120, useNativeDriver: true }).start();
+          Animated.spring(micTranslateX, { toValue: 0, friction: 6, tension: 120, useNativeDriver: true }).start();
+          Animated.spring(micTranslateY, { toValue: 0, friction: 6, tension: 120, useNativeDriver: true }).start();
           handleCancelRecording();
           Alert.alert(
             "Voice Message",
@@ -1193,9 +1183,9 @@ export default function ConversationChatScreen() {
         }
 
         // Normal release -> send recording!
-        Animated.spring(micScaleAnim, { toValue: 1, useNativeDriver: true }).start();
-        Animated.spring(micTranslateX, { toValue: 0, useNativeDriver: true }).start();
-        Animated.spring(micTranslateY, { toValue: 0, useNativeDriver: true }).start();
+        Animated.spring(micScaleAnim, { toValue: 1, friction: 6, tension: 120, useNativeDriver: true }).start();
+        Animated.spring(micTranslateX, { toValue: 0, friction: 6, tension: 120, useNativeDriver: true }).start();
+        Animated.spring(micTranslateY, { toValue: 0, friction: 6, tension: 120, useNativeDriver: true }).start();
         handleSendRecording();
       },
       onPanResponderTerminate: () => {
@@ -2452,247 +2442,19 @@ export default function ConversationChatScreen() {
             shadowRadius: 3,
             elevation: 3,
             position: "relative",
-            overflow: "visible",
+            minHeight: 62,
           }}
         >
-          {isRecording ? (
-            isLocked ? (
-              /* WhatsApp-style Locked Hands-free Recording Bar */
-              <View
-                style={{
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  height: 46,
-                  paddingHorizontal: 2,
-                }}
-              >
-                {/* Left: Tap-to-cancel Dustbin */}
-                <AnimatedDustbin
-                  isOpen={false}
-                  onPress={handleCancelRecording}
-                  size={40}
-                />
-
-                {/* Center: Live Recording Indicator, Timer & Dancing Waveform */}
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Animated.View
-                    style={{
-                      opacity: recordingPulseAnim,
-                      width: 9,
-                      height: 9,
-                      borderRadius: 4.5,
-                      backgroundColor: "#EF4444",
-                    }}
-                  />
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: "700",
-                      color: "#1A1D1F",
-                      letterSpacing: 0.3,
-                    }}
-                  >
-                    {formatMillis(recorderState.durationMillis)}
-                  </Text>
-                  <AudioWaveformBar color="#EF4444" count={7} />
-                </View>
-
-                {/* Right: Send Button in Locked Mode */}
-                <TouchableOpacity
-                  onPress={handleSendRecording}
-                  disabled={isSending}
-                  activeOpacity={0.85}
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 21,
-                    backgroundColor: "#14919B",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    shadowColor: "#14919B",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  }}
-                  accessibilityLabel="Send recorded message"
-                >
-                  {isSending ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Ionicons name="send" size={17} color="#FFFFFF" />
-                  )}
-                </TouchableOpacity>
-              </View>
-            ) : (
-              /* WhatsApp-style Active Voice Recording Track (Holding) */
-              <View
-                style={{
-                  flex: 1,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  height: 46,
-                }}
-              >
-                {/* Left: Dustbin with opening lid animation */}
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <AnimatedDustbin
-                    isOpen={isNearTrash}
-                    lidAnim={trashLidAnim}
-                    scaleAnim={trashScaleAnim}
-                    shakeAnim={trashShakeAnim}
-                    size={40}
-                  />
-
-                  {/* Blinking Red Recording Dot & Duration */}
-                  <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 8 }}>
-                    <Animated.View
-                      style={{
-                        opacity: recordingPulseAnim,
-                        width: 9,
-                        height: 9,
-                        borderRadius: 4.5,
-                        backgroundColor: "#EF4444",
-                        marginRight: 6,
-                      }}
-                    />
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "700",
-                        color: "#1A1D1F",
-                        letterSpacing: 0.3,
-                      }}
-                    >
-                      {formatMillis(recorderState.durationMillis)}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Center: Slide to cancel indicator */}
-                <Animated.View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    transform: [{ translateX: slideAnim }],
-                    paddingRight: 8,
-                  }}
-                >
-                  <Ionicons
-                    name="chevron-back"
-                    size={16}
-                    color={isNearTrash ? "#EF4444" : "#9CA3AF"}
-                  />
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: isNearTrash ? "800" : "600",
-                      color: isNearTrash ? "#EF4444" : "#6F767E",
-                      marginLeft: 2,
-                    }}
-                  >
-                    {isNearTrash ? "Release to delete" : "Slide to cancel"}
-                  </Text>
-                </Animated.View>
-
-                {/* Right: Floating Lock Pill & Holding Mic Button */}
-                <View style={{ alignItems: "center", justifyContent: "center" }}>
-                  {/* Floating Slide-up-to-lock indicator pill above mic */}
-                  <Animated.View
-                    pointerEvents="none"
-                    style={{
-                      position: "absolute",
-                      bottom: 58,
-                      backgroundColor: "#FFFFFF",
-                      borderRadius: 22,
-                      paddingVertical: 8,
-                      paddingHorizontal: 10,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderWidth: 1,
-                      borderColor: "#EAE5DD",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 3 },
-                      shadowOpacity: 0.12,
-                      shadowRadius: 6,
-                      elevation: 6,
-                      transform: [{ translateY: lockSlideAnim }],
-                    }}
-                  >
-                    <Ionicons name="lock-closed" size={16} color="#14919B" />
-                    <Ionicons name="chevron-up" size={13} color="#14919B" style={{ marginTop: 2 }} />
-                    <Text style={{ fontSize: 9, fontWeight: "700", color: "#6F767E", marginTop: 2 }}>
-                      Lock
-                    </Text>
-                  </Animated.View>
-
-                  {/* Pulsing Ripple Aura behind mic */}
-                  <Animated.View
-                    pointerEvents="none"
-                    style={{
-                      position: "absolute",
-                      width: 44,
-                      height: 44,
-                      borderRadius: 22,
-                      backgroundColor: "rgba(239, 68, 68, 0.28)",
-                      transform: [
-                        {
-                          scale: micRippleAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [1, 2.3],
-                          }),
-                        },
-                        { translateX: micTranslateX },
-                        { translateY: micTranslateY },
-                      ],
-                      opacity: micRippleAnim.interpolate({
-                        inputRange: [0, 0.7, 1],
-                        outputRange: [0.65, 0.3, 0],
-                      }),
-                    }}
-                  />
-
-                  {/* Active Holding Mic Button */}
-                  <View
-                    {...micPanResponder.panHandlers}
-                    style={{
-                      width: 44,
-                      height: 44,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Animated.View
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 22,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: "#EF4444",
-                        shadowColor: "#EF4444",
-                        shadowOffset: { width: 0, height: 3 },
-                        shadowOpacity: 0.45,
-                        shadowRadius: 8,
-                        elevation: 6,
-                        transform: [
-                          { scale: micScaleAnim },
-                          { translateX: micTranslateX },
-                          { translateY: micTranslateY },
-                        ],
-                      }}
-                    >
-                      <Ionicons name="mic" size={21} color="#FFFFFF" />
-                    </Animated.View>
-                  </View>
-                </View>
-              </View>
-            )
-          ) : (
-            <>
+          {/* Normal Input Area (Attachment, Camera, TextInput) - hidden when recording */}
+          {!isRecording && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                flex: 1,
+                marginRight: 50,
+              }}
+            >
               {/* Attachment Picker Button */}
               <TouchableOpacity
                 onPress={handlePickAttachment}
@@ -2747,7 +2509,6 @@ export default function ConversationChatScreen() {
                   paddingVertical: 9,
                   fontSize: 14,
                   color: "#1A1D1F",
-                  marginRight: 8,
                 }}
                 placeholder="Type a message..."
                 placeholderTextColor="#9CA3AF"
@@ -2755,39 +2516,178 @@ export default function ConversationChatScreen() {
                 onChangeText={setInputText}
                 multiline
               />
+            </View>
+          )}
 
-              {/* Send or Mic Button */}
-              {!inputText.trim() && pendingAttachments.length === 0 ? (
-                /* WhatsApp Hold-to-Record Mic Button */
+          {/* Active Voice Recording Controls Area (visible when recording) */}
+          {isRecording && (
+            <View
+              style={{
+                flex: 1,
+                marginRight: isLocked ? 0 : 50,
+                height: 44,
+                justifyContent: "center",
+              }}
+            >
+              {isLocked ? (
+                /* Locked Hands-free Recording Bar */
                 <View
-                  {...micPanResponder.panHandlers}
                   style={{
-                    width: 44,
-                    height: 44,
+                    flexDirection: "row",
                     alignItems: "center",
-                    justifyContent: "center",
+                    justifyContent: "space-between",
+                    height: 44,
                   }}
                 >
-                  <Animated.View
+                  {/* Left: Tap-to-cancel Dustbin */}
+                  <AnimatedDustbin
+                    isOpen={false}
+                    onPress={handleCancelRecording}
+                    size={40}
+                  />
+
+                  {/* Center: Live Recording Indicator, Timer & Dancing Waveform */}
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <Animated.View
+                      style={{
+                        opacity: recordingPulseAnim,
+                        width: 9,
+                        height: 9,
+                        borderRadius: 4.5,
+                        backgroundColor: "#EF4444",
+                      }}
+                    />
+                    <RecordingTimer
+                      isRecording={isRecording}
+                      startTime={recordingStartTimeRef.current}
+                    />
+                    <AudioWaveformBar color="#EF4444" count={6} />
+                  </View>
+
+                  {/* Right: Send Button in Locked Mode */}
+                  <TouchableOpacity
+                    onPress={handleSendRecording}
+                    disabled={isSending}
+                    activeOpacity={0.85}
                     style={{
                       width: 42,
                       height: 42,
                       borderRadius: 21,
+                      backgroundColor: "#14919B",
                       alignItems: "center",
                       justifyContent: "center",
-                      backgroundColor: "#14919B",
                       shadowColor: "#14919B",
                       shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.25,
-                      shadowRadius: 3,
+                      shadowOpacity: 0.3,
+                      shadowRadius: 4,
                       elevation: 3,
-                      transform: [{ scale: micScaleAnim }],
                     }}
+                    accessibilityLabel="Send recorded message"
                   >
-                    <Ionicons name="mic" size={20} color="#FFFFFF" />
-                  </Animated.View>
+                    {isSending ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Ionicons name="send" size={17} color="#FFFFFF" />
+                    )}
+                  </TouchableOpacity>
                 </View>
               ) : (
+                /* Holding Recording Track */
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    height: 44,
+                  }}
+                >
+                  {/* Left: Dustbin with opening lid animation */}
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <AnimatedDustbin
+                      isOpen={isNearTrash}
+                      lidAnim={trashLidAnim}
+                      scaleAnim={trashScaleAnim}
+                      shakeAnim={trashShakeAnim}
+                      size={40}
+                    />
+
+                    {/* Blinking Red Recording Dot & Duration */}
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginLeft: 8,
+                      }}
+                    >
+                      <Animated.View
+                        style={{
+                          opacity: recordingPulseAnim,
+                          width: 9,
+                          height: 9,
+                          borderRadius: 4.5,
+                          backgroundColor: "#EF4444",
+                          marginRight: 6,
+                        }}
+                      />
+                      <RecordingTimer
+                        isRecording={isRecording}
+                        startTime={recordingStartTimeRef.current}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Center: Slide to cancel indicator */}
+                  <Animated.View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      transform: [{ translateX: slideAnim }],
+                      paddingRight: 6,
+                    }}
+                  >
+                    <Ionicons
+                      name="chevron-back"
+                      size={16}
+                      color={isNearTrash ? "#EF4444" : "#9CA3AF"}
+                    />
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: isNearTrash ? "800" : "600",
+                        color: isNearTrash ? "#EF4444" : "#6F767E",
+                        marginLeft: 2,
+                      }}
+                    >
+                      {isNearTrash ? "Release to delete" : "Slide to cancel"}
+                    </Text>
+                  </Animated.View>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* PERMANENT, UNMOUNTED RIGHT BUTTON (Mic or Send) */}
+          {!isLocked && (
+            <View
+              style={{
+                position: "absolute",
+                right: 12,
+                bottom: 10,
+                width: 44,
+                height: 44,
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 20,
+              }}
+            >
+              {canSend ? (
+                /* Text/Attachment Send Button */
                 <TouchableOpacity
                   onPress={handleSend}
                   disabled={!canSend}
@@ -2817,8 +2717,116 @@ export default function ConversationChatScreen() {
                     />
                   )}
                 </TouchableOpacity>
+              ) : (
+                /* SINGLE PERSISTENT MIC BUTTON WITH TOUCH PAN RESPONDER */
+                <View style={{ alignItems: "center", justifyContent: "center" }}>
+                  {/* Floating Slide-up Lock Capsule (visible only when holding to record) */}
+                  {isRecording && (
+                    <Animated.View
+                      pointerEvents="none"
+                      style={{
+                        position: "absolute",
+                        bottom: 58,
+                        backgroundColor: "#FFFFFF",
+                        borderRadius: 22,
+                        paddingVertical: 8,
+                        paddingHorizontal: 10,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderWidth: 1,
+                        borderColor: "#EAE5DD",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 3 },
+                        shadowOpacity: 0.12,
+                        shadowRadius: 6,
+                        elevation: 6,
+                        transform: [{ translateY: lockSlideAnim }],
+                      }}
+                    >
+                      <Ionicons name="lock-closed" size={16} color="#14919B" />
+                      <Ionicons
+                        name="chevron-up"
+                        size={13}
+                        color="#14919B"
+                        style={{ marginTop: 2 }}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 9,
+                          fontWeight: "700",
+                          color: "#6F767E",
+                          marginTop: 2,
+                        }}
+                      >
+                        Lock
+                      </Text>
+                    </Animated.View>
+                  )}
+
+                  {/* Pulsing Ripple Aura Ring behind mic (visible only when holding) */}
+                  {isRecording && (
+                    <Animated.View
+                      pointerEvents="none"
+                      style={{
+                        position: "absolute",
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
+                        backgroundColor: "rgba(239, 68, 68, 0.28)",
+                        transform: [
+                          {
+                            scale: micRippleAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 2.3],
+                            }),
+                          },
+                          { translateX: micTranslateX },
+                          { translateY: micTranslateY },
+                        ],
+                        opacity: micRippleAnim.interpolate({
+                          inputRange: [0, 0.7, 1],
+                          outputRange: [0.65, 0.3, 0],
+                        }),
+                      }}
+                    />
+                  )}
+
+                  {/* The Physical Touch Target for PanResponder */}
+                  <View
+                    {...micPanResponder.panHandlers}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Animated.View
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 21,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: isRecording ? "#EF4444" : "#14919B",
+                        shadowColor: isRecording ? "#EF4444" : "#14919B",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: isRecording ? 0.45 : 0.25,
+                        shadowRadius: isRecording ? 6 : 3,
+                        elevation: isRecording ? 5 : 3,
+                        transform: [
+                          { scale: micScaleAnim },
+                          { translateX: micTranslateX },
+                          { translateY: micTranslateY },
+                        ],
+                      }}
+                    >
+                      <Ionicons name="mic" size={20} color="#FFFFFF" />
+                    </Animated.View>
+                  </View>
+                </View>
               )}
-            </>
+            </View>
           )}
         </View>
       </KeyboardAvoidingView>

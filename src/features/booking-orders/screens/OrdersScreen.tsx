@@ -145,6 +145,7 @@ export default function OrdersScreen() {
                     id={order.orderNumber || order.id || `ORD${index + 1000}`}
                     item={order.itemName || "Custom Outfit"}
                     tailor={order.tailorName || "Tailor"}
+                    onPress={() => router.push(`/orders/${order.id || order.orderNumber || index + 1}` as any)}
                     placedOn={
                       order.createdAt ||
                       (isDeliv

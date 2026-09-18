@@ -183,45 +183,55 @@ export default function MainOrdersScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          displayedOrders.map((order, index) => {
-            const orderStatus = order.status || "In Progress";
-            const isDelivered =
-              orderStatus.toLowerCase() === "completed" ||
-              orderStatus.toLowerCase() === "delivered";
-            const isCancel =
-              orderStatus.toLowerCase() === "cancelled" ||
-              orderStatus.toLowerCase() === "canceled";
+          <View className="mt-3">
+            {displayedOrders.map((order, index) => {
+              const orderStatus = order.status || "In Progress";
+              const isDelivered =
+                orderStatus.toLowerCase() === "completed" ||
+                orderStatus.toLowerCase() === "delivered";
+              const isCancel =
+                orderStatus.toLowerCase() === "cancelled" ||
+                orderStatus.toLowerCase() === "canceled";
 
-            const displayStatus = isDelivered
-              ? "Completed"
-              : isCancel
-              ? "Cancelled"
-              : orderStatus === "Confirmed"
-              ? "Confirmed"
-              : "In Progress";
+              const displayStatus = isDelivered
+                ? "Completed"
+                : isCancel
+                ? "Cancelled"
+                : orderStatus === "Confirmed"
+                ? "Confirmed"
+                : "In Progress";
 
-            const deliveryText = isDelivered
-              ? `Delivered on ${order.deliveryDate || "Recent"}`
-              : isCancel
-              ? "Order Cancelled"
-              : `Delivery by ${order.deliveryDate || order.dueDate || "Expected Soon"}`;
+              const deliveryText = isDelivered
+                ? `Delivered on ${order.deliveryDate || "Recent"}`
+                : isCancel
+                ? "Order Cancelled"
+                : `Delivery by ${order.deliveryDate || order.dueDate || "Expected Soon"}`;
 
-            return (
-              <MainOrderCard
-                key={order.id || index}
-                id={order.orderNumber || order.id || `SD${1200 + index}`}
-                orderId={order.id}
-                item={order.itemName || "Custom Garment"}
-                tailor={order.tailorName || "Tailor"}
-                delivery={deliveryText}
-                price={`Rs ${order.price?.toLocaleString?.() || order.price || 0}`}
-                status={displayStatus}
-                image={order.imageUrl || order.image || defaultImages[index % defaultImages.length]}
-                tone={getTone(index)}
-                button={isDelivered ? "View Details" : "Track Order"}
-              />
-            );
-          })
+              const placedOnText = order.createdAt
+                ? new Date(order.createdAt).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                  })
+                : undefined;
+
+              return (
+                <MainOrderCard
+                  key={order.id || index}
+                  id={order.orderNumber || order.id || `SD${1200 + index}`}
+                  orderId={order.id}
+                  item={order.itemName || "Custom Garment"}
+                  tailor={order.tailorName || "Tailor"}
+                  delivery={deliveryText}
+                  placedOn={placedOnText}
+                  price={`Rs ${order.price?.toLocaleString?.() || order.price || 0}`}
+                  status={displayStatus}
+                  image={order.imageUrl || order.image || defaultImages[index % defaultImages.length]}
+                  tone={getTone(index)}
+                  button={isDelivered ? "View Details" : isCancel ? "Order Details" : "Track Order"}
+                />
+              );
+            })}
+          </View>
         )}
       </View>
     </CustomerTabShell>

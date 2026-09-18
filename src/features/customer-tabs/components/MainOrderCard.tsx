@@ -1,7 +1,8 @@
-import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import React, { useState, useMemo } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Image, type ImageSource } from "expo-image";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 const orderItems = require("@/assets/illustrations/customer-tabs/order-items.png");
 
@@ -9,14 +10,25 @@ type MainOrderCardProps = {
   id: string;
   item: string;
   tailor: string;
-  delivery: string;
-  price: string;
+  delivery?: string;
+  placedOn?: string;
+  price: string | number;
   status: string;
   image?: ImageSource | string;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   button?: string;
   orderId?: string;
+  tags?: string[];
   onPress?: () => void;
+};
+
+const toneConfig: Record<string, { bg: string; text: string }> = {
+  teal: { bg: "#EBF8F9", text: "#078B87" },
+  coral: { bg: "#FFF1EE", text: "#E11D48" },
+  gold: { bg: "#FFF9E6", text: "#D97706" },
+  blue: { bg: "#EFF6FF", text: "#2563EB" },
+  mint: { bg: "#ECFDF5", text: "#059669" },
+  cream: { bg: "#FDF8F0", text: "#B45309" },
 };
 
 export function MainOrderCard({
@@ -24,30 +36,25 @@ export function MainOrderCard({
   item,
   tailor,
   delivery,
+  placedOn,
   price,
   status,
   image,
-  button = "Track Order",
+  tone = "teal",
+  button,
   orderId,
+  tags,
   onPress,
 }: MainOrderCardProps) {
+  const [imageError, setImageError] = useState(false);
+
   const normalizedStatus = (status || "").toLowerCase();
   const isCompleted = normalizedStatus === "completed" || normalizedStatus === "delivered";
   const isCancelled = normalizedStatus === "cancelled" || normalizedStatus === "canceled";
+  const isConfirmed = normalizedStatus === "confirmed";
 
-  const statusBadge = isCompleted ? {
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
-    border: "border-emerald-200",
-  } : isCancelled ? {
-    bg: "bg-rose-50",
-    text: "text-rose-700",
-    border: "border-rose-200",
-  } : {
-    bg: "bg-[#FFF6DA]",
-    text: "text-[#C08300]",
-    border: "border-amber-200",
-  };
+  const activeTone = toneConfig[tone] || toneConfig.teal;
+  const initialLetter = (item || "O").charAt(0).toUpperCase();
 
   const handleCardPress = () => {
     if (onPress) {
@@ -57,46 +64,480 @@ export function MainOrderCard({
     }
   };
 
+  // Formatted price string
+  const formattedPrice = useMemo(() => {
+    if (typeof price === "number") {
+      return `Rs. ${price.toLocaleString()}`;
+    }
+    if (typeof price === "string") {
+      const trimmed = price.trim();
+      if (trimmed.startsWith("Rs") || trimmed.startsWith("₹") || trimmed.startsWith("$")) {
+        return trimmed;
+      }
+      return `Rs. ${trimmed}`;
+    }
+    return "Rs. 0";
+  }, [price]);
+
+  // Clean status display
+  const statusDisplay = useMemo(() => {
+    if (isCompleted) {
+      return {
+        label: "Delivered",
+        icon: "checkmark-circle" as const,
+        bg: "#ECFDF5",
+        text: "#059669",
+        border: "#A7F3D0",
+      };
+    }
+    if (isCancelled) {
+      return {
+        label: "Cancelled",
+        icon: "close-circle" as const,
+        bg: "#FFF1EE",
+        text: "#E11D48",
+        border: "#FECDD3",
+      };
+    }
+    if (isConfirmed) {
+      return {
+        label: "Confirmed",
+        icon: "shield-checkmark" as const,
+        bg: "#EFF6FF",
+        text: "#2563EB",
+        border: "#BFDBFE",
+      };
+    }
+    return {
+      label: status || "In Progress",
+      icon: "time" as const,
+      bg: "#E0F7F7",
+      text: "#078B87",
+      border: "#B2EBF2",
+    };
+  }, [isCompleted, isCancelled, isConfirmed, status]);
+
+  // Tags list (similar to specialties in Tailor card)
+  const tagsList = useMemo(() => {
+    if (Array.isArray(tags) && tags.length > 0) {
+      return tags.map((t) => t.trim()).filter(Boolean);
+    }
+    const list: string[] = [];
+    if (delivery) {
+      list.push(delivery);
+    }
+    if (placedOn) {
+      list.push(`Placed ${placedOn}`);
+    }
+    if (list.length === 0) {
+      list.push("Custom Stitching");
+    }
+    return list;
+  }, [tags, delivery, placedOn]);
+
+  // Button label
+  const ctaLabel = button || (isCompleted ? "View Details" : isCancelled ? "Order Details" : "Track Order");
+
+  const resolvedImage = image ?? orderItems;
+  const hasValidImage = resolvedImage && !imageError;
+
   return (
     <TouchableOpacity
-      activeOpacity={0.8}
+      activeOpacity={0.93}
       onPress={handleCardPress}
-      className="mb-4 rounded-md border border-brand-border bg-white p-3.5 shadow-sm"
+      style={styles.card}
     >
-      <View className="flex-row">
-        <View className="h-24 w-20 overflow-hidden rounded-md bg-brand-surface border border-brand-border">
-          <Image
-            source={image ?? orderItems}
-            contentFit="contain"
-            style={{ height: "100%", width: "100%" }}
-          />
+      {/* TOP ROW: AVATAR / GARMENT IMAGE + ORDER DETAILS */}
+      <View style={styles.topRow}>
+        {/* AVATAR / IMAGE CONTAINER */}
+        <View style={[styles.avatarContainer, { backgroundColor: activeTone.bg }]}>
+          {hasValidImage ? (
+            <Image
+              source={resolvedImage}
+              contentFit="cover"
+              style={styles.avatarImage}
+              onError={() => setImageError(true)}
+              transition={200}
+            />
+          ) : (
+            <View style={styles.initialsWrap}>
+              <Ionicons
+                name="shirt-outline"
+                size={22}
+                color={activeTone.text}
+                style={{ opacity: 0.7, marginBottom: 2 }}
+              />
+              <Text style={[styles.initialText, { color: activeTone.text }]}>
+                {initialLetter}
+              </Text>
+            </View>
+          )}
+
+          {/* Status Mini Badge Overlay on Avatar */}
+          <View
+            style={[
+              styles.avatarStatusBadge,
+              {
+                backgroundColor: isCompleted
+                  ? "#059669"
+                  : isCancelled
+                  ? "#E11D48"
+                  : isConfirmed
+                  ? "#2563EB"
+                  : "#078B87",
+              },
+            ]}
+          >
+            <Ionicons
+              name={
+                isCompleted
+                  ? "checkmark"
+                  : isCancelled
+                  ? "close"
+                  : isConfirmed
+                  ? "shield"
+                  : "sync"
+              }
+              size={10}
+              color="#FFFFFF"
+            />
+          </View>
         </View>
-        <View className="ml-3.5 flex-1">
-          <View className="flex-row items-start justify-between">
-            <Text className="text-[12px] font-bold text-brand-dark">Order #{id}</Text>
-            <View className={`rounded-md px-2 py-0.5 border ${statusBadge.bg} ${statusBadge.border}`}>
-              <Text className={`text-[10px] font-bold ${statusBadge.text}`}>
-                {status}
+
+        {/* MIDDLE INFO BLOCK */}
+        <View style={styles.infoBlock}>
+          {/* Header: Item / Outfit Name */}
+          <Text style={styles.itemName} numberOfLines={1}>
+            {item}
+          </Text>
+
+          {/* Order ID & Tailor Meta Row */}
+          <View style={styles.metaRow}>
+            {/* Order ID Pill */}
+            <View style={styles.orderIdPill}>
+              <Ionicons name="receipt-outline" size={11} color="#078B87" />
+              <Text style={styles.orderIdPillText}>#{id}</Text>
+            </View>
+
+            <Text style={styles.dotDivider}>•</Text>
+
+            {/* Tailor Name */}
+            <View style={styles.tailorWrap}>
+              <Ionicons name="storefront-outline" size={12} color="#078B87" />
+              <Text style={styles.tailorText} numberOfLines={1}>
+                {tailor}
               </Text>
             </View>
           </View>
-          <Text numberOfLines={1} className="mt-1.5 text-[14px] font-bold text-brand-dark">{item}</Text>
-          <Text numberOfLines={1} className="mt-0.5 text-[12px] font-medium text-brand-gray">{tailor}</Text>
-          <Text className="mt-0.5 text-[12px] font-medium text-brand-gray">{delivery}</Text>
-          <Text className="mt-1.5 text-[15px] font-bold text-primary">{price}</Text>
+
+          {/* Badges Strip (Status, Delivery/Timeline) */}
+          <View style={styles.badgesRow}>
+            {/* Status Tag */}
+            <View
+              style={[
+                styles.statusTag,
+                {
+                  backgroundColor: statusDisplay.bg,
+                  borderColor: statusDisplay.border,
+                },
+              ]}
+            >
+              <Ionicons
+                name={statusDisplay.icon}
+                size={11}
+                color={statusDisplay.text}
+              />
+              <Text style={[styles.statusTagText, { color: statusDisplay.text }]}>
+                {statusDisplay.label}
+              </Text>
+            </View>
+
+            {/* Placed date or quick tag if available */}
+            {placedOn ? (
+              <View style={styles.dateTag}>
+                <Ionicons name="time-outline" size={10} color="#475569" />
+                <Text style={styles.dateTagText}>{placedOn}</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
       </View>
 
-      <View className="mt-3 pt-2.5 border-t border-brand-border/60 flex-row justify-end">
+      {/* TAGS / DETAILS STRIP */}
+      {tagsList.length > 0 ? (
+        <View style={styles.tagsWrap}>
+          {tagsList.slice(0, 3).map((tag, idx) => (
+            <View key={idx} style={styles.tagPill}>
+              <Text style={styles.tagPillText} numberOfLines={1}>
+                {tag}
+              </Text>
+            </View>
+          ))}
+          {tagsList.length > 3 ? (
+            <View style={styles.morePill}>
+              <Text style={styles.morePillText}>+{tagsList.length - 3} more</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {/* FOOTER STRIP: PRICING + CTA BUTTON */}
+      <View style={styles.footerRow}>
+        <View style={styles.priceContainer}>
+          <Text style={styles.priceLabel}>Total Amount</Text>
+          <Text style={styles.priceValue}>{formattedPrice}</Text>
+        </View>
+
         <TouchableOpacity
+          activeOpacity={0.82}
           onPress={handleCardPress}
-          className="rounded-md border border-primary px-4 py-2 bg-primary/5 active:bg-primary/10"
+          style={[
+            styles.actionCta,
+            isCancelled ? styles.actionCtaCancelled : null,
+          ]}
         >
-          <Text className="text-[12px] font-bold text-primary tracking-wide">
-            {isCompleted ? "View Invoice" : isCancelled ? "Order Details" : button}
+          <Text
+            style={[
+              styles.actionCtaText,
+              isCancelled ? styles.actionCtaTextCancelled : null,
+            ]}
+          >
+            {ctaLabel}
           </Text>
+          <Ionicons
+            name={isCancelled ? "chevron-forward" : "arrow-forward"}
+            size={14}
+            color={isCancelled ? "#64748B" : "#FFFFFF"}
+            style={{ marginLeft: 3 }}
+          />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 15,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  avatarContainer: {
+    width: 76,
+    height: 76,
+    borderRadius: 16,
+    overflow: "hidden",
+    position: "relative",
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 15,
+  },
+  initialsWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  initialText: {
+    fontSize: 20,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+  },
+  avatarStatusBadge: {
+    position: "absolute",
+    bottom: 4,
+    right: 4,
+    width: 17,
+    height: 17,
+    borderRadius: 8.5,
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  infoBlock: {
+    flex: 1,
+    marginLeft: 13,
+  },
+  itemName: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#0F172A",
+    letterSpacing: -0.2,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+    flexWrap: "wrap",
+    gap: 4,
+  },
+  orderIdPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FAFA",
+    borderWidth: 1,
+    borderColor: "#CCF0EE",
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    gap: 3,
+  },
+  orderIdPillText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#078B87",
+  },
+  dotDivider: {
+    fontSize: 11,
+    color: "#CBD5E1",
+    marginHorizontal: 1,
+  },
+  tailorWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    flexShrink: 1,
+  },
+  tailorText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#475569",
+  },
+  badgesRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 7,
+    flexWrap: "wrap",
+  },
+  statusTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 3,
+  },
+  statusTagText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  dateTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 3,
+  },
+  dateTagText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#475569",
+  },
+  tagsWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    marginTop: 10,
+    gap: 5,
+  },
+  tagPill: {
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 7,
+  },
+  tagPillText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#334155",
+  },
+  morePill: {
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 7,
+  },
+  morePillText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#64748B",
+  },
+  footerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 11,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+  priceContainer: {
+    justifyContent: "center",
+  },
+  priceLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#94A3B8",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  priceValue: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#0F172A",
+    marginTop: 1,
+  },
+  actionCta: {
+    height: 38,
+    backgroundColor: "#078B87",
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#078B87",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  actionCtaCancelled: {
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  actionCtaText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  actionCtaTextCancelled: {
+    color: "#64748B",
+  },
+});
+
