@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { useDesigns } from "../../design-studio/hooks/useDesigns";
 import { CustomerHeader } from "../components/CustomerHeader";
@@ -11,6 +11,7 @@ import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
 
 const newDesignDress = require("@/assets/illustrations/customer-tabs/design/new-design-dress.png");
+const buttonGreenishTexture = require("@/assets/texture/button-greenish-texture.original.png");
 
 function DesignOption({
   title,
@@ -50,13 +51,21 @@ export default function DesignTabScreen() {
       <CustomerHeader
         title="AI Design Studio"
         subtitle="Create something extraordinary ✨"
+        hideRightIcon={true}
       />
       <View className="px-5 pb-8">
         <TouchableOpacity
           onPress={() => router.push("/design-studio" as never)}
           activeOpacity={0.85}
-          className="mb-4 min-h-[130px] flex-row items-center justify-between overflow-hidden rounded-md bg-primary px-5  shadow-sm"
+          className="relative mb-4 min-h-[130px] flex-row items-center justify-between overflow-hidden rounded-md bg-primary px-5 pb-0 shadow-sm"
         >
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <Image
+              source={buttonGreenishTexture}
+              contentFit="cover"
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
           <View className="flex-row items-center flex-1 pr-3">
             <View className="h-14 w-14 items-center justify-center rounded-md bg-white shadow-xs">
               <Ionicons name="add" size={28} color="#14919B" />
@@ -70,7 +79,7 @@ export default function DesignTabScreen() {
               </Text>
             </View>
           </View>
-          <View className="h-36 w-32  border-2 overflow-hidden rounded-md items-center justify-center">
+          <View className="h-36 w-32 rounded-md items-center justify-center">
             <Image
               source={newDesignDress}
               contentFit="cover"

@@ -363,19 +363,21 @@ export default function TailorProfileScreen() {
 
           {/* Bottom address row & Full Screen action button */}
           <View className="mt-3.5 flex-row items-center justify-between">
-            <View className="mr-3 flex-1 flex-row items-center">
-              <Ionicons name="location-sharp" size={17} color="#14919B" />
-              <Text
-                className="ml-1.5 text-[13.5px] font-semibold text-brand-dark"
-                numberOfLines={1}
-              >
+            <View className="mr-3 flex-1 flex-row items-start">
+              <Ionicons
+                name="location-sharp"
+                size={17}
+                color="#14919B"
+                style={{ marginTop: 1 }}
+              />
+              <Text className="ml-1.5 flex-1 text-[13.5px] font-semibold text-brand-dark leading-[19px]">
                 {location}
               </Text>
             </View>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => setIsMapModalVisible(true)}
-              className="flex-row items-center rounded-lg border border-[#14919B] bg-white px-3.5 py-1.5 shadow-xs active:bg-primary-50"
+              className="flex-shrink-0 flex-row items-center rounded-lg border border-[#14919B] bg-white px-3.5 py-1.5 shadow-xs active:bg-primary-50"
             >
               <Ionicons name="expand-outline" size={15} color="#14919B" />
               <Text className="ml-1.5 text-[13px] font-bold text-[#14919B]">
