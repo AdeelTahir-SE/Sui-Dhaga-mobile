@@ -22,7 +22,7 @@ The Expo Router structure must follow these routes.
 
 | Route       | Page Sections                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------- |
-| `/home`     | Hero, Quick Actions, Popular Categories, Recommended Tailors, Recent Designs, Community Preview |
+| `/home`     | Hero, Quick Actions, Recent Designs, Community Preview |
 | `/tailors`  | Search Bar, Filters, Tailor List, Tailor Cards, View Profile Button                             |
 | `/design`   | New Design, Text to Design, Image to Design, Sketch to Design, My Designs, Templates            |
 | `/orders`   | Active Orders, Completed Orders, Cancelled Orders, Order Cards                                  |

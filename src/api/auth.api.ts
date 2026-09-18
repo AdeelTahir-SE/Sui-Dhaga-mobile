@@ -85,6 +85,7 @@ export const authApi = {
   },
 
   async googleAuth(payload: {
+    code?: string;
     token?: string;
     accessToken?: string;
     idToken?: string;

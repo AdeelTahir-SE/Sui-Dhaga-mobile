@@ -547,52 +547,64 @@ export default function TailorProfileSetupScreen() {
           </View>
 
           {/* Set Address on Map Section */}
-          <View className="mb-4 rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
-            <View className="flex-row items-center justify-between mb-2.5">
+          <View className="mb-4 rounded-xl border border-brand-border bg-white p-4 shadow-xs">
+            <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">
-                <Ionicons name="map-outline" size={17} color="#14919B" />
-                <Text className="ml-1.5 text-[13px] font-bold text-brand-dark">
-                  Set Address Using Map
-                </Text>
+                <View className="h-7 w-7 rounded-md bg-primary-50 items-center justify-center mr-2">
+                  <Ionicons name="location" size={16} color="#078B87" />
+                </View>
+                <View>
+                  <Text className="text-[13px] font-black text-brand-dark">
+                    Shop Location & Map Pin
+                  </Text>
+                  <Text className="text-[10px] text-brand-gray">
+                    Used to match nearby customers searching for tailors
+                  </Text>
+                </View>
               </View>
               <TouchableOpacity
                 accessibilityRole="button"
                 activeOpacity={0.8}
                 onPress={() => setIsMapModalOpen(true)}
-                className="flex-row items-center rounded-md bg-primary-50 px-2.5 py-1.5 border border-primary/30"
+                className="flex-row items-center rounded-md bg-primary px-3 py-1.5 shadow-xs"
               >
-                <Ionicons name="navigate-outline" size={13} color="#14919B" />
-                <Text className="ml-1 text-[11px] font-bold text-primary">
-                  {hasLocationPinned ? "Change on Map" : "Open Map"}
+                <Ionicons name="map" size={13} color="#FFFFFF" />
+                <Text className="ml-1 text-[11px] font-bold text-white">
+                  {hasLocationPinned ? "Adjust Pin" : "Set on Map"}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {hasLocationPinned ? (
-              <View className="overflow-hidden rounded-md border border-brand-border">
+              <View className="overflow-hidden rounded-lg border border-brand-border">
                 <TailorLeafletMap
                   latitude={latitude}
                   longitude={longitude}
                   shopName={businessName || "Your Tailor Shop"}
                   locationText={address ? `${address}, ${city}` : city || "Shop Location"}
-                  height={130}
+                  height={140}
                   interactive={false}
                 />
-                <View className="bg-brand-surface/70 p-2.5 flex-row items-center justify-between">
-                  <View className="flex-1 mr-2">
-                    <Text className="text-[11px] font-bold text-brand-dark" numberOfLines={1}>
-                      📍 {address || "Pinned Shop Location"}
+                <View className="bg-[#F7FCFC] p-3 border-t border-brand-border">
+                  <View className="flex-row items-center justify-between mb-1">
+                    <View className="flex-row items-center gap-1.5 flex-1 mr-2">
+                      <Ionicons name="pin" size={13} color="#078B87" />
+                      <Text className="text-[12px] font-black text-brand-dark" numberOfLines={1}>
+                        {address || "Exact Shop Spot Selected"}
+                      </Text>
+                    </View>
+                    <View className="rounded bg-emerald-100 px-2 py-0.5">
+                      <Text className="text-[10px] font-bold text-emerald-800">✓ Pin Linked</Text>
+                    </View>
+                  </View>
+                  <View className="flex-row items-center justify-between mt-1 pt-1.5 border-t border-gray-100">
+                    <Text className="text-[11px] font-semibold text-brand-dark">
+                      City: {city || "Not set"}
                     </Text>
-                    <Text className="text-[10px] text-brand-gray mt-0.5">
-                      {city} • GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                    <Text className="text-[10px] font-mono font-bold text-primary">
+                      GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => setIsMapModalOpen(true)}
-                    className="rounded bg-primary px-2 py-1"
-                  >
-                    <Text className="text-[10px] font-bold text-white">Adjust Pin</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
             ) : (
@@ -600,14 +612,16 @@ export default function TailorProfileSetupScreen() {
                 accessibilityRole="button"
                 activeOpacity={0.7}
                 onPress={() => setIsMapModalOpen(true)}
-                className="items-center justify-center rounded-md border border-dashed border-primary/40 bg-primary-50/40 py-4 px-3"
+                className="items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-primary-50/40 py-5 px-4"
               >
-                <Ionicons name="location" size={24} color="#14919B" />
-                <Text className="mt-1 text-[12px] font-bold text-primary text-center">
-                  Tap to Set Location on Interactive Leaflet Map
+                <View className="h-10 w-10 rounded-full bg-primary/10 items-center justify-center mb-1.5">
+                  <Ionicons name="navigate" size={22} color="#078B87" />
+                </View>
+                <Text className="text-[13px] font-black text-primary text-center">
+                  Tap to Pin Your Shop on Interactive Map
                 </Text>
-                <Text className="text-[10px] text-brand-gray text-center mt-0.5">
-                  Pin your shop, search or use GPS to auto-populate address, city & coordinates
+                <Text className="text-[11px] text-brand-gray text-center mt-1">
+                  Drag the pin, search your area or use GPS. Address, city & coordinates auto-fill.
                 </Text>
               </TouchableOpacity>
             )}

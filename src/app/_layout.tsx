@@ -4,10 +4,14 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SystemUI from "expo-system-ui";
+import * as WebBrowser from "expo-web-browser";
 import "../global.css";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "../stores/auth.store";
+
+// Ensure auth session from deep linking is completed on app resume
+WebBrowser.maybeCompleteAuthSession();
 
 export default function RootLayout() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
