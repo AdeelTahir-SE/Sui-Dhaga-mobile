@@ -179,13 +179,13 @@ export default function MainTailorsScreen() {
         {/* Search Bar & Dedicated Distance Filter Button */}
         <View className="flex-row items-center gap-2.5 mb-4">
           <View
-            className="h-[48px] flex-1 flex-row items-center rounded-md px-3.5 bg-[#F8FAFC] shadow-xs"
-            style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
+            className="flex-1 flex-row items-center px-3.5 bg-[#F8FAFC] shadow-xs"
+            style={{ height: 48, borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0" }}
           >
             <Ionicons name="search" size={19} color="#14919B" />
             <TextInput
               style={{ paddingVertical: 0 }}
-              className="ml-2.5 b flex-1 text-[13px] font-medium text-brand-dark"
+              className="ml-2.5 flex-1 text-[13px] font-medium text-brand-dark"
               placeholder="Search by name, specialty, location..."
               placeholderTextColor="#94A3B8"
               value={searchQuery}
@@ -203,22 +203,39 @@ export default function MainTailorsScreen() {
             )}
           </View>
 
-          {/* Dedicated Upgraded Distance Filter Button */}
+          {/* Filter Button */}
           <TouchableOpacity
             onPress={() => setIsNearbyModalVisible(true)}
             activeOpacity={0.8}
-            className="h-[48px] px-3.5 flex-row items-center justify-center rounded-md shadow-xs"
+            className="items-center justify-center shadow-xs"
             style={{
-              backgroundColor: selectedRadius !== null ? "#14919B" : "#F0FAFA",
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              backgroundColor: "#FFFFFF",
               borderWidth: 1,
-              borderColor: selectedRadius !== null ? "#14919B" : "#BCE3E5",
+              borderColor: "#E2E8F0",
             }}
+            accessibilityLabel="Filter by distance"
           >
             <Ionicons
-              name={selectedRadius !== null ? "funnel" : "funnel-outline"}
-              size={16}
-              color={selectedRadius !== null ? "#FFFFFF" : "#14919B"}
+              name="filter"
+              size={21}
+              color="#14919B"
             />
+            {selectedRadius !== null && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  width: 7,
+                  height: 7,
+                  borderRadius: 3.5,
+                  backgroundColor: "#14919B",
+                }}
+              />
+            )}
           </TouchableOpacity>
         </View>
 

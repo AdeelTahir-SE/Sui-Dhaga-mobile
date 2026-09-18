@@ -47,6 +47,9 @@ export default function HomeScreen() {
       description: "Manage upcoming fittings & tailor visits",
       icon: "calendar" as const,
       route: "/appointments",
+      color: "#2563EB",
+      bgColor: "#EFF6FF",
+      borderColor: "#DBEAFE",
     },
     {
       id: "qa-2",
@@ -54,6 +57,9 @@ export default function HomeScreen() {
       description: "Find & schedule master stitching experts",
       icon: "cut-outline" as const,
       route: "/tailors",
+      color: "#D97706",
+      bgColor: "#FFFBEB",
+      borderColor: "#FEF3C7",
     },
     {
       id: "qa-3",
@@ -61,6 +67,9 @@ export default function HomeScreen() {
       description: "Create bespoke outfits with AI visualization",
       icon: "color-wand-outline" as const,
       route: "/design-studio",
+      color: "#7C3AED",
+      bgColor: "#F5F3FF",
+      borderColor: "#EDE9FE",
     },
     {
       id: "qa-4",
@@ -68,6 +77,9 @@ export default function HomeScreen() {
       description: "Track live stitching and delivery status",
       icon: "bag-handle-outline" as const,
       route: "/orders",
+      color: "#0D9488",
+      bgColor: "#F0FDFA",
+      borderColor: "#CCFBF1",
     },
     {
       id: "qa-5",
@@ -75,6 +87,9 @@ export default function HomeScreen() {
       description: "Save and update your custom body profiles",
       icon: "body-outline" as const,
       route: "/measurements",
+      color: "#E11D48",
+      bgColor: "#FFF1F2",
+      borderColor: "#FFE4E6",
     },
     {
       id: "qa-6",
@@ -82,6 +97,9 @@ export default function HomeScreen() {
       description: "Chat with AI stylist for fabric & cut advice",
       icon: "sparkles-outline" as const,
       route: "/design-studio/chat",
+      color: "#EA580C",
+      bgColor: "#FFF7ED",
+      borderColor: "#FFEDD5",
     },
     {
       id: "qa-7",
@@ -89,6 +107,9 @@ export default function HomeScreen() {
       description: "Locate nearby verified boutiques & studios",
       icon: "map-outline" as const,
       route: "/tailors/map",
+      color: "#059669",
+      bgColor: "#ECFDF5",
+      borderColor: "#D1FAE5",
     },
     {
       id: "qa-8",
@@ -96,6 +117,9 @@ export default function HomeScreen() {
       description: "Connect & share designs with fashion enthusiasts",
       icon: "people-outline" as const,
       route: "/community",
+      color: "#4F46E5",
+      bgColor: "#EEF2FF",
+      borderColor: "#E0E7FF",
     },
   ];
 
@@ -177,23 +201,29 @@ export default function HomeScreen() {
           action="View All"
           onPressAction={() => setActiveModal("quickActions")}
         />
-        <View className="gap-2.5">
-          <View className="flex-row gap-2.5">
+        <View className="gap-2">
+          <View className="flex-row gap-2">
             {quickActionsList.slice(0, 4).map((quickAction) => (
               <QuickAction
                 key={quickAction.id}
                 title={quickAction.title}
                 icon={quickAction.icon}
+                color={quickAction.color}
+                bgColor={quickAction.bgColor}
+                borderColor={quickAction.borderColor}
                 onPress={() => router.push(quickAction.route as never)}
               />
             ))}
           </View>
-          <View className="flex-row gap-2.5">
+          <View className="flex-row gap-2">
             {quickActionsList.slice(4, 8).map((quickAction) => (
               <QuickAction
                 key={quickAction.id}
                 title={quickAction.title}
                 icon={quickAction.icon}
+                color={quickAction.color}
+                bgColor={quickAction.bgColor}
+                borderColor={quickAction.borderColor}
                 onPress={() => router.push(quickAction.route as never)}
               />
             ))}
@@ -319,8 +349,19 @@ export default function HomeScreen() {
                     }}
                     className="flex-row items-center rounded-xl border border-brand-border bg-white p-3.5 shadow-xs active:bg-gray-50"
                   >
-                    <View className="h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
-                      <Ionicons name={action.icon} size={22} color="#14919B" />
+                    <View
+                      style={{
+                        backgroundColor: action.bgColor,
+                        borderColor: action.borderColor,
+                        borderWidth: 1,
+                      }}
+                      className="h-11 w-11 items-center justify-center rounded-xl"
+                    >
+                      <Ionicons
+                        name={action.icon}
+                        size={22}
+                        color={action.color}
+                      />
                     </View>
                     <View className="ml-3.5 flex-1">
                       <Text className="text-[14px] font-bold text-brand-dark">

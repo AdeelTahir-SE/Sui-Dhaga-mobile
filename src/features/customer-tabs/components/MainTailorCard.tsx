@@ -46,7 +46,6 @@ export function MainTailorCard({
   onPress,
   price = "Rs. 1,500",
 }: MainTailorCardProps) {
-  const [isFavorited, setIsFavorited] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const isTailorVerified = verified || isVerified;
@@ -146,29 +145,10 @@ export function MainTailorCard({
 
         {/* MIDDLE INFO BLOCK */}
         <View style={styles.infoBlock}>
-          {/* Header Row: Shop Name & Heart Toggle */}
-          <View style={styles.nameHeartRow}>
-            <Text style={styles.shopName} numberOfLines={1}>
-              {name}
-            </Text>
-
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={(e) => {
-                e.stopPropagation();
-                setIsFavorited(!isFavorited);
-              }}
-              style={styles.heartButton}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Save Tailor to favorites"
-            >
-              <Ionicons
-                name={isFavorited ? "heart" : "heart-outline"}
-                size={20}
-                color={isFavorited ? "#EF4444" : "#94A3B8"}
-              />
-            </TouchableOpacity>
-          </View>
+          {/* Header: Shop Name */}
+          <Text style={styles.shopName} numberOfLines={1}>
+            {name}
+          </Text>
 
           {/* Rating, Reviews & Location Row */}
           <View style={styles.metaRow}>
@@ -316,21 +296,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 13,
   },
-  nameHeartRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
   shopName: {
-    flex: 1,
     fontSize: 16,
     fontWeight: "800",
     color: "#0F172A",
     letterSpacing: -0.2,
-  },
-  heartButton: {
-    padding: 2,
-    marginLeft: 6,
   },
   metaRow: {
     flexDirection: "row",
