@@ -1111,42 +1111,7 @@ export default function ConversationChatScreen() {
         </View>
 
         {/* Header Right Actions */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-          {/* Place Order CTA Button */}
-          {!isTailor && (
-            <TouchableOpacity
-              onPress={handleGoToCreateOrder}
-              activeOpacity={0.85}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#14919B",
-                paddingHorizontal: 11,
-                paddingVertical: 7,
-                borderRadius: 20,
-                shadowColor: "#14919B",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.22,
-                shadowRadius: 3,
-                elevation: 2,
-              }}
-              accessibilityLabel="Place Order"
-            >
-              <Ionicons name="bag-handle" size={13} color="#FFFFFF" />
-              <Text
-                style={{
-                  marginLeft: 4,
-                  fontSize: 12,
-                  fontWeight: "700",
-                  color: "#FFFFFF",
-                  letterSpacing: 0.2,
-                }}
-              >
-                Place Order
-              </Text>
-            </TouchableOpacity>
-          )}
-
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           {resolvedTailorId && !isTailor && (
             <TouchableOpacity
               onPress={() => router.push(`/tailors/${resolvedTailorId}` as any)}
@@ -1184,6 +1149,89 @@ export default function ConversationChatScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Pinned Order Action Banner below Header */}
+      {!isTailor && (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            backgroundColor: "#FFFFFF",
+            borderBottomWidth: 1,
+            borderBottomColor: "#EAE5DD",
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.03,
+            shadowRadius: 2,
+            elevation: 1,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 10 }}>
+            <View
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: "#E0F7F7",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 9,
+              }}
+            >
+              <Ionicons name="bag-handle" size={16} color="#14919B" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                numberOfLines={1}
+                style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}
+              >
+                Custom Tailoring Order
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={{ fontSize: 11, color: "#6F767E", marginTop: 1 }}
+              >
+                Send measurements & get outfit stitched
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            onPress={handleGoToCreateOrder}
+            activeOpacity={0.85}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#14919B",
+              paddingHorizontal: 13,
+              paddingVertical: 7.5,
+              borderRadius: 18,
+              shadowColor: "#14919B",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 3,
+              elevation: 2,
+            }}
+            accessibilityLabel="Place Order"
+          >
+            <Ionicons name="bag-check" size={14} color="#FFFFFF" />
+            <Text
+              style={{
+                marginLeft: 5,
+                fontSize: 12,
+                fontWeight: "800",
+                color: "#FFFFFF",
+                letterSpacing: 0.2,
+              }}
+            >
+              Place Order
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -1731,12 +1779,95 @@ export default function ConversationChatScreen() {
           }}
         >
           {isRecording ? (
-            <VoiceRecorderBar
-              durationMillis={recorderState.durationMillis}
-              onCancel={handleCancelRecording}
-              onSend={handleSendRecording}
-              isSending={isSending}
-            />
+            /* WhatsApp-style Active Voice Recording Track */
+            <View
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                height: 44,
+                paddingRight: 6,
+              }}
+            >
+              {/* Left: Trash Bin & Timer */}
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <TouchableOpacity
+                  onPress={handleCancelRecording}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Cancel recording"
+                >
+                  <Animated.View
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 19,
+                      backgroundColor: isNearTrash ? "#FEE2E2" : "#F3F4F6",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 10,
+                      transform: [{ scale: trashScaleAnim }],
+                    }}
+                  >
+                    <Ionicons
+                      name={isNearTrash ? "trash" : "trash-outline"}
+                      size={20}
+                      color={isNearTrash ? "#EF4444" : "#6F767E"}
+                    />
+                  </Animated.View>
+                </TouchableOpacity>
+
+                {/* Blinking Red Recording Dot & Duration */}
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Animated.View
+                    style={{
+                      opacity: recordingPulseAnim,
+                      width: 9,
+                      height: 9,
+                      borderRadius: 4.5,
+                      backgroundColor: "#EF4444",
+                      marginRight: 7,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: "#1A1D1F",
+                      letterSpacing: 0.3,
+                    }}
+                  >
+                    {formatMillis(recorderState.durationMillis)}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Center: Slide to cancel indicator */}
+              <Animated.View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  transform: [{ translateX: slideAnim }],
+                  paddingRight: 4,
+                }}
+              >
+                <Ionicons
+                  name="chevron-back"
+                  size={16}
+                  color={isNearTrash ? "#EF4444" : "#9CA3AF"}
+                />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: isNearTrash ? "800" : "600",
+                    color: isNearTrash ? "#EF4444" : "#6F767E",
+                    marginLeft: 2,
+                  }}
+                >
+                  {isNearTrash ? "Release to delete" : "Slide to cancel"}
+                </Text>
+              </Animated.View>
+            </View>
           ) : (
             <>
               {/* Attachment Picker Button */}
@@ -1801,62 +1932,70 @@ export default function ConversationChatScreen() {
                 onChangeText={setInputText}
                 multiline
               />
-
-              {/* Send or Mic Button */}
-              {!inputText.trim() && pendingAttachments.length === 0 ? (
-                <TouchableOpacity
-                  onPress={handleStartRecording}
-                  disabled={isSending}
-                  activeOpacity={0.85}
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 21,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#14919B",
-                    shadowColor: "#14919B",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 3,
-                    elevation: 2,
-                  }}
-                  accessibilityLabel="Record voice message"
-                >
-                  <Ionicons name="mic" size={20} color="#FFFFFF" />
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  onPress={handleSend}
-                  disabled={!canSend}
-                  activeOpacity={0.85}
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 21,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: canSend ? "#14919B" : "#E2DDD5",
-                    shadowColor: canSend ? "#14919B" : "transparent",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 3,
-                    elevation: canSend ? 2 : 0,
-                  }}
-                  accessibilityLabel="Send message"
-                >
-                  {isSending ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Ionicons
-                      name="send"
-                      size={18}
-                      color={canSend ? "#FFFFFF" : "#8E887E"}
-                    />
-                  )}
-                </TouchableOpacity>
-              )}
             </>
+          )}
+
+          {/* Send or Mic Button */}
+          {!inputText.trim() && pendingAttachments.length === 0 ? (
+            /* WhatsApp Hold-to-Record Mic Button */
+            <View
+              {...micPanResponder.panHandlers}
+              style={{
+                width: 44,
+                height: 44,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Animated.View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 21,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: isRecording ? "#EF4444" : "#14919B",
+                  shadowColor: isRecording ? "#EF4444" : "#14919B",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: isRecording ? 0.35 : 0.25,
+                  shadowRadius: isRecording ? 5 : 3,
+                  elevation: 3,
+                  transform: [{ scale: micScaleAnim }],
+                }}
+              >
+                <Ionicons name="mic" size={20} color="#FFFFFF" />
+              </Animated.View>
+            </View>
+          ) : (
+            <TouchableOpacity
+              onPress={handleSend}
+              disabled={!canSend}
+              activeOpacity={0.85}
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 21,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: canSend ? "#14919B" : "#E2DDD5",
+                shadowColor: canSend ? "#14919B" : "transparent",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3,
+                elevation: canSend ? 2 : 0,
+              }}
+              accessibilityLabel="Send message"
+            >
+              {isSending ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons
+                  name="send"
+                  size={18}
+                  color={canSend ? "#FFFFFF" : "#8E887E"}
+                />
+              )}
+            </TouchableOpacity>
           )}
         </View>
       </KeyboardAvoidingView>
