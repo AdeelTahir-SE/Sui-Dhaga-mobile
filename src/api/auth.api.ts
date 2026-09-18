@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, storage } from './client';
 import { AuthSession, User } from '../types/api';
 
 export interface LoginPayload {
@@ -54,15 +54,21 @@ export const authApi = {
   async forgotPassword(email: string) {
     return apiClient('/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email: email.trim() }),
       skipAuth: true,
     });
   },
 
-  async resetPassword(password: string, token?: string) {
+  async resetPassword(password: string, token?: string, email?: string) {
+    const hasStoredToken = !!(await storage.getToken());
     return apiClient('/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ password, token }),
+      body: JSON.stringify({
+        password,
+        token: token ? token.trim() : undefined,
+        email: email ? email.trim() : undefined,
+      }),
+      skipAuth: !token && !hasStoredToken,
     });
   },
 

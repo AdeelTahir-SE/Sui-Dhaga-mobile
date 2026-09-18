@@ -4,7 +4,7 @@
     "slug": "sui-dhaga-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/logos/main-logo.png",
     "scheme": "suidhagamobile",
     "userInterfaceStyle": "light",
     "backgroundColor": "#FFFFFF",
@@ -18,15 +18,15 @@
       "backgroundColor": "#FFFFFF"
     },
     "ios": {
-      "icon": "./assets/images/icon.png"
+      "icon": "./assets/logos/main-logo.png"
     },
     "android": {
       "package": "com.suidhaga.app",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/logos/main-logo.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "monochromeImage": "./assets/logos/black-logo.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -38,7 +38,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/logos/main-logo.png"
     },
     "plugins": [
       "expo-router",
@@ -47,7 +47,7 @@
         {
           "backgroundColor": "#FFFFFF",
           "android": {
-            "image": "./assets/images/splash-icon.png",
+            "image": "./assets/logos/main-logo.png",
             "imageWidth": 160
           }
         }

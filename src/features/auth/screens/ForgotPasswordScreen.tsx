@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -14,13 +15,58 @@ import { Ionicons } from "@expo/vector-icons";
 import { AuthInput } from "../components/AuthInput";
 import { AuthButton } from "../components/AuthButton";
 import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
+import { authApi } from "@/api/auth.api";
 
 const forgotIllustration = require("@/assets/illustrations/auth-flow/auth-forgot-password.png");
-const sewingMachine = require("@/assets/illustrations/auth-flow/auth-sewing-machine.png");
 
 export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const validateEmail = (val: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+  };
+
+  const handleSendResetLink = async () => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setErrorMsg("Please enter your email address.");
+      return;
+    }
+
+    if (!validateEmail(trimmedEmail)) {
+      setErrorMsg("Please enter a valid email address (e.g. name@example.com).");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await authApi.forgotPassword(trimmedEmail);
+      setSuccessMsg(
+        "If an account exists with this email, password reset instructions have been sent."
+      );
+      // Give the user a moment to see the success or allow immediate navigation
+      setTimeout(() => {
+        router.push({
+          pathname: "/auth/reset-password",
+          params: { email: trimmedEmail },
+        } as any);
+      }, 1500);
+    } catch (err: any) {
+      const msg =
+        err?.message ||
+        "Unable to send reset instructions right now. Please verify your email and try again.";
+      setErrorMsg(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
@@ -57,17 +103,40 @@ export default function ForgotPasswordScreen() {
             <Text className="text-[24px] font-bold text-brand-dark text-center">
               Forgot Password?
             </Text>
-            <Text className="text-[14px] text-brand-gray text-center mt-2 mb-7 leading-[20px] px-4">
-              No worries! Enter your email address and we'll send you a link to
+            <Text className="text-[14px] text-brand-gray text-center mt-2 mb-6 leading-[20px] px-4">
+              No worries! Enter your email address and we'll send you instructions to
               reset your password.
             </Text>
+
+            {/* Success Banner */}
+            {successMsg ? (
+              <View className="mb-4 flex-row items-center rounded-xl bg-emerald-50 border border-emerald-200 p-3.5">
+                <Ionicons name="checkmark-circle" size={20} color="#059669" />
+                <Text className="ml-2.5 flex-1 text-[13px] font-medium text-emerald-800">
+                  {successMsg}
+                </Text>
+              </View>
+            ) : null}
+
+            {/* Error Banner */}
+            {errorMsg ? (
+              <View className="mb-4 flex-row items-center rounded-xl bg-red-50 border border-red-200 p-3.5">
+                <Ionicons name="alert-circle" size={20} color="#DC2626" />
+                <Text className="ml-2.5 flex-1 text-[13px] font-medium text-red-700">
+                  {errorMsg}
+                </Text>
+              </View>
+            ) : null}
 
             {/* Email Input */}
             <AuthInput
               label="Email Address"
               placeholder="Enter your email address"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errorMsg) setErrorMsg(null);
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
               icon="mail-outline"
@@ -75,8 +144,10 @@ export default function ForgotPasswordScreen() {
 
             {/* Send Reset Link */}
             <AuthButton
-              title="Send Reset Link"
-              onPress={() => router.push("/auth/reset-password" as any)}
+              title={isLoading ? "Sending Instructions..." : "Send Reset Link"}
+              loading={isLoading}
+              disabled={isLoading}
+              onPress={handleSendResetLink}
               style={{ marginTop: 8 }}
             />
 
@@ -86,6 +157,21 @@ export default function ForgotPasswordScreen() {
               <Text className="mx-4 text-[13px] text-brand-gray">or</Text>
               <View className="flex-1 h-px bg-brand-border" />
             </View>
+
+            {/* Manual Proceed to Reset */}
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: "/auth/reset-password",
+                  params: { email: email.trim() },
+                } as any)
+              }
+              className="items-center py-2 mb-2"
+            >
+              <Text className="text-[13px] font-semibold text-primary">
+                Already have a reset code or link? Set password →
+              </Text>
+            </TouchableOpacity>
 
             {/* Back to Login */}
             <AuthButton

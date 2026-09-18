@@ -18,10 +18,11 @@ export function WebBadge() {
       <Image
         source={
           scheme === 'dark'
-            ? require('@/assets/images/expo-badge-white.png')
-            : require('@/assets/images/expo-badge.png')
+            ? require('@/assets/logos/white-logo.png')
+            : require('@/assets/logos/main-logo.png')
         }
         style={styles.badgeImage}
+        contentFit="contain"
       />
     </ThemedView>
   );
