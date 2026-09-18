@@ -491,19 +491,28 @@ export default function MainTailorsScreen() {
                   : "New (0 reviews)"
               }
               distance={
-                tailor.city ||
-                (typeof tailor.location === "object"
-                  ? tailor.location?.city
-                  : null) ||
-                tailor.address ||
-                tailor.distance ||
-                "Nearby"
+                tailor.distanceKm !== undefined
+                  ? `${tailor.distanceKm.toFixed(1)} km away`
+                  : tailor.city ||
+                    (typeof tailor.location === "object"
+                      ? tailor.location?.city
+                      : null) ||
+                    tailor.address ||
+                    tailor.distance ||
+                    "Nearby"
               }
               specialty={
                 Array.isArray(tailor.specialties) &&
                 tailor.specialties.length > 0
                   ? tailor.specialties.join(", ")
                   : tailor.specialty || "Custom Tailoring"
+              }
+              specialties={
+                Array.isArray(tailor.specialties) && tailor.specialties.length > 0
+                  ? tailor.specialties
+                  : tailor.specialty
+                    ? [tailor.specialty]
+                    : ["Custom Tailoring"]
               }
               price={
                 tailor.startingPrice && Number(tailor.startingPrice) > 0
@@ -514,6 +523,8 @@ export default function MainTailorsScreen() {
               }
               image={tailor.imageUrl || tailor.image || tailor.avatar}
               topRated={tailor.topRated || tailor.isTopRated}
+              verified={tailor.verified || tailor.isVerified}
+              experienceYears={tailor.experienceYears}
               tone={getTone(index)}
             />
           ))

@@ -12,12 +12,15 @@ export function QuickAction({ title, icon, onPress }: QuickActionProps) {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
-      className="flex-1 items-center justify-between rounded-md border border-brand-border/80 bg-white p-3 shadow-sm active:bg-brand-surface min-h-[96px]"
+      className="flex-1 items-center justify-between rounded-md border border-brand-border/80 bg-white px-1.5 py-2.5 shadow-sm active:bg-brand-surface min-h-[92px]"
     >
-      <View className="h-12 w-12 items-center justify-center rounded-md bg-primary/10">
-        <Ionicons name={icon} size={25} color="#14919B" />
+      <View className="h-11 w-11 items-center justify-center rounded-md bg-primary/10">
+        <Ionicons name={icon} size={23} color="#14919B" />
       </View>
-      <Text className="mt-1.5 text-center text-[12px] font-semibold text-brand-dark leading-[16px]">
+      <Text
+        numberOfLines={2}
+        className="mt-1 text-center text-[11px] font-semibold text-brand-dark leading-[14px]"
+      >
         {title}
       </Text>
     </TouchableOpacity>

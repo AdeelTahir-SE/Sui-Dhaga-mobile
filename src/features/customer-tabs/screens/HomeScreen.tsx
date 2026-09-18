@@ -90,6 +90,13 @@ export default function HomeScreen() {
       icon: "map-outline" as const,
       route: "/tailors/map",
     },
+    {
+      id: "qa-8",
+      title: "Community",
+      description: "Connect & share designs with fashion enthusiasts",
+      icon: "people-outline" as const,
+      route: "/community",
+    },
   ];
 
   return (
@@ -107,15 +114,7 @@ export default function HomeScreen() {
           </View>
 
           {/* Action Icons */}
-          <View className="flex-row items-center gap-2">
-            <TouchableOpacity
-              onPress={() => router.push("/tailors" as never)}
-              activeOpacity={0.7}
-              className="h-11 w-11 items-center justify-center rounded-md border border-brand-border/80 bg-white shadow-xs"
-            >
-              <Ionicons name="search-outline" size={22} color="#1A1D1F" />
-            </TouchableOpacity>
-
+          <View className="flex-row items-center">
             <TouchableOpacity
               onPress={() => router.push("/messages" as never)}
               activeOpacity={0.7}
@@ -172,21 +171,33 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Quick Actions (Grid with Appointments included) */}
+        {/* Quick Actions (2 Rows of 4) */}
         <SectionTitle
           title="Quick Actions"
           action="View All"
           onPressAction={() => setActiveModal("quickActions")}
         />
-        <View className="flex-row  gap-2.5">
-          {quickActionsList?.slice(0, 4).map((quickAction) => (
-            <QuickAction
-              key={quickAction.id}
-              title={quickAction.title}
-              icon={quickAction.icon}
-              onPress={() => router.push(quickAction.route as never)}
-            />
-          ))}
+        <View className="gap-2.5">
+          <View className="flex-row gap-2.5">
+            {quickActionsList.slice(0, 4).map((quickAction) => (
+              <QuickAction
+                key={quickAction.id}
+                title={quickAction.title}
+                icon={quickAction.icon}
+                onPress={() => router.push(quickAction.route as never)}
+              />
+            ))}
+          </View>
+          <View className="flex-row gap-2.5">
+            {quickActionsList.slice(4, 8).map((quickAction) => (
+              <QuickAction
+                key={quickAction.id}
+                title={quickAction.title}
+                icon={quickAction.icon}
+                onPress={() => router.push(quickAction.route as never)}
+              />
+            ))}
+          </View>
         </View>
       </View>
 
