@@ -3,17 +3,21 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Image as RNImage,
   KeyboardAvoidingView,
   Modal,
   PanResponder,
   Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   Vibration,
   View,
 } from "react-native";
+
+const skinTexture = require("@/assets/texture/skin-texture.png");
 
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -1237,15 +1241,30 @@ export default function ConversationChatScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1, backgroundColor: "#FAF8F5" }}
       >
-        {/* Message List */}
-        <ScrollView
-          ref={scrollViewRef}
-          style={{ flex: 1, backgroundColor: "#FAF8F5", paddingHorizontal: 16 }}
-          contentContainerStyle={{
-            paddingVertical: 12,
-            flexGrow: 1,
-            justifyContent: messages.length === 0 ? "center" : "flex-end",
-          }}
+        {/* Message List Section with Repeated Texture Background */}
+        <View style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <RNImage
+              source={skinTexture}
+              resizeMode="repeat"
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  width: "100%",
+                  height: "100%",
+                },
+              ]}
+            />
+          </View>
+
+          <ScrollView
+            ref={scrollViewRef}
+            style={{ flex: 1, backgroundColor: "transparent", paddingHorizontal: 16 }}
+            contentContainerStyle={{
+              paddingVertical: 12,
+              flexGrow: 1,
+              justifyContent: messages.length === 0 ? "center" : "flex-end",
+            }}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() =>
             scrollViewRef.current?.scrollToEnd({ animated: false })
@@ -1680,6 +1699,7 @@ export default function ConversationChatScreen() {
             })
           )}
         </ScrollView>
+        </View>
 
         {/* Enhanced Pending Attachments Preview Bar */}
         {pendingAttachments.length > 0 && (

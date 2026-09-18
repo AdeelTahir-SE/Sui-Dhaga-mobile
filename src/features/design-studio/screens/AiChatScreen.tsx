@@ -1,4 +1,4 @@
-import { Text, TouchableOpacity, View } from "react-native";
+import { Image as RNImage, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -7,6 +7,8 @@ import { ChatBubble } from "../components/ChatBubble";
 import { ScreenShell } from "../components/ScreenShell";
 import { StudioHeader } from "../components/StudioHeader";
 import { royalDesignImages } from "../constants/designStudioAssets";
+
+const skinTexture = require("@/assets/texture/skin-texture.png");
 
 export default function AiChatScreen() {
   const handlePlaceOrder = () => {
@@ -55,8 +57,24 @@ export default function AiChatScreen() {
           </TouchableOpacity>
         }
       />
-      <View style={{ paddingHorizontal: 16, paddingTop: 12, backgroundColor: "#FAF8F5", flex: 1 }}>
-        <ChatBubble>Hi Ayesha! How can I help you design today?</ChatBubble>
+      <View style={{ flex: 1, position: "relative", backgroundColor: "#FAF8F5" }}>
+        {/* Repeated Texture Background for Chat Section */}
+        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+          <RNImage
+            source={skinTexture}
+            resizeMode="repeat"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                width: "100%",
+                height: "100%",
+              },
+            ]}
+          />
+        </View>
+
+        <View style={{ paddingHorizontal: 16, paddingTop: 12, flex: 1 }}>
+          <ChatBubble>Hi Ayesha! How can I help you design today?</ChatBubble>
         <ChatBubble outgoing>
           I want a royal blue lehenga for a wedding.
         </ChatBubble>
