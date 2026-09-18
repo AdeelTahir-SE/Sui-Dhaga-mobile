@@ -5,8 +5,10 @@ import { router } from "expo-router";
 import {
   ActivityIndicator,
   Dimensions,
+  Image as RNImage,
   Modal,
   ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
@@ -25,6 +27,7 @@ import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
 
 const homeHero = require("@/assets/illustrations/customer-tabs/home-hero.png");
+const skinTexture = require("@/assets/texture/skin-texture.png");
 const categoryKurtas = require("@/assets/illustrations/customer-tabs/home/category-kurtas-suits.png");
 const categoryLehengas = require("@/assets/illustrations/customer-tabs/home/category-lehengas.png");
 const categorySarees = require("@/assets/illustrations/customer-tabs/home/category-sarees.png");
@@ -217,6 +220,19 @@ export default function HomeScreen() {
 
         {/* Prominent Hero Banner */}
         <View className="relative overflow-hidden rounded-md bg-[#FFF7EA] border border-[#FFE8C7] p-5 shadow-sm min-h-[168px] justify-center">
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <RNImage
+              source={skinTexture}
+              resizeMode="repeat"
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  width: "100%",
+                  height: "100%",
+                },
+              ]}
+            />
+          </View>
           <Text className="w-[56%] text-[23px] font-black leading-[29px] text-brand-dark">
             Your Style, Your Story, Our Craft.
           </Text>
