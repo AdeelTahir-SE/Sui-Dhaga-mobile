@@ -26,6 +26,15 @@ import { TabPlaceholder } from "../components/TabPlaceholder";
 const homeHero = require("@/assets/illustrations/customer-tabs/home-hero.png");
 const skinTexture = require("@/assets/texture/skin-texture.png");
 
+const appointmentsIcon = require("@/assets/illustrations/customer-tabs/home/appointments-icon.png");
+const bookTailorIcon = require("@/assets/illustrations/customer-tabs/home/book-tailor-icon.png");
+const aiStudioIcon = require("@/assets/illustrations/customer-tabs/home/ai-studio-icon.png");
+const ordersIcon = require("@/assets/illustrations/customer-tabs/home/orders-icon.png");
+const measurementsIcon = require("@/assets/illustrations/customer-tabs/home/measurements-icon.png");
+const aiAssistantIcon = require("@/assets/illustrations/customer-tabs/home/ai-assistant-icon.png");
+const messagesIcon = require("@/assets/illustrations/customer-tabs/home/messages-icon.png");
+const communityIcon = require("@/assets/illustrations/customer-tabs/home/community-icon.png");
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -46,6 +55,7 @@ export default function HomeScreen() {
       title: "Appointments",
       description: "Manage upcoming fittings & tailor visits",
       icon: "calendar" as const,
+      image: appointmentsIcon,
       route: "/appointments",
       color: "#2563EB",
       bgColor: "#EFF6FF",
@@ -56,6 +66,7 @@ export default function HomeScreen() {
       title: "Book Tailor",
       description: "Find & schedule master stitching experts",
       icon: "cut-outline" as const,
+      image: bookTailorIcon,
       route: "/tailors",
       color: "#D97706",
       bgColor: "#FFFBEB",
@@ -66,6 +77,7 @@ export default function HomeScreen() {
       title: "AI Studio",
       description: "Create bespoke outfits with AI visualization",
       icon: "color-wand-outline" as const,
+      image: aiStudioIcon,
       route: "/design-studio",
       color: "#7C3AED",
       bgColor: "#F5F3FF",
@@ -76,6 +88,7 @@ export default function HomeScreen() {
       title: "My Orders",
       description: "Track live stitching and delivery status",
       icon: "bag-handle-outline" as const,
+      image: ordersIcon,
       route: "/orders",
       color: "#0D9488",
       bgColor: "#F0FDFA",
@@ -86,6 +99,7 @@ export default function HomeScreen() {
       title: "Measurements",
       description: "Save and update your custom body profiles",
       icon: "body-outline" as const,
+      image: measurementsIcon,
       route: "/measurements",
       color: "#E11D48",
       bgColor: "#FFF1F2",
@@ -96,6 +110,7 @@ export default function HomeScreen() {
       title: "AI Assistant",
       description: "Chat with AI stylist for fabric & cut advice",
       icon: "sparkles-outline" as const,
+      image: aiAssistantIcon,
       route: "/design-studio/chat",
       color: "#EA580C",
       bgColor: "#FFF7ED",
@@ -103,19 +118,21 @@ export default function HomeScreen() {
     },
     {
       id: "qa-7",
-      title: "Tailor Map",
-      description: "Locate nearby verified boutiques & studios",
-      icon: "map-outline" as const,
-      route: "/tailors/map",
-      color: "#059669",
-      bgColor: "#ECFDF5",
-      borderColor: "#D1FAE5",
+      title: "Messages",
+      description: "Chat with tailors and discuss custom orders",
+      icon: "chatbubbles-outline" as const,
+      image: messagesIcon,
+      route: "/messages",
+      color: "#0284C7",
+      bgColor: "#F0F9FF",
+      borderColor: "#BAE6FD",
     },
     {
       id: "qa-8",
       title: "Community",
       description: "Connect & share designs with fashion enthusiasts",
       icon: "people-outline" as const,
+      image: communityIcon,
       route: "/community",
       color: "#4F46E5",
       bgColor: "#EEF2FF",
@@ -208,6 +225,7 @@ export default function HomeScreen() {
                 key={quickAction.id}
                 title={quickAction.title}
                 icon={quickAction.icon}
+                image={quickAction.image}
                 color={quickAction.color}
                 bgColor={quickAction.bgColor}
                 borderColor={quickAction.borderColor}
@@ -221,6 +239,7 @@ export default function HomeScreen() {
                 key={quickAction.id}
                 title={quickAction.title}
                 icon={quickAction.icon}
+                image={quickAction.image}
                 color={quickAction.color}
                 bgColor={quickAction.bgColor}
                 borderColor={quickAction.borderColor}
@@ -349,20 +368,28 @@ export default function HomeScreen() {
                     }}
                     className="flex-row items-center rounded-xl border border-brand-border bg-white p-3.5 shadow-xs active:bg-gray-50"
                   >
-                    <View
-                      style={{
-                        backgroundColor: action.bgColor,
-                        borderColor: action.borderColor,
-                        borderWidth: 1,
-                      }}
-                      className="h-11 w-11 items-center justify-center rounded-xl"
-                    >
-                      <Ionicons
-                        name={action.icon}
-                        size={22}
-                        color={action.color}
+                    {action.image ? (
+                      <Image
+                        source={action.image}
+                        contentFit="contain"
+                        style={{ width: 44, height: 44 }}
                       />
-                    </View>
+                    ) : (
+                      <View
+                        style={{
+                          backgroundColor: action.bgColor,
+                          borderColor: action.borderColor,
+                          borderWidth: 1,
+                        }}
+                        className="h-11 w-11 items-center justify-center rounded-xl"
+                      >
+                        <Ionicons
+                          name={action.icon}
+                          size={22}
+                          color={action.color}
+                        />
+                      </View>
+                    )}
                     <View className="ml-3.5 flex-1">
                       <Text className="text-[14px] font-bold text-brand-dark">
                         {action.title}

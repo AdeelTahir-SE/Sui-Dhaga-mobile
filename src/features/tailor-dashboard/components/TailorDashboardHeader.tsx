@@ -7,8 +7,9 @@ type TailorDashboardHeaderProps = {
   subtitle?: string;
   showBack?: boolean;
   rightText?: string;
-  rightIcon?: keyof typeof Ionicons.glyphMap;
+  rightIcon?: keyof typeof Ionicons.glyphMap | null;
   onRightPress?: () => void;
+  hideRightIcon?: boolean;
 };
 
 export function TailorDashboardHeader({
@@ -18,6 +19,7 @@ export function TailorDashboardHeader({
   rightText,
   rightIcon = "notifications-outline",
   onRightPress,
+  hideRightIcon = false,
 }: TailorDashboardHeaderProps) {
   return (
     <View className="px-5 pb-3 pt-2">
@@ -48,18 +50,20 @@ export function TailorDashboardHeader({
             ) : null}
           </View>
         </View>
-        <TouchableOpacity
-          onPress={onRightPress}
-          className="h-10 min-w-10 items-center justify-center px-1"
-        >
-          {rightText ? (
-            <Text className="text-[13px] font-bold text-primary">
-              {rightText}
-            </Text>
-          ) : rightIcon ? (
-            <Ionicons name={rightIcon} size={22} color="#1A1D1F" />
-          ) : null}
-        </TouchableOpacity>
+        {!hideRightIcon && (rightText || rightIcon) ? (
+          <TouchableOpacity
+            onPress={onRightPress}
+            className="h-10 min-w-10 items-center justify-center px-1"
+          >
+            {rightText ? (
+              <Text className="text-[13px] font-bold text-primary">
+                {rightText}
+              </Text>
+            ) : rightIcon ? (
+              <Ionicons name={rightIcon} size={22} color="#1A1D1F" />
+            ) : null}
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );

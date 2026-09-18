@@ -1,9 +1,11 @@
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 type QuickActionProps = {
   title: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Ionicons.glyphMap;
+  image?: any;
   color?: string;
   bgColor?: string;
   borderColor?: string;
@@ -12,7 +14,8 @@ type QuickActionProps = {
 
 export function QuickAction({
   title,
-  icon,
+  icon = "apps-outline",
+  image,
   color = "#14919B",
   bgColor = "#F0FAFA",
   borderColor = "#E0F7F7",
@@ -25,16 +28,17 @@ export function QuickAction({
       style={styles.card}
       className="flex-1 items-center justify-between rounded-xl bg-white pt-2.5 pb-2 px-1 border border-brand-border/60"
     >
-      <View
-        style={{
-          backgroundColor: bgColor,
-          borderColor: borderColor,
-          borderWidth: 1,
-        }}
-        className="h-10 w-10 items-center justify-center rounded-xl"
-      >
-        <Ionicons name={icon} size={21} color={color} />
-      </View>
+      {image ? (
+        <Image
+          source={image}
+          contentFit="contain"
+          style={{ width: 44, height: 44 }}
+        />
+      ) : (
+        <View className="h-11 w-11 items-center justify-center">
+          <Ionicons name={icon} size={26} color={color} />
+        </View>
+      )}
       <View style={styles.textContainer}>
         <Text
           numberOfLines={2}
