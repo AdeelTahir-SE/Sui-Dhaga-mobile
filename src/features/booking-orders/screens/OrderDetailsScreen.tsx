@@ -1,5 +1,6 @@
 import React from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
 
@@ -19,12 +20,23 @@ export default function OrderDetailsScreen() {
   const { order, isLoading } = useOrderDetails(orderId || "1");
   const currentUser = useAuthStore((state) => state.user);
 
-  const orderNumber = order?.orderNumber || orderId || "#ORD12345";
-  const itemName = order?.itemName || "Custom Lehenga";
-  const tailorName = order?.tailorName || "Rekha Tailors";
-  const price = order?.price ? `₹${order.price.toLocaleString()}` : "₹18,900";
-  const delivery = order?.deliveryDate || "Expected Soon";
-  const status = order?.status || "In Progress";
+  const orderNumber = order?.orderNumber || order?.id || orderId || "#ORD12345";
+  const itemName = order?.itemName || order?.item_name || "Custom Tailored Outfit";
+  const tailorName = order?.tailorName || "Master Tailor";
+  const rawPrice = order?.totalAmount ?? order?.total_amount ?? order?.price ?? 0;
+  const price = rawPrice ? `₹${rawPrice.toLocaleString("en-IN")}` : "₹18,900";
+  const delivery = order?.deliveryDate || order?.delivery_date || "Expected Soon";
+  const status = order?.status || "Pending";
+  const designImages = order?.designImages || order?.design_images || [];
+  const measurements = order?.measurements || {};
+  const additionalNotes = order?.additionalNotes || order?.additional_notes || "";
+  const notes = order?.notes || "";
+
+  const hasMeasurements =
+    measurements &&
+    typeof measurements === "object" &&
+    Object.keys(measurements).length > 0 &&
+    (measurements.chest || measurements.waist || measurements.hips || measurements.shoulder);
 
   const handleMessage = () => {
     const targetUserId = order?.tailorId || "";
@@ -40,6 +52,18 @@ export default function OrderDetailsScreen() {
     } as any);
   };
 
+  if (isLoading) {
+    return (
+      <BookingOrdersScreenShell>
+        <BookingOrdersHeader title="Order Details" />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
+          <ActivityIndicator size="large" color="#14919B" />
+          <Text style={{ marginTop: 12, fontSize: 13, color: "#6F767E" }}>Loading order details...</Text>
+        </View>
+      </BookingOrdersScreenShell>
+    );
+  }
+
   return (
     <BookingOrdersScreenShell>
       <BookingOrdersHeader title="Order Details" />
@@ -50,42 +74,139 @@ export default function OrderDetailsScreen() {
               Order {orderNumber}
             </Text>
             <Text className="mt-1 text-[11px] text-brand-gray">
-              {order?.createdAt || "Placed Recently"}
+              {order?.createdAt || order?.created_at || "Placed Recently"}
             </Text>
           </View>
-          <StatusPill label={status} tone={status === "Completed" ? "green" : "gold"} />
+          <StatusPill
+            label={status}
+            tone={status === "Completed" ? "green" : status === "Cancelled" ? "red" : "gold"}
+          />
         </View>
 
+        {/* Main Garment Card */}
         <View className="flex-row rounded-xl border border-brand-border bg-white p-3">
-          <PlaceholderImage image={order?.image || order?.imageUrl} variant="garment" size="md" tone="coral" />
+          {designImages && designImages.length > 0 ? (
+            <Image
+              source={{ uri: designImages[0] }}
+              style={{ width: 70, height: 70, borderRadius: 10 }}
+              contentFit="cover"
+            />
+          ) : (
+            <PlaceholderImage image={order?.image || order?.imageUrl} variant="garment" size="md" tone="coral" />
+          )}
           <View className="ml-3 flex-1">
-            <Text className="text-[13px] font-semibold text-brand-dark">
+            <Text className="text-[14px] font-bold text-brand-dark">
               {itemName}
             </Text>
             <Text className="mt-1 text-[11px] text-brand-gray">
               {tailorName}
             </Text>
-            <Text className="mt-2 text-[13px] font-bold text-brand-dark">
+            <Text className="mt-2 text-[14px] font-extrabold text-primary">
               {price}
             </Text>
           </View>
         </View>
+
         <Text className="mt-3 text-[11px] text-brand-gray">
           Est. Delivery: {delivery}
         </Text>
+
+        {/* Attached Design Images Gallery */}
+        {designImages && designImages.length > 0 && (
+          <View className="mt-5">
+            <SectionLabel title={`Attached Design Images (${designImages.length})`} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+              {designImages.map((uri, idx) => (
+                <View key={idx} style={{ borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: "#EAE5DD" }}>
+                  <Image
+                    source={{ uri }}
+                    style={{ width: 95, height: 95 }}
+                    contentFit="cover"
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Custom Measurements Card */}
+        {hasMeasurements && (
+          <View className="mt-5">
+            <View className="flex-row items-center justify-between mb-2">
+              <SectionLabel title="Custom Garment Measurements" />
+              <View style={{ backgroundColor: "#E0F7F7", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ fontSize: 10, fontWeight: "700", color: "#14919B" }}>
+                  Unit: {measurements.unit || "in"}
+                </Text>
+              </View>
+            </View>
+            <View className="rounded-xl border border-brand-border bg-white p-3">
+              <View className="flex-row flex-wrap">
+                {measurements.chest != null && (
+                  <View style={{ width: "50%", marginBottom: 8 }}>
+                    <Text style={{ fontSize: 10, color: "#6F767E", fontWeight: "600" }}>CHEST / BUST</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>{measurements.chest} {measurements.unit || "in"}</Text>
+                  </View>
+                )}
+                {measurements.waist != null && (
+                  <View style={{ width: "50%", marginBottom: 8 }}>
+                    <Text style={{ fontSize: 10, color: "#6F767E", fontWeight: "600" }}>WAIST</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>{measurements.waist} {measurements.unit || "in"}</Text>
+                  </View>
+                )}
+                {measurements.hips != null && (
+                  <View style={{ width: "50%", marginBottom: 8 }}>
+                    <Text style={{ fontSize: 10, color: "#6F767E", fontWeight: "600" }}>HIPS</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>{measurements.hips} {measurements.unit || "in"}</Text>
+                  </View>
+                )}
+                {measurements.shoulder != null && (
+                  <View style={{ width: "50%", marginBottom: 8 }}>
+                    <Text style={{ fontSize: 10, color: "#6F767E", fontWeight: "600" }}>SHOULDER</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>{measurements.shoulder} {measurements.unit || "in"}</Text>
+                  </View>
+                )}
+                {measurements.sleeveLength != null && (
+                  <View style={{ width: "50%", marginBottom: 8 }}>
+                    <Text style={{ fontSize: 10, color: "#6F767E", fontWeight: "600" }}>SLEEVE LENGTH</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>{measurements.sleeveLength} {measurements.unit || "in"}</Text>
+                  </View>
+                )}
+                {measurements.inseam != null && (
+                  <View style={{ width: "50%", marginBottom: 8 }}>
+                    <Text style={{ fontSize: 10, color: "#6F767E", fontWeight: "600" }}>INSEAM</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>{measurements.inseam} {measurements.unit || "in"}</Text>
+                  </View>
+                )}
+                {measurements.neck != null && (
+                  <View style={{ width: "50%", marginBottom: 8 }}>
+                    <Text style={{ fontSize: 10, color: "#6F767E", fontWeight: "600" }}>NECK</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>{measurements.neck} {measurements.unit || "in"}</Text>
+                  </View>
+                )}
+                {measurements.shirtLength != null && (
+                  <View style={{ width: "50%", marginBottom: 8 }}>
+                    <Text style={{ fontSize: 10, color: "#6F767E", fontWeight: "600" }}>SHIRT LENGTH</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>{measurements.shirtLength} {measurements.unit || "in"}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        )}
 
         <View className="mt-5 flex-row gap-4">
           <View className="flex-1">
             <SectionLabel title="Tracking Timeline" />
             <TimelineItem
-              title="Order Confirmed"
-              subtitle="Confirmed by tailor"
+              title="Order Placed"
+              subtitle="Received by tailor"
               complete
             />
             <TimelineItem
-              title="Fabric Received"
-              subtitle="Material ready"
-              complete
+              title="Measurements Confirmed"
+              subtitle={hasMeasurements ? "Custom fit recorded" : "Pending confirmation"}
+              complete={Boolean(hasMeasurements)}
             />
             <TimelineItem
               title="Stitching in Progress"
@@ -93,7 +214,7 @@ export default function OrderDetailsScreen() {
               complete={status === "In Progress" || status === "Completed"}
             />
             <TimelineItem
-              title="Quality Check"
+              title="Quality Check & Finish"
               subtitle={status === "Completed" ? "Passed" : "Pending"}
               complete={status === "Completed"}
             />
@@ -117,9 +238,6 @@ export default function OrderDetailsScreen() {
                   4.8 (128)
                 </Text>
               </View>
-              <Text className="mt-1 text-[11px] text-brand-gray">
-                C-Scheme, Jaipur
-              </Text>
               <View className="mt-3 flex-row justify-between">
                 <TouchableOpacity onPress={handleMessage}>
                   <Text className="text-[11px] font-medium text-primary">Message</Text>
@@ -132,36 +250,47 @@ export default function OrderDetailsScreen() {
 
             <SectionLabel title="Payment Summary" />
             <View className="rounded-xl bg-brand-surface p-3">
-              <InfoRow label="Item Total" value={price} />
-              <InfoRow label="Customization" value="Included" />
-              <InfoRow label="Delivery Charges" value="Free" />
+              <InfoRow label="Garment Total" value={price} />
+              <InfoRow label="Custom Fit" value="Included" />
+              <InfoRow label="Protection Fee" value="Included" />
               <View className="mt-2 border-t border-brand-border pt-2">
-                <InfoRow label="Total Paid" value={price} highlight />
+                <InfoRow label="Total Amount" value={price} highlight />
               </View>
               <View className="mt-1 self-start">
-                <StatusPill label="Paid" tone="green" />
+                <StatusPill label="Confirmed" tone="green" />
               </View>
             </View>
           </View>
         </View>
 
-        <SectionLabel title="Order Details" />
-        <View className="rounded-xl border border-brand-border px-4 py-2 bg-white">
-          <InfoRow label="Fabric" value="Silk & Georgette" />
-          <InfoRow label="Color" value="Pastel Peach" />
-          <InfoRow label="Size" value="Custom Measurement" />
-          <InfoRow label="Work" value="Hand Embroidery" />
-        </View>
+        {/* Additional Notes & Instructions */}
+        {(additionalNotes || notes) && (
+          <View className="mt-5">
+            <SectionLabel title="Order Notes & Special Instructions" />
+            <View className="rounded-xl border border-brand-border p-4 bg-white">
+              {additionalNotes ? (
+                <Text className="text-[12px] text-brand-dark leading-relaxed">
+                  {additionalNotes}
+                </Text>
+              ) : null}
+              {notes && notes !== additionalNotes ? (
+                <Text className="mt-2 text-[11px] text-brand-gray whitespace-pre-line leading-relaxed">
+                  {notes}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        )}
 
         <View className="mt-5 rounded-xl bg-brand-surface p-4">
           <View className="flex-row">
             <Ionicons name="headset-outline" size={22} color="#1A1D1F" />
             <View className="ml-3 flex-1">
               <Text className="text-[13px] font-semibold text-brand-dark">
-                Need Help?
+                Need Help with Your Order?
               </Text>
               <Text className="mt-1 text-[11px] text-brand-gray">
-                Our support team is here for you.
+                Our support team and master tailors are here for you.
               </Text>
             </View>
           </View>

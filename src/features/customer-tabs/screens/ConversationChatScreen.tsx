@@ -5,6 +5,8 @@ import {
   Animated,
   KeyboardAvoidingView,
   Modal,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   PanResponder,
   Platform,
   Image as RNImage,
@@ -42,6 +44,10 @@ import { ConversationItem, MessageItem } from "../../../types/api";
 import { VoiceMessagePlayer } from "../components/VoiceMessagePlayer";
 import { AnimatedDustbin } from "../components/AnimatedDustbin";
 import { AudioWaveformBar } from "../components/AudioWaveformBar";
+import {
+  subscribeToConversation,
+  unsubscribeChannel,
+} from "../../../services/supabase";
 
 function formatMillis(ms: number): string {
   const totalSeconds = Math.floor((ms || 0) / 1000);
@@ -278,12 +284,17 @@ export default function ConversationChatScreen() {
   const [inputText, setInputText] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [isNearTrash, setIsNearTrash] = useState(false);
   const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const previousContentHeightRef = useRef<number>(0);
+  const isPrependScrollAdjustRef = useRef<boolean>(false);
+  const hasInitiallyScrolledRef = useRef<boolean>(false);
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder, 200);
@@ -405,6 +416,7 @@ export default function ConversationChatScreen() {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
+    hasInitiallyScrolledRef.current = false;
     try {
       // 1. Primary path: Use tailorId and clientId
       if (resolvedTailorId && resolvedClientId) {
@@ -413,7 +425,7 @@ export default function ConversationChatScreen() {
             .getConversationBetween(resolvedTailorId, resolvedClientId)
             .catch(() => null),
           conversationsApi
-            .getMessagesBetween(resolvedTailorId, resolvedClientId)
+            .getMessagesBetween(resolvedTailorId, resolvedClientId, { limit: 20 })
             .catch(() => null),
         ]);
 
@@ -425,7 +437,11 @@ export default function ConversationChatScreen() {
         }
         if (msgsRes?.data && Array.isArray(msgsRes.data)) {
           setMessages(msgsRes.data);
+          setHasMore(Boolean(msgsRes.hasMore));
           markUnreadMessagesAsRead(msgsRes.data);
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: false });
+          }, 100);
         }
         return;
       }
@@ -437,13 +453,17 @@ export default function ConversationChatScreen() {
       if (convId) {
         const [convRes, msgsRes] = await Promise.all([
           conversationsApi.getConversationById(convId).catch(() => null),
-          conversationsApi.getMessages(convId).catch(() => null),
+          conversationsApi.getMessages(convId, { limit: 20 }).catch(() => null),
         ]);
 
         if (convRes?.data) setConversation(convRes.data);
         if (msgsRes?.data && Array.isArray(msgsRes.data)) {
           setMessages(msgsRes.data);
+          setHasMore(Boolean(msgsRes.hasMore));
           markUnreadMessagesAsRead(msgsRes.data);
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: false });
+          }, 100);
         }
       }
     } catch (err) {
@@ -459,9 +479,191 @@ export default function ConversationChatScreen() {
     markUnreadMessagesAsRead,
   ]);
 
+  const loadOlderMessages = useCallback(async () => {
+    if (isLoadingOlder || !hasMore || messages.length === 0) return;
+    setIsLoadingOlder(true);
+
+    const oldestMsg = messages[0];
+    const beforeCursor = oldestMsg.createdAt || (oldestMsg as any).created_at;
+
+    try {
+      let res: any = null;
+      if (resolvedTailorId && resolvedClientId) {
+        res = await conversationsApi.getMessagesBetween(
+          resolvedTailorId,
+          resolvedClientId,
+          { limit: 20, before: beforeCursor }
+        );
+      } else {
+        const convId =
+          activeConvId ||
+          (params.conversationId !== "new" ? params.conversationId : null);
+        if (convId) {
+          res = await conversationsApi.getMessages(convId, {
+            limit: 20,
+            before: beforeCursor,
+          });
+        }
+      }
+
+      if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+        const olderBatch: MessageItem[] = res.data;
+        setHasMore(Boolean(res.hasMore));
+
+        // Deduplicate against existing messages
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => String(m.id || "")));
+          const uniqueOlder = olderBatch.filter(
+            (m) => !existingIds.has(String(m.id || ""))
+          );
+          if (uniqueOlder.length === 0) return prev;
+          isPrependScrollAdjustRef.current = true;
+          return [...uniqueOlder, ...prev];
+        });
+      } else {
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.warn("Failed to load older messages:", err);
+    } finally {
+      setIsLoadingOlder(false);
+    }
+  }, [
+    isLoadingOlder,
+    hasMore,
+    messages,
+    resolvedTailorId,
+    resolvedClientId,
+    activeConvId,
+    params.conversationId,
+  ]);
+
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Supabase Realtime Subscription for live incoming messages
+  useEffect(() => {
+    if (!activeConvId || activeConvId === "new") return;
+
+    let channel: any = null;
+    let isMounted = true;
+
+    subscribeToConversation(activeConvId, {
+      onInsert: (newRecord) => {
+        if (!isMounted || !newRecord) return;
+        setMessages((prev) => {
+          const curId = currentUser?.id
+            ? String(currentUser.id).toLowerCase()
+            : "";
+          const senderId = (
+            newRecord.sender_id ||
+            newRecord.senderId ||
+            ""
+          )
+            .toString()
+            .toLowerCase();
+          const isFromSelf = curId && senderId === curId;
+
+          // Check if message ID already exists
+          const exists = prev.some(
+            (m) => String(m.id) === String(newRecord.id)
+          );
+          if (exists) return prev;
+
+          // If from current user, reconcile with optimistic temp message
+          if (isFromSelf) {
+            const tempIdx = prev.findIndex(
+              (m) =>
+                String(m.id).startsWith("temp_") &&
+                m.text === newRecord.text
+            );
+            if (tempIdx !== -1) {
+              const updated = [...prev];
+              updated[tempIdx] = {
+                ...updated[tempIdx],
+                ...newRecord,
+                id: newRecord.id,
+                conversationId:
+                  newRecord.conversation_id || newRecord.conversationId,
+                senderId: newRecord.sender_id || newRecord.senderId,
+                attachments: newRecord.attachments,
+                createdAt:
+                  newRecord.created_at || newRecord.createdAt,
+              };
+              return updated;
+            }
+          }
+
+          const formattedMsg: MessageItem = {
+            id: newRecord.id,
+            conversationId:
+              newRecord.conversation_id || newRecord.conversationId,
+            senderId: newRecord.sender_id || newRecord.senderId,
+            text: newRecord.text || "",
+            attachments: newRecord.attachments || [],
+            isRead: newRecord.is_read ?? newRecord.isRead ?? false,
+            createdAt:
+              newRecord.created_at ||
+              newRecord.createdAt ||
+              new Date().toISOString(),
+          };
+
+          if (!isFromSelf) {
+            conversationsApi.markAsRead(newRecord.id).catch(() => {});
+          }
+
+          return [...prev, formattedMsg];
+        });
+
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 80);
+      },
+
+      onUpdate: (updatedRecord) => {
+        if (!isMounted || !updatedRecord) return;
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (String(m.id) === String(updatedRecord.id)) {
+              return {
+                ...m,
+                ...updatedRecord,
+                isRead:
+                  updatedRecord.is_read ??
+                  updatedRecord.isRead ??
+                  m.isRead,
+                attachments:
+                  updatedRecord.attachments ?? m.attachments,
+                text: updatedRecord.text ?? m.text,
+              };
+            }
+            return m;
+          })
+        );
+      },
+
+      onDelete: (oldRecord) => {
+        if (!isMounted || !oldRecord) return;
+        setMessages((prev) =>
+          prev.filter((m) => String(m.id) !== String(oldRecord.id))
+        );
+      },
+    }).then((sub) => {
+      if (isMounted) {
+        channel = sub;
+      } else if (sub) {
+        unsubscribeChannel(sub);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      if (channel) {
+        unsubscribeChannel(channel);
+      }
+    };
+  }, [activeConvId, currentUser?.id]);
 
   const [previewImageUri, setPreviewImageUri] = useState<string | null>(null);
 
@@ -1493,9 +1695,42 @@ export default function ConversationChatScreen() {
               justifyContent: messages.length === 0 ? "center" : "flex-end",
             }}
             showsVerticalScrollIndicator={false}
-            onContentSizeChange={() =>
-              scrollViewRef.current?.scrollToEnd({ animated: false })
-            }
+            scrollEventThrottle={16}
+            onScroll={(event: NativeSyntheticEvent<NativeScrollEvent>) => {
+              const offsetY = event.nativeEvent.contentOffset.y;
+              if (
+                offsetY <= 30 &&
+                !isLoadingOlder &&
+                hasMore &&
+                !isLoading &&
+                messages.length > 0
+              ) {
+                loadOlderMessages();
+              }
+            }}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 1,
+            }}
+            onContentSizeChange={(_contentWidth, contentHeight) => {
+              if (isPrependScrollAdjustRef.current) {
+                isPrependScrollAdjustRef.current = false;
+                const heightDiff =
+                  contentHeight - previousContentHeightRef.current;
+                if (heightDiff > 0) {
+                  scrollViewRef.current?.scrollTo({
+                    y: heightDiff,
+                    animated: false,
+                  });
+                }
+              } else if (
+                !hasInitiallyScrolledRef.current &&
+                messages.length > 0
+              ) {
+                hasInitiallyScrolledRef.current = true;
+                scrollViewRef.current?.scrollToEnd({ animated: false });
+              }
+              previousContentHeightRef.current = contentHeight;
+            }}
           >
             {isLoading ? (
               <View
