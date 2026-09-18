@@ -26,30 +26,13 @@ export default function MainTailorsScreen() {
   // Nearest / Distance Filter Options State
   const [isNearbyModalVisible, setIsNearbyModalVisible] = useState(false);
   const [selectedRadius, setSelectedRadius] = useState<number | null>(null);
-  const [selectedCity, setSelectedCity] = useState<string>("All");
-  const [sortBy, setSortBy] = useState<"nearest" | "rating" | "reviews">("nearest");
 
   const radiusOptions = [
-    { label: "All Distances", value: null, desc: "Show tailors everywhere" },
-    { label: "Within 2 km", value: 2, desc: "Walking / immediate vicinity" },
-    { label: "Within 5 km", value: 5, desc: "Short drive in your area" },
-    { label: "Within 10 km", value: 10, desc: "Across your district" },
-    { label: "Within 25 km", value: 25, desc: "Citywide radius" },
-  ];
-
-  const cityOptions = [
-    "All",
-    "Lahore",
-    "Karachi",
-    "Islamabad",
-    "Rawalpindi",
-    "Faisalabad",
-  ];
-
-  const sortOptions = [
-    { label: "Nearest First", value: "nearest" as const, icon: "navigate-circle-outline" },
-    { label: "Top Rated", value: "rating" as const, icon: "star-outline" },
-    { label: "Most Reviews", value: "reviews" as const, icon: "chatbubbles-outline" },
+    { label: "All Distances", value: null, desc: "Show tailors anywhere", icon: "globe-outline" },
+    { label: "Within 2 km", value: 2, desc: "Walking / immediate vicinity", icon: "walk-outline" },
+    { label: "Within 5 km", value: 5, desc: "Short drive in your area", icon: "bicycle-outline" },
+    { label: "Within 10 km", value: 10, desc: "Across your district", icon: "car-outline" },
+    { label: "Within 25 km", value: 25, desc: "Citywide radius", icon: "navigate-outline" },
   ];
 
   const filterOptions = ["Near Me", "Rating 4+", "Verified"];
@@ -85,8 +68,6 @@ export default function MainTailorsScreen() {
           t.city ||
           (typeof t.location === "object"
             ? `${t.location?.address || ""} ${t.location?.city || ""}`
-            : typeof t.location === "string"
-            ? t.location
             : t.address || t.distance || "");
         return (
           name.includes(q) ||
@@ -96,26 +77,12 @@ export default function MainTailorsScreen() {
       });
     }
 
-    // 2. City Filter
-    if (selectedCity && selectedCity !== "All") {
-      const c = selectedCity.toLowerCase();
-      result = result.filter((t) => {
-        const tailorCity = (
-          t.city ||
-          (typeof t.location === "object" ? t.location?.city : null) ||
-          t.address ||
-          ""
-        ).toLowerCase();
-        return tailorCity.includes(c);
-      });
-    }
-
-    // 3. Distance Radius Filter
+    // 2. Distance Radius Filter
     if (selectedRadius !== null) {
       result = result.filter((t) => parseDistanceKm(t.distance) <= selectedRadius);
     }
 
-    // 4. Quick filter chips
+    // 3. Quick filter chips
     if (activeFilter === "Rating 4+") {
       result = result.filter((t) => (Number(t.rating) || 0) >= 4);
     } else if (activeFilter === "Verified") {
@@ -131,21 +98,11 @@ export default function MainTailorsScreen() {
       );
     }
 
-    // 5. Sorting
-    if (sortBy === "nearest") {
-      result.sort((a, b) => parseDistanceKm(a.distance) - parseDistanceKm(b.distance));
-    } else if (sortBy === "rating") {
-      result.sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0));
-    } else if (sortBy === "reviews") {
-      result.sort(
-        (a, b) =>
-          (Number(b.reviewsCount || b.reviews) || 0) -
-          (Number(a.reviewsCount || a.reviews) || 0)
-      );
-    }
+    // Sort by nearest distance
+    result.sort((a, b) => parseDistanceKm(a.distance) - parseDistanceKm(b.distance));
 
     return result;
-  }, [tailors, searchQuery, activeFilter, selectedRadius, selectedCity, sortBy]);
+  }, [tailors, searchQuery, activeFilter, selectedRadius]);
 
   const getTone = (index: number) => {
     const tones: ("coral" | "blue" | "gold" | "teal")[] = [
@@ -159,7 +116,6 @@ export default function MainTailorsScreen() {
 
   const handleFilterToggle = (filter: string) => {
     if (filter === "Near Me") {
-      // If clicking Near Me, open nearest search options modal or toggle
       if (activeFilter === "Near Me") {
         setActiveFilter(null);
         setSelectedRadius(null);
@@ -173,15 +129,12 @@ export default function MainTailorsScreen() {
     }
   };
 
-  const hasActiveNearbyFilters =
-    selectedRadius !== null || selectedCity !== "All" || sortBy !== "nearest";
+  const hasActiveNearbyFilters = selectedRadius !== null;
 
   const clearAllFilters = () => {
     setSearchQuery("");
     setActiveFilter(null);
     setSelectedRadius(null);
-    setSelectedCity("All");
-    setSortBy("nearest");
   };
 
   return (
@@ -198,43 +151,52 @@ export default function MainTailorsScreen() {
     >
       <CustomerHeader title="Find Tailors" subtitle="Explore bespoke master tailors" />
       <View className="flex-1 px-5 pb-6">
-        {/* Search Bar with Clickable Options Button */}
-        <View className="h-[48px] flex-row items-center rounded-xl border border-brand-border px-4 bg-white shadow-xs">
-          <Ionicons name="search" size={17} color="#6F767E" />
-          <TextInput
-            className="ml-3 flex-1 text-[13px] font-medium text-brand-dark"
-            placeholder="Search by name, specialty or location"
-            placeholderTextColor="#9CA3AF"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setSearchQuery("")}
-              className="mr-2.5 p-1"
-            >
-              <Ionicons name="close-circle" size={16} color="#9CA3AF" />
-            </TouchableOpacity>
-          )}
-          {/* Options / Nearest Filter Button */}
+        {/* Search Bar & Upgraded Dedicated Filter Button */}
+        <View className="flex-row items-center gap-2.5">
+          <View className="h-[48px] flex-1 flex-row items-center rounded-xl border border-brand-border px-3.5 bg-white shadow-xs">
+            <Ionicons name="search" size={18} color="#00949D" />
+            <TextInput
+              className="ml-2.5 flex-1 text-[13px] font-medium text-brand-dark"
+              placeholder="Search by name, specialty, location..."
+              placeholderTextColor="#9CA3AF"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery("")}
+                className="p-1"
+              >
+                <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Dedicated Upgraded Filter Button */}
           <TouchableOpacity
             onPress={() => setIsNearbyModalVisible(true)}
-            activeOpacity={0.7}
-            className={`h-8 w-8 items-center justify-center rounded-lg ${
-              hasActiveNearbyFilters || activeFilter === "Near Me"
-                ? "bg-primary text-white shadow-xs"
-                : "bg-brand-surface"
+            activeOpacity={0.8}
+            className={`h-[48px] px-3.5 flex-row items-center justify-center rounded-xl border shadow-xs ${
+              selectedRadius !== null
+                ? "bg-[#00949D] border-[#00949D]"
+                : "bg-white border-brand-border"
             }`}
           >
             <Ionicons
-              name="options-outline"
-              size={18}
-              color={
-                hasActiveNearbyFilters || activeFilter === "Near Me"
-                  ? "#FFFFFF"
-                  : "#1A1D1F"
-              }
+              name={selectedRadius !== null ? "funnel" : "funnel-outline"}
+              size={17}
+              color={selectedRadius !== null ? "#FFFFFF" : "#00949D"}
             />
+            <Text
+              className={`ml-1.5 text-[12px] font-bold ${
+                selectedRadius !== null ? "text-white" : "text-brand-dark"
+              }`}
+            >
+              {selectedRadius !== null ? `< ${selectedRadius}km` : "Filter"}
+            </Text>
+            {selectedRadius !== null && (
+              <View className="ml-1.5 h-1.5 w-1.5 rounded-full bg-white" />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -257,7 +219,7 @@ export default function MainTailorsScreen() {
                   <Ionicons
                     name="location-sharp"
                     size={13}
-                    color={isSelected ? "#14919B" : "#6F767E"}
+                    color={isSelected ? "#00949D" : "#6F767E"}
                     style={{ marginRight: 4 }}
                   />
                 ) : null}
@@ -276,42 +238,23 @@ export default function MainTailorsScreen() {
           {selectedRadius !== null ? (
             <TouchableOpacity
               onPress={() => setIsNearbyModalVisible(true)}
-              className="flex-row items-center rounded-lg border border-primary bg-primary/10 px-2.5 py-1.5"
+              className="flex-row items-center rounded-lg border border-[#00949D] bg-[#00949D]/10 px-2.5 py-1.5"
             >
-              <Ionicons name="navigate" size={12} color="#14919B" />
-              <Text className="ml-1 text-[11px] font-bold text-primary">
+              <Ionicons name="navigate" size={12} color="#00949D" />
+              <Text className="ml-1 text-[11px] font-bold text-[#00949D]">
                 &lt; {selectedRadius} km
               </Text>
               <TouchableOpacity
                 onPress={() => setSelectedRadius(null)}
                 className="ml-1.5"
               >
-                <Ionicons name="close" size={13} color="#14919B" />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          ) : null}
-
-          {/* Active City Tag if set */}
-          {selectedCity !== "All" ? (
-            <TouchableOpacity
-              onPress={() => setIsNearbyModalVisible(true)}
-              className="flex-row items-center rounded-lg border border-primary bg-primary/10 px-2.5 py-1.5"
-            >
-              <Ionicons name="business" size={12} color="#14919B" />
-              <Text className="ml-1 text-[11px] font-bold text-primary">
-                {selectedCity}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setSelectedCity("All")}
-                className="ml-1.5"
-              >
-                <Ionicons name="close" size={13} color="#14919B" />
+                <Ionicons name="close" size={13} color="#00949D" />
               </TouchableOpacity>
             </TouchableOpacity>
           ) : null}
         </View>
 
-        {/* Modal: Nearest Tailor Search Options */}
+        {/* Modal: Nearest Tailor Distance Filter */}
         <Modal
           visible={isNearbyModalVisible}
           animationType="slide"
@@ -323,15 +266,15 @@ export default function MainTailorsScreen() {
               {/* Header */}
               <View className="flex-row items-center justify-between border-b border-brand-border pb-3.5">
                 <View className="flex-row items-center">
-                  <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 mr-2.5">
-                    <Ionicons name="location" size={19} color="#14919B" />
+                  <View className="h-9 w-9 items-center justify-center rounded-full bg-[#00949D]/10 mr-2.5">
+                    <Ionicons name="location" size={20} color="#00949D" />
                   </View>
                   <View>
                     <Text className="text-[17px] font-extrabold text-brand-dark">
-                      Search Nearest Tailors
+                      Distance Filter
                     </Text>
                     <Text className="text-[12px] font-medium text-brand-gray">
-                      Filter by distance radius and city
+                      Find tailors near your current location
                     </Text>
                   </View>
                 </View>
@@ -343,12 +286,13 @@ export default function MainTailorsScreen() {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView showsVerticalScrollIndicator={false} className="mt-3">
-                {/* Section 1: Distance Radius */}
-                <Text className="text-[13px] font-bold uppercase tracking-wider text-brand-gray mb-2.5 mt-1">
-                  Distance Radius
+              <ScrollView showsVerticalScrollIndicator={false} className="mt-4">
+                {/* Distance Radius Options */}
+                <Text className="text-[13px] font-bold uppercase tracking-wider text-brand-gray mb-3">
+                  Select Radius
                 </Text>
-                <View className="flex-row flex-wrap gap-2 mb-4">
+
+                <View className="gap-2.5 mb-5">
                   {radiusOptions.map((opt) => {
                     const isSelected = selectedRadius === opt.value;
                     return (
@@ -356,88 +300,46 @@ export default function MainTailorsScreen() {
                         key={opt.label}
                         onPress={() => setSelectedRadius(opt.value)}
                         activeOpacity={0.7}
-                        className={`rounded-xl border p-3 flex-1 min-w-[45%] ${
+                        className={`flex-row items-center rounded-2xl border p-3.5 ${
                           isSelected
-                            ? "border-primary bg-primary/10"
+                            ? "border-[#00949D] bg-[#00949D]/10"
                             : "border-brand-border bg-white"
                         }`}
                       >
-                        <Text
-                          className={`text-[13px] font-bold ${
-                            isSelected ? "text-primary" : "text-brand-dark"
+                        <View
+                          className={`h-10 w-10 items-center justify-center rounded-xl mr-3 ${
+                            isSelected ? "bg-[#00949D]" : "bg-brand-surface"
                           }`}
                         >
-                          {opt.label}
-                        </Text>
-                        <Text className="text-[11px] text-brand-gray mt-0.5">
-                          {opt.desc}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Section 2: City Selection */}
-                <Text className="text-[13px] font-bold uppercase tracking-wider text-brand-gray mb-2.5">
-                  Select City / Region
-                </Text>
-                <View className="flex-row flex-wrap gap-2 mb-4">
-                  {cityOptions.map((city) => {
-                    const isSelected = selectedCity === city;
-                    return (
-                      <TouchableOpacity
-                        key={city}
-                        onPress={() => setSelectedCity(city)}
-                        activeOpacity={0.7}
-                        className={`rounded-lg border px-3.5 py-2 ${
-                          isSelected
-                            ? "border-primary bg-primary text-white"
-                            : "border-brand-border bg-white"
-                        }`}
-                      >
-                        <Text
-                          className={`text-[12px] font-semibold ${
-                            isSelected ? "text-white font-bold" : "text-brand-dark"
+                          <Ionicons
+                            name={opt.icon as any}
+                            size={20}
+                            color={isSelected ? "#FFFFFF" : "#6F767E"}
+                          />
+                        </View>
+                        <View className="flex-1">
+                          <Text
+                            className={`text-[14px] font-bold ${
+                              isSelected ? "text-[#00949D]" : "text-brand-dark"
+                            }`}
+                          >
+                            {opt.label}
+                          </Text>
+                          <Text className="text-[12px] text-brand-gray mt-0.5">
+                            {opt.desc}
+                          </Text>
+                        </View>
+                        <View
+                          className={`h-5 w-5 rounded-full border items-center justify-center ${
+                            isSelected
+                              ? "border-[#00949D] bg-[#00949D]"
+                              : "border-brand-border bg-white"
                           }`}
                         >
-                          {city === "All" ? "All Cities" : city}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-
-                {/* Section 3: Sort Order */}
-                <Text className="text-[13px] font-bold uppercase tracking-wider text-brand-gray mb-2.5">
-                  Sort Tailors By
-                </Text>
-                <View className="flex-row gap-2 mb-5">
-                  {sortOptions.map((opt) => {
-                    const isSelected = sortBy === opt.value;
-                    return (
-                      <TouchableOpacity
-                        key={opt.value}
-                        onPress={() => setSortBy(opt.value)}
-                        activeOpacity={0.7}
-                        className={`flex-1 flex-row items-center justify-center rounded-xl border py-2.5 px-2 ${
-                          isSelected
-                            ? "border-primary bg-primary/10"
-                            : "border-brand-border bg-white"
-                        }`}
-                      >
-                        <Ionicons
-                          name={opt.icon as any}
-                          size={15}
-                          color={isSelected ? "#14919B" : "#6F767E"}
-                          style={{ marginRight: 4 }}
-                        />
-                        <Text
-                          className={`text-[11px] font-bold ${
-                            isSelected ? "text-primary" : "text-brand-dark"
-                          }`}
-                        >
-                          {opt.label}
-                        </Text>
+                          {isSelected && (
+                            <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                          )}
+                        </View>
                       </TouchableOpacity>
                     );
                   })}
@@ -450,10 +352,10 @@ export default function MainTailorsScreen() {
                     router.push("/tailors/map" as any);
                   }}
                   activeOpacity={0.8}
-                  className="mb-4 flex-row items-center justify-center rounded-xl border border-primary/30 bg-primary-50 py-3"
+                  className="mb-4 flex-row items-center justify-center rounded-xl border border-[#00949D]/30 bg-[#00949D]/5 py-3"
                 >
-                  <Ionicons name="map-outline" size={17} color="#14919B" />
-                  <Text className="ml-2 text-[13px] font-bold text-primary">
+                  <Ionicons name="map-outline" size={17} color="#00949D" />
+                  <Text className="ml-2 text-[13px] font-bold text-[#00949D]">
                     View Tailors on Interactive Map →
                   </Text>
                 </TouchableOpacity>
@@ -463,8 +365,6 @@ export default function MainTailorsScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       setSelectedRadius(null);
-                      setSelectedCity("All");
-                      setSortBy("nearest");
                       setActiveFilter(null);
                     }}
                     className="h-[48px] flex-1 items-center justify-center rounded-xl border border-brand-border bg-white"
@@ -481,7 +381,7 @@ export default function MainTailorsScreen() {
                         setActiveFilter("Near Me");
                       }
                     }}
-                    className="h-[48px] flex-[2] items-center justify-center rounded-xl bg-primary shadow-sm active:bg-primary-dark"
+                    className="h-[48px] flex-[2] items-center justify-center rounded-xl bg-[#00949D] shadow-sm active:opacity-90"
                   >
                     <Text className="text-[14px] font-bold text-white">
                       Show Results ({filteredTailors.length})

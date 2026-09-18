@@ -2,13 +2,14 @@ import { Image } from "expo-image";
 import { useWindowDimensions, View } from "react-native";
 
 type AuthEdgeDecorationsProps = {
-  variant?: "teal" | "tealNew" | "gold";
+  variant?: "teal" | "tealNew" | "gold" | "coral";
 };
 
 const edgeSources = {
   teal: require("@/assets/illustrations/auth-flow/edges/edge-teal.png"),
   tealNew: require("@/assets/illustrations/auth-flow/edges/edge-teal-new.png"),
   gold: require("@/assets/illustrations/auth-flow/edges/edge-gold.png"),
+  coral: require("@/assets/illustrations/auth-flow/edges/edge-coral.png"),
 };
 
 export function AuthEdgeDecorations({
