@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 
 import { ordersApi } from "../../../api/orders.api";
+import { measurementsApi } from "../../../api/measurements.api";
 import { conversationsApi } from "../../../api/conversations.api";
 import { useAuthStore } from "../../../stores/auth.store";
 
@@ -63,12 +64,29 @@ export default function CreateOrderScreen() {
     params.itemName || selectedCategory.name
   );
   const [fabricOption, setFabricOption] = useState<"client" | "tailor">("client");
-  const [measurementType, setMeasurementType] = useState<"saved" | "visit" | "chat">("saved");
   const [deliverySpeed, setDeliverySpeed] = useState<"standard" | "urgent" | "relaxed">("standard");
   const [notes, setNotes] = useState("");
+  const [additionalNotes, setAdditionalNotes] = useState("");
   const [customBudget, setCustomBudget] = useState(String(selectedCategory.basePrice));
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+
+  // Measurements State (auto-fetched & editable)
+  const [isLoadingMeasurements, setIsLoadingMeasurements] = useState(true);
+  const [measurementId, setMeasurementId] = useState<string | undefined>(undefined);
+  const [measurementProfileName, setMeasurementProfileName] = useState<string>("");
+  const [measurementSource, setMeasurementSource] = useState<"fetched" | "empty">("empty");
+  const [unit, setUnit] = useState<"in" | "cm">("in");
+  const [chest, setChest] = useState("");
+  const [waist, setWaist] = useState("");
+  const [hips, setHips] = useState("");
+  const [shoulder, setShoulder] = useState("");
+  const [sleeveLength, setSleeveLength] = useState("");
+  const [inseam, setInseam] = useState("");
+  const [neck, setNeck] = useState("");
+  const [shirtLength, setShirtLength] = useState("");
+  const [trouserLength, setTrouserLength] = useState("");
 
   // Price calculations
   const basePriceNum = parseInt(customBudget.replace(/[^0-9]/g, ""), 10) || selectedCategory.basePrice;
@@ -76,6 +94,61 @@ export default function CreateOrderScreen() {
   const speedSurcharge = deliverySpeed === "urgent" ? 1500 : 0;
   const platformFee = 150;
   const totalPrice = basePriceNum + fabricSurcharge + speedSurcharge + platformFee;
+
+  // Auto-fetch user measurements on mount
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingMeasurements(true);
+
+    measurementsApi
+      .getMyMeasurements()
+      .catch(() => measurementsApi.getMeasurements())
+      .then((res) => {
+        if (!isMounted) return;
+        const data = res?.data;
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray((data as any)?.records)
+          ? (data as any).records
+          : [];
+
+        if (list && list.length > 0) {
+          const m = list[0];
+          setMeasurementId(m.id);
+          setMeasurementProfileName(m.profileName || m.title || "My Saved Profile");
+          setUnit(m.unit === "cm" ? "cm" : "in");
+          if (m.chest != null) setChest(String(m.chest));
+          if (m.waist != null) setWaist(String(m.waist));
+          if (m.hips != null) setHips(String(m.hips));
+          if (m.shoulder != null) setShoulder(String(m.shoulder));
+          if (m.sleeveLength != null || m.sleeve_length != null) {
+            setSleeveLength(String(m.sleeveLength ?? m.sleeve_length));
+          }
+          if (m.inseam != null) setInseam(String(m.inseam));
+          if (m.neck != null) setNeck(String(m.neck));
+          if (m.shirtLength != null || m.shirt_length != null) {
+            setShirtLength(String(m.shirtLength ?? m.shirt_length));
+          }
+          if (m.trouserLength != null || m.trouser_length != null) {
+            setTrouserLength(String(m.trouserLength ?? m.trouser_length));
+          }
+          setMeasurementSource("fetched");
+        } else {
+          setMeasurementSource("empty");
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not fetch measurements:", err?.message);
+        if (isMounted) setMeasurementSource("empty");
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingMeasurements(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSelectCategory = (cat: GarmentCategory) => {
     setSelectedCategory(cat);
@@ -116,7 +189,26 @@ export default function CreateOrderScreen() {
 
     setIsSubmitting(true);
     try {
-      // Calculate target delivery date
+      // 1. Upload attached design images to order-designs bucket
+      let uploadedDesignUrls: string[] = [];
+      if (referenceImages.length > 0) {
+        setIsUploadingImages(true);
+        const uploadPromises = referenceImages.map(async (uri, idx) => {
+          if (uri.startsWith("http://") || uri.startsWith("https://")) {
+            return uri;
+          }
+          try {
+            const fileName = `order-design-${Date.now()}-${idx}.png`;
+            return await ordersApi.uploadOrderDesignImage(uri, fileName);
+          } catch {
+            return uri;
+          }
+        });
+        uploadedDesignUrls = await Promise.all(uploadPromises);
+        setIsUploadingImages(false);
+      }
+
+      // 2. Calculate target delivery date
       const daysToAdd =
         deliverySpeed === "urgent"
           ? Math.max(3, Math.floor(selectedCategory.estDays / 2))
@@ -128,27 +220,47 @@ export default function CreateOrderScreen() {
       targetDate.setDate(targetDate.getDate() + daysToAdd);
       const deliveryDateStr = targetDate.toISOString().split("T")[0];
 
+      // 3. Assemble measurements snapshot
+      const measurementsSnapshot: Record<string, any> = {
+        unit,
+        chest: chest ? parseFloat(chest) : null,
+        waist: waist ? parseFloat(waist) : null,
+        hips: hips ? parseFloat(hips) : null,
+        shoulder: shoulder ? parseFloat(shoulder) : null,
+        sleeveLength: sleeveLength ? parseFloat(sleeveLength) : null,
+        inseam: inseam ? parseFloat(inseam) : null,
+        neck: neck ? parseFloat(neck) : null,
+        shirtLength: shirtLength ? parseFloat(shirtLength) : null,
+        trouserLength: trouserLength ? parseFloat(trouserLength) : null,
+      };
+
       const fullNotes = [
         notes.trim(),
         fabricOption === "tailor" ? "• Fabric: Sourced by tailor" : "• Fabric: Provided by customer",
-        `• Measurement mode: ${
-          measurementType === "saved"
-            ? "Saved customer measurements"
-            : measurementType === "visit"
-            ? "Request home measurement visit"
-            : "Will coordinate measurements in chat"
-        }`,
         `• Delivery speed: ${deliverySpeed.toUpperCase()}`,
+        additionalNotes.trim() ? `• Additional instructions: ${additionalNotes.trim()}` : "",
       ]
         .filter(Boolean)
         .join("\n");
 
       const orderPayload = {
-        tailorId: tailorId,
+        tailorId,
         itemName: itemName.trim(),
+        item_name: itemName.trim(),
         price: totalPrice,
+        totalAmount: totalPrice,
+        total_amount: totalPrice,
+        amount: totalPrice,
         deliveryDate: deliveryDateStr,
+        delivery_date: deliveryDateStr,
         notes: fullNotes,
+        additionalNotes: additionalNotes.trim(),
+        additional_notes: additionalNotes.trim(),
+        measurements: measurementsSnapshot,
+        measurementId: measurementId || undefined,
+        measurementsId: measurementId || undefined,
+        designImages: uploadedDesignUrls,
+        design_images: uploadedDesignUrls,
       };
 
       const res = await ordersApi.createOrder(orderPayload).catch(() => null);
@@ -183,6 +295,7 @@ export default function CreateOrderScreen() {
       Alert.alert("Order Error", err?.message || "Could not place order. Please try again.");
     } finally {
       setIsSubmitting(false);
+      setIsUploadingImages(false);
     }
   };
 
@@ -507,74 +620,141 @@ export default function CreateOrderScreen() {
             </View>
           </View>
 
-          {/* Section 4: Measurements Choice */}
+          {/* Section 4: Measurements (Automatically Fetched & Editable) */}
           <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 10 }}>
-              4. Measurements
-            </Text>
-            <View style={{ gap: 8 }}>
-              {[
-                {
-                  id: "saved",
-                  title: "Use Saved Body Profile",
-                  desc: "Apply your saved measurements from your profile",
-                  icon: "ribbon-outline",
-                },
-                {
-                  id: "visit",
-                  title: "Book Home Tailor Visit",
-                  desc: "Expert visits your home to take precision tape measurements",
-                  icon: "home-outline",
-                },
-                {
-                  id: "chat",
-                  title: "Discuss / Send in Chat",
-                  desc: "Share measurements or reference garments via chat",
-                  icon: "chatbubble-ellipses-outline",
-                },
-              ].map((m) => {
-                const isSelected = measurementType === m.id;
-                return (
-                  <TouchableOpacity
-                    key={m.id}
-                    onPress={() => setMeasurementType(m.id as any)}
-                    activeOpacity={0.8}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      padding: 12,
-                      borderRadius: 14,
-                      backgroundColor: isSelected ? "#F0FAFA" : "#FFFFFF",
-                      borderWidth: 1.5,
-                      borderColor: isSelected ? "#14919B" : "#EAE5DD",
-                    }}
-                  >
-                    <Ionicons
-                      name={isSelected ? "checkmark-circle" : "ellipse-outline"}
-                      size={20}
-                      color={isSelected ? "#14919B" : "#9CA3AF"}
-                      style={{ marginRight: 10 }}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>
-                        {m.title}
-                      </Text>
-                      <Text style={{ fontSize: 11, color: "#6F767E", marginTop: 1 }}>
-                        {m.desc}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F" }}>
+                4. Custom Measurements
+              </Text>
+              {/* Unit Toggle */}
+              <View style={{ flexDirection: "row", backgroundColor: "#EAE5DD", borderRadius: 8, padding: 2 }}>
+                <TouchableOpacity
+                  onPress={() => setUnit("in")}
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 6,
+                    backgroundColor: unit === "in" ? "#14919B" : "transparent",
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: unit === "in" ? "#FFFFFF" : "#6F767E" }}>
+                    in
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setUnit("cm")}
+                  style={{
+                    paddingHorizontal: 8,
+                    paddingVertical: 3,
+                    borderRadius: 6,
+                    backgroundColor: unit === "cm" ? "#14919B" : "transparent",
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: unit === "cm" ? "#FFFFFF" : "#6F767E" }}>
+                    cm
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Fetch Status Banner */}
+            {isLoadingMeasurements ? (
+              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0FAFA", padding: 10, borderRadius: 10, marginBottom: 12 }}>
+                <ActivityIndicator size="small" color="#14919B" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 12, color: "#14919B", fontWeight: "600" }}>
+                  Fetching your saved measurements...
+                </Text>
+              </View>
+            ) : measurementSource === "fetched" ? (
+              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#ECFDF5", padding: 10, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: "#A7F3D0" }}>
+                <Ionicons name="checkmark-circle" size={16} color="#059669" style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 12, color: "#065F46", fontWeight: "600", flex: 1 }}>
+                  Auto-fetched from {measurementProfileName || "your profile"}. You can modify any value below for this order.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#FFFBEB", padding: 10, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: "#FDE68A" }}>
+                <Ionicons name="information-circle" size={16} color="#D97706" style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 12, color: "#92400E", fontWeight: "500", flex: 1 }}>
+                  Enter your custom measurements below to guarantee a tailored fit.
+                </Text>
+              </View>
+            )}
+
+            {/* Editable Measurements Grid */}
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 14,
+                padding: 14,
+                borderWidth: 1,
+                borderColor: "#EAE5DD",
+              }}
+            >
+              <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -5 }}>
+                {[
+                  { label: "CHEST / BUST", value: chest, setter: setChest, placeholder: "36" },
+                  { label: "WAIST", value: waist, setter: setWaist, placeholder: "30" },
+                  { label: "HIPS", value: hips, setter: setHips, placeholder: "38" },
+                  { label: "SHOULDER", value: shoulder, setter: setShoulder, placeholder: "15" },
+                  { label: "SLEEVE LENGTH", value: sleeveLength, setter: setSleeveLength, placeholder: "22" },
+                  { label: "INSEAM / PANT", value: inseam, setter: setInseam, placeholder: "39" },
+                  { label: "NECK", value: neck, setter: setNeck, placeholder: "14" },
+                  { label: "SHIRT LENGTH", value: shirtLength, setter: setShirtLength, placeholder: "38" },
+                ].map((field, idx) => (
+                  <View key={idx} style={{ width: "50%", paddingHorizontal: 5, marginBottom: 10 }}>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: "#6F767E", marginBottom: 3 }}>
+                      {field.label} ({unit})
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        borderWidth: 1,
+                        borderColor: "#EAE5DD",
+                        borderRadius: 10,
+                        backgroundColor: "#FAF8F5",
+                        paddingHorizontal: 10,
+                        height: 40,
+                      }}
+                    >
+                      <TextInput
+                        value={field.value}
+                        onChangeText={field.setter}
+                        placeholder={field.placeholder}
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="decimal-pad"
+                        style={{
+                          flex: 1,
+                          fontSize: 14,
+                          fontWeight: "700",
+                          color: "#1A1D1F",
+                        }}
+                      />
+                      <Text style={{ fontSize: 11, color: "#9CA3AF", fontWeight: "600" }}>
+                        {unit}
                       </Text>
                     </View>
-                  </TouchableOpacity>
-                );
-              })}
+                  </View>
+                ))}
+              </View>
+              <Text style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2, textAlign: "center" }}>
+                ✏️ All measurements can be updated right here specifically for this outfit.
+              </Text>
             </View>
           </View>
 
-          {/* Section 5: Reference Images */}
+          {/* Section 5: Reference Images & Designs (order-designs bucket) */}
           <View style={{ marginBottom: 20 }}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F" }}>
-                5. Reference Photos & Sketches
-              </Text>
+              <View>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F" }}>
+                  5. Design Images & Inspiration
+                </Text>
+                <Text style={{ fontSize: 11, color: "#6F767E", marginTop: 1 }}>
+                  Attached photos will be securely saved in the order-designs bucket
+                </Text>
+              </View>
               <TouchableOpacity onPress={handlePickReferenceImage} activeOpacity={0.7}>
                 <Text style={{ fontSize: 12, fontWeight: "700", color: "#14919B" }}>
                   + Add Photos
@@ -599,10 +779,10 @@ export default function CreateOrderScreen() {
               >
                 <Ionicons name="cloud-upload-outline" size={28} color="#14919B" />
                 <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F", marginTop: 6 }}>
-                  Upload Reference Images
+                  Upload Reference Designs
                 </Text>
                 <Text style={{ fontSize: 11, color: "#6F767E", marginTop: 2 }}>
-                  Add sketches, Pinterest inspiration, or fabric swatches
+                  Attach sketches, neck design photos, embroidery patterns, or fabric swatches
                 </Text>
               </TouchableOpacity>
             ) : (
@@ -611,7 +791,7 @@ export default function CreateOrderScreen() {
                   <View key={idx} style={{ position: "relative" }}>
                     <Image
                       source={{ uri }}
-                      style={{ width: 80, height: 80, borderRadius: 12 }}
+                      style={{ width: 85, height: 85, borderRadius: 12 }}
                       contentFit="cover"
                     />
                     <TouchableOpacity
@@ -637,8 +817,8 @@ export default function CreateOrderScreen() {
                 <TouchableOpacity
                   onPress={handlePickReferenceImage}
                   style={{
-                    width: 80,
-                    height: 80,
+                    width: 85,
+                    height: 85,
                     borderRadius: 12,
                     borderWidth: 1.5,
                     borderStyle: "dashed",
@@ -655,7 +835,38 @@ export default function CreateOrderScreen() {
             )}
           </View>
 
-          {/* Section 6: Price & Order Summary */}
+          {/* Section 6: Additional Notes */}
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 6 }}>
+              6. Additional Notes & Custom Requests
+            </Text>
+            <View
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: "#EAE5DD",
+                padding: 12,
+              }}
+            >
+              <TextInput
+                value={additionalNotes}
+                onChangeText={setAdditionalNotes}
+                placeholder="Any special instructions for stitching, fitting preferences, border placement, pocket requirements, or urgent handling..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={3}
+                style={{
+                  fontSize: 13,
+                  color: "#1A1D1F",
+                  minHeight: 65,
+                  textAlignVertical: "top",
+                }}
+              />
+            </View>
+          </View>
+
+          {/* Section 7: Pricing & Total Amount */}
           <View
             style={{
               backgroundColor: "#FFFFFF",
@@ -667,33 +878,52 @@ export default function CreateOrderScreen() {
             }}
           >
             <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 12 }}>
-              Pricing & Payment Summary
+              7. Pricing & Total Amount Summary
             </Text>
 
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-              <Text style={{ fontSize: 13, color: "#6F767E" }}>Stitching & Tailoring</Text>
-              <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>
-                ₹{basePriceNum.toLocaleString("en-IN")}
-              </Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <Text style={{ fontSize: 13, color: "#6F767E" }}>Stitching & Tailoring Base</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F", marginRight: 6 }}>
+                  ₹
+                </Text>
+                <TextInput
+                  value={customBudget}
+                  onChangeText={setCustomBudget}
+                  keyboardType="numeric"
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: "#1A1D1F",
+                    borderWidth: 1,
+                    borderColor: "#EAE5DD",
+                    borderRadius: 8,
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    minWidth: 70,
+                    textAlign: "right",
+                  }}
+                />
+              </View>
             </View>
 
             {fabricOption === "tailor" && (
               <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
                 <Text style={{ fontSize: 13, color: "#6F767E" }}>Fabric & Lining Sourcing</Text>
-                <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>₹3,500</Text>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹3,500</Text>
               </View>
             )}
 
             {deliverySpeed === "urgent" && (
               <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
                 <Text style={{ fontSize: 13, color: "#6F767E" }}>Express Urgent Stitching</Text>
-                <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>₹1,500</Text>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹1,500</Text>
               </View>
             )}
 
             <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
               <Text style={{ fontSize: 13, color: "#6F767E" }}>Platform & Assurance Fee</Text>
-              <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>₹150</Text>
+              <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹150</Text>
             </View>
 
             <View
@@ -708,13 +938,13 @@ export default function CreateOrderScreen() {
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <View>
                 <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F" }}>
-                  Total Estimated
+                  Total Amount
                 </Text>
                 <Text style={{ fontSize: 11, color: "#10B981", fontWeight: "600" }}>
                   Guaranteed Perfect Fit Protection
                 </Text>
               </View>
-              <Text style={{ fontSize: 18, fontWeight: "900", color: "#14919B" }}>
+              <Text style={{ fontSize: 20, fontWeight: "900", color: "#14919B" }}>
                 ₹{totalPrice.toLocaleString("en-IN")}
               </Text>
             </View>
@@ -728,7 +958,7 @@ export default function CreateOrderScreen() {
             style={{
               height: 52,
               borderRadius: 14,
-              backgroundColor: "#14919B",
+              backgroundColor: isSubmitting ? "#A5D6D9" : "#14919B",
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
@@ -740,7 +970,12 @@ export default function CreateOrderScreen() {
             }}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <ActivityIndicator color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={{ fontSize: 15, fontWeight: "800", color: "#FFFFFF" }}>
+                  {isUploadingImages ? "Uploading Designs to Bucket..." : "Submitting Order..."}
+                </Text>
+              </View>
             ) : (
               <>
                 <Ionicons name="bag-check" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />

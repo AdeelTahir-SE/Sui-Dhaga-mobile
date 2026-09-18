@@ -473,9 +473,16 @@ export const conversationsApi = {
   },
 
   // GET /conversations/:tailorId/:clientId/messages - Get messages in conversation between tailor and client
-  async getMessagesBetween(tailorId: string, clientId: string) {
+  async getMessagesBetween(tailorId: string, clientId: string, params?: { limit?: number; before?: string; page?: number; order?: string }) {
+    const queryParts: string[] = [];
+    if (params?.limit) queryParts.push(`limit=${encodeURIComponent(params.limit)}`);
+    if (params?.before) queryParts.push(`before=${encodeURIComponent(params.before)}`);
+    if (params?.page) queryParts.push(`page=${encodeURIComponent(params.page)}`);
+    if (params?.order) queryParts.push(`order=${encodeURIComponent(params.order)}`);
+    const qs = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+
     const res = await apiClient<any>(
-      `/conversations/${encodeURIComponent(tailorId)}/${encodeURIComponent(clientId)}/messages`,
+      `/conversations/${encodeURIComponent(tailorId)}/${encodeURIComponent(clientId)}/messages${qs}`,
       {
         method: 'GET',
       }
@@ -492,9 +499,12 @@ export const conversationsApi = {
     } else if (Array.isArray((res.data as any)?.results)) {
       list = (res.data as any).results;
     }
+    const pagination = (res as any).pagination || (res.data as any)?.pagination;
     return {
       ...res,
       data: list,
+      hasMore: Boolean(pagination?.hasMore ?? (list.length >= (params?.limit || 20))),
+      total: pagination?.total ?? list.length,
     };
   },
 
@@ -564,8 +574,15 @@ export const conversationsApi = {
   },
 
   // GET /conversations/{conversationId}/messages - Get messages in a conversation
-  async getMessages(conversationId: string) {
-    const res = await apiClient<any>(`/conversations/${conversationId}/messages`, {
+  async getMessages(conversationId: string, params?: { limit?: number; before?: string; page?: number; order?: string }) {
+    const queryParts: string[] = [];
+    if (params?.limit) queryParts.push(`limit=${encodeURIComponent(params.limit)}`);
+    if (params?.before) queryParts.push(`before=${encodeURIComponent(params.before)}`);
+    if (params?.page) queryParts.push(`page=${encodeURIComponent(params.page)}`);
+    if (params?.order) queryParts.push(`order=${encodeURIComponent(params.order)}`);
+    const qs = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+
+    const res = await apiClient<any>(`/conversations/${conversationId}/messages${qs}`, {
       method: 'GET',
     });
     let list: MessageItem[] = [];
@@ -580,10 +597,25 @@ export const conversationsApi = {
     } else if (Array.isArray((res.data as any)?.results)) {
       list = (res.data as any).results;
     }
+    const pagination = (res as any).pagination || (res.data as any)?.pagination;
     return {
       ...res,
       data: list,
+      hasMore: Boolean(pagination?.hasMore ?? (list.length >= (params?.limit || 20))),
+      total: pagination?.total ?? list.length,
     };
+  },
+
+  // GET /conversations/realtime-config - Fetch Supabase realtime credentials
+  async getRealtimeConfig() {
+    try {
+      const res = await apiClient<{ supabaseUrl: string; supabaseAnonKey: string }>('/conversations/realtime-config', {
+        method: 'GET',
+      });
+      return res.data || null;
+    } catch {
+      return null;
+    }
   },
 
   // POST /conversations/{conversationId}/messages - Send a message in a conversation
