@@ -174,6 +174,62 @@ export function extractMessageAttachments(item: any): string[] {
   return Array.from(new Set(resolved));
 }
 
+function formatMessageTime(dateString?: string): string {
+  if (!dateString) return "";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "";
+  }
+}
+
+function getMessageDateDivider(dateString?: string): string {
+  if (!dateString) return "Today";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Today";
+
+    const now = new Date();
+    const isToday =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+    if (isToday) return "Today";
+
+    const yesterday = new Date();
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday =
+      date.getDate() === yesterday.getDate() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getFullYear() === yesterday.getFullYear();
+    if (isYesterday) return "Yesterday";
+
+    const diffDays = Math.round(
+      (now.getTime() - date.getTime()) / (1000 * 3600 * 24)
+    );
+    if (diffDays < 7) {
+      return date.toLocaleDateString([], { weekday: "long" });
+    }
+
+    return date.toLocaleDateString([], {
+      day: "numeric",
+      month: "short",
+      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+    });
+  } catch {
+    return "Today";
+  }
+}
+
+const QUICK_SUGGESTIONS = [
+  "👋 Hi! I'd like to ask about stitching a custom design.",
+  "📏 Can I book a fitting or measurement appointment?",
+  "🧵 What is your typical turnaround time?",
+  "✨ Do you handle alterations and resizing?",
+];
+
 export default function ConversationChatScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
@@ -209,6 +265,7 @@ export default function ConversationChatScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -775,66 +832,117 @@ export default function ConversationChatScreen() {
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
-      {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-brand-border px-4 py-3 bg-white">
+      {/* Enhanced Header */}
+      <View className="flex-row items-center justify-between border-b border-slate-200/80 px-3.5 py-2.5 bg-white shadow-xs">
         <View className="flex-row items-center flex-1">
           <TouchableOpacity
             onPress={() => router.back()}
-            className="w-9 h-9 items-center justify-center mr-1"
+            activeOpacity={0.7}
+            className="w-9 h-9 items-center justify-center rounded-full bg-slate-50 border border-slate-200/70 mr-2 active:bg-slate-100"
+            accessibilityLabel="Back"
           >
-            <Ionicons name="arrow-back" size={22} color="#1A1D1F" />
+            <Ionicons name="arrow-back" size={20} color="#1E293B" />
           </TouchableOpacity>
 
-          <View
-            style={{ width: 40, height: 40, borderRadius: 20 }}
-            className="overflow-hidden mr-3 items-center justify-center border border-brand-border bg-brand-surface"
+          <TouchableOpacity
+            activeOpacity={resolvedTailorId && !isTailor ? 0.75 : 1}
+            onPress={() => {
+              if (resolvedTailorId && !isTailor) {
+                router.push(`/tailors/${resolvedTailorId}` as any);
+              }
+            }}
+            className="flex-row items-center flex-1 mr-2"
           >
-            {avatarUrl ? (
-              <Image
-                source={{ uri: avatarUrl }}
-                style={{ width: 40, height: 40, borderRadius: 20 }}
-                contentFit="cover"
-                transition={200}
-              />
-            ) : (
+            <View className="relative mr-2.5">
               <View
                 style={{ width: 40, height: 40, borderRadius: 20 }}
-                className="w-full h-full bg-primary-50 items-center justify-center border border-primary/20"
+                className="overflow-hidden items-center justify-center border border-slate-200 bg-slate-50 shadow-xs"
               >
-                <Text className="text-[15px] font-bold text-primary">
-                  {participantName.charAt(0).toUpperCase()}
+                {avatarUrl ? (
+                  <Image
+                    source={{ uri: avatarUrl }}
+                    style={{ width: 40, height: 40, borderRadius: 20 }}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                ) : (
+                  <View
+                    style={{ width: 40, height: 40, borderRadius: 20 }}
+                    className="w-full h-full bg-[#E0F7F7] items-center justify-center"
+                  >
+                    <Text className="text-[15px] font-bold text-[#14919B]">
+                      {participantName.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {/* Online Indicator Badge */}
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  right: 0,
+                  width: 11,
+                  height: 11,
+                  borderRadius: 5.5,
+                  backgroundColor: "#10B981",
+                  borderWidth: 2,
+                  borderColor: "#FFFFFF",
+                }}
+              />
+            </View>
+
+            <View className="flex-1">
+              <Text
+                numberOfLines={1}
+                className="text-[15px] font-bold text-slate-900 tracking-tight"
+              >
+                {participantName}
+              </Text>
+              <View className="flex-row items-center mt-0.5">
+                <View className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
+                <Text className="text-[11px] font-medium text-emerald-600">
+                  Online • Active now
                 </Text>
               </View>
-            )}
-          </View>
-
-          <View className="flex-1">
-            <Text
-              numberOfLines={1}
-              className="text-[15px] font-bold text-brand-dark"
-            >
-              {participantName}
-            </Text>
-            <Text className="text-[11px] text-emerald-600 font-medium">
-              Online
-            </Text>
-          </View>
+            </View>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity className="p-2">
-          <Ionicons name="ellipsis-vertical" size={18} color="#6F767E" />
-        </TouchableOpacity>
+        {/* Header Right Actions */}
+        <View className="flex-row items-center gap-1.5">
+          {resolvedTailorId && !isTailor && (
+            <TouchableOpacity
+              onPress={() => router.push(`/tailors/${resolvedTailorId}` as any)}
+              className="w-9 h-9 items-center justify-center rounded-full bg-slate-50 border border-slate-200/70 active:bg-slate-100"
+              accessibilityLabel="View tailor profile"
+            >
+              <Ionicons name="storefront-outline" size={17} color="#14919B" />
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            onPress={() => setIsActionSheetVisible(true)}
+            className="w-9 h-9 items-center justify-center rounded-full bg-slate-50 border border-slate-200/70 active:bg-slate-100"
+            accessibilityLabel="More options"
+          >
+            <Ionicons name="ellipsis-vertical" size={17} color="#64748B" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
+        className="flex-1 bg-[#F8FAFC]"
       >
         {/* Message List */}
         <ScrollView
           ref={scrollViewRef}
-          className="flex-1 px-4 py-4"
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }}
+          className="flex-1 bg-[#F8FAFC] px-4 py-3"
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: messages.length === 0 ? "center" : "flex-end",
+          }}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() =>
             scrollViewRef.current?.scrollToEnd({ animated: false })
@@ -842,24 +950,73 @@ export default function ConversationChatScreen() {
         >
           {isLoading ? (
             <View className="py-20 items-center justify-center">
-              <ActivityIndicator color="#14919B" />
+              <ActivityIndicator size="large" color="#14919B" />
+              <Text className="mt-3 text-[13px] font-medium text-slate-400">
+                Loading messages...
+              </Text>
             </View>
           ) : messages.length === 0 ? (
-            <View className="py-12 items-center justify-center px-6">
-              <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center mb-3">
-                <Ionicons
-                  name="chatbubble-ellipses-outline"
-                  size={28}
-                  color="#14919B"
+            <View className="py-8 items-center justify-center px-4 max-w-[360px] self-center">
+              {/* Avatar with soft glow */}
+              <View className="relative mb-3">
+                <View
+                  style={{ width: 68, height: 68, borderRadius: 34 }}
+                  className="overflow-hidden items-center justify-center border-2 border-[#14919B]/30 bg-white shadow-sm"
+                >
+                  {avatarUrl ? (
+                    <Image
+                      source={{ uri: avatarUrl }}
+                      style={{ width: 68, height: 68, borderRadius: 34 }}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  ) : (
+                    <View className="w-full h-full bg-[#E0F7F7] items-center justify-center">
+                      <Ionicons name="chatbubbles" size={30} color="#14919B" />
+                    </View>
+                  )}
+                </View>
+                <View
+                  style={{
+                    position: "absolute",
+                    bottom: 2,
+                    right: 2,
+                    width: 15,
+                    height: 15,
+                    borderRadius: 7.5,
+                    backgroundColor: "#10B981",
+                    borderWidth: 2,
+                    borderColor: "#FFFFFF",
+                  }}
                 />
               </View>
-              <Text className="text-[15px] font-bold text-brand-dark text-center">
-                Start a conversation
+
+              <Text className="text-[17px] font-bold text-slate-900 text-center tracking-tight">
+                {participantName}
               </Text>
-              <Text className="text-[12px] text-brand-gray text-center mt-1">
-                Say hello and discuss your outfit designs, fittings, or
-                timelines.
+              <Text className="text-[12px] text-slate-500 text-center mt-1 leading-5">
+                Send a message to discuss your outfit designs, fittings, alterations, or custom tailoring inquiries.
               </Text>
+
+              {/* Quick suggestions */}
+              <View className="w-full mt-6 gap-2">
+                <Text className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 text-center">
+                  Quick conversation starters
+                </Text>
+                {QUICK_SUGGESTIONS.map((prompt, pIdx) => (
+                  <TouchableOpacity
+                    key={pIdx}
+                    activeOpacity={0.75}
+                    onPress={() => setInputText(prompt)}
+                    className="flex-row items-center justify-between p-3 rounded-xl bg-white border border-slate-200/80 shadow-xs active:bg-slate-50"
+                  >
+                    <Text className="text-[13px] font-medium text-slate-700 flex-1 pr-2">
+                      {prompt}
+                    </Text>
+                    <Ionicons name="arrow-forward" size={15} color="#14919B" />
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
           ) : (
             messages.map((item, idx) => {
@@ -901,105 +1058,185 @@ export default function ConversationChatScreen() {
                 (item as any).sender?.avatar ||
                 avatarUrl;
 
+              const itemDate = item.createdAt || (item as any).created_at;
+              const currDateDivider = getMessageDateDivider(itemDate);
+              const prevItem = idx > 0 ? messages[idx - 1] : null;
+              const prevDate = prevItem
+                ? prevItem.createdAt || (prevItem as any).created_at
+                : null;
+              const prevDateDivider = prevDate
+                ? getMessageDateDivider(prevDate)
+                : null;
+              const showDateDivider =
+                idx === 0 || currDateDivider !== prevDateDivider;
+
+              // Check if next message is from same sender to group tightly
+              const nextItem =
+                idx < messages.length - 1 ? messages[idx + 1] : null;
+              const nextSenderId = (
+                nextItem?.senderId ||
+                (nextItem as any)?.sender_id ||
+                (nextItem as any)?.sender?.id ||
+                ""
+              )
+                .toString()
+                .toLowerCase();
+              const nextIsOutgoing =
+                nextItem &&
+                ((curId && nextSenderId === curId) ||
+                  (nextItem.id && String(nextItem.id).startsWith("temp_")) ||
+                  (nextItem as any).isSender === true ||
+                  (nextItem as any).is_sender === true);
+              const isSameSenderAsNext =
+                nextItem && isOutgoing === nextIsOutgoing;
+
+              const formattedTime = formatMessageTime(itemDate);
+
               return (
-                <View
-                  key={item.id || idx}
-                  className={
-                    isOutgoing
-                      ? "mb-3 flex-row items-end justify-end self-end max-w-[85%]"
-                      : "mb-3 flex-row items-end justify-start self-start max-w-[85%]"
-                  }
-                >
-                  {/* Incoming person avatar */}
-                  {!isOutgoing && (
-                    <View
-                      style={{ width: 28, height: 28, borderRadius: 14 }}
-                      className="overflow-hidden mr-2 mb-0.5 items-center justify-center border border-brand-border bg-brand-surface"
-                    >
-                      {messageAvatar ? (
-                        <Image
-                          source={{ uri: messageAvatar }}
-                          style={{ width: 28, height: 28, borderRadius: 14 }}
-                          contentFit="cover"
-                          transition={200}
-                        />
-                      ) : (
-                        <View
-                          style={{ width: 28, height: 28, borderRadius: 14 }}
-                          className="w-full h-full bg-primary-50 items-center justify-center"
-                        >
-                          <Text className="text-[11px] font-bold text-primary">
-                            {participantName.charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-                      )}
+                <View key={item.id || idx}>
+                  {/* Floating Date Divider */}
+                  {showDateDivider && (
+                    <View className="items-center my-3">
+                      <View className="px-3 py-1 rounded-full bg-slate-200/80 border border-slate-300/40 shadow-2xs">
+                        <Text className="text-[11px] font-semibold text-slate-600 tracking-wide">
+                          {currDateDivider}
+                        </Text>
+                      </View>
                     </View>
                   )}
 
-                  {/* Message Bubble */}
                   <View
                     className={
                       isOutgoing
-                        ? "rounded-2xl px-4 py-3 bg-primary rounded-br-none"
-                        : "rounded-2xl px-4 py-3 bg-brand-surface border border-brand-border rounded-bl-none"
+                        ? "flex-row items-end justify-end self-end max-w-[85%]"
+                        : "flex-row items-end justify-start self-start max-w-[85%]"
                     }
+                    style={{ marginBottom: isSameSenderAsNext ? 3 : 10 }}
                   >
-                    {attachments.length > 0 && (
-                      <View className="mb-1 gap-2">
-                        {attachments.map((attUri: string, attIdx: number) => {
-                          const isAudio = isAudioAttachment(attUri);
-                          if (isAudio) {
-                            return (
-                              <VoiceMessagePlayer
-                                key={attIdx}
-                                uri={attUri}
-                                isOutgoing={isOutgoing}
-                              />
-                            );
-                          }
-                          return (
-                            <TouchableOpacity
-                              key={attIdx}
-                              activeOpacity={0.9}
-                              onPress={() => setPreviewImageUri(attUri)}
-                              style={{
-                                borderRadius: 12,
-                                overflow: "hidden",
-                                backgroundColor: isOutgoing
-                                  ? "rgba(255,255,255,0.15)"
-                                  : "#F3F4F6",
-                              }}
+                    {/* Incoming person avatar (only on the last message in a consecutive group) */}
+                    {!isOutgoing && (
+                      <View
+                        style={{ width: 28, height: 28, borderRadius: 14 }}
+                        className="overflow-hidden mr-2 mb-0.5 items-center justify-center border border-slate-200 bg-slate-50"
+                      >
+                        {!isSameSenderAsNext ? (
+                          messageAvatar ? (
+                            <Image
+                              source={{ uri: messageAvatar }}
+                              style={{ width: 28, height: 28, borderRadius: 14 }}
+                              contentFit="cover"
+                              transition={200}
+                            />
+                          ) : (
+                            <View
+                              style={{ width: 28, height: 28, borderRadius: 14 }}
+                              className="w-full h-full bg-[#E0F7F7] items-center justify-center"
                             >
-                              <Image
-                                source={{ uri: attUri }}
-                                style={{
-                                  width: 220,
-                                  height: 160,
-                                  borderRadius: 12,
-                                }}
-                                contentFit="cover"
-                                transition={200}
-                                cachePolicy="memory-disk"
-                              />
-                            </TouchableOpacity>
-                          );
-                        })}
+                              <Text className="text-[11px] font-bold text-[#14919B]">
+                                {participantName.charAt(0).toUpperCase()}
+                              </Text>
+                            </View>
+                          )
+                        ) : (
+                          <View style={{ width: 28, height: 28 }} />
+                        )}
                       </View>
                     )}
-                    {text &&
-                    (!attachments.some(isAudioAttachment) ||
-                      (text !== "Voice message" &&
-                        text !== "Sent an attachment")) ? (
-                      <Text
+
+                    {/* Message Bubble */}
+                    <View
+                      className={
+                        isOutgoing
+                          ? "rounded-2xl px-3.5 py-2.5 bg-[#14919B] shadow-xs rounded-tr-xs"
+                          : "rounded-2xl px-3.5 py-2.5 bg-white border border-slate-200/90 shadow-xs rounded-tl-xs"
+                      }
+                    >
+                      {attachments.length > 0 && (
+                        <View className="mb-1.5 gap-2">
+                          {attachments.map((attUri: string, attIdx: number) => {
+                            const isAudio = isAudioAttachment(attUri);
+                            if (isAudio) {
+                              return (
+                                <VoiceMessagePlayer
+                                  key={attIdx}
+                                  uri={attUri}
+                                  isOutgoing={isOutgoing}
+                                />
+                              );
+                            }
+                            return (
+                              <TouchableOpacity
+                                key={attIdx}
+                                activeOpacity={0.9}
+                                onPress={() => setPreviewImageUri(attUri)}
+                                style={{
+                                  borderRadius: 12,
+                                  overflow: "hidden",
+                                  backgroundColor: isOutgoing
+                                    ? "rgba(255,255,255,0.15)"
+                                    : "#F3F4F6",
+                                }}
+                              >
+                                <Image
+                                  source={{ uri: attUri }}
+                                  style={{
+                                    width: 220,
+                                    height: 160,
+                                    borderRadius: 12,
+                                  }}
+                                  contentFit="cover"
+                                  transition={200}
+                                  cachePolicy="memory-disk"
+                                />
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      )}
+
+                      {text &&
+                      (!attachments.some(isAudioAttachment) ||
+                        (text !== "Voice message" &&
+                          text !== "Sent an attachment")) ? (
+                        <Text
+                          className={
+                            isOutgoing
+                              ? "text-[14px] leading-5 text-white font-normal"
+                              : "text-[14px] leading-5 text-slate-800 font-normal"
+                          }
+                        >
+                          {text}
+                        </Text>
+                      ) : null}
+
+                      {/* Timestamp & Status Footer */}
+                      <View
                         className={
                           isOutgoing
-                            ? "text-[13px] leading-5 text-white font-medium"
-                            : "text-[13px] leading-5 text-brand-dark"
+                            ? "flex-row items-center justify-end mt-1 self-end gap-1"
+                            : "flex-row items-center justify-end mt-1 self-end"
                         }
                       >
-                        {text}
-                      </Text>
-                    ) : null}
+                        {formattedTime ? (
+                          <Text
+                            className={
+                              isOutgoing
+                                ? "text-[10px] font-medium text-teal-100/80"
+                                : "text-[10px] font-medium text-slate-400"
+                            }
+                          >
+                            {formattedTime}
+                          </Text>
+                        ) : null}
+                        {isOutgoing && (
+                          <Ionicons
+                            name={item.isRead ? "checkmark-done" : "checkmark"}
+                            size={13}
+                            color={item.isRead ? "#6EE7B7" : "#CCFBF1"}
+                          />
+                        )}
+                      </View>
+                    </View>
                   </View>
                 </View>
               );
@@ -1009,11 +1246,11 @@ export default function ConversationChatScreen() {
 
         {/* Enhanced Pending Attachments Preview Bar */}
         {pendingAttachments.length > 0 && (
-          <View className="border-t border-brand-border bg-[#F8FAFB] px-4 py-2.5">
+          <View className="border-t border-slate-200 bg-[#F8FAFB] px-4 py-2.5">
             <View className="flex-row items-center justify-between mb-2">
               <View className="flex-row items-center">
                 <Ionicons name="images" size={15} color="#14919B" />
-                <Text className="ml-1.5 text-[12px] font-bold text-brand-dark">
+                <Text className="ml-1.5 text-[12px] font-bold text-slate-800">
                   Attached Files ({pendingAttachments.length})
                 </Text>
               </View>
@@ -1061,10 +1298,10 @@ export default function ConversationChatScreen() {
           </View>
         )}
 
-        {/* Input Bar */}
+        {/* Modern Input Bar */}
         <View
-          className="flex-row items-center border-t border-brand-border px-4 py-3 bg-white"
-          style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+          className="flex-row items-center border-t border-slate-200/80 px-3 py-2.5 bg-white shadow-md"
+          style={{ paddingBottom: Math.max(insets.bottom, 10) }}
         >
           {isRecording ? (
             <VoiceRecorderBar
@@ -1075,36 +1312,52 @@ export default function ConversationChatScreen() {
             />
           ) : (
             <>
+              {/* Attachment Picker Button */}
               <TouchableOpacity
                 onPress={handlePickAttachment}
-                className="h-11 w-11 items-center justify-center rounded-full bg-primary/10 mr-2 border border-primary/20"
+                activeOpacity={0.75}
+                className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 border border-slate-200/70 mr-1.5 active:bg-slate-200"
+                accessibilityLabel="Add attachment"
               >
-                <Ionicons name="attach" size={22} color="#14919B" />
+                <Ionicons name="add" size={22} color="#14919B" />
               </TouchableOpacity>
 
+              {/* Quick Camera Button */}
+              <TouchableOpacity
+                onPress={handleTakePhoto}
+                activeOpacity={0.75}
+                className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 border border-slate-200/70 mr-2 active:bg-slate-200"
+                accessibilityLabel="Take photo"
+              >
+                <Ionicons name="camera-outline" size={19} color="#64748B" />
+              </TouchableOpacity>
+
+              {/* Text Input Box */}
               <TextInput
-                className="flex-1 min-h-[44px] max-h-[100px] rounded-2xl bg-brand-surface px-4 text-[14px] text-brand-dark border border-brand-border mr-2"
-                placeholder="Type a message or note..."
-                placeholderTextColor="#9CA3AF"
+                className="flex-1 min-h-[42px] max-h-[110px] rounded-2xl bg-slate-100 px-4 py-2 text-[14px] text-slate-800 border border-slate-200/70 mr-2"
+                placeholder="Type a message..."
+                placeholderTextColor="#94A3B8"
                 value={inputText}
                 onChangeText={setInputText}
                 multiline
               />
 
+              {/* Send or Mic Button */}
               {!inputText.trim() && pendingAttachments.length === 0 ? (
                 <TouchableOpacity
                   onPress={handleStartRecording}
                   disabled={isSending}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
+                    width: 42,
+                    height: 42,
+                    borderRadius: 21,
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: "#14919B",
-                    elevation: 2,
                   }}
+                  className="shadow-sm active:bg-[#0D7377]"
+                  accessibilityLabel="Record voice message"
                 >
                   <Ionicons name="mic" size={20} color="#FFFFFF" />
                 </TouchableOpacity>
@@ -1112,16 +1365,17 @@ export default function ConversationChatScreen() {
                 <TouchableOpacity
                   onPress={handleSend}
                   disabled={!canSend}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 22,
+                    width: 42,
+                    height: 42,
+                    borderRadius: 21,
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: canSend ? "#14919B" : "#E5E7EB",
-                    elevation: canSend ? 2 : 0,
+                    backgroundColor: canSend ? "#14919B" : "#E2E8F0",
                   }}
+                  className="shadow-sm"
+                  accessibilityLabel="Send message"
                 >
                   {isSending ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
@@ -1129,7 +1383,7 @@ export default function ConversationChatScreen() {
                     <Ionicons
                       name="send"
                       size={18}
-                      color={canSend ? "#FFFFFF" : "#9CA3AF"}
+                      color={canSend ? "#FFFFFF" : "#94A3B8"}
                     />
                   )}
                 </TouchableOpacity>
@@ -1138,6 +1392,112 @@ export default function ConversationChatScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
+
+      {/* Options Action Sheet Modal */}
+      <Modal
+        visible={isActionSheetVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsActionSheetVisible(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setIsActionSheetVisible(false)}
+          className="flex-1 justify-end"
+          style={{ backgroundColor: "rgba(15, 23, 42, 0.45)" }}
+        >
+          <View className="rounded-t-[28px] bg-white px-5 pb-8 pt-3 shadow-2xl">
+            <View className="h-1.5 w-12 rounded-full bg-slate-200 self-center mb-4 mt-1" />
+
+            <View className="flex-row items-center justify-between pb-3 border-b border-slate-100 mb-2">
+              <View>
+                <Text className="text-[16px] font-bold text-slate-900">
+                  {participantName}
+                </Text>
+                <Text className="text-[12px] text-slate-500 font-medium">
+                  Conversation Options
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsActionSheetVisible(false)}
+                className="h-8 w-8 items-center justify-center rounded-full bg-slate-100"
+              >
+                <Ionicons name="close" size={17} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <View className="gap-2 py-2">
+              {resolvedTailorId && !isTailor && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setIsActionSheetVisible(false);
+                    router.push(`/tailors/${resolvedTailorId}` as any);
+                  }}
+                  className="flex-row items-center p-3.5 rounded-xl bg-slate-50 active:bg-slate-100"
+                >
+                  <View className="w-10 h-10 rounded-full bg-[#E0F7F7] items-center justify-center mr-3">
+                    <Ionicons name="storefront" size={19} color="#14919B" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-[14px] font-bold text-slate-900">
+                      View Tailor Profile
+                    </Text>
+                    <Text className="text-[12px] text-slate-500">
+                      Explore services, ratings, and studio info
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={17} color="#94A3B8" />
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  setIsActionSheetVisible(false);
+                  handlePickAttachment();
+                }}
+                className="flex-row items-center p-3.5 rounded-xl bg-slate-50 active:bg-slate-100"
+              >
+                <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center mr-3">
+                  <Ionicons name="images" size={19} color="#2563EB" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[14px] font-bold text-slate-900">
+                    Send Photos & Designs
+                  </Text>
+                  <Text className="text-[12px] text-slate-500">
+                    Share reference images or outfit styles
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={17} color="#94A3B8" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  setIsActionSheetVisible(false);
+                  loadData();
+                }}
+                className="flex-row items-center p-3.5 rounded-xl bg-slate-50 active:bg-slate-100"
+              >
+                <View className="w-10 h-10 rounded-full bg-slate-100 items-center justify-center mr-3">
+                  <Ionicons name="refresh" size={19} color="#475569" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[14px] font-bold text-slate-900">
+                    Refresh Messages
+                  </Text>
+                  <Text className="text-[12px] text-slate-500">
+                    Check for latest replies and updates
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={17} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Full-screen Image Preview Modal */}
       <Modal
