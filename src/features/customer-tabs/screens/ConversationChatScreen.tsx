@@ -2,13 +2,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   KeyboardAvoidingView,
   Modal,
+  PanResponder,
   Platform,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
+  Vibration,
   View,
 } from "react-native";
 
@@ -34,6 +37,13 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { ConversationItem, MessageItem } from "../../../types/api";
 import { VoiceMessagePlayer } from "../components/VoiceMessagePlayer";
 import { VoiceRecorderBar } from "../components/VoiceRecorderBar";
+
+function formatMillis(ms: number): string {
+  const totalSeconds = Math.floor((ms || 0) / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes < 10 ? "0" : ""}${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+}
 
 export function resolveMediaUrl(uri?: any): string | null {
   if (!uri) return null;
@@ -265,11 +275,50 @@ export default function ConversationChatScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isNearTrash, setIsNearTrash] = useState(false);
   const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recorderState = useAudioRecorderState(audioRecorder, 200);
+
+  // WhatsApp-style Voice Recording Refs & Animated Values
+  const isHoldingVoiceRef = useRef(false);
+  const isNearTrashRef = useRef(false);
+  const recordingStartTimeRef = useRef(0);
+  const isStartingRecordingRef = useRef(false);
+
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const micScaleAnim = useRef(new Animated.Value(1)).current;
+  const trashScaleAnim = useRef(new Animated.Value(1)).current;
+  const recordingPulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Pulse animation for recording dot
+  useEffect(() => {
+    let pulseLoop: Animated.CompositeAnimation | null = null;
+    if (isRecording) {
+      pulseLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(recordingPulseAnim, {
+            toValue: 0.25,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(recordingPulseAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      pulseLoop.start();
+    } else {
+      recordingPulseAnim.setValue(1);
+    }
+    return () => {
+      pulseLoop?.stop();
+    };
+  }, [isRecording, recordingPulseAnim]);
 
   const markUnreadMessagesAsRead = useCallback(
     (msgs: MessageItem[]) => {
@@ -444,61 +493,6 @@ export default function ConversationChatScreen() {
     })();
   }, []);
 
-  const handleStartRecording = async () => {
-    try {
-      const perm = await AudioModule.requestRecordingPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert(
-          "Microphone Permission Required",
-          "Permission to access the microphone is required to record voice messages.",
-        );
-        return;
-      }
-
-      await setAudioModeAsync({
-        playsInSilentMode: true,
-        allowsRecording: true,
-      });
-
-      try {
-        await audioRecorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
-      } catch (prepErr) {
-        // If already prepared, proceed to record
-        console.log("prepareToRecordAsync note:", prepErr);
-      }
-
-      audioRecorder.record();
-      setIsRecording(true);
-    } catch (err: any) {
-      console.warn("Failed to start voice recording:", err);
-      Alert.alert(
-        "Recording Error",
-        err?.message ||
-          "Unable to start voice recording. Please verify microphone permissions.",
-      );
-      setIsRecording(false);
-      try {
-        await setAudioModeAsync({
-          playsInSilentMode: true,
-          allowsRecording: false,
-        });
-      } catch {}
-    }
-  };
-
-  const handleCancelRecording = async () => {
-    try {
-      await audioRecorder.stop();
-    } catch {}
-    setIsRecording(false);
-    try {
-      await setAudioModeAsync({
-        playsInSilentMode: true,
-        allowsRecording: false,
-      });
-    } catch {}
-  };
-
   const sendVoiceMessage = async (voiceUri: string) => {
     if (isSending) return;
     setIsSending(true);
@@ -612,10 +606,90 @@ export default function ConversationChatScreen() {
     }
   };
 
-  const handleSendRecording = async () => {
-    if (!isRecording) return;
+  const handleStartRecording = async () => {
+    if (isStartingRecordingRef.current) return;
+    isStartingRecordingRef.current = true;
     try {
+      const perm = await AudioModule.requestRecordingPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          "Microphone Permission Required",
+          "Permission to access the microphone is required to record voice messages.",
+        );
+        isHoldingVoiceRef.current = false;
+        Animated.spring(micScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+        return;
+      }
+
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: true,
+      });
+
+      try {
+        await audioRecorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
+      } catch (prepErr) {
+        console.log("prepareToRecordAsync note:", prepErr);
+      }
+
+      if (!isHoldingVoiceRef.current) {
+        try {
+          await setAudioModeAsync({
+            playsInSilentMode: true,
+            allowsRecording: false,
+          });
+        } catch {}
+        return;
+      }
+
+      audioRecorder.record();
+      setIsRecording(true);
+      try {
+        Vibration.vibrate(40);
+      } catch {}
+    } catch (err: any) {
+      console.warn("Failed to start voice recording:", err);
       setIsRecording(false);
+      try {
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          allowsRecording: false,
+        });
+      } catch {}
+    } finally {
+      isStartingRecordingRef.current = false;
+    }
+  };
+
+  const handleCancelRecording = async () => {
+    isHoldingVoiceRef.current = false;
+    isNearTrashRef.current = false;
+    setIsNearTrash(false);
+    setIsRecording(false);
+    slideAnim.setValue(0);
+    Animated.spring(micScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+    Animated.spring(trashScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+    try {
+      await audioRecorder.stop();
+    } catch {}
+    try {
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: false,
+      });
+    } catch {}
+  };
+
+  const handleSendRecording = async () => {
+    isHoldingVoiceRef.current = false;
+    isNearTrashRef.current = false;
+    setIsNearTrash(false);
+    setIsRecording(false);
+    slideAnim.setValue(0);
+    Animated.spring(micScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+    Animated.spring(trashScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+
+    try {
       const stopResult = await audioRecorder.stop();
       try {
         await setAudioModeAsync({
@@ -629,24 +703,104 @@ export default function ConversationChatScreen() {
         (stopResult as any)?.url;
       if (recordedUri) {
         await sendVoiceMessage(recordedUri);
-      } else {
-        Alert.alert("Voice Recording", "No audio recorded. Please try again.");
       }
     } catch (err: any) {
       console.warn("Failed to stop and send recording:", err);
-      setIsRecording(false);
       try {
         await setAudioModeAsync({
           playsInSilentMode: true,
           allowsRecording: false,
         });
       } catch {}
-      Alert.alert(
-        "Voice Recording",
-        err?.message || "Unable to save audio recording.",
-      );
     }
   };
+
+  const micPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        if (isSending) return;
+        isHoldingVoiceRef.current = true;
+        isNearTrashRef.current = false;
+        setIsNearTrash(false);
+        recordingStartTimeRef.current = Date.now();
+        slideAnim.setValue(0);
+        Animated.spring(micScaleAnim, {
+          toValue: 1.25,
+          friction: 5,
+          useNativeDriver: true,
+        }).start();
+        handleStartRecording();
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (!isHoldingVoiceRef.current) return;
+        const clampedDx = Math.max(-130, Math.min(0, gestureState.dx));
+        slideAnim.setValue(clampedDx);
+
+        if (gestureState.dx <= -75) {
+          if (!isNearTrashRef.current) {
+            isNearTrashRef.current = true;
+            setIsNearTrash(true);
+            try {
+              Vibration.vibrate(40);
+            } catch {}
+            Animated.spring(trashScaleAnim, {
+              toValue: 1.35,
+              friction: 4,
+              useNativeDriver: true,
+            }).start();
+          }
+        } else if (gestureState.dx > -60) {
+          if (isNearTrashRef.current) {
+            isNearTrashRef.current = false;
+            setIsNearTrash(false);
+            Animated.spring(trashScaleAnim, {
+              toValue: 1,
+              friction: 4,
+              useNativeDriver: true,
+            }).start();
+          }
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (!isHoldingVoiceRef.current) return;
+        isHoldingVoiceRef.current = false;
+        Animated.spring(micScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true }).start();
+        Animated.spring(trashScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+
+        // If dragged to bin -> cancel and delete
+        if (isNearTrashRef.current || gestureState.dx <= -75) {
+          try {
+            Vibration.vibrate([0, 50, 40, 50]);
+          } catch {}
+          handleCancelRecording();
+          return;
+        }
+
+        // Tap vs hold check
+        const duration = Date.now() - recordingStartTimeRef.current;
+        if (duration < 650) {
+          handleCancelRecording();
+          Alert.alert(
+            "Voice Message",
+            "Hold the microphone button to record, and release to send. Slide left to the trash bin to cancel.",
+            [{ text: "Got it" }]
+          );
+          return;
+        }
+
+        // Normal release -> send!
+        handleSendRecording();
+      },
+      onPanResponderTerminate: () => {
+        if (isHoldingVoiceRef.current) {
+          handleCancelRecording();
+        }
+      },
+    })
+  ).current;
 
   const handleSend = async () => {
     const textToSend = inputText.trim();
@@ -902,7 +1056,7 @@ export default function ConversationChatScreen() {
                   justifyContent: "center",
                   borderWidth: 1,
                   borderColor: "#EAE5DD",
-                  backgroundColor: "#F8F6F0",
+                  backgroundColor: "#FFFFFF",
                 }}
               >
                 {avatarUrl ? (
@@ -945,19 +1099,13 @@ export default function ConversationChatScreen() {
               />
             </View>
 
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, justifyContent: "center" }}>
               <Text
                 numberOfLines={1}
                 style={{ fontSize: 15, fontWeight: "800", color: "#1A1D1F", letterSpacing: -0.2 }}
               >
                 {participantName}
               </Text>
-              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#10B981", marginRight: 5 }} />
-                <Text style={{ fontSize: 11, fontWeight: "600", color: "#10B981" }}>
-                  Online • Active now
-                </Text>
-              </View>
             </View>
           </TouchableOpacity>
         </View>
@@ -1006,7 +1154,7 @@ export default function ConversationChatScreen() {
                 width: 36,
                 height: 36,
                 borderRadius: 18,
-                backgroundColor: "#F8F6F0",
+                backgroundColor: "#FFFFFF",
                 borderWidth: 1,
                 borderColor: "#EAE5DD",
                 alignItems: "center",
@@ -1024,7 +1172,7 @@ export default function ConversationChatScreen() {
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: "#F8F6F0",
+              backgroundColor: "#FFFFFF",
               borderWidth: 1,
               borderColor: "#EAE5DD",
               alignItems: "center",
@@ -1321,7 +1469,7 @@ export default function ConversationChatScreen() {
                           justifyContent: "center",
                           borderWidth: 1,
                           borderColor: "#EAE5DD",
-                          backgroundColor: "#F8F6F0",
+                          backgroundColor: "#FFFFFF",
                         }}
                       >
                         {!isSameSenderAsNext ? (
@@ -1599,7 +1747,7 @@ export default function ConversationChatScreen() {
                   width: 40,
                   height: 40,
                   borderRadius: 20,
-                  backgroundColor: "#F8F6F0",
+                  backgroundColor: "#FFFFFF",
                   borderWidth: 1,
                   borderColor: "#EAE5DD",
                   alignItems: "center",
@@ -1619,7 +1767,7 @@ export default function ConversationChatScreen() {
                   width: 40,
                   height: 40,
                   borderRadius: 20,
-                  backgroundColor: "#F8F6F0",
+                  backgroundColor: "#FFFFFF",
                   borderWidth: 1,
                   borderColor: "#EAE5DD",
                   alignItems: "center",
@@ -1638,7 +1786,7 @@ export default function ConversationChatScreen() {
                   minHeight: 42,
                   maxHeight: 110,
                   borderRadius: 18,
-                  backgroundColor: "#F8F6F0",
+                  backgroundColor: "#FFFFFF",
                   borderWidth: 1,
                   borderColor: "#EAE5DD",
                   paddingHorizontal: 14,
@@ -1753,7 +1901,7 @@ export default function ConversationChatScreen() {
               </View>
               <TouchableOpacity
                 onPress={() => setIsActionSheetVisible(false)}
-                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#F8F6F0", alignItems: "center", justifyContent: "center" }}
+                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#EAE5DD", alignItems: "center", justifyContent: "center" }}
               >
                 <Ionicons name="close" size={17} color="#6F767E" />
               </TouchableOpacity>
@@ -1805,7 +1953,7 @@ export default function ConversationChatScreen() {
                     alignItems: "center",
                     padding: 14,
                     borderRadius: 14,
-                    backgroundColor: "#F8F6F0",
+                    backgroundColor: "#FFFFFF",
                     borderWidth: 1,
                     borderColor: "#EAE5DD",
                   }}
@@ -1836,7 +1984,7 @@ export default function ConversationChatScreen() {
                   alignItems: "center",
                   padding: 14,
                   borderRadius: 14,
-                  backgroundColor: "#F8F6F0",
+                  backgroundColor: "#FFFFFF",
                   borderWidth: 1,
                   borderColor: "#EAE5DD",
                 }}
@@ -1866,7 +2014,7 @@ export default function ConversationChatScreen() {
                   alignItems: "center",
                   padding: 14,
                   borderRadius: 14,
-                  backgroundColor: "#F8F6F0",
+                  backgroundColor: "#FFFFFF",
                   borderWidth: 1,
                   borderColor: "#EAE5DD",
                 }}
