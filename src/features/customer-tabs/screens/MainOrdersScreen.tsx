@@ -83,7 +83,7 @@ export default function MainOrdersScreen() {
         />
       }
     >
-      <CustomerHeader title="My Orders" rightIcon="notifications-outline" />
+      <CustomerHeader title="My Orders" hideRightIcon={true} />
 
       <View className="flex-1 px-5 pb-6">
         {/* Interactive Tabs with Real Counts */}

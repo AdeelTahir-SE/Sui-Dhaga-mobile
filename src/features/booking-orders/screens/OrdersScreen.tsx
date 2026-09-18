@@ -72,8 +72,7 @@ export default function OrdersScreen() {
       <BookingOrdersHeader
         title="My Orders"
         leftIcon="menu"
-        rightIcon="notifications-outline"
-        rightLabel="Notifications"
+        hideRightIcon={true}
       />
       <View className="px-5 pb-8">
         <SegmentedTabs

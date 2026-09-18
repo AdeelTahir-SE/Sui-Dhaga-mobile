@@ -100,12 +100,6 @@ export default function DesignTabScreen() {
           icon="image-outline"
           href="/design-studio/image-to-design"
         />
-        <DesignOption
-          title="Sketch to Design"
-          subtitle="Upload sketch & visualize"
-          icon="color-wand-outline"
-          href="/design-studio/sketch-to-design"
-        />
 
         <SectionTitle title="My Designs" />
         {isLoading ? (

@@ -9,11 +9,53 @@ type ChatBubbleProps = {
 export function ChatBubble({ children, outgoing }: ChatBubbleProps) {
   return (
     <View
-      className={`mb-3 max-w-[82%] rounded-xl px-4 py-3 ${
-        outgoing ? "self-end bg-primary-50" : "self-start bg-brand-surface"
-      }`}
+      style={
+        outgoing
+          ? {
+              alignSelf: "flex-end",
+              backgroundColor: "#14919B",
+              borderRadius: 16,
+              borderTopRightRadius: 3,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              maxWidth: "82%",
+              marginBottom: 10,
+              shadowColor: "#14919B",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.1,
+              shadowRadius: 2,
+              elevation: 1,
+            }
+          : {
+              alignSelf: "flex-start",
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              borderTopLeftRadius: 3,
+              borderWidth: 1,
+              borderColor: "#EAE5DD",
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              maxWidth: "82%",
+              marginBottom: 10,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.03,
+              shadowRadius: 2,
+              elevation: 1,
+            }
+      }
     >
-      <Text className="text-[12px] leading-5 text-brand-dark">{children}</Text>
+      <Text
+        style={{
+          fontSize: 13,
+          lineHeight: 19,
+          fontWeight: "500",
+          color: outgoing ? "#FFFFFF" : "#1A1D1F",
+        }}
+      >
+        {children}
+      </Text>
     </View>
   );
 }
+

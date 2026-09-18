@@ -224,9 +224,9 @@ function getMessageDateDivider(dateString?: string): string {
 }
 
 const QUICK_SUGGESTIONS = [
-  "👋 Hi! I'd like to ask about stitching a custom design.",
-  "📏 Can I book a fitting or measurement appointment?",
-  "🧵 What is your typical turnaround time?",
+  "🛍️ I would like to place a custom tailoring order",
+  "👗 What is your price estimate for an Anarkali suit?",
+  "⏱️ How many days will stitching a bridal lehenga take?",
   "✨ Do you handle alterations and resizing?",
 ];
 
@@ -830,18 +830,56 @@ export default function ConversationChatScreen() {
     (inputText.trim().length > 0 || pendingAttachments.length > 0) &&
     !isSending;
 
+  const handleGoToCreateOrder = () => {
+    router.push({
+      pathname: "/orders/create",
+      params: {
+        tailorId: resolvedTailorId || "1",
+        tailorName: participantName || "Tailor",
+        avatar: avatarUrl || "",
+        conversationId: activeConvId || params.conversationId || "",
+      },
+    } as any);
+  };
+
   return (
-    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: "#FAF8F5", paddingTop: insets.top }}>
       {/* Enhanced Header */}
-      <View className="flex-row items-center justify-between border-b border-slate-200/80 px-3.5 py-2.5 bg-white shadow-xs">
-        <View className="flex-row items-center flex-1">
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+          backgroundColor: "#FFFFFF",
+          borderBottomWidth: 1,
+          borderBottomColor: "#EAE5DD",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.04,
+          shadowRadius: 2,
+          elevation: 1,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
           <TouchableOpacity
             onPress={() => router.back()}
             activeOpacity={0.7}
-            className="w-9 h-9 items-center justify-center rounded-full bg-slate-50 border border-slate-200/70 mr-2 active:bg-slate-100"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: "#F8F6F0",
+              borderWidth: 1,
+              borderColor: "#EAE5DD",
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 8,
+            }}
             accessibilityLabel="Back"
           >
-            <Ionicons name="arrow-back" size={20} color="#1E293B" />
+            <Ionicons name="arrow-back" size={20} color="#1A1D1F" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -851,12 +889,21 @@ export default function ConversationChatScreen() {
                 router.push(`/tailors/${resolvedTailorId}` as any);
               }
             }}
-            className="flex-row items-center flex-1 mr-2"
+            style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 6 }}
           >
-            <View className="relative mr-2.5">
+            <View style={{ position: "relative", marginRight: 10 }}>
               <View
-                style={{ width: 40, height: 40, borderRadius: 20 }}
-                className="overflow-hidden items-center justify-center border border-slate-200 bg-slate-50 shadow-xs"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  overflow: "hidden",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: "#EAE5DD",
+                  backgroundColor: "#F8F6F0",
+                }}
               >
                 {avatarUrl ? (
                   <Image
@@ -867,10 +914,16 @@ export default function ConversationChatScreen() {
                   />
                 ) : (
                   <View
-                    style={{ width: 40, height: 40, borderRadius: 20 }}
-                    className="w-full h-full bg-[#E0F7F7] items-center justify-center"
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: "#E0F7F7",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
                   >
-                    <Text className="text-[15px] font-bold text-[#14919B]">
+                    <Text style={{ fontSize: 15, fontWeight: "800", color: "#14919B" }}>
                       {participantName.charAt(0).toUpperCase()}
                     </Text>
                   </View>
@@ -892,16 +945,16 @@ export default function ConversationChatScreen() {
               />
             </View>
 
-            <View className="flex-1">
+            <View style={{ flex: 1 }}>
               <Text
                 numberOfLines={1}
-                className="text-[15px] font-bold text-slate-900 tracking-tight"
+                style={{ fontSize: 15, fontWeight: "800", color: "#1A1D1F", letterSpacing: -0.2 }}
               >
                 {participantName}
               </Text>
-              <View className="flex-row items-center mt-0.5">
-                <View className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5" />
-                <Text className="text-[11px] font-medium text-emerald-600">
+              <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#10B981", marginRight: 5 }} />
+                <Text style={{ fontSize: 11, fontWeight: "600", color: "#10B981" }}>
                   Online • Active now
                 </Text>
               </View>
@@ -910,36 +963,90 @@ export default function ConversationChatScreen() {
         </View>
 
         {/* Header Right Actions */}
-        <View className="flex-row items-center gap-1.5">
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          {/* Place Order CTA Button */}
+          {!isTailor && (
+            <TouchableOpacity
+              onPress={handleGoToCreateOrder}
+              activeOpacity={0.85}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#14919B",
+                paddingHorizontal: 11,
+                paddingVertical: 7,
+                borderRadius: 20,
+                shadowColor: "#14919B",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.22,
+                shadowRadius: 3,
+                elevation: 2,
+              }}
+              accessibilityLabel="Place Order"
+            >
+              <Ionicons name="bag-handle" size={13} color="#FFFFFF" />
+              <Text
+                style={{
+                  marginLeft: 4,
+                  fontSize: 12,
+                  fontWeight: "700",
+                  color: "#FFFFFF",
+                  letterSpacing: 0.2,
+                }}
+              >
+                Place Order
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {resolvedTailorId && !isTailor && (
             <TouchableOpacity
               onPress={() => router.push(`/tailors/${resolvedTailorId}` as any)}
-              className="w-9 h-9 items-center justify-center rounded-full bg-slate-50 border border-slate-200/70 active:bg-slate-100"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: "#F8F6F0",
+                borderWidth: 1,
+                borderColor: "#EAE5DD",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
               accessibilityLabel="View tailor profile"
             >
-              <Ionicons name="storefront-outline" size={17} color="#14919B" />
+              <Ionicons name="storefront-outline" size={16} color="#14919B" />
             </TouchableOpacity>
           )}
 
           <TouchableOpacity
             onPress={() => setIsActionSheetVisible(true)}
-            className="w-9 h-9 items-center justify-center rounded-full bg-slate-50 border border-slate-200/70 active:bg-slate-100"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: "#F8F6F0",
+              borderWidth: 1,
+              borderColor: "#EAE5DD",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
             accessibilityLabel="More options"
           >
-            <Ionicons name="ellipsis-vertical" size={17} color="#64748B" />
+            <Ionicons name="ellipsis-vertical" size={16} color="#6F767E" />
           </TouchableOpacity>
         </View>
       </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1 bg-[#F8FAFC]"
+        style={{ flex: 1, backgroundColor: "#FAF8F5" }}
       >
         {/* Message List */}
         <ScrollView
           ref={scrollViewRef}
-          className="flex-1 bg-[#F8FAFC] px-4 py-3"
+          style={{ flex: 1, backgroundColor: "#FAF8F5", paddingHorizontal: 16 }}
           contentContainerStyle={{
+            paddingVertical: 12,
             flexGrow: 1,
             justifyContent: messages.length === 0 ? "center" : "flex-end",
           }}
@@ -949,19 +1056,33 @@ export default function ConversationChatScreen() {
           }
         >
           {isLoading ? (
-            <View className="py-20 items-center justify-center">
+            <View style={{ paddingVertical: 80, alignItems: "center", justifyContent: "center" }}>
               <ActivityIndicator size="large" color="#14919B" />
-              <Text className="mt-3 text-[13px] font-medium text-slate-400">
-                Loading messages...
+              <Text style={{ marginTop: 12, fontSize: 13, fontWeight: "600", color: "#8E887E" }}>
+                Loading conversation...
               </Text>
             </View>
           ) : messages.length === 0 ? (
-            <View className="py-8 items-center justify-center px-4 max-w-[360px] self-center">
+            <View style={{ paddingVertical: 24, alignItems: "center", justifyContent: "center", maxWidth: 360, alignSelf: "center", width: "100%" }}>
               {/* Avatar with soft glow */}
-              <View className="relative mb-3">
+              <View style={{ position: "relative", marginBottom: 12 }}>
                 <View
-                  style={{ width: 68, height: 68, borderRadius: 34 }}
-                  className="overflow-hidden items-center justify-center border-2 border-[#14919B]/30 bg-white shadow-sm"
+                  style={{
+                    width: 68,
+                    height: 68,
+                    borderRadius: 34,
+                    overflow: "hidden",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 2,
+                    borderColor: "#14919B",
+                    backgroundColor: "#FFFFFF",
+                    shadowColor: "#14919B",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 4,
+                    elevation: 2,
+                  }}
                 >
                   {avatarUrl ? (
                     <Image
@@ -971,7 +1092,7 @@ export default function ConversationChatScreen() {
                       transition={200}
                     />
                   ) : (
-                    <View className="w-full h-full bg-[#E0F7F7] items-center justify-center">
+                    <View style={{ width: "100%", height: "100%", backgroundColor: "#E0F7F7", alignItems: "center", justifyContent: "center" }}>
                       <Ionicons name="chatbubbles" size={30} color="#14919B" />
                     </View>
                   )}
@@ -991,16 +1112,64 @@ export default function ConversationChatScreen() {
                 />
               </View>
 
-              <Text className="text-[17px] font-bold text-slate-900 text-center tracking-tight">
+              <Text style={{ fontSize: 17, fontWeight: "800", color: "#1A1D1F", textAlign: "center" }}>
                 {participantName}
               </Text>
-              <Text className="text-[12px] text-slate-500 text-center mt-1 leading-5">
+              <Text style={{ fontSize: 12, color: "#6F767E", textAlign: "center", marginTop: 4, lineHeight: 18, paddingHorizontal: 10 }}>
                 Send a message to discuss your outfit designs, fittings, alterations, or custom tailoring inquiries.
               </Text>
 
+              {/* Prominent Place Order Banner in Empty State */}
+              {!isTailor && (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={handleGoToCreateOrder}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    backgroundColor: "#F0FAFA",
+                    borderWidth: 1.5,
+                    borderColor: "#14919B",
+                    borderRadius: 16,
+                    padding: 14,
+                    marginTop: 18,
+                    marginBottom: 6,
+                    width: "100%",
+                    shadowColor: "#14919B",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 3,
+                    elevation: 2,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 21,
+                      backgroundColor: "#14919B",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                    }}
+                  >
+                    <Ionicons name="bag-handle" size={20} color="#FFFFFF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "800", color: "#0D7377" }}>
+                      Place an Order with {participantName}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: "#6F767E", marginTop: 2, lineHeight: 16 }}>
+                      Ready to stitch? Tap to specify your outfit, measurements & order details.
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#14919B" />
+                </TouchableOpacity>
+              )}
+
               {/* Quick suggestions */}
-              <View className="w-full mt-6 gap-2">
-                <Text className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 text-center">
+              <View style={{ width: "100%", marginTop: 14, gap: 8 }}>
+                <Text style={{ fontSize: 11, fontWeight: "800", color: "#8E887E", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 2, textAlign: "center" }}>
                   Quick conversation starters
                 </Text>
                 {QUICK_SUGGESTIONS.map((prompt, pIdx) => (
@@ -1008,9 +1177,23 @@ export default function ConversationChatScreen() {
                     key={pIdx}
                     activeOpacity={0.75}
                     onPress={() => setInputText(prompt)}
-                    className="flex-row items-center justify-between p-3 rounded-xl bg-white border border-slate-200/80 shadow-xs active:bg-slate-50"
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: 12,
+                      borderRadius: 12,
+                      backgroundColor: "#FFFFFF",
+                      borderWidth: 1,
+                      borderColor: "#EAE5DD",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.03,
+                      shadowRadius: 2,
+                      elevation: 1,
+                    }}
                   >
-                    <Text className="text-[13px] font-medium text-slate-700 flex-1 pr-2">
+                    <Text style={{ fontSize: 13, fontWeight: "500", color: "#1A1D1F", flex: 1, paddingRight: 8 }}>
                       {prompt}
                     </Text>
                     <Ionicons name="arrow-forward" size={15} color="#14919B" />
@@ -1096,9 +1279,18 @@ export default function ConversationChatScreen() {
                 <View key={item.id || idx}>
                   {/* Floating Date Divider */}
                   {showDateDivider && (
-                    <View className="items-center my-3">
-                      <View className="px-3 py-1 rounded-full bg-slate-200/80 border border-slate-300/40 shadow-2xs">
-                        <Text className="text-[11px] font-semibold text-slate-600 tracking-wide">
+                    <View style={{ alignItems: "center", marginVertical: 12 }}>
+                      <View
+                        style={{
+                          paddingHorizontal: 12,
+                          paddingVertical: 4,
+                          borderRadius: 12,
+                          backgroundColor: "#EFEBE4",
+                          borderWidth: 1,
+                          borderColor: "#E5DFD5",
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: "600", color: "#78716C", letterSpacing: 0.3 }}>
                           {currDateDivider}
                         </Text>
                       </View>
@@ -1106,18 +1298,31 @@ export default function ConversationChatScreen() {
                   )}
 
                   <View
-                    className={
-                      isOutgoing
-                        ? "flex-row items-end justify-end self-end max-w-[85%]"
-                        : "flex-row items-end justify-start self-start max-w-[85%]"
-                    }
-                    style={{ marginBottom: isSameSenderAsNext ? 3 : 10 }}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "flex-end",
+                      justifyContent: isOutgoing ? "flex-end" : "flex-start",
+                      alignSelf: isOutgoing ? "flex-end" : "flex-start",
+                      maxWidth: "85%",
+                      marginBottom: isSameSenderAsNext ? 4 : 12,
+                    }}
                   >
-                    {/* Incoming person avatar (only on the last message in a consecutive group) */}
+                    {/* Incoming person avatar */}
                     {!isOutgoing && (
                       <View
-                        style={{ width: 28, height: 28, borderRadius: 14 }}
-                        className="overflow-hidden mr-2 mb-0.5 items-center justify-center border border-slate-200 bg-slate-50"
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 14,
+                          overflow: "hidden",
+                          marginRight: 8,
+                          marginBottom: 2,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderWidth: 1,
+                          borderColor: "#EAE5DD",
+                          backgroundColor: "#F8F6F0",
+                        }}
                       >
                         {!isSameSenderAsNext ? (
                           messageAvatar ? (
@@ -1129,10 +1334,16 @@ export default function ConversationChatScreen() {
                             />
                           ) : (
                             <View
-                              style={{ width: 28, height: 28, borderRadius: 14 }}
-                              className="w-full h-full bg-[#E0F7F7] items-center justify-center"
+                              style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 14,
+                                backgroundColor: "#E0F7F7",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
                             >
-                              <Text className="text-[11px] font-bold text-[#14919B]">
+                              <Text style={{ fontSize: 11, fontWeight: "800", color: "#14919B" }}>
                                 {participantName.charAt(0).toUpperCase()}
                               </Text>
                             </View>
@@ -1145,14 +1356,38 @@ export default function ConversationChatScreen() {
 
                     {/* Message Bubble */}
                     <View
-                      className={
+                      style={
                         isOutgoing
-                          ? "rounded-2xl px-3.5 py-2.5 bg-[#14919B] shadow-xs rounded-tr-xs"
-                          : "rounded-2xl px-3.5 py-2.5 bg-white border border-slate-200/90 shadow-xs rounded-tl-xs"
+                          ? {
+                              backgroundColor: "#14919B",
+                              borderRadius: 16,
+                              borderTopRightRadius: 3,
+                              paddingHorizontal: 14,
+                              paddingVertical: 10,
+                              shadowColor: "#000",
+                              shadowOffset: { width: 0, height: 1 },
+                              shadowOpacity: 0.05,
+                              shadowRadius: 2,
+                              elevation: 1,
+                            }
+                          : {
+                              backgroundColor: "#FFFFFF",
+                              borderRadius: 16,
+                              borderTopLeftRadius: 3,
+                              borderWidth: 1,
+                              borderColor: "#EAE4DA",
+                              paddingHorizontal: 14,
+                              paddingVertical: 10,
+                              shadowColor: "#000",
+                              shadowOffset: { width: 0, height: 1 },
+                              shadowOpacity: 0.04,
+                              shadowRadius: 2,
+                              elevation: 1,
+                            }
                       }
                     >
                       {attachments.length > 0 && (
-                        <View className="mb-1.5 gap-2">
+                        <View style={{ marginBottom: 6, gap: 6 }}>
                           {attachments.map((attUri: string, attIdx: number) => {
                             const isAudio = isAudioAttachment(attUri);
                             if (isAudio) {
@@ -1175,6 +1410,8 @@ export default function ConversationChatScreen() {
                                   backgroundColor: isOutgoing
                                     ? "rgba(255,255,255,0.15)"
                                     : "#F3F4F6",
+                                  borderWidth: isOutgoing ? 0 : 1,
+                                  borderColor: "#EAE5DD",
                                 }}
                               >
                                 <Image
@@ -1199,11 +1436,12 @@ export default function ConversationChatScreen() {
                         (text !== "Voice message" &&
                           text !== "Sent an attachment")) ? (
                         <Text
-                          className={
-                            isOutgoing
-                              ? "text-[14px] leading-5 text-white font-normal"
-                              : "text-[14px] leading-5 text-slate-800 font-normal"
-                          }
+                          style={{
+                            fontSize: 14,
+                            lineHeight: 20,
+                            color: isOutgoing ? "#FFFFFF" : "#1A1D1F",
+                            fontWeight: "400",
+                          }}
                         >
                           {text}
                         </Text>
@@ -1211,19 +1449,22 @@ export default function ConversationChatScreen() {
 
                       {/* Timestamp & Status Footer */}
                       <View
-                        className={
-                          isOutgoing
-                            ? "flex-row items-center justify-end mt-1 self-end gap-1"
-                            : "flex-row items-center justify-end mt-1 self-end"
-                        }
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "flex-end",
+                          marginTop: 4,
+                          alignSelf: "flex-end",
+                          gap: 4,
+                        }}
                       >
                         {formattedTime ? (
                           <Text
-                            className={
-                              isOutgoing
-                                ? "text-[10px] font-medium text-teal-100/80"
-                                : "text-[10px] font-medium text-slate-400"
-                            }
+                            style={{
+                              fontSize: 10,
+                              fontWeight: "500",
+                              color: isOutgoing ? "#D1FAF4" : "#9CA3AF",
+                            }}
                           >
                             {formattedTime}
                           </Text>
@@ -1246,20 +1487,27 @@ export default function ConversationChatScreen() {
 
         {/* Enhanced Pending Attachments Preview Bar */}
         {pendingAttachments.length > 0 && (
-          <View className="border-t border-slate-200 bg-[#F8FAFB] px-4 py-2.5">
-            <View className="flex-row items-center justify-between mb-2">
-              <View className="flex-row items-center">
+          <View
+            style={{
+              borderTopWidth: 1,
+              borderTopColor: "#EAE5DD",
+              backgroundColor: "#FAF8F5",
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+            }}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Ionicons name="images" size={15} color="#14919B" />
-                <Text className="ml-1.5 text-[12px] font-bold text-slate-800">
+                <Text style={{ marginLeft: 6, fontSize: 12, fontWeight: "700", color: "#1A1D1F" }}>
                   Attached Files ({pendingAttachments.length})
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={handleClearAllAttachments}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                className="flex-row items-center"
               >
-                <Text className="text-[11px] font-bold text-red-500">
+                <Text style={{ fontSize: 11, fontWeight: "700", color: "#EF4444" }}>
                   Clear All
                 </Text>
               </TouchableOpacity>
@@ -1271,11 +1519,17 @@ export default function ConversationChatScreen() {
               contentContainerStyle={{ gap: 10, paddingVertical: 2 }}
             >
               {pendingAttachments.map((uri, idx) => (
-                <View key={idx} className="relative">
+                <View key={idx} style={{ position: "relative" }}>
                   <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={() => setPreviewImageUri(uri)}
-                    className="overflow-hidden rounded-xl border-2 border-primary/40 bg-white"
+                    style={{
+                      borderRadius: 12,
+                      borderWidth: 1.5,
+                      borderColor: "#14919B",
+                      overflow: "hidden",
+                      backgroundColor: "#FFFFFF",
+                    }}
                   >
                     <Image
                       source={{ uri }}
@@ -1287,8 +1541,20 @@ export default function ConversationChatScreen() {
                   <TouchableOpacity
                     onPress={() => handleRemoveAttachment(idx)}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    style={{ elevation: 2 }}
-                    className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-red-500 border-2 border-white items-center justify-center"
+                    style={{
+                      position: "absolute",
+                      top: -6,
+                      right: -6,
+                      width: 22,
+                      height: 22,
+                      borderRadius: 11,
+                      backgroundColor: "#EF4444",
+                      borderWidth: 2,
+                      borderColor: "#FFFFFF",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      elevation: 2,
+                    }}
                   >
                     <Ionicons name="close" size={13} color="#FFFFFF" />
                   </TouchableOpacity>
@@ -1300,8 +1566,21 @@ export default function ConversationChatScreen() {
 
         {/* Modern Input Bar */}
         <View
-          className="flex-row items-center border-t border-slate-200/80 px-3 py-2.5 bg-white shadow-md"
-          style={{ paddingBottom: Math.max(insets.bottom, 10) }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            borderTopWidth: 1,
+            borderTopColor: "#EAE5DD",
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            backgroundColor: "#FFFFFF",
+            paddingBottom: Math.max(insets.bottom, 10),
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.04,
+            shadowRadius: 3,
+            elevation: 3,
+          }}
         >
           {isRecording ? (
             <VoiceRecorderBar
@@ -1316,7 +1595,17 @@ export default function ConversationChatScreen() {
               <TouchableOpacity
                 onPress={handlePickAttachment}
                 activeOpacity={0.75}
-                className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 border border-slate-200/70 mr-1.5 active:bg-slate-200"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: "#F8F6F0",
+                  borderWidth: 1,
+                  borderColor: "#EAE5DD",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 6,
+                }}
                 accessibilityLabel="Add attachment"
               >
                 <Ionicons name="add" size={22} color="#14919B" />
@@ -1326,17 +1615,40 @@ export default function ConversationChatScreen() {
               <TouchableOpacity
                 onPress={handleTakePhoto}
                 activeOpacity={0.75}
-                className="h-10 w-10 items-center justify-center rounded-full bg-slate-100 border border-slate-200/70 mr-2 active:bg-slate-200"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: "#F8F6F0",
+                  borderWidth: 1,
+                  borderColor: "#EAE5DD",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 8,
+                }}
                 accessibilityLabel="Take photo"
               >
-                <Ionicons name="camera-outline" size={19} color="#64748B" />
+                <Ionicons name="camera-outline" size={19} color="#6F767E" />
               </TouchableOpacity>
 
               {/* Text Input Box */}
               <TextInput
-                className="flex-1 min-h-[42px] max-h-[110px] rounded-2xl bg-slate-100 px-4 py-2 text-[14px] text-slate-800 border border-slate-200/70 mr-2"
+                style={{
+                  flex: 1,
+                  minHeight: 42,
+                  maxHeight: 110,
+                  borderRadius: 18,
+                  backgroundColor: "#F8F6F0",
+                  borderWidth: 1,
+                  borderColor: "#EAE5DD",
+                  paddingHorizontal: 14,
+                  paddingVertical: 9,
+                  fontSize: 14,
+                  color: "#1A1D1F",
+                  marginRight: 8,
+                }}
                 placeholder="Type a message..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor="#9CA3AF"
                 value={inputText}
                 onChangeText={setInputText}
                 multiline
@@ -1355,8 +1667,12 @@ export default function ConversationChatScreen() {
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: "#14919B",
+                    shadowColor: "#14919B",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3,
+                    elevation: 2,
                   }}
-                  className="shadow-sm active:bg-[#0D7377]"
                   accessibilityLabel="Record voice message"
                 >
                   <Ionicons name="mic" size={20} color="#FFFFFF" />
@@ -1372,9 +1688,13 @@ export default function ConversationChatScreen() {
                     borderRadius: 21,
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: canSend ? "#14919B" : "#E2E8F0",
+                    backgroundColor: canSend ? "#14919B" : "#E2DDD5",
+                    shadowColor: canSend ? "#14919B" : "transparent",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3,
+                    elevation: canSend ? 2 : 0,
                   }}
-                  className="shadow-sm"
                   accessibilityLabel="Send message"
                 >
                   {isSending ? (
@@ -1383,7 +1703,7 @@ export default function ConversationChatScreen() {
                     <Ionicons
                       name="send"
                       size={18}
-                      color={canSend ? "#FFFFFF" : "#94A3B8"}
+                      color={canSend ? "#FFFFFF" : "#8E887E"}
                     />
                   )}
                 </TouchableOpacity>
@@ -1403,30 +1723,76 @@ export default function ConversationChatScreen() {
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setIsActionSheetVisible(false)}
-          className="flex-1 justify-end"
-          style={{ backgroundColor: "rgba(15, 23, 42, 0.45)" }}
+          style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, 0.45)" }}
         >
-          <View className="rounded-t-[28px] bg-white px-5 pb-8 pt-3 shadow-2xl">
-            <View className="h-1.5 w-12 rounded-full bg-slate-200 self-center mb-4 mt-1" />
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              paddingHorizontal: 20,
+              paddingTop: 12,
+              paddingBottom: Math.max(insets.bottom + 10, 28),
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 0.1,
+              shadowRadius: 10,
+              elevation: 10,
+            }}
+          >
+            <View style={{ height: 5, width: 44, borderRadius: 2.5, backgroundColor: "#EAE5DD", alignSelf: "center", marginBottom: 16, marginTop: 4 }} />
 
-            <View className="flex-row items-center justify-between pb-3 border-b border-slate-100 mb-2">
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: "#EAE5DD", marginBottom: 12 }}>
               <View>
-                <Text className="text-[16px] font-bold text-slate-900">
+                <Text style={{ fontSize: 16, fontWeight: "800", color: "#1A1D1F" }}>
                   {participantName}
                 </Text>
-                <Text className="text-[12px] text-slate-500 font-medium">
+                <Text style={{ fontSize: 12, color: "#6F767E", fontWeight: "500" }}>
                   Conversation Options
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setIsActionSheetVisible(false)}
-                className="h-8 w-8 items-center justify-center rounded-full bg-slate-100"
+                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#F8F6F0", alignItems: "center", justifyContent: "center" }}
               >
-                <Ionicons name="close" size={17} color="#64748B" />
+                <Ionicons name="close" size={17} color="#6F767E" />
               </TouchableOpacity>
             </View>
 
-            <View className="gap-2 py-2">
+            <View style={{ gap: 8, paddingVertical: 4 }}>
+              {/* Place Custom Order Action Sheet Item */}
+              {!isTailor && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setIsActionSheetVisible(false);
+                    handleGoToCreateOrder();
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 14,
+                    borderRadius: 14,
+                    backgroundColor: "#F0FAFA",
+                    borderWidth: 1.5,
+                    borderColor: "#14919B",
+                  }}
+                >
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#14919B", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                    <Ionicons name="bag-check" size={20} color="#FFFFFF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "800", color: "#0D7377" }}>
+                      Place Custom Order
+                    </Text>
+                    <Text style={{ fontSize: 12, color: "#6F767E" }}>
+                      Create bespoke outfit order with measurements
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={17} color="#14919B" />
+                </TouchableOpacity>
+              )}
+
               {resolvedTailorId && !isTailor && (
                 <TouchableOpacity
                   activeOpacity={0.7}
@@ -1434,20 +1800,28 @@ export default function ConversationChatScreen() {
                     setIsActionSheetVisible(false);
                     router.push(`/tailors/${resolvedTailorId}` as any);
                   }}
-                  className="flex-row items-center p-3.5 rounded-xl bg-slate-50 active:bg-slate-100"
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 14,
+                    borderRadius: 14,
+                    backgroundColor: "#F8F6F0",
+                    borderWidth: 1,
+                    borderColor: "#EAE5DD",
+                  }}
                 >
-                  <View className="w-10 h-10 rounded-full bg-[#E0F7F7] items-center justify-center mr-3">
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#E0F7F7", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
                     <Ionicons name="storefront" size={19} color="#14919B" />
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-[14px] font-bold text-slate-900">
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: "#1A1D1F" }}>
                       View Tailor Profile
                     </Text>
-                    <Text className="text-[12px] text-slate-500">
-                      Explore services, ratings, and studio info
+                    <Text style={{ fontSize: 12, color: "#6F767E" }}>
+                      Explore services, ratings, and studio location
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={17} color="#94A3B8" />
+                  <Ionicons name="chevron-forward" size={17} color="#9CA3AF" />
                 </TouchableOpacity>
               )}
 
@@ -1457,20 +1831,28 @@ export default function ConversationChatScreen() {
                   setIsActionSheetVisible(false);
                   handlePickAttachment();
                 }}
-                className="flex-row items-center p-3.5 rounded-xl bg-slate-50 active:bg-slate-100"
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  padding: 14,
+                  borderRadius: 14,
+                  backgroundColor: "#F8F6F0",
+                  borderWidth: 1,
+                  borderColor: "#EAE5DD",
+                }}
               >
-                <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center mr-3">
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
                   <Ionicons name="images" size={19} color="#2563EB" />
                 </View>
-                <View className="flex-1">
-                  <Text className="text-[14px] font-bold text-slate-900">
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#1A1D1F" }}>
                     Send Photos & Designs
                   </Text>
-                  <Text className="text-[12px] text-slate-500">
+                  <Text style={{ fontSize: 12, color: "#6F767E" }}>
                     Share reference images or outfit styles
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={17} color="#94A3B8" />
+                <Ionicons name="chevron-forward" size={17} color="#9CA3AF" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1479,20 +1861,28 @@ export default function ConversationChatScreen() {
                   setIsActionSheetVisible(false);
                   loadData();
                 }}
-                className="flex-row items-center p-3.5 rounded-xl bg-slate-50 active:bg-slate-100"
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  padding: 14,
+                  borderRadius: 14,
+                  backgroundColor: "#F8F6F0",
+                  borderWidth: 1,
+                  borderColor: "#EAE5DD",
+                }}
               >
-                <View className="w-10 h-10 rounded-full bg-slate-100 items-center justify-center mr-3">
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
                   <Ionicons name="refresh" size={19} color="#475569" />
                 </View>
-                <View className="flex-1">
-                  <Text className="text-[14px] font-bold text-slate-900">
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#1A1D1F" }}>
                     Refresh Messages
                   </Text>
-                  <Text className="text-[12px] text-slate-500">
+                  <Text style={{ fontSize: 12, color: "#6F767E" }}>
                     Check for latest replies and updates
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={17} color="#94A3B8" />
+                <Ionicons name="chevron-forward" size={17} color="#9CA3AF" />
               </TouchableOpacity>
             </View>
           </View>
@@ -1506,10 +1896,21 @@ export default function ConversationChatScreen() {
         animationType="fade"
         onRequestClose={() => setPreviewImageUri(null)}
       >
-        <View className="flex-1 bg-black/95 items-center justify-center relative">
+        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.95)", alignItems: "center", justifyContent: "center", position: "relative" }}>
           <TouchableOpacity
             onPress={() => setPreviewImageUri(null)}
-            className="absolute top-12 right-6 z-10 w-10 h-10 rounded-full bg-white/20 items-center justify-center"
+            style={{
+              position: "absolute",
+              top: 48,
+              right: 20,
+              zIndex: 10,
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "rgba(255, 255, 255, 0.2)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
             <Ionicons name="close" size={24} color="#FFFFFF" />
           </TouchableOpacity>
@@ -1526,3 +1927,4 @@ export default function ConversationChatScreen() {
     </View>
   );
 }
+
