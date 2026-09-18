@@ -74,21 +74,21 @@ export function CustomerTabsPreview({ active }: CustomerTabsPreviewProps) {
             onPress={() => router.push(tab.href as never)}
             className="flex-1 items-center justify-center py-0.5"
           >
-            {/* Active Pill Area */}
             <View
               className={`h-8 w-12 items-center justify-center rounded-full ${
                 selected ? "bg-primary-light" : "bg-transparent"
               }`}
             >
               <Ionicons
-                name={selected ? tab.activeIcon : tab.icon}
-                size={21}
-                color={selected ? "#14919B" : "#252525"}
+                // always use the filled icon — outline reads too thin at this size
+                name={tab.activeIcon}
+                size={22}
+                color={selected ? "#14919B" : "#94A3B8"}
               />
             </View>
             <Text
               className={`mt-0.5 text-[10px] tracking-tight ${
-                selected ? "font-bold text-primary" : "font-bold text-[#252525]"
+                selected ? "font-bold text-primary" : "font-bold text-[#94A3B8]"
               }`}
             >
               {tab.label}

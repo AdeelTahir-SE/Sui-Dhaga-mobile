@@ -870,7 +870,7 @@ export default function ConversationChatScreen() {
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: "#F8F6F0",
+              backgroundColor: "#FFFFFF",
               borderWidth: 1,
               borderColor: "#EAE5DD",
               alignItems: "center",
