@@ -234,6 +234,7 @@ export default function AiChatScreen() {
             <Ionicons name="send" size={16} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
+        </View>
       </View>
     </ScreenShell>
   );

@@ -3,11 +3,11 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Image as RNImage,
   KeyboardAvoidingView,
   Modal,
   PanResponder,
   Platform,
+  Image as RNImage,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,7 +17,7 @@ import {
   View,
 } from "react-native";
 
-const skinTexture = require("@/assets/texture/skin-texture.png");
+const skinTexture = require("@/assets/texture/white-texture.png");
 
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -40,7 +40,6 @@ import { CONFIG } from "../../../constants/config";
 import { useAuthStore } from "../../../stores/auth.store";
 import { ConversationItem, MessageItem } from "../../../types/api";
 import { VoiceMessagePlayer } from "../components/VoiceMessagePlayer";
-import { VoiceRecorderBar } from "../components/VoiceRecorderBar";
 
 function formatMillis(ms: number): string {
   const totalSeconds = Math.floor((ms || 0) / 1000);
@@ -221,7 +220,7 @@ function getMessageDateDivider(dateString?: string): string {
     if (isYesterday) return "Yesterday";
 
     const diffDays = Math.round(
-      (now.getTime() - date.getTime()) / (1000 * 3600 * 24)
+      (now.getTime() - date.getTime()) / (1000 * 3600 * 24),
     );
     if (diffDays < 7) {
       return date.toLocaleDateString([], { weekday: "long" });
@@ -313,7 +312,7 @@ export default function ConversationChatScreen() {
             duration: 500,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       );
       pulseLoop.start();
     } else {
@@ -621,7 +620,10 @@ export default function ConversationChatScreen() {
           "Permission to access the microphone is required to record voice messages.",
         );
         isHoldingVoiceRef.current = false;
-        Animated.spring(micScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+        Animated.spring(micScaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+        }).start();
         return;
       }
 
@@ -671,8 +673,14 @@ export default function ConversationChatScreen() {
     setIsNearTrash(false);
     setIsRecording(false);
     slideAnim.setValue(0);
-    Animated.spring(micScaleAnim, { toValue: 1, useNativeDriver: true }).start();
-    Animated.spring(trashScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+    Animated.spring(micScaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+    Animated.spring(trashScaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
     try {
       await audioRecorder.stop();
     } catch {}
@@ -690,8 +698,14 @@ export default function ConversationChatScreen() {
     setIsNearTrash(false);
     setIsRecording(false);
     slideAnim.setValue(0);
-    Animated.spring(micScaleAnim, { toValue: 1, useNativeDriver: true }).start();
-    Animated.spring(trashScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+    Animated.spring(micScaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+    Animated.spring(trashScaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
 
     try {
       const stopResult = await audioRecorder.stop();
@@ -770,9 +784,18 @@ export default function ConversationChatScreen() {
       onPanResponderRelease: (_, gestureState) => {
         if (!isHoldingVoiceRef.current) return;
         isHoldingVoiceRef.current = false;
-        Animated.spring(micScaleAnim, { toValue: 1, useNativeDriver: true }).start();
-        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true }).start();
-        Animated.spring(trashScaleAnim, { toValue: 1, useNativeDriver: true }).start();
+        Animated.spring(micScaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+        }).start();
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+        Animated.spring(trashScaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+        }).start();
 
         // If dragged to bin -> cancel and delete
         if (isNearTrashRef.current || gestureState.dx <= -75) {
@@ -790,7 +813,7 @@ export default function ConversationChatScreen() {
           Alert.alert(
             "Voice Message",
             "Hold the microphone button to record, and release to send. Slide left to the trash bin to cancel.",
-            [{ text: "Got it" }]
+            [{ text: "Got it" }],
           );
           return;
         }
@@ -803,7 +826,7 @@ export default function ConversationChatScreen() {
           handleCancelRecording();
         }
       },
-    })
+    }),
   ).current;
 
   const handleSend = async () => {
@@ -1001,7 +1024,9 @@ export default function ConversationChatScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FAF8F5", paddingTop: insets.top }}>
+    <View
+      style={{ flex: 1, backgroundColor: "#FAF8F5", paddingTop: insets.top }}
+    >
       {/* Enhanced Header */}
       <View
         style={{
@@ -1047,7 +1072,12 @@ export default function ConversationChatScreen() {
                 router.push(`/tailors/${resolvedTailorId}` as any);
               }
             }}
-            style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 6 }}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              flex: 1,
+              marginRight: 6,
+            }}
           >
             <View style={{ position: "relative", marginRight: 10 }}>
               <View
@@ -1081,7 +1111,13 @@ export default function ConversationChatScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    <Text style={{ fontSize: 15, fontWeight: "800", color: "#14919B" }}>
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "800",
+                        color: "#14919B",
+                      }}
+                    >
                       {participantName.charAt(0).toUpperCase()}
                     </Text>
                   </View>
@@ -1106,7 +1142,12 @@ export default function ConversationChatScreen() {
             <View style={{ flex: 1, justifyContent: "center" }}>
               <Text
                 numberOfLines={1}
-                style={{ fontSize: 15, fontWeight: "800", color: "#1A1D1F", letterSpacing: -0.2 }}
+                style={{
+                  fontSize: 15,
+                  fontWeight: "800",
+                  color: "#1A1D1F",
+                  letterSpacing: -0.2,
+                }}
               >
                 {participantName}
               </Text>
@@ -1173,7 +1214,14 @@ export default function ConversationChatScreen() {
             elevation: 1,
           }}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 10 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              flex: 1,
+              marginRight: 10,
+            }}
+          >
             <View
               style={{
                 width: 32,
@@ -1259,446 +1307,564 @@ export default function ConversationChatScreen() {
 
           <ScrollView
             ref={scrollViewRef}
-            style={{ flex: 1, backgroundColor: "transparent", paddingHorizontal: 16 }}
+            style={{
+              flex: 1,
+              backgroundColor: "transparent",
+              paddingHorizontal: 16,
+            }}
             contentContainerStyle={{
               paddingVertical: 12,
               flexGrow: 1,
               justifyContent: messages.length === 0 ? "center" : "flex-end",
             }}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() =>
-            scrollViewRef.current?.scrollToEnd({ animated: false })
-          }
-        >
-          {isLoading ? (
-            <View style={{ paddingVertical: 80, alignItems: "center", justifyContent: "center" }}>
-              <ActivityIndicator size="large" color="#14919B" />
-              <Text style={{ marginTop: 12, fontSize: 13, fontWeight: "600", color: "#8E887E" }}>
-                Loading conversation...
-              </Text>
-            </View>
-          ) : messages.length === 0 ? (
-            <View style={{ paddingVertical: 24, alignItems: "center", justifyContent: "center", maxWidth: 360, alignSelf: "center", width: "100%" }}>
-              {/* Avatar with soft glow */}
-              <View style={{ position: "relative", marginBottom: 12 }}>
-                <View
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() =>
+              scrollViewRef.current?.scrollToEnd({ animated: false })
+            }
+          >
+            {isLoading ? (
+              <View
+                style={{
+                  paddingVertical: 80,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ActivityIndicator size="large" color="#14919B" />
+                <Text
                   style={{
-                    width: 68,
-                    height: 68,
-                    borderRadius: 34,
-                    overflow: "hidden",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderWidth: 2,
-                    borderColor: "#14919B",
-                    backgroundColor: "#FFFFFF",
-                    shadowColor: "#14919B",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.15,
-                    shadowRadius: 4,
-                    elevation: 2,
+                    marginTop: 12,
+                    fontSize: 13,
+                    fontWeight: "600",
+                    color: "#8E887E",
                   }}
                 >
-                  {avatarUrl ? (
-                    <Image
-                      source={{ uri: avatarUrl }}
-                      style={{ width: 68, height: 68, borderRadius: 34 }}
-                      contentFit="cover"
-                      transition={200}
-                    />
-                  ) : (
-                    <View style={{ width: "100%", height: "100%", backgroundColor: "#E0F7F7", alignItems: "center", justifyContent: "center" }}>
-                      <Ionicons name="chatbubbles" size={30} color="#14919B" />
-                    </View>
-                  )}
-                </View>
-                <View
-                  style={{
-                    position: "absolute",
-                    bottom: 2,
-                    right: 2,
-                    width: 15,
-                    height: 15,
-                    borderRadius: 7.5,
-                    backgroundColor: "#10B981",
-                    borderWidth: 2,
-                    borderColor: "#FFFFFF",
-                  }}
-                />
+                  Loading conversation...
+                </Text>
               </View>
-
-              <Text style={{ fontSize: 17, fontWeight: "800", color: "#1A1D1F", textAlign: "center" }}>
-                {participantName}
-              </Text>
-              <Text style={{ fontSize: 12, color: "#6F767E", textAlign: "center", marginTop: 4, lineHeight: 18, paddingHorizontal: 10 }}>
-                Send a message to discuss your outfit designs, fittings, alterations, or custom tailoring inquiries.
-              </Text>
-
-              {/* Prominent Place Order Banner in Empty State */}
-              {!isTailor && (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={handleGoToCreateOrder}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    backgroundColor: "#F0FAFA",
-                    borderWidth: 1.5,
-                    borderColor: "#14919B",
-                    borderRadius: 16,
-                    padding: 14,
-                    marginTop: 18,
-                    marginBottom: 6,
-                    width: "100%",
-                    shadowColor: "#14919B",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.08,
-                    shadowRadius: 3,
-                    elevation: 2,
-                  }}
-                >
+            ) : messages.length === 0 ? (
+              <View
+                style={{
+                  paddingVertical: 24,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  maxWidth: 360,
+                  alignSelf: "center",
+                  width: "100%",
+                }}
+              >
+                {/* Avatar with soft glow */}
+                <View style={{ position: "relative", marginBottom: 12 }}>
                   <View
                     style={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 21,
-                      backgroundColor: "#14919B",
+                      width: 68,
+                      height: 68,
+                      borderRadius: 34,
+                      overflow: "hidden",
                       alignItems: "center",
                       justifyContent: "center",
-                      marginRight: 12,
+                      borderWidth: 2,
+                      borderColor: "#14919B",
+                      backgroundColor: "#FFFFFF",
+                      shadowColor: "#14919B",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.15,
+                      shadowRadius: 4,
+                      elevation: 2,
                     }}
                   >
-                    <Ionicons name="bag-handle" size={20} color="#FFFFFF" />
+                    {avatarUrl ? (
+                      <Image
+                        source={{ uri: avatarUrl }}
+                        style={{ width: 68, height: 68, borderRadius: 34 }}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          backgroundColor: "#E0F7F7",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Ionicons
+                          name="chatbubbles"
+                          size={30}
+                          color="#14919B"
+                        />
+                      </View>
+                    )}
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: "800", color: "#0D7377" }}>
-                      Place an Order with {participantName}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: "#6F767E", marginTop: 2, lineHeight: 16 }}>
-                      Ready to stitch? Tap to specify your outfit, measurements & order details.
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color="#14919B" />
-                </TouchableOpacity>
-              )}
+                  <View
+                    style={{
+                      position: "absolute",
+                      bottom: 2,
+                      right: 2,
+                      width: 15,
+                      height: 15,
+                      borderRadius: 7.5,
+                      backgroundColor: "#10B981",
+                      borderWidth: 2,
+                      borderColor: "#FFFFFF",
+                    }}
+                  />
+                </View>
 
-              {/* Quick suggestions */}
-              <View style={{ width: "100%", marginTop: 14, gap: 8 }}>
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#8E887E", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 2, textAlign: "center" }}>
-                  Quick conversation starters
+                <Text
+                  style={{
+                    fontSize: 17,
+                    fontWeight: "800",
+                    color: "#1A1D1F",
+                    textAlign: "center",
+                  }}
+                >
+                  {participantName}
                 </Text>
-                {QUICK_SUGGESTIONS.map((prompt, pIdx) => (
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: "#6F767E",
+                    textAlign: "center",
+                    marginTop: 4,
+                    lineHeight: 18,
+                    paddingHorizontal: 10,
+                  }}
+                >
+                  Send a message to discuss your outfit designs, fittings,
+                  alterations, or custom tailoring inquiries.
+                </Text>
+
+                {/* Prominent Place Order Banner in Empty State */}
+                {!isTailor && (
                   <TouchableOpacity
-                    key={pIdx}
-                    activeOpacity={0.75}
-                    onPress={() => setInputText(prompt)}
+                    activeOpacity={0.85}
+                    onPress={handleGoToCreateOrder}
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: 12,
-                      borderRadius: 12,
-                      backgroundColor: "#FFFFFF",
-                      borderWidth: 1,
-                      borderColor: "#EAE5DD",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.03,
-                      shadowRadius: 2,
-                      elevation: 1,
+                      backgroundColor: "#F0FAFA",
+                      borderWidth: 1.5,
+                      borderColor: "#14919B",
+                      borderRadius: 16,
+                      padding: 14,
+                      marginTop: 18,
+                      marginBottom: 6,
+                      width: "100%",
+                      shadowColor: "#14919B",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 3,
+                      elevation: 2,
                     }}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: "500", color: "#1A1D1F", flex: 1, paddingRight: 8 }}>
-                      {prompt}
-                    </Text>
-                    <Ionicons name="arrow-forward" size={15} color="#14919B" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          ) : (
-            messages.map((item, idx) => {
-              const curId = currentUser?.id
-                ? String(currentUser.id).toLowerCase()
-                : "";
-              const senderId = (
-                item.senderId ||
-                (item as any).sender_id ||
-                (item as any).sender?.id ||
-                (item as any).sender?._id ||
-                (item as any).userId ||
-                (item as any).user_id ||
-                ""
-              )
-                .toString()
-                .toLowerCase();
-
-              const isOutgoing =
-                (curId && senderId === curId) ||
-                (item.id && String(item.id).startsWith("temp_")) ||
-                (item as any).isSender === true ||
-                (item as any).is_sender === true;
-
-              const text =
-                item.text ||
-                (item as any).content ||
-                (item as any).message ||
-                (item as any).body ||
-                "";
-
-              const attachments = extractMessageAttachments(item);
-
-              const messageAvatar =
-                (item as any).senderAvatar ||
-                (item as any).sender_avatar ||
-                (item as any).sender?.avatar_url ||
-                (item as any).sender?.avatarUrl ||
-                (item as any).sender?.avatar ||
-                avatarUrl;
-
-              const itemDate = item.createdAt || (item as any).created_at;
-              const currDateDivider = getMessageDateDivider(itemDate);
-              const prevItem = idx > 0 ? messages[idx - 1] : null;
-              const prevDate = prevItem
-                ? prevItem.createdAt || (prevItem as any).created_at
-                : null;
-              const prevDateDivider = prevDate
-                ? getMessageDateDivider(prevDate)
-                : null;
-              const showDateDivider =
-                idx === 0 || currDateDivider !== prevDateDivider;
-
-              // Check if next message is from same sender to group tightly
-              const nextItem =
-                idx < messages.length - 1 ? messages[idx + 1] : null;
-              const nextSenderId = (
-                nextItem?.senderId ||
-                (nextItem as any)?.sender_id ||
-                (nextItem as any)?.sender?.id ||
-                ""
-              )
-                .toString()
-                .toLowerCase();
-              const nextIsOutgoing =
-                nextItem &&
-                ((curId && nextSenderId === curId) ||
-                  (nextItem.id && String(nextItem.id).startsWith("temp_")) ||
-                  (nextItem as any).isSender === true ||
-                  (nextItem as any).is_sender === true);
-              const isSameSenderAsNext =
-                nextItem && isOutgoing === nextIsOutgoing;
-
-              const formattedTime = formatMessageTime(itemDate);
-
-              return (
-                <View key={item.id || idx}>
-                  {/* Floating Date Divider */}
-                  {showDateDivider && (
-                    <View style={{ alignItems: "center", marginVertical: 12 }}>
-                      <View
-                        style={{
-                          paddingHorizontal: 12,
-                          paddingVertical: 4,
-                          borderRadius: 12,
-                          backgroundColor: "#EFEBE4",
-                          borderWidth: 1,
-                          borderColor: "#E5DFD5",
-                        }}
-                      >
-                        <Text style={{ fontSize: 11, fontWeight: "600", color: "#78716C", letterSpacing: 0.3 }}>
-                          {currDateDivider}
-                        </Text>
-                      </View>
+                    <View
+                      style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 21,
+                        backgroundColor: "#14919B",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 12,
+                      }}
+                    >
+                      <Ionicons name="bag-handle" size={20} color="#FFFFFF" />
                     </View>
-                  )}
-
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "flex-end",
-                      justifyContent: isOutgoing ? "flex-end" : "flex-start",
-                      alignSelf: isOutgoing ? "flex-end" : "flex-start",
-                      maxWidth: "85%",
-                      marginBottom: isSameSenderAsNext ? 4 : 12,
-                    }}
-                  >
-                    {/* Incoming person avatar */}
-                    {!isOutgoing && (
-                      <View
+                    <View style={{ flex: 1 }}>
+                      <Text
                         style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 14,
-                          overflow: "hidden",
-                          marginRight: 8,
-                          marginBottom: 2,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderWidth: 1,
-                          borderColor: "#EAE5DD",
-                          backgroundColor: "#FFFFFF",
+                          fontSize: 14,
+                          fontWeight: "800",
+                          color: "#0D7377",
                         }}
                       >
-                        {!isSameSenderAsNext ? (
-                          messageAvatar ? (
-                            <Image
-                              source={{ uri: messageAvatar }}
-                              style={{ width: 28, height: 28, borderRadius: 14 }}
-                              contentFit="cover"
-                              transition={200}
-                            />
-                          ) : (
-                            <View
-                              style={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 14,
-                                backgroundColor: "#E0F7F7",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <Text style={{ fontSize: 11, fontWeight: "800", color: "#14919B" }}>
-                                {participantName.charAt(0).toUpperCase()}
-                              </Text>
-                            </View>
-                          )
-                        ) : (
-                          <View style={{ width: 28, height: 28 }} />
-                        )}
+                        Place an Order with {participantName}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: "#6F767E",
+                          marginTop: 2,
+                          lineHeight: 16,
+                        }}
+                      >
+                        Ready to stitch? Tap to specify your outfit,
+                        measurements & order details.
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color="#14919B"
+                    />
+                  </TouchableOpacity>
+                )}
+
+                {/* Quick suggestions */}
+                <View style={{ width: "100%", marginTop: 14, gap: 8 }}>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "800",
+                      color: "#8E887E",
+                      textTransform: "uppercase",
+                      letterSpacing: 0.6,
+                      marginBottom: 2,
+                      textAlign: "center",
+                    }}
+                  >
+                    Quick conversation starters
+                  </Text>
+                  {QUICK_SUGGESTIONS.map((prompt, pIdx) => (
+                    <TouchableOpacity
+                      key={pIdx}
+                      activeOpacity={0.75}
+                      onPress={() => setInputText(prompt)}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: 12,
+                        borderRadius: 12,
+                        backgroundColor: "#FFFFFF",
+                        borderWidth: 1,
+                        borderColor: "#EAE5DD",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.03,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "500",
+                          color: "#1A1D1F",
+                          flex: 1,
+                          paddingRight: 8,
+                        }}
+                      >
+                        {prompt}
+                      </Text>
+                      <Ionicons
+                        name="arrow-forward"
+                        size={15}
+                        color="#14919B"
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ) : (
+              messages.map((item, idx) => {
+                const curId = currentUser?.id
+                  ? String(currentUser.id).toLowerCase()
+                  : "";
+                const senderId = (
+                  item.senderId ||
+                  (item as any).sender_id ||
+                  (item as any).sender?.id ||
+                  (item as any).sender?._id ||
+                  (item as any).userId ||
+                  (item as any).user_id ||
+                  ""
+                )
+                  .toString()
+                  .toLowerCase();
+
+                const isOutgoing =
+                  (curId && senderId === curId) ||
+                  (item.id && String(item.id).startsWith("temp_")) ||
+                  (item as any).isSender === true ||
+                  (item as any).is_sender === true;
+
+                const text =
+                  item.text ||
+                  (item as any).content ||
+                  (item as any).message ||
+                  (item as any).body ||
+                  "";
+
+                const attachments = extractMessageAttachments(item);
+
+                const messageAvatar =
+                  (item as any).senderAvatar ||
+                  (item as any).sender_avatar ||
+                  (item as any).sender?.avatar_url ||
+                  (item as any).sender?.avatarUrl ||
+                  (item as any).sender?.avatar ||
+                  avatarUrl;
+
+                const itemDate = item.createdAt || (item as any).created_at;
+                const currDateDivider = getMessageDateDivider(itemDate);
+                const prevItem = idx > 0 ? messages[idx - 1] : null;
+                const prevDate = prevItem
+                  ? prevItem.createdAt || (prevItem as any).created_at
+                  : null;
+                const prevDateDivider = prevDate
+                  ? getMessageDateDivider(prevDate)
+                  : null;
+                const showDateDivider =
+                  idx === 0 || currDateDivider !== prevDateDivider;
+
+                // Check if next message is from same sender to group tightly
+                const nextItem =
+                  idx < messages.length - 1 ? messages[idx + 1] : null;
+                const nextSenderId = (
+                  nextItem?.senderId ||
+                  (nextItem as any)?.sender_id ||
+                  (nextItem as any)?.sender?.id ||
+                  ""
+                )
+                  .toString()
+                  .toLowerCase();
+                const nextIsOutgoing =
+                  nextItem &&
+                  ((curId && nextSenderId === curId) ||
+                    (nextItem.id && String(nextItem.id).startsWith("temp_")) ||
+                    (nextItem as any).isSender === true ||
+                    (nextItem as any).is_sender === true);
+                const isSameSenderAsNext =
+                  nextItem && isOutgoing === nextIsOutgoing;
+
+                const formattedTime = formatMessageTime(itemDate);
+
+                return (
+                  <View key={item.id || idx}>
+                    {/* Floating Date Divider */}
+                    {showDateDivider && (
+                      <View
+                        style={{ alignItems: "center", marginVertical: 12 }}
+                      >
+                        <View
+                          style={{
+                            paddingHorizontal: 12,
+                            paddingVertical: 4,
+                            borderRadius: 12,
+                            backgroundColor: "#EFEBE4",
+                            borderWidth: 1,
+                            borderColor: "#E5DFD5",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              fontWeight: "600",
+                              color: "#78716C",
+                              letterSpacing: 0.3,
+                            }}
+                          >
+                            {currDateDivider}
+                          </Text>
+                        </View>
                       </View>
                     )}
 
-                    {/* Message Bubble */}
                     <View
-                      style={
-                        isOutgoing
-                          ? {
-                              backgroundColor: "#14919B",
-                              borderRadius: 16,
-                              borderTopRightRadius: 3,
-                              paddingHorizontal: 14,
-                              paddingVertical: 10,
-                              shadowColor: "#000",
-                              shadowOffset: { width: 0, height: 1 },
-                              shadowOpacity: 0.05,
-                              shadowRadius: 2,
-                              elevation: 1,
-                            }
-                          : {
-                              backgroundColor: "#FFFFFF",
-                              borderRadius: 16,
-                              borderTopLeftRadius: 3,
-                              borderWidth: 1,
-                              borderColor: "#EAE4DA",
-                              paddingHorizontal: 14,
-                              paddingVertical: 10,
-                              shadowColor: "#000",
-                              shadowOffset: { width: 0, height: 1 },
-                              shadowOpacity: 0.04,
-                              shadowRadius: 2,
-                              elevation: 1,
-                            }
-                      }
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "flex-end",
+                        justifyContent: isOutgoing ? "flex-end" : "flex-start",
+                        alignSelf: isOutgoing ? "flex-end" : "flex-start",
+                        maxWidth: "85%",
+                        marginBottom: isSameSenderAsNext ? 4 : 12,
+                      }}
                     >
-                      {attachments.length > 0 && (
-                        <View style={{ marginBottom: 6, gap: 6 }}>
-                          {attachments.map((attUri: string, attIdx: number) => {
-                            const isAudio = isAudioAttachment(attUri);
-                            if (isAudio) {
-                              return (
-                                <VoiceMessagePlayer
-                                  key={attIdx}
-                                  uri={attUri}
-                                  isOutgoing={isOutgoing}
-                                />
-                              );
-                            }
-                            return (
-                              <TouchableOpacity
-                                key={attIdx}
-                                activeOpacity={0.9}
-                                onPress={() => setPreviewImageUri(attUri)}
+                      {/* Incoming person avatar */}
+                      {!isOutgoing && (
+                        <View
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 14,
+                            overflow: "hidden",
+                            marginRight: 8,
+                            marginBottom: 2,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderWidth: 1,
+                            borderColor: "#EAE5DD",
+                            backgroundColor: "#FFFFFF",
+                          }}
+                        >
+                          {!isSameSenderAsNext ? (
+                            messageAvatar ? (
+                              <Image
+                                source={{ uri: messageAvatar }}
                                 style={{
-                                  borderRadius: 12,
-                                  overflow: "hidden",
-                                  backgroundColor: isOutgoing
-                                    ? "rgba(255,255,255,0.15)"
-                                    : "#F3F4F6",
-                                  borderWidth: isOutgoing ? 0 : 1,
-                                  borderColor: "#EAE5DD",
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 14,
+                                }}
+                                contentFit="cover"
+                                transition={200}
+                              />
+                            ) : (
+                              <View
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 14,
+                                  backgroundColor: "#E0F7F7",
+                                  alignItems: "center",
+                                  justifyContent: "center",
                                 }}
                               >
-                                <Image
-                                  source={{ uri: attUri }}
+                                <Text
                                   style={{
-                                    width: 220,
-                                    height: 160,
-                                    borderRadius: 12,
+                                    fontSize: 11,
+                                    fontWeight: "800",
+                                    color: "#14919B",
                                   }}
-                                  contentFit="cover"
-                                  transition={200}
-                                  cachePolicy="memory-disk"
-                                />
-                              </TouchableOpacity>
-                            );
-                          })}
+                                >
+                                  {participantName.charAt(0).toUpperCase()}
+                                </Text>
+                              </View>
+                            )
+                          ) : (
+                            <View style={{ width: 28, height: 28 }} />
+                          )}
                         </View>
                       )}
 
-                      {text &&
-                      (!attachments.some(isAudioAttachment) ||
-                        (text !== "Voice message" &&
-                          text !== "Sent an attachment")) ? (
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            lineHeight: 20,
-                            color: isOutgoing ? "#FFFFFF" : "#1A1D1F",
-                            fontWeight: "400",
-                          }}
-                        >
-                          {text}
-                        </Text>
-                      ) : null}
-
-                      {/* Timestamp & Status Footer */}
+                      {/* Message Bubble */}
                       <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          justifyContent: "flex-end",
-                          marginTop: 4,
-                          alignSelf: "flex-end",
-                          gap: 4,
-                        }}
+                        style={
+                          isOutgoing
+                            ? {
+                                backgroundColor: "#14919B",
+                                borderRadius: 16,
+                                borderTopRightRadius: 3,
+                                paddingHorizontal: 14,
+                                paddingVertical: 10,
+                                shadowColor: "#000",
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.05,
+                                shadowRadius: 2,
+                                elevation: 1,
+                              }
+                            : {
+                                backgroundColor: "#FFFFFF",
+                                borderRadius: 16,
+                                borderTopLeftRadius: 3,
+                                borderWidth: 1,
+                                borderColor: "#EAE4DA",
+                                paddingHorizontal: 14,
+                                paddingVertical: 10,
+                                shadowColor: "#000",
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.04,
+                                shadowRadius: 2,
+                                elevation: 1,
+                              }
+                        }
                       >
-                        {formattedTime ? (
+                        {attachments.length > 0 && (
+                          <View style={{ marginBottom: 6, gap: 6 }}>
+                            {attachments.map(
+                              (attUri: string, attIdx: number) => {
+                                const isAudio = isAudioAttachment(attUri);
+                                if (isAudio) {
+                                  return (
+                                    <VoiceMessagePlayer
+                                      key={attIdx}
+                                      uri={attUri}
+                                      isOutgoing={isOutgoing}
+                                    />
+                                  );
+                                }
+                                return (
+                                  <TouchableOpacity
+                                    key={attIdx}
+                                    activeOpacity={0.9}
+                                    onPress={() => setPreviewImageUri(attUri)}
+                                    style={{
+                                      borderRadius: 12,
+                                      overflow: "hidden",
+                                      backgroundColor: isOutgoing
+                                        ? "rgba(255,255,255,0.15)"
+                                        : "#F3F4F6",
+                                      borderWidth: isOutgoing ? 0 : 1,
+                                      borderColor: "#EAE5DD",
+                                    }}
+                                  >
+                                    <Image
+                                      source={{ uri: attUri }}
+                                      style={{
+                                        width: 220,
+                                        height: 160,
+                                        borderRadius: 12,
+                                      }}
+                                      contentFit="cover"
+                                      transition={200}
+                                      cachePolicy="memory-disk"
+                                    />
+                                  </TouchableOpacity>
+                                );
+                              },
+                            )}
+                          </View>
+                        )}
+
+                        {text &&
+                        (!attachments.some(isAudioAttachment) ||
+                          (text !== "Voice message" &&
+                            text !== "Sent an attachment")) ? (
                           <Text
                             style={{
-                              fontSize: 10,
-                              fontWeight: "500",
-                              color: isOutgoing ? "#D1FAF4" : "#9CA3AF",
+                              fontSize: 14,
+                              lineHeight: 20,
+                              color: isOutgoing ? "#FFFFFF" : "#1A1D1F",
+                              fontWeight: "400",
                             }}
                           >
-                            {formattedTime}
+                            {text}
                           </Text>
                         ) : null}
-                        {isOutgoing && (
-                          <Ionicons
-                            name={item.isRead ? "checkmark-done" : "checkmark"}
-                            size={13}
-                            color={item.isRead ? "#6EE7B7" : "#CCFBF1"}
-                          />
-                        )}
+
+                        {/* Timestamp & Status Footer */}
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "flex-end",
+                            marginTop: 4,
+                            alignSelf: "flex-end",
+                            gap: 4,
+                          }}
+                        >
+                          {formattedTime ? (
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                fontWeight: "500",
+                                color: isOutgoing ? "#D1FAF4" : "#9CA3AF",
+                              }}
+                            >
+                              {formattedTime}
+                            </Text>
+                          ) : null}
+                          {isOutgoing && (
+                            <Ionicons
+                              name={
+                                item.isRead ? "checkmark-done" : "checkmark"
+                              }
+                              size={13}
+                              color={item.isRead ? "#6EE7B7" : "#CCFBF1"}
+                            />
+                          )}
+                        </View>
                       </View>
                     </View>
                   </View>
-                </View>
-              );
-            })
-          )}
-        </ScrollView>
+                );
+              })
+            )}
+          </ScrollView>
         </View>
 
         {/* Enhanced Pending Attachments Preview Bar */}
@@ -1712,10 +1878,24 @@ export default function ConversationChatScreen() {
               paddingVertical: 10,
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 8,
+              }}
+            >
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Ionicons name="images" size={15} color="#14919B" />
-                <Text style={{ marginLeft: 6, fontSize: 12, fontWeight: "700", color: "#1A1D1F" }}>
+                <Text
+                  style={{
+                    marginLeft: 6,
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: "#1A1D1F",
+                  }}
+                >
                   Attached Files ({pendingAttachments.length})
                 </Text>
               </View>
@@ -1723,7 +1903,9 @@ export default function ConversationChatScreen() {
                 onPress={handleClearAllAttachments}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={{ fontSize: 11, fontWeight: "700", color: "#EF4444" }}>
+                <Text
+                  style={{ fontSize: 11, fontWeight: "700", color: "#EF4444" }}
+                >
                   Clear All
                 </Text>
               </TouchableOpacity>
@@ -2030,7 +2212,11 @@ export default function ConversationChatScreen() {
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setIsActionSheetVisible(false)}
-          style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(15, 23, 42, 0.45)" }}
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(15, 23, 42, 0.45)",
+          }}
         >
           <View
             style={{
@@ -2047,20 +2233,53 @@ export default function ConversationChatScreen() {
               elevation: 10,
             }}
           >
-            <View style={{ height: 5, width: 44, borderRadius: 2.5, backgroundColor: "#EAE5DD", alignSelf: "center", marginBottom: 16, marginTop: 4 }} />
+            <View
+              style={{
+                height: 5,
+                width: 44,
+                borderRadius: 2.5,
+                backgroundColor: "#EAE5DD",
+                alignSelf: "center",
+                marginBottom: 16,
+                marginTop: 4,
+              }}
+            />
 
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: "#EAE5DD", marginBottom: 12 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingBottom: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: "#EAE5DD",
+                marginBottom: 12,
+              }}
+            >
               <View>
-                <Text style={{ fontSize: 16, fontWeight: "800", color: "#1A1D1F" }}>
+                <Text
+                  style={{ fontSize: 16, fontWeight: "800", color: "#1A1D1F" }}
+                >
                   {participantName}
                 </Text>
-                <Text style={{ fontSize: 12, color: "#6F767E", fontWeight: "500" }}>
+                <Text
+                  style={{ fontSize: 12, color: "#6F767E", fontWeight: "500" }}
+                >
                   Conversation Options
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setIsActionSheetVisible(false)}
-                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#EAE5DD", alignItems: "center", justifyContent: "center" }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#FFFFFF",
+                  borderWidth: 1,
+                  borderColor: "#EAE5DD",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
                 <Ionicons name="close" size={17} color="#6F767E" />
               </TouchableOpacity>
@@ -2085,11 +2304,27 @@ export default function ConversationChatScreen() {
                     borderColor: "#14919B",
                   }}
                 >
-                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#14919B", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: "#14919B",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                    }}
+                  >
                     <Ionicons name="bag-check" size={20} color="#FFFFFF" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: "800", color: "#0D7377" }}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "800",
+                        color: "#0D7377",
+                      }}
+                    >
                       Place Custom Order
                     </Text>
                     <Text style={{ fontSize: 12, color: "#6F767E" }}>
@@ -2117,11 +2352,27 @@ export default function ConversationChatScreen() {
                     borderColor: "#EAE5DD",
                   }}
                 >
-                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#E0F7F7", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: "#E0F7F7",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                    }}
+                  >
                     <Ionicons name="storefront" size={19} color="#14919B" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: "700", color: "#1A1D1F" }}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "700",
+                        color: "#1A1D1F",
+                      }}
+                    >
                       View Tailor Profile
                     </Text>
                     <Text style={{ fontSize: 12, color: "#6F767E" }}>
@@ -2148,11 +2399,27 @@ export default function ConversationChatScreen() {
                   borderColor: "#EAE5DD",
                 }}
               >
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#EFF6FF", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: "#EFF6FF",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
+                  }}
+                >
                   <Ionicons name="images" size={19} color="#2563EB" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#1A1D1F" }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: "#1A1D1F",
+                    }}
+                  >
                     Send Photos & Designs
                   </Text>
                   <Text style={{ fontSize: 12, color: "#6F767E" }}>
@@ -2178,11 +2445,27 @@ export default function ConversationChatScreen() {
                   borderColor: "#EAE5DD",
                 }}
               >
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: "#F3F4F6",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
+                  }}
+                >
                   <Ionicons name="refresh" size={19} color="#475569" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#1A1D1F" }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: "#1A1D1F",
+                    }}
+                  >
                     Refresh Messages
                   </Text>
                   <Text style={{ fontSize: 12, color: "#6F767E" }}>
@@ -2203,7 +2486,15 @@ export default function ConversationChatScreen() {
         animationType="fade"
         onRequestClose={() => setPreviewImageUri(null)}
       >
-        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.95)", alignItems: "center", justifyContent: "center", position: "relative" }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.95)",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+          }}
+        >
           <TouchableOpacity
             onPress={() => setPreviewImageUri(null)}
             style={{
@@ -2234,4 +2525,3 @@ export default function ConversationChatScreen() {
     </View>
   );
 }
-
