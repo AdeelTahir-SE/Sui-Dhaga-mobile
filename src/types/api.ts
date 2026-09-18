@@ -94,24 +94,37 @@ export interface OrderItem {
   id: string;
   orderNumber?: string;
   customerId?: string;
+  customer_id?: string;
   tailorId?: string;
+  tailor_id?: string;
   status: 'Pending' | 'In Progress' | 'Confirmed' | 'Completed' | 'Cancelled';
   itemName: string;
+  item_name?: string;
   tailorName?: string;
   customerName?: string;
   deliveryDate?: string;
+  delivery_date?: string;
   dueDate?: string;
   price: number;
+  totalAmount?: number;
+  total_amount?: number;
   imageUrl?: string;
   image?: string;
   notes?: string;
+  additionalNotes?: string;
+  additional_notes?: string;
+  designImages?: string[];
+  design_images?: string[];
+  measurements?: Record<string, any>;
   measurementsId?: string;
+  measurement_id?: string;
   timeline?: {
     status: string;
     date: string;
     completed: boolean;
   }[];
   createdAt?: string;
+  created_at?: string;
 }
 
 export interface AppointmentItem {
