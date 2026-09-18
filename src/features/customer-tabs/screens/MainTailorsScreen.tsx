@@ -158,29 +158,6 @@ export default function MainTailorsScreen() {
     return tones[index % tones.length];
   };
 
-  const handleFilterToggle = (filter: string) => {
-    if (filter === "Near Me") {
-      if (activeFilter === "Near Me") {
-        setActiveFilter(null);
-        setSelectedRadius(null);
-      } else {
-        setActiveFilter("Near Me");
-        setSelectedRadius(5); // Default to 5 km when Near Me is tapped
-        setIsNearbyModalVisible(true);
-      }
-    } else {
-      setActiveFilter((prev) => (prev === filter ? null : filter));
-    }
-  };
-
-  const hasActiveNearbyFilters = selectedRadius !== null;
-
-  const clearAllFilters = () => {
-    setSearchQuery("");
-    setActiveFilter(null);
-    setSelectedRadius(null);
-  };
-
   return (
     <CustomerTabShell
       bottomTabs={<CustomerTabsPreview active="Tailors" />}
@@ -199,26 +176,29 @@ export default function MainTailorsScreen() {
         hideRightIcon={true}
       />
       <View className="flex-1 px-5 pb-6">
-        {/* Search Bar & Upgraded Dedicated Filter Button */}
-        <View className="flex-row items-center gap-2.5">
+        {/* Search Bar & Dedicated Distance Filter Button */}
+        <View className="flex-row items-center gap-2.5 mb-4">
           <View
-            className="h-[48px] flex-1 flex-row items-center rounded-md px-3.5 bg-white shadow-xs"
+            className="h-[48px] flex-1 flex-row items-center rounded-md px-3.5 bg-[#F8FAFC] shadow-xs"
             style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
           >
-            <Ionicons name="search" size={18} color="#14919B" />
+            <Ionicons name="search" size={19} color="#14919B" />
             <TextInput
-              className="ml-2.5 flex-1 text-[13px] font-medium text-brand-dark"
+              style={{ paddingVertical: 0 }}
+              className="ml-2.5 b flex-1 text-[13px] font-medium text-brand-dark"
               placeholder="Search by name, specialty, location..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="#94A3B8"
               value={searchQuery}
               onChangeText={setSearchQuery}
+              returnKeyType="search"
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity
                 onPress={() => setSearchQuery("")}
                 className="p-1"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="close-circle" size={16} color="#9CA3AF" />
+                <Ionicons name="close-circle" size={17} color="#94A3B8" />
               </TouchableOpacity>
             )}
           </View>
@@ -239,87 +219,7 @@ export default function MainTailorsScreen() {
               size={16}
               color={selectedRadius !== null ? "#FFFFFF" : "#14919B"}
             />
-            <Text
-              className={`ml-1.5 text-[12px] font-bold ${
-                selectedRadius !== null ? "text-white" : "text-[#14919B]"
-              }`}
-            >
-              {selectedRadius !== null ? `< ${selectedRadius}km` : "Distance"}
-            </Text>
-            {selectedRadius !== null && (
-              <View className="ml-1.5 h-1.5 w-1.5 rounded-full bg-white" />
-            )}
           </TouchableOpacity>
-        </View>
-
-        {/* Filter Chips Row */}
-        <View className="my-3 flex-row flex-wrap items-center gap-2">
-          {filterOptions.map((filter) => {
-            const isSelected = activeFilter === filter;
-            const isNearMe = filter === "Near Me";
-
-            return (
-              <TouchableOpacity
-                key={filter}
-                activeOpacity={0.7}
-                onPress={() => handleFilterToggle(filter)}
-                className="flex-row items-center rounded-md px-3 py-2"
-                style={{
-                  backgroundColor: isSelected
-                    ? "#14919B"
-                    : isNearMe
-                      ? "#F0FAFA"
-                      : "#FFFFFF",
-                  borderWidth: isSelected ? 0 : 1,
-                  borderColor: isNearMe ? "#BCE3E5" : "#E2E8F0",
-                }}
-              >
-                {isNearMe ? (
-                  <Ionicons
-                    name="location-sharp"
-                    size={13}
-                    color={isSelected ? "#FFFFFF" : "#14919B"}
-                    style={{ marginRight: 4 }}
-                  />
-                ) : null}
-                <Text
-                  className={`text-[11px] font-bold ${
-                    isSelected
-                      ? "text-white"
-                      : isNearMe
-                        ? "text-[#14919B]"
-                        : "text-brand-dark"
-                  }`}
-                >
-                  {filter}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* Active Radius Tag if set */}
-          {selectedRadius !== null ? (
-            <TouchableOpacity
-              onPress={() => setIsNearbyModalVisible(true)}
-              className="flex-row items-center rounded-md px-2.5 py-1.5"
-              style={{
-                backgroundColor: "#E0F7F7",
-                borderWidth: 1,
-                borderColor: "rgba(20, 145, 155, 0.4)",
-              }}
-            >
-              <Ionicons name="navigate" size={12} color="#14919B" />
-              <Text className="ml-1 text-[11px] font-bold text-[#0D7377]">
-                &lt; {selectedRadius} km
-              </Text>
-              <TouchableOpacity
-                onPress={() => setSelectedRadius(null)}
-                className="ml-1.5 h-4 w-4 rounded-md bg-[#14919B]/20 items-center justify-center"
-              >
-                <Ionicons name="close" size={10} color="#14919B" />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          ) : null}
         </View>
 
         {/* Modal: Nearest Tailor Distance Filter */}
@@ -330,7 +230,7 @@ export default function MainTailorsScreen() {
           onRequestClose={() => setIsNearbyModalVisible(false)}
         >
           <View
-            className="flex-1 justify-end "
+            className="flex-1 justify-end"
             style={{ backgroundColor: "rgba(15, 23, 42, 0.45)" }}
           >
             <View className="rounded-t-[36px] bg-white px-5 pb-8 pt-3 shadow-2xl max-h-[88%]">
