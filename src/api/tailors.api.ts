@@ -20,6 +20,8 @@ export interface CreateTailorProfilePayload {
   specialties: string[];
   city: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   experienceYears?: number;
   bio?: string;
 }
@@ -29,6 +31,8 @@ export interface UpdateTailorProfilePayload {
   specialties?: string[];
   city?: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   experienceYears?: number;
   bio?: string;
 }

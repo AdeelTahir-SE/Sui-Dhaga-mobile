@@ -16,6 +16,7 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { useTailorProfile } from "../hooks/useTailorProfile";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
+import { TailorLeafletMap } from "../../tailors/components/TailorLeafletMap";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
 import { tailorsApi } from "../../../api/tailors.api";
 import { storage } from "../../../api/client";
@@ -213,6 +214,20 @@ export default function TailorMyProfileScreen() {
     city && address
       ? `${city} • ${address}`
       : city || address || "Location not set";
+
+  const latitude =
+    p.latitude !== undefined && p.latitude !== null && !isNaN(Number(p.latitude))
+      ? Number(p.latitude)
+      : p.location?.latitude !== undefined && !isNaN(Number(p.location.latitude))
+      ? Number(p.location.latitude)
+      : 31.5204;
+
+  const longitude =
+    p.longitude !== undefined && p.longitude !== null && !isNaN(Number(p.longitude))
+      ? Number(p.longitude)
+      : p.location?.longitude !== undefined && !isNaN(Number(p.location.longitude))
+      ? Number(p.location.longitude)
+      : 74.3587;
 
   const startingPrice =
     p.startingPrice !== undefined && p.startingPrice !== null && p.startingPrice !== "" && Number(p.startingPrice) > 0
@@ -499,6 +514,50 @@ export default function TailorMyProfileScreen() {
                 No bio added yet. Tap "Edit" above to add details about your craftsmanship.
               </Text>
             )}
+          </View>
+        </View>
+
+        {/* Shop Location on Map */}
+        <View className="mb-5">
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-[15px] font-black tracking-tight text-brand-dark">
+              Shop Location on Map
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/tailor-dashboard/complete-profile" as any)}
+              className="flex-row items-center rounded-md bg-primary-50 px-2.5 py-1 border border-primary/20"
+            >
+              <Ionicons name="pencil" size={12} color="#14919B" />
+              <Text className="ml-1 text-[11px] font-bold text-primary">
+                Update on Map
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View className="overflow-hidden rounded-md border border-brand-border bg-white shadow-xs">
+            <TailorLeafletMap
+              latitude={latitude}
+              longitude={longitude}
+              shopName={shopName}
+              locationText={locationText}
+              height={140}
+              interactive={false}
+            />
+            <View className="bg-brand-surface/70 p-3 flex-row items-center justify-between">
+              <View className="flex-1 mr-2">
+                <Text className="text-[12px] font-bold text-brand-dark" numberOfLines={1}>
+                  📍 {locationText}
+                </Text>
+                <Text className="text-[11px] font-mono text-primary font-semibold mt-0.5">
+                  GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push("/tailor-dashboard/complete-profile" as any)}
+                className="rounded-md bg-primary px-3 py-1.5 shadow-xs"
+              >
+                <Text className="text-[11px] font-bold text-white">Change Pin</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 

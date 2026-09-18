@@ -19,6 +19,8 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { useTailorProfile } from "../hooks/useTailorProfile";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
+import { TailorLocationPickerModal, SelectedLocation } from "../components/TailorLocationPickerModal";
+import { TailorLeafletMap } from "../../tailors/components/TailorLeafletMap";
 import { tailorsApi } from "../../../api/tailors.api";
 import { storage } from "../../../api/client";
 
@@ -46,6 +48,10 @@ export default function TailorProfileSetupScreen() {
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
+  const [latitude, setLatitude] = useState<number>(31.5204);
+  const [longitude, setLongitude] = useState<number>(74.3587);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [hasLocationPinned, setHasLocationPinned] = useState(false);
   const [experienceYears, setExperienceYears] = useState("");
   const [startingPrice, setStartingPrice] = useState("");
   const [bio, setBio] = useState("");
@@ -54,6 +60,14 @@ export default function TailorProfileSetupScreen() {
   const [shopImage, setShopImage] = useState<string | null>(null);
   const [pendingBannerAsset, setPendingBannerAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleLocationConfirm = (loc: SelectedLocation) => {
+    setAddress(loc.address);
+    setCity(loc.city);
+    setLatitude(loc.latitude);
+    setLongitude(loc.longitude);
+    setHasLocationPinned(true);
+  };
 
   // Sync profile & user data once loaded
   useEffect(() => {
@@ -79,12 +93,26 @@ export default function TailorProfileSetupScreen() {
       if (typeof p.location === "object" && p.location) {
         setCity(p.location.city || p.city || "");
         setAddress(p.location.address || p.address || "");
+        if (p.location.latitude) {
+          setLatitude(Number(p.location.latitude));
+          setHasLocationPinned(true);
+        }
+        if (p.location.longitude) {
+          setLongitude(Number(p.location.longitude));
+        }
       } else if (typeof p.location === "string") {
         setCity(p.location);
         setAddress(p.address || "");
       } else {
         setCity(p.city || "");
         setAddress(p.address || "");
+      }
+      if (p.latitude !== undefined && p.latitude !== null && !isNaN(Number(p.latitude))) {
+        setLatitude(Number(p.latitude));
+        setHasLocationPinned(true);
+      }
+      if (p.longitude !== undefined && p.longitude !== null && !isNaN(Number(p.longitude))) {
+        setLongitude(Number(p.longitude));
       }
       const expVal =
         p.experienceYears !== undefined && p.experienceYears !== null && p.experienceYears !== ""
@@ -212,9 +240,13 @@ export default function TailorProfileSetupScreen() {
       phone: phone.trim(),
       city: city.trim(),
       address: address.trim(),
+      latitude: hasLocationPinned ? Number(latitude) : undefined,
+      longitude: hasLocationPinned ? Number(longitude) : undefined,
       location: {
         city: city.trim(),
         address: address.trim(),
+        latitude: hasLocationPinned ? Number(latitude) : undefined,
+        longitude: hasLocationPinned ? Number(longitude) : undefined,
       },
       experienceYears: Number(experienceYears) || 0,
       startingPrice: priceNum,
@@ -514,6 +546,73 @@ export default function TailorProfileSetupScreen() {
             />
           </View>
 
+          {/* Set Address on Map Section */}
+          <View className="mb-4 rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
+            <View className="flex-row items-center justify-between mb-2.5">
+              <View className="flex-row items-center">
+                <Ionicons name="map-outline" size={17} color="#14919B" />
+                <Text className="ml-1.5 text-[13px] font-bold text-brand-dark">
+                  Set Address Using Map
+                </Text>
+              </View>
+              <TouchableOpacity
+                accessibilityRole="button"
+                activeOpacity={0.8}
+                onPress={() => setIsMapModalOpen(true)}
+                className="flex-row items-center rounded-md bg-primary-50 px-2.5 py-1.5 border border-primary/30"
+              >
+                <Ionicons name="navigate-outline" size={13} color="#14919B" />
+                <Text className="ml-1 text-[11px] font-bold text-primary">
+                  {hasLocationPinned ? "Change on Map" : "Open Map"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {hasLocationPinned ? (
+              <View className="overflow-hidden rounded-md border border-brand-border">
+                <TailorLeafletMap
+                  latitude={latitude}
+                  longitude={longitude}
+                  shopName={businessName || "Your Tailor Shop"}
+                  locationText={address ? `${address}, ${city}` : city || "Shop Location"}
+                  height={130}
+                  interactive={false}
+                />
+                <View className="bg-brand-surface/70 p-2.5 flex-row items-center justify-between">
+                  <View className="flex-1 mr-2">
+                    <Text className="text-[11px] font-bold text-brand-dark" numberOfLines={1}>
+                      📍 {address || "Pinned Shop Location"}
+                    </Text>
+                    <Text className="text-[10px] text-brand-gray mt-0.5">
+                      {city} • GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setIsMapModalOpen(true)}
+                    className="rounded bg-primary px-2 py-1"
+                  >
+                    <Text className="text-[10px] font-bold text-white">Adjust Pin</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                accessibilityRole="button"
+                activeOpacity={0.7}
+                onPress={() => setIsMapModalOpen(true)}
+                className="items-center justify-center rounded-md border border-dashed border-primary/40 bg-primary-50/40 py-4 px-3"
+              >
+                <Ionicons name="location" size={24} color="#14919B" />
+                <Text className="mt-1 text-[12px] font-bold text-primary text-center">
+                  Tap to Set Location on Interactive Leaflet Map
+                </Text>
+                <Text className="text-[10px] text-brand-gray text-center mt-0.5">
+                  Pin your shop, search or use GPS to auto-populate address, city & coordinates
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {/* Starting Price */}
           <View className="mb-4">
             <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
@@ -628,6 +727,16 @@ export default function TailorProfileSetupScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <TailorLocationPickerModal
+        visible={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        onConfirm={handleLocationConfirm}
+        initialLat={latitude}
+        initialLng={longitude}
+        initialAddress={address}
+        initialCity={city}
+      />
     </TailorDashboardShell>
   );
 }
