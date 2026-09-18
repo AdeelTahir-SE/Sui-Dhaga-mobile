@@ -110,4 +110,65 @@ export function useTailorDetails(tailorId: string) {
   return { tailor, isLoading, error };
 }
 
+export function useTailorsMap(params?: { city?: string; search?: string; lat?: number; lng?: number; radius?: number }) {
+  const [tailors, setTailors] = useState<TailorItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const city = params?.city;
+  const search = params?.search;
+  const lat = params?.lat;
+  const lng = params?.lng;
+  const radius = params?.radius;
+
+  const fetchMapTailors = useCallback(async (customParams?: typeof params) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await tailorsApi.getTailorsMap(customParams ?? { city, search, lat, lng, radius });
+      if (res.data && Array.isArray(res.data)) {
+        setTailors(res.data);
+      } else {
+        setTailors([]);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to load map tailors');
+      setTailors([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [city, search, lat, lng, radius]);
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    setError(null);
+    tailorsApi.getTailorsMap({ city, search, lat, lng, radius })
+      .then((res) => {
+        if (isMounted) {
+          if (res.data && Array.isArray(res.data)) {
+            setTailors(res.data);
+          } else {
+            setTailors([]);
+          }
+        }
+      })
+      .catch((err) => {
+        if (isMounted) {
+          setError(err.message || 'Failed to load map tailors');
+          setTailors([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [city, search, lat, lng, radius]);
+
+  return { tailors, isLoading, error, refetch: fetchMapTailors };
+}
+
 

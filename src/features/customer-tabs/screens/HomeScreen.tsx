@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { useState } from "react";
 import {
   Dimensions,
-  Image as RNImage,
   Modal,
+  Image as RNImage,
   ScrollView,
   StyleSheet,
   Text,
@@ -38,10 +38,7 @@ export default function HomeScreen() {
   >(null);
 
   const emailPrefix = user?.email ? user.email.split("@")[0] : "User";
-  const userName =
-    user?.fullName?.trim() ||
-    user?.name?.trim() ||
-    emailPrefix;
+  const userName = user?.fullName?.trim() || user?.name?.trim() || emailPrefix;
 
   const quickActionsList = [
     {
@@ -181,66 +178,16 @@ export default function HomeScreen() {
           action="View All"
           onPressAction={() => setActiveModal("quickActions")}
         />
-        <View className="flex-row gap-2.5">
-          <QuickAction
-            title="Appointments"
-            icon="calendar"
-            onPress={() => router.push("/appointments" as never)}
-          />
-          <QuickAction
-            title="Book Tailor"
-            icon="cut-outline"
-            onPress={() => router.push("/tailors" as never)}
-          />
-          <QuickAction
-            title="AI Studio"
-            icon="color-wand-outline"
-            onPress={() => router.push("/design-studio" as never)}
-          />
-          <QuickAction
-            title="My Orders"
-            icon="bag-handle-outline"
-            onPress={() => router.push("/orders" as never)}
-          />
-        </View>
-
-        {/* Recent Designs */}
-        {designs?.length > 0 ? (
-          <>
-            <SectionTitle
-              title="Recent Designs"
-              action="View All"
-              onPressAction={() => setActiveModal("designs")}
+        <View className="flex-row  gap-2.5">
+          {quickActionsList?.slice(0, 4).map((quickAction) => (
+            <QuickAction
+              key={quickAction.id}
+              title={quickAction.title}
+              icon={quickAction.icon}
+              onPress={() => router.push(quickAction.route as never)}
             />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 12, paddingRight: 10 }}
-            >
-              {designs?.slice(0, 5)?.map((design, index) => (
-                <TouchableOpacity
-                  key={design.id || index}
-                  activeOpacity={0.8}
-                  onPress={() => router.push("/design-studio" as never)}
-                  className="w-[110px] items-center"
-                >
-                  <TabPlaceholder
-                    image={design.imageUrl || design.image}
-                    variant="garment"
-                    size="md"
-                    tone="coral"
-                  />
-                  <Text
-                    className="mt-2 text-center text-[12px] font-bold text-brand-dark leading-[16px]"
-                    numberOfLines={1}
-                  >
-                    {design.name || "Custom Outfit"}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </>
-        ) : null}
+          ))}
+        </View>
       </View>
 
       {/* Modal: All Quick Actions */}
@@ -251,9 +198,23 @@ export default function HomeScreen() {
         statusBarTranslucent
         onRequestClose={() => setActiveModal(null)}
       >
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
+          }}
+        >
           <TouchableWithoutFeedback onPress={() => setActiveModal(null)}>
-            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              }}
+            />
           </TouchableWithoutFeedback>
 
           <View
@@ -274,7 +235,14 @@ export default function HomeScreen() {
             }}
           >
             <View style={{ alignItems: "center", paddingVertical: 6 }}>
-              <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: "#E2E8F0" }} />
+              <View
+                style={{
+                  width: 44,
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor: "#E2E8F0",
+                }}
+              />
             </View>
 
             <View
@@ -289,10 +257,20 @@ export default function HomeScreen() {
               }}
             >
               <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text style={{ fontSize: 18, fontWeight: "900", color: "#1A1D1F" }} numberOfLines={1}>
+                <Text
+                  style={{ fontSize: 18, fontWeight: "900", color: "#1A1D1F" }}
+                  numberOfLines={1}
+                >
                   All Quick Actions
                 </Text>
-                <Text style={{ fontSize: 12, fontWeight: "500", color: "#6F767E", marginTop: 2 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "500",
+                    color: "#6F767E",
+                    marginTop: 2,
+                  }}
+                >
                   Fast shortcuts to everything in Sui Dhaga
                 </Text>
               </View>
@@ -341,7 +319,11 @@ export default function HomeScreen() {
                         {action.description}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color="#9CA3AF"
+                    />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -358,9 +340,23 @@ export default function HomeScreen() {
         statusBarTranslucent
         onRequestClose={() => setActiveModal(null)}
       >
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
+          }}
+        >
           <TouchableWithoutFeedback onPress={() => setActiveModal(null)}>
-            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} />
+            <View
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+              }}
+            />
           </TouchableWithoutFeedback>
 
           <View
@@ -381,7 +377,14 @@ export default function HomeScreen() {
             }}
           >
             <View style={{ alignItems: "center", paddingVertical: 6 }}>
-              <View style={{ width: 44, height: 5, borderRadius: 3, backgroundColor: "#E2E8F0" }} />
+              <View
+                style={{
+                  width: 44,
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor: "#E2E8F0",
+                }}
+              />
             </View>
 
             <View
@@ -396,10 +399,20 @@ export default function HomeScreen() {
               }}
             >
               <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text style={{ fontSize: 18, fontWeight: "900", color: "#1A1D1F" }} numberOfLines={1}>
+                <Text
+                  style={{ fontSize: 18, fontWeight: "900", color: "#1A1D1F" }}
+                  numberOfLines={1}
+                >
                   Design Gallery
                 </Text>
-                <Text style={{ fontSize: 12, fontWeight: "500", color: "#6F767E", marginTop: 2 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "500",
+                    color: "#6F767E",
+                    marginTop: 2,
+                  }}
+                >
                   Custom & AI created garment designs
                 </Text>
               </View>

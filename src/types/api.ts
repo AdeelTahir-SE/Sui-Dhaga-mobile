@@ -72,6 +72,9 @@ export interface TailorItem {
   startingPrice?: number;
   city?: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
+  distanceKm?: number;
   location?: {
     address?: string;
     city?: string;

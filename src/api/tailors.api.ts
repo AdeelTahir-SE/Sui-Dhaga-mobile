@@ -162,6 +162,32 @@ export function mapTailorFromBackend(raw: any): TailorItem {
       ? Number(raw.services[0].price)
       : raw.hourlyRate || 0;
 
+  const latitude =
+    typeof raw.latitude === 'number' && !isNaN(raw.latitude)
+      ? raw.latitude
+      : typeof raw.location?.latitude === 'number' && !isNaN(raw.location.latitude)
+      ? raw.location.latitude
+      : undefined;
+
+  const longitude =
+    typeof raw.longitude === 'number' && !isNaN(raw.longitude)
+      ? raw.longitude
+      : typeof raw.location?.longitude === 'number' && !isNaN(raw.location.longitude)
+      ? raw.location.longitude
+      : undefined;
+
+  const distanceKm =
+    typeof raw.distance_km === 'number' && !isNaN(raw.distance_km)
+      ? raw.distance_km
+      : typeof raw.distanceKm === 'number' && !isNaN(raw.distanceKm)
+      ? raw.distanceKm
+      : undefined;
+
+  const distanceStr =
+    distanceKm !== undefined
+      ? `${distanceKm.toFixed(1)} km away`
+      : raw.distance || (city ? city : 'Nearby');
+
   return {
     ...raw,
     id: raw.id,
@@ -176,9 +202,15 @@ export function mapTailorFromBackend(raw: any): TailorItem {
     specialty: specialties[0] || '',
     city,
     address,
+    latitude,
+    longitude,
+    distanceKm,
+    distance: distanceStr,
     location: {
       city,
       address,
+      latitude,
+      longitude,
     },
     experienceYears: expYears,
     startingPrice,
@@ -213,6 +245,29 @@ export const tailorsApi = {
         limit: filters?.limit || 20,
         ...filters,
       },
+    });
+
+    const rawData = res.data;
+    let list: any[] = [];
+    if (Array.isArray(rawData)) {
+      list = rawData;
+    } else if (Array.isArray(rawData?.tailors)) {
+      list = rawData.tailors;
+    } else if (Array.isArray(rawData?.data)) {
+      list = rawData.data;
+    }
+
+    const mapped = list.map(mapTailorFromBackend);
+    return {
+      ...res,
+      data: mapped,
+    };
+  },
+
+  async getTailorsMap(params?: { city?: string; search?: string; lat?: number; lng?: number; radius?: number }) {
+    const res = await apiClient<any>('/tailors/map', {
+      method: 'GET',
+      params,
     });
 
     const rawData = res.data;
