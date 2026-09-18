@@ -6,6 +6,11 @@ import { conversationsApi } from '../api/conversations.api';
 let supabaseClient: SupabaseClient | null = null;
 let initPromise: Promise<SupabaseClient | null> | null = null;
 
+function cleanConfigValue(val?: string): string {
+  if (!val) return '';
+  return val.trim().replace(/^["']|["']$/g, '');
+}
+
 /**
  * Get or initialize the Supabase client singleton.
  * Uses CONFIG values first, and falls back to backend /conversations/realtime-config if needed.
@@ -26,14 +31,14 @@ export async function getSupabaseClient(): Promise<SupabaseClient | null> {
   }
 
   initPromise = (async () => {
-    let url = CONFIG.SUPABASE_URL;
-    let anonKey = CONFIG.SUPABASE_ANON_KEY;
+    let url = cleanConfigValue(CONFIG.SUPABASE_URL);
+    let anonKey = cleanConfigValue(CONFIG.SUPABASE_ANON_KEY);
 
     if (!url || !anonKey) {
       const remoteConfig = await conversationsApi.getRealtimeConfig();
       if (remoteConfig?.supabaseUrl && remoteConfig?.supabaseAnonKey) {
-        url = remoteConfig.supabaseUrl;
-        anonKey = remoteConfig.supabaseAnonKey;
+        url = cleanConfigValue(remoteConfig.supabaseUrl);
+        anonKey = cleanConfigValue(remoteConfig.supabaseAnonKey);
       }
     }
 

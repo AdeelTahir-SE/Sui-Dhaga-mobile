@@ -1970,7 +1970,69 @@ export default function ConversationChatScreen() {
                 </View>
               </View>
             ) : (
-              messages.map((item, idx) => {
+              <>
+                {/* Top loader when fetching earlier messages */}
+                {isLoadingOlder && (
+                  <View
+                    style={{
+                      paddingVertical: 12,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <ActivityIndicator size="small" color="#14919B" />
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "#8E887E",
+                        marginTop: 4,
+                        fontWeight: "500",
+                      }}
+                    >
+                      Loading earlier messages...
+                    </Text>
+                  </View>
+                )}
+
+                {/* Beginning of conversation indicator when all messages are loaded */}
+                {!hasMore && messages.length >= 20 && (
+                  <View
+                    style={{
+                      alignItems: "center",
+                      paddingVertical: 14,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                        backgroundColor: "#EFECE6",
+                        paddingHorizontal: 12,
+                        paddingVertical: 5,
+                        borderRadius: 14,
+                      }}
+                    >
+                      <Ionicons
+                        name="checkmark-circle-outline"
+                        size={14}
+                        color="#8E887E"
+                      />
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: "#8E887E",
+                          fontWeight: "600",
+                        }}
+                      >
+                        Beginning of conversation
+                      </Text>
+                    </View>
+                  </View>
+                )}
+
+                {messages.map((item, idx) => {
                 const curId = currentUser?.id
                   ? String(currentUser.id).toLowerCase()
                   : "";
@@ -2272,7 +2334,8 @@ export default function ConversationChatScreen() {
                     </View>
                   </View>
                 );
-              })
+              })}
+              </>
             )}
           </ScrollView>
         </View>
