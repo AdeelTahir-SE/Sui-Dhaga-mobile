@@ -74,8 +74,36 @@ export default function RegisterScreen() {
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const register = useAuthStore((state) => state.register);
+  const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle);
+
+  const handleGoogleLogin = async () => {
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await loginWithGoogle();
+      if (result.success) {
+        if (result.needsProfileCompletion) {
+          router.replace("/auth/complete-profile" as any);
+        } else {
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser?.role === "tailor") {
+            router.replace("/tailor-dashboard" as any);
+          } else {
+            router.replace("/home" as any);
+          }
+        }
+      } else if (result.error && result.error !== "Sign in was cancelled.") {
+        setErrorMessage(result.error);
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Google registration failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const currentCountry = countryOptions[selectedCountryIndex];
+
 
   const handleRegister = async () => {
     const trimmedName = fullName.trim();
@@ -468,7 +496,11 @@ export default function RegisterScreen() {
             </View>
 
             {/* Social Signup */}
-            <SocialLoginButton title="Sign up with Google" onPress={() => {}} />
+            <SocialLoginButton
+              title="Sign up with Google"
+              onPress={handleGoogleLogin}
+            />
+
 
             {/* Login Link */}
             <View className="flex-row justify-center mt-6 mb-28">

@@ -84,8 +84,52 @@ export const authApi = {
     });
   },
 
+  async googleAuth(payload: {
+    token?: string;
+    accessToken?: string;
+    idToken?: string;
+    email?: string;
+    name?: string;
+    fullName?: string;
+    avatar?: string;
+    avatarUrl?: string;
+    phone?: string;
+  }) {
+    return apiClient<AuthSession & { needsProfileCompletion?: boolean }>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      skipAuth: true,
+    });
+  },
+
+  async completeProfile(payload: {
+    role: 'customer' | 'tailor';
+    phone?: string;
+    name?: string;
+    fullName?: string;
+    shopName?: string;
+    city?: string;
+    address?: string;
+    specialties?: string[];
+  }) {
+    return apiClient<{ user: User; profile: any; message: string }>('/auth/complete-profile', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getGoogleAuthUrl(redirectUri?: string) {
+    const params = redirectUri ? { redirectUri } : undefined;
+    return apiClient<{ url: string | null }>('/auth/google-url', {
+      method: 'GET',
+      params,
+      skipAuth: true,
+    });
+  },
+
   async uploadAvatar(fileOrFormData: any) {
     const { usersApi } = await import('./users.api');
     return usersApi.uploadAvatar(fileOrFormData);
   },
 };
+

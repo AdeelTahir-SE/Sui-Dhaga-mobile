@@ -21,8 +21,10 @@ const routeGroups: RouteGroup[] = [
       { label: "Register", href: "/auth/register" },
       { label: "Forgot Password", href: "/auth/forgot-password" },
       { label: "Reset Password", href: "/auth/reset-password" },
+      { label: "Complete Profile (Google Auth)", href: "/auth/complete-profile" },
       { label: "Success", href: "/auth/success" },
     ],
+
   },
   {
     title: "Customer Tabs",

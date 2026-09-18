@@ -31,8 +31,36 @@ export default function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const login = useAuthStore((state) => state.login);
+  const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle);
+
+  const handleGoogleLogin = async () => {
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const result = await loginWithGoogle();
+      if (result.success) {
+        if (result.needsProfileCompletion) {
+          router.replace("/auth/complete-profile" as any);
+        } else {
+          const currentUser = useAuthStore.getState().user;
+          if (currentUser?.role === "tailor") {
+            router.replace("/tailor-dashboard" as any);
+          } else {
+            router.replace("/home" as any);
+          }
+        }
+      } else if (result.error && result.error !== "Sign in was cancelled.") {
+        setErrorMessage(result.error);
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Google sign in failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleLogin = async () => {
+
     if (!email.trim() || !password.trim()) {
       Alert.alert("Missing Fields", "Please enter both your email and password.");
       return;
@@ -189,8 +217,9 @@ export default function LoginScreen() {
             {/* Social Login */}
             <SocialLoginButton
               title="Continue with Google"
-              onPress={() => {}}
+              onPress={handleGoogleLogin}
             />
+
 
             {/* Register Link */}
             <View className="flex-row justify-center mt-10 mb-28">
