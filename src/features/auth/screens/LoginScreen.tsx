@@ -170,14 +170,12 @@ export default function LoginScreen() {
               />
             ) : null}
 
-            {/* Login Button */}
-            {isSubmitting ? (
-              <View className="h-[52px] items-center justify-center rounded-xl bg-primary">
-                <ActivityIndicator color="#FFFFFF" />
-              </View>
-            ) : (
-              <AuthButton title="Login" onPress={handleLogin} />
-            )}
+            {/* Login Button with Bespoke Tailor Texture */}
+            <AuthButton
+              title="Login"
+              onPress={handleLogin}
+              loading={isSubmitting}
+            />
 
             {/* Divider */}
             <View className="flex-row items-center my-7">

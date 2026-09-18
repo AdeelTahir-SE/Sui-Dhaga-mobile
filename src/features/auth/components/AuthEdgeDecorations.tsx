@@ -1,14 +1,13 @@
-import React from "react";
-import { useWindowDimensions, View } from "react-native";
 import { Image } from "expo-image";
+import { useWindowDimensions, View } from "react-native";
 
 type AuthEdgeDecorationsProps = {
-  variant?: "teal" | "coral" | "gold";
+  variant?: "teal" | "tealNew" | "gold";
 };
 
 const edgeSources = {
   teal: require("@/assets/illustrations/auth-flow/edges/edge-teal.png"),
-  coral: require("@/assets/illustrations/auth-flow/edges/edge-coral.png"),
+  tealNew: require("@/assets/illustrations/auth-flow/edges/edge-teal-new.png"),
   gold: require("@/assets/illustrations/auth-flow/edges/edge-gold.png"),
 };
 
@@ -16,7 +15,7 @@ export function AuthEdgeDecorations({
   variant = "teal",
 }: AuthEdgeDecorationsProps) {
   const { width } = useWindowDimensions();
-  const alignRight = variant === "coral";
+  const alignRight = variant === "tealNew";
   const edgeSize = Math.min(Math.max(width * 0.78, 285), 430);
 
   return (

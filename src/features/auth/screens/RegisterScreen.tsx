@@ -1,26 +1,26 @@
-import React, { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-  ActivityIndicator,
-  Image,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { AuthInput } from "../components/AuthInput";
+import { useAuthStore } from "../../../stores/auth.store";
 import { AuthButton } from "../components/AuthButton";
+import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
+import { AuthInput } from "../components/AuthInput";
+import { AuthMessageBanner } from "../components/AuthMessageBanner";
 import { RoleCard } from "../components/RoleCard";
 import { SocialLoginButton } from "../components/SocialLoginButton";
-import { AuthEdgeDecorations } from "../components/AuthEdgeDecorations";
-import { AuthMessageBanner } from "../components/AuthMessageBanner";
-import { useAuthStore } from "../../../stores/auth.store";
 
 const logoImg = require("@/assets/logos/main-logo.png");
 const customerImg = require("@/assets/illustrations/auth-flow/cutomer-crete-account.png");
@@ -95,18 +95,24 @@ export default function RegisterScreen() {
     if (password.length < 8) {
       Alert.alert(
         "Weak Password",
-        "Password must be at least 8 characters long (e.g., Password123!)."
+        "Password must be at least 8 characters long (e.g., Password123!).",
       );
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Password Mismatch", "Passwords do not match. Please verify.");
+      Alert.alert(
+        "Password Mismatch",
+        "Passwords do not match. Please verify.",
+      );
       return;
     }
 
     if (!agreedToTerms) {
-      Alert.alert("Terms Required", "Please agree to the Terms of Service to proceed.");
+      Alert.alert(
+        "Terms Required",
+        "Please agree to the Terms of Service to proceed.",
+      );
       return;
     }
 
@@ -144,7 +150,9 @@ export default function RegisterScreen() {
         setRegistrationSuccess(true);
       } else {
         const storeError = useAuthStore.getState().error;
-        setErrorMessage(storeError || "Registration failed. Please check your information.");
+        setErrorMessage(
+          storeError || "Registration failed. Please check your information.",
+        );
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Registration failed. Please try again.");
@@ -156,7 +164,7 @@ export default function RegisterScreen() {
   if (registrationSuccess) {
     return (
       <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
-        <AuthEdgeDecorations variant="teal" />
+        <AuthEdgeDecorations variant="tealNew" />
         <View className="flex-1 px-6 justify-center items-center pb-10">
           {/* Logo Header */}
           <View className="flex-row items-center mb-8">
@@ -195,7 +203,12 @@ export default function RegisterScreen() {
           {/* Email Info Card */}
           <View className="w-full rounded-2xl bg-brand-surface p-4 border border-brand-border my-5 shadow-sm">
             <View className="flex-row items-center mb-1.5">
-              <Ionicons name="mail" size={15} color="#14919B" style={{ marginRight: 6 }} />
+              <Ionicons
+                name="mail"
+                size={15}
+                color="#14919B"
+                style={{ marginRight: 6 }}
+              />
               <Text className="text-[12px] font-semibold text-brand-gray">
                 Sent to:
               </Text>
@@ -205,7 +218,8 @@ export default function RegisterScreen() {
             </Text>
             <View className="h-px bg-brand-border my-2.5" />
             <Text className="text-[12px] text-brand-gray leading-[18px]">
-              Please check your inbox (and spam folder) and click the verification link to activate your account.
+              Please check your inbox (and spam folder) and click the
+              verification link to activate your account.
             </Text>
           </View>
 
@@ -223,7 +237,7 @@ export default function RegisterScreen() {
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
-      <AuthEdgeDecorations variant="coral" />
+      <AuthEdgeDecorations variant="tealNew" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -305,7 +319,9 @@ export default function RegisterScreen() {
                   className="flex-row items-center px-3 h-full border-r border-brand-border bg-gray-50/60"
                   activeOpacity={0.7}
                 >
-                  <Text className="text-[15px] mr-1">{currentCountry.flag}</Text>
+                  <Text className="text-[15px] mr-1">
+                    {currentCountry.flag}
+                  </Text>
                   <Text className="text-[14px] text-brand-dark font-medium">
                     {currentCountry.code}
                   </Text>
@@ -452,17 +468,16 @@ export default function RegisterScreen() {
             </View>
 
             {/* Social Signup */}
-            <SocialLoginButton
-              title="Sign up with Google"
-              onPress={() => {}}
-            />
+            <SocialLoginButton title="Sign up with Google" onPress={() => {}} />
 
             {/* Login Link */}
             <View className="flex-row justify-center mt-6 mb-28">
               <Text className="text-[14px] text-brand-gray">
                 Already have an account?{"  "}
               </Text>
-              <TouchableOpacity onPress={() => router.push("/auth/login" as any)}>
+              <TouchableOpacity
+                onPress={() => router.push("/auth/login" as any)}
+              >
                 <Text className="text-[14px] font-bold text-primary">
                   Login
                 </Text>

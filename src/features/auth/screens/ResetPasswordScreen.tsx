@@ -39,6 +39,16 @@ export default function ResetPasswordScreen() {
     const trimmedEmail = email.trim();
     const trimmedToken = token.trim();
 
+    if (!trimmedEmail) {
+      setErrorMsg("Please enter your account email.");
+      return;
+    }
+
+    if (!trimmedToken) {
+      setErrorMsg("Please enter the 6-digit verification code sent to your email.");
+      return;
+    }
+
     if (!trimmedPassword) {
       setErrorMsg("Please enter a new password.");
       return;
@@ -58,8 +68,8 @@ export default function ResetPasswordScreen() {
     try {
       await authApi.resetPassword(
         trimmedPassword,
-        trimmedToken || undefined,
-        trimmedEmail || undefined
+        trimmedToken,
+        trimmedEmail
       );
 
       // On successful reset, navigate to success screen
@@ -67,7 +77,7 @@ export default function ResetPasswordScreen() {
     } catch (err: any) {
       const msg =
         err?.message ||
-        "Failed to reset password. Please check your token or request a new reset link.";
+        "Failed to reset password. Please check your verification code or request a new one.";
       setErrorMsg(msg);
     } finally {
       setIsLoading(false);
@@ -111,8 +121,8 @@ export default function ResetPasswordScreen() {
             </Text>
             <Text className="text-[14px] text-brand-gray text-center mt-2 mb-4 leading-[20px]">
               {email
-                ? `Create a secure new password for ${email}`
-                : "Create a new password for your Sui Dhaga account."}
+                ? `Enter the 6-digit code sent to ${email} and choose a new password.`
+                : "Enter the 6-digit code sent to your email and choose a new password."}
             </Text>
 
             {/* Error Banner */}
@@ -128,7 +138,7 @@ export default function ResetPasswordScreen() {
             {/* Email Field (if not prefilled or editable) */}
             {!params.email ? (
               <AuthInput
-                label="Account Email"
+                label="Account Email *"
                 placeholder="Enter your account email"
                 value={email}
                 onChangeText={(text) => {
@@ -141,20 +151,19 @@ export default function ResetPasswordScreen() {
               />
             ) : null}
 
-            {/* Reset Code / Token (optional if coming from email link) */}
-            {!params.token ? (
-              <AuthInput
-                label="Reset Code / Token (Optional)"
-                placeholder="Enter code from email (if provided)"
-                value={token}
-                onChangeText={(text) => {
-                  setToken(text);
-                  if (errorMsg) setErrorMsg(null);
-                }}
-                autoCapitalize="none"
-                icon="key-outline"
-              />
-            ) : null}
+            {/* Mandatory Verification Code / OTP */}
+            <AuthInput
+              label="Verification Code (OTP) *"
+              placeholder="Enter 6-digit code from email"
+              value={token}
+              onChangeText={(text) => {
+                setToken(text);
+                if (errorMsg) setErrorMsg(null);
+              }}
+              keyboardType="number-pad"
+              autoCapitalize="none"
+              icon="key-outline"
+            />
 
             {/* New Password */}
             <AuthInput
