@@ -6,33 +6,68 @@ type StudioHeaderProps = {
   title: string;
   rightIcon?: keyof typeof Ionicons.glyphMap;
   rightLabel?: string;
+  rightAction?: React.ReactNode;
 };
 
 export function StudioHeader({
   title,
   rightIcon = "information-circle-outline",
   rightLabel,
+  rightAction,
 }: StudioHeaderProps) {
   return (
-    <View className="h-14 flex-row items-center justify-between px-4">
+    <View
+      style={{
+        height: 56,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        paddingHorizontal: 16,
+        backgroundColor: "#FFFFFF",
+        borderBottomWidth: 1,
+        borderBottomColor: "#EAE5DD",
+      }}
+    >
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel="Go back"
         onPress={() => router.back()}
-        className="h-10 w-10 items-center justify-center"
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: "#F8F6F0",
+          borderWidth: 1,
+          borderColor: "#EAE5DD",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
-        <Ionicons name="arrow-back" size={22} color="#1A1D1F" />
+        <Ionicons name="arrow-back" size={20} color="#1A1D1F" />
       </TouchableOpacity>
-      <Text className="text-[15px] font-semibold text-brand-dark">
+      <Text style={{ fontSize: 16, fontWeight: "700", color: "#1A1D1F" }}>
         {title}
       </Text>
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel={rightLabel ?? "More information"}
-        className="h-10 w-10 items-center justify-center"
-      >
-        <Ionicons name={rightIcon} size={19} color="#1A1D1F" />
-      </TouchableOpacity>
+      {rightAction ? (
+        rightAction
+      ) : (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={rightLabel ?? "More information"}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: "#F8F6F0",
+            borderWidth: 1,
+            borderColor: "#EAE5DD",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name={rightIcon} size={18} color="#1A1D1F" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

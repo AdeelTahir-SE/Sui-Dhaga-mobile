@@ -1,7 +1,6 @@
-import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
-import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { Text, TouchableOpacity, View } from "react-native";
 
 type CustomerTab =
   | "Home"
@@ -84,14 +83,12 @@ export function CustomerTabsPreview({ active }: CustomerTabsPreviewProps) {
               <Ionicons
                 name={selected ? tab.activeIcon : tab.icon}
                 size={21}
-                color={selected ? "#14919B" : "#6F767E"}
+                color={selected ? "#14919B" : "#252525"}
               />
             </View>
             <Text
               className={`mt-0.5 text-[10px] tracking-tight ${
-                selected
-                  ? "font-bold text-primary"
-                  : "font-medium text-brand-gray"
+                selected ? "font-bold text-primary" : "font-bold text-[#252525]"
               }`}
             >
               {tab.label}
