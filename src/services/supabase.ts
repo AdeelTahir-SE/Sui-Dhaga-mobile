@@ -1,10 +1,10 @@
-import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
+import { RealtimeClient, RealtimeChannel } from '@supabase/realtime-js';
 import { CONFIG } from '../constants/config';
 import { storage } from '../api/client';
 import { conversationsApi } from '../api/conversations.api';
 
-let supabaseClient: SupabaseClient | null = null;
-let initPromise: Promise<SupabaseClient | null> | null = null;
+let realtimeClient: RealtimeClient | null = null;
+let initPromise: Promise<RealtimeClient | null> | null = null;
 
 function cleanConfigValue(val?: string): string {
   if (!val) return '';
@@ -12,18 +12,18 @@ function cleanConfigValue(val?: string): string {
 }
 
 /**
- * Get or initialize the Supabase client singleton.
+ * Get or initialize the Supabase Realtime client singleton.
  * Uses CONFIG values first, and falls back to backend /conversations/realtime-config if needed.
  */
-export async function getSupabaseClient(): Promise<SupabaseClient | null> {
-  if (supabaseClient) {
+export async function getRealtimeClient(): Promise<RealtimeClient | null> {
+  if (realtimeClient) {
     const token = await storage.getToken();
     if (token) {
       try {
-        supabaseClient.realtime.setAuth(token);
+        realtimeClient.setAuth(token);
       } catch {}
     }
-    return supabaseClient;
+    return realtimeClient;
   }
 
   if (initPromise) {
@@ -49,29 +49,28 @@ export async function getSupabaseClient(): Promise<SupabaseClient | null> {
     }
 
     try {
-      const client = createClient(url, anonKey, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-        realtime: {
-          params: {
-            eventsPerSecond: 10,
-          },
+      const normalizedBaseUrl = url.replace(/\/+$/, '');
+      const endpoint = `${normalizedBaseUrl}/realtime/v1`;
+
+      const client = new RealtimeClient(endpoint, {
+        params: {
+          apikey: anonKey,
+          eventsPerSecond: 10,
         },
       });
 
       const token = await storage.getToken();
       if (token) {
         try {
-          client.realtime.setAuth(token);
+          client.setAuth(token);
         } catch {}
       }
 
-      supabaseClient = client;
+      client.connect();
+      realtimeClient = client;
       return client;
     } catch (err) {
-      console.warn('[Supabase Realtime] Error initializing Supabase client:', err);
+      console.warn('[Supabase Realtime] Error initializing Realtime client:', err);
       initPromise = null;
       return null;
     }
@@ -95,7 +94,7 @@ export async function subscribeToConversation(
 ): Promise<RealtimeChannel | null> {
   if (!conversationId || conversationId === 'new') return null;
 
-  const client = await getSupabaseClient();
+  const client = await getRealtimeClient();
   if (!client) return null;
 
   try {
@@ -111,7 +110,7 @@ export async function subscribeToConversation(
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => {
+        (payload: any) => {
           if (payload.eventType === 'INSERT' && callbacks.onInsert) {
             callbacks.onInsert(payload.new);
           } else if (payload.eventType === 'UPDATE' && callbacks.onUpdate) {
@@ -121,7 +120,7 @@ export async function subscribeToConversation(
           }
         }
       )
-      .subscribe((status, err) => {
+      .subscribe((status: string, err: any) => {
         if (err) {
           console.warn(`[Supabase Realtime] Subscription error on ${conversationId}:`, err);
         }
@@ -138,9 +137,9 @@ export async function subscribeToConversation(
  * Unsubscribe and remove a Supabase Realtime channel.
  */
 export async function unsubscribeChannel(channel: RealtimeChannel | null): Promise<void> {
-  if (!channel || !supabaseClient) return;
+  if (!channel || !realtimeClient) return;
   try {
-    await supabaseClient.removeChannel(channel);
+    await realtimeClient.removeChannel(channel);
   } catch (err) {
     console.warn('[Supabase Realtime] Failed to unsubscribe channel:', err);
   }

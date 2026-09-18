@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import { View, Animated, StyleSheet, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 interface AnimatedDustbinProps {
   isOpen?: boolean;
@@ -19,15 +18,12 @@ export function AnimatedDustbin({
   onPress,
   size = 40,
 }: AnimatedDustbinProps) {
-  // Internal fallback lid animation if external isn't passed
   const internalLid = useRef(new Animated.Value(0)).current;
   const activeLid = lidAnim || internalLid;
 
-  // Internal fallback scale animation
   const internalScale = useRef(new Animated.Value(1)).current;
   const activeScale = scaleAnim || internalScale;
 
-  // Internal fallback shake animation
   const internalShake = useRef(new Animated.Value(0)).current;
   const activeShake = shakeAnim || internalShake;
 
@@ -36,26 +32,27 @@ export function AnimatedDustbin({
       Animated.spring(internalLid, {
         toValue: isOpen ? 1 : 0,
         friction: 6,
-        tension: 80,
+        tension: 100,
         useNativeDriver: true,
       }).start();
     }
   }, [isOpen, lidAnim, internalLid]);
 
-  // Interpolate rotation for lid opening (pivot from bottom-left)
+  // Robust rotation & translation for opening the dustbin lid:
+  // Tilts open -40 degrees and lifts up smoothly
   const lidRotate = activeLid.interpolate({
     inputRange: [0, 1],
-    outputRange: ["0deg", "-42deg"],
+    outputRange: ["0deg", "-45deg"],
   });
 
   const lidTranslateY = activeLid.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -5],
+    outputRange: [0, -6],
   });
 
   const lidTranslateX = activeLid.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -2],
+    outputRange: [0, -4],
   });
 
   const content = (
@@ -72,10 +69,10 @@ export function AnimatedDustbin({
       ]}
     >
       <View style={styles.iconContainer}>
-        {/* Animated Dustbin Lid */}
+        {/* Animated Dustbin Lid Container */}
         <Animated.View
           style={[
-            styles.lidWrapper,
+            styles.lidContainer,
             {
               transform: [
                 { translateX: lidTranslateX },
@@ -107,7 +104,7 @@ export function AnimatedDustbin({
             styles.binBody,
             {
               borderColor: isOpen ? "#EF4444" : "#6F767E",
-              backgroundColor: isOpen ? "rgba(239, 68, 68, 0.08)" : "transparent",
+              backgroundColor: isOpen ? "rgba(239, 68, 68, 0.1)" : "transparent",
             },
           ]}
         >
@@ -134,6 +131,7 @@ export function AnimatedDustbin({
         onPress={onPress}
         activeOpacity={0.7}
         accessibilityLabel="Delete recording"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         {content}
       </TouchableOpacity>
@@ -147,9 +145,9 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#EF4444",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -159,11 +157,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  lidWrapper: {
+  lidContainer: {
     alignItems: "center",
     marginBottom: 1,
-    // transformOrigin for pivot at bottom left
-    transformOrigin: "left bottom" as any,
   },
   lidHandle: {
     width: 6,
