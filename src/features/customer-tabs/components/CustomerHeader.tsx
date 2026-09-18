@@ -5,10 +5,11 @@ import { Ionicons } from "@expo/vector-icons";
 type CustomerHeaderProps = {
   title: string;
   subtitle?: string;
-  rightIcon?: keyof typeof Ionicons.glyphMap;
+  rightIcon?: keyof typeof Ionicons.glyphMap | null;
   avatarUrl?: string | null;
   onRightPress?: () => void;
   centered?: boolean;
+  hideRightIcon?: boolean;
 };
 
 export function CustomerHeader({
@@ -18,6 +19,7 @@ export function CustomerHeader({
   avatarUrl,
   onRightPress,
   centered,
+  hideRightIcon = false,
 }: CustomerHeaderProps) {
   return (
     <View className={`px-5 pb-3 pt-2 ${centered ? "items-center" : ""}`}>
@@ -32,20 +34,22 @@ export function CustomerHeader({
             </Text>
           ) : null}
         </View>
-        <TouchableOpacity
-          onPress={onRightPress}
-          className="h-10 w-10 items-center justify-center rounded-full"
-        >
-          {avatarUrl ? (
-            <Image
-              source={{ uri: avatarUrl }}
-              className="w-9 h-9 rounded-full border border-brand-border bg-brand-surface"
-              contentFit="cover"
-            />
-          ) : (
-            <Ionicons name={rightIcon} size={20} color="#1A1D1F" />
-          )}
-        </TouchableOpacity>
+        {!hideRightIcon && rightIcon ? (
+          <TouchableOpacity
+            onPress={onRightPress}
+            className="h-10 w-10 items-center justify-center rounded-full"
+          >
+            {avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                className="w-9 h-9 rounded-full border border-brand-border bg-brand-surface"
+                contentFit="cover"
+              />
+            ) : (
+              <Ionicons name={rightIcon} size={20} color="#1A1D1F" />
+            )}
+          </TouchableOpacity>
+        ) : null}
       </View>
     </View>
   );

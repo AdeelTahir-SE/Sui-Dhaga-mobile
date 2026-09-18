@@ -11,7 +11,7 @@ export function SearchAndFilters({ onPressOptions, onPressNearMe }: SearchAndFil
   return (
     <>
       <View
-        className="h-[48px] flex-row items-center rounded-2xl bg-white px-4 shadow-xs"
+        className="h-[48px] flex-row items-center rounded-md bg-white px-4 shadow-xs"
         style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
       >
         <Ionicons name="search" size={18} color="#14919B" />
@@ -21,7 +21,7 @@ export function SearchAndFilters({ onPressOptions, onPressNearMe }: SearchAndFil
         <TouchableOpacity
           onPress={onPressOptions || (() => router.push("/tailors" as any))}
           activeOpacity={0.7}
-          className="h-8 w-8 items-center justify-center rounded-xl bg-[#F0FAFA]"
+          className="h-8 w-8 items-center justify-center rounded-md bg-[#F0FAFA]"
           style={{ borderWidth: 1, borderColor: "#BCE3E5" }}
         >
           <Ionicons name="options-outline" size={16} color="#14919B" />
@@ -44,7 +44,7 @@ export function SearchAndFilters({ onPressOptions, onPressNearMe }: SearchAndFil
                 }
               }}
               activeOpacity={0.7}
-              className="flex-row items-center rounded-xl px-3 py-2"
+              className="flex-row items-center rounded-md px-3 py-2"
               style={{
                 backgroundColor: isNearMe ? "#F0FAFA" : "#FFFFFF",
                 borderWidth: 1,

@@ -196,12 +196,13 @@ export default function MainTailorsScreen() {
       <CustomerHeader
         title="Find Tailors"
         subtitle="Explore bespoke master tailors"
+        hideRightIcon={true}
       />
       <View className="flex-1 px-5 pb-6">
         {/* Search Bar & Upgraded Dedicated Filter Button */}
         <View className="flex-row items-center gap-2.5">
           <View
-            className="h-[48px] flex-1 flex-row items-center rounded-2xl px-3.5 bg-white shadow-xs"
+            className="h-[48px] flex-1 flex-row items-center rounded-md px-3.5 bg-white shadow-xs"
             style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
           >
             <Ionicons name="search" size={18} color="#14919B" />
@@ -226,7 +227,7 @@ export default function MainTailorsScreen() {
           <TouchableOpacity
             onPress={() => setIsNearbyModalVisible(true)}
             activeOpacity={0.8}
-            className="h-[48px] px-3.5 flex-row items-center justify-center rounded-2xl shadow-xs"
+            className="h-[48px] px-3.5 flex-row items-center justify-center rounded-md shadow-xs"
             style={{
               backgroundColor: selectedRadius !== null ? "#14919B" : "#F0FAFA",
               borderWidth: 1,
@@ -262,7 +263,7 @@ export default function MainTailorsScreen() {
                 key={filter}
                 activeOpacity={0.7}
                 onPress={() => handleFilterToggle(filter)}
-                className="flex-row items-center rounded-xl px-3 py-2"
+                className="flex-row items-center rounded-md px-3 py-2"
                 style={{
                   backgroundColor: isSelected
                     ? "#14919B"
@@ -300,7 +301,7 @@ export default function MainTailorsScreen() {
           {selectedRadius !== null ? (
             <TouchableOpacity
               onPress={() => setIsNearbyModalVisible(true)}
-              className="flex-row items-center rounded-xl px-2.5 py-1.5"
+              className="flex-row items-center rounded-md px-2.5 py-1.5"
               style={{
                 backgroundColor: "#E0F7F7",
                 borderWidth: 1,
@@ -313,7 +314,7 @@ export default function MainTailorsScreen() {
               </Text>
               <TouchableOpacity
                 onPress={() => setSelectedRadius(null)}
-                className="ml-1.5 h-4 w-4 rounded-full bg-[#14919B]/20 items-center justify-center"
+                className="ml-1.5 h-4 w-4 rounded-md bg-[#14919B]/20 items-center justify-center"
               >
                 <Ionicons name="close" size={10} color="#14919B" />
               </TouchableOpacity>
@@ -329,17 +330,17 @@ export default function MainTailorsScreen() {
           onRequestClose={() => setIsNearbyModalVisible(false)}
         >
           <View
-            className="flex-1 justify-end"
+            className="flex-1 justify-end "
             style={{ backgroundColor: "rgba(15, 23, 42, 0.45)" }}
           >
-            <View className="rounded-t-[32px] bg-white px-5 pb-8 pt-3 shadow-2xl max-h-[88%]">
+            <View className="rounded-t-[36px] bg-white px-5 pb-8 pt-3 shadow-2xl max-h-[88%]">
               {/* Drag handle indicator */}
               <View className="h-1.5 w-12 rounded-full bg-slate-200 self-center mb-3 mt-1" />
 
               {/* Header */}
               <View className="flex-row items-center justify-between pb-3">
                 <View className="flex-row items-center flex-1">
-                  <View className="h-10 w-10 items-center justify-center rounded-2xl bg-[#E0F7F7] mr-3">
+                  <View className="h-10 w-10 items-center justify-center rounded-md bg-[#E0F7F7] mr-3">
                     <Ionicons name="location" size={20} color="#14919B" />
                   </View>
                   <View className="flex-1">
@@ -353,7 +354,7 @@ export default function MainTailorsScreen() {
                 </View>
                 <TouchableOpacity
                   onPress={() => setIsNearbyModalVisible(false)}
-                  className="h-8 w-8 items-center justify-center rounded-full bg-slate-100 active:bg-slate-200"
+                  className="h-8 w-8 items-center justify-center rounded-md bg-slate-100 active:bg-slate-200"
                 >
                   <Ionicons name="close" size={18} color="#64748B" />
                 </TouchableOpacity>
@@ -377,7 +378,7 @@ export default function MainTailorsScreen() {
                         key={opt.label}
                         onPress={() => setSelectedRadius(opt.value)}
                         activeOpacity={0.75}
-                        className="flex-row items-center rounded-2xl p-3.5"
+                        className="flex-row items-center rounded-md p-3.5"
                         style={{
                           backgroundColor: isSelected ? "#F0FAFA" : "#FFFFFF",
                           borderWidth: isSelected ? 2 : 1,
@@ -385,7 +386,7 @@ export default function MainTailorsScreen() {
                         }}
                       >
                         <View
-                          className="h-10 w-10 items-center justify-center rounded-xl mr-3"
+                          className="h-10 w-10 items-center justify-center rounded-md mr-3"
                           style={{
                             backgroundColor: isSelected ? "#14919B" : "#F0FAFA",
                           }}
@@ -443,7 +444,7 @@ export default function MainTailorsScreen() {
                             {count} {count === 1 ? "tailor" : "tailors"}
                           </Text>
                           <View
-                            className="h-5 w-5 rounded-full items-center justify-center"
+                            className="h-5 w-5 rounded-md items-center justify-center"
                             style={{
                               backgroundColor: isSelected
                                 ? "#14919B"
@@ -473,11 +474,11 @@ export default function MainTailorsScreen() {
                     router.push("/tailors/map" as any);
                   }}
                   activeOpacity={0.8}
-                  className="mb-4 flex-row items-center justify-between rounded-2xl p-3.5 bg-[#F0FAFA]"
+                  className="mb-2 flex-row items-center justify-between rounded-md p-3.5 bg-[#F0FAFA]"
                   style={{ borderWidth: 1, borderColor: "#BCE3E5" }}
                 >
                   <View className="flex-row items-center flex-1">
-                    <View className="h-9 w-9 rounded-xl bg-white items-center justify-center shadow-xs mr-3">
+                    <View className="h-9 w-9 rounded-md bg-white items-center justify-center shadow-xs mr-3">
                       <Ionicons name="map" size={18} color="#14919B" />
                     </View>
                     <View className="flex-1">
@@ -491,38 +492,42 @@ export default function MainTailorsScreen() {
                   </View>
                   <Ionicons name="chevron-forward" size={17} color="#14919B" />
                 </TouchableOpacity>
-
-                {/* Bottom Action Buttons */}
-                <View className="flex-row gap-3">
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSelectedRadius(null);
-                      setActiveFilter(null);
-                    }}
-                    activeOpacity={0.7}
-                    className="h-[48px] flex-1 items-center justify-center rounded-xl bg-slate-100 active:bg-slate-200"
-                  >
-                    <Text className="text-[13px] font-bold text-slate-600">
-                      Reset
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => {
-                      setIsNearbyModalVisible(false);
-                      if (selectedRadius !== null) {
-                        setActiveFilter("Near Me");
-                      }
-                    }}
-                    activeOpacity={0.85}
-                    className="h-[48px] flex-[2] items-center justify-center rounded-xl bg-primary active:bg-primary-dark shadow-sm"
-                  >
-                    <Text className="text-[14px] font-bold text-white">
-                      Show Results ({filteredTailors.length})
-                    </Text>
-                  </TouchableOpacity>
-                </View>
               </ScrollView>
+
+              {/* Fixed Bottom Action Buttons */}
+              <View
+                className="mt-3.5 pt-3 pb-1 flex flex-row items-center justify-center gap-3 "
+                style={{ borderTopWidth: 1, borderTopColor: "#E2E8F0" }}
+              >
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedRadius(null);
+                    setActiveFilter(null);
+                  }}
+                  activeOpacity={0.7}
+                  className="h-[50px] px-5 flex-1 items-center justify-center rounded-md bg-white shadow-xs"
+                  style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
+                >
+                  <Text className="text-[13px] font-bold text-brand-gray">
+                    Reset
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsNearbyModalVisible(false);
+                    if (selectedRadius !== null) {
+                      setActiveFilter("Near Me");
+                    }
+                  }}
+                  activeOpacity={0.85}
+                  className="h-[50px] flex-1 items-center justify-center rounded-md bg-primary active:bg-primary-dark shadow-sm px-4"
+                >
+                  <Text className="text-[14px] font-bold text-white">
+                    Show Results ({filteredTailors.length})
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
