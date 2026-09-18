@@ -3,6 +3,7 @@ import { useWindowDimensions, View } from "react-native";
 
 type AuthEdgeDecorationsProps = {
   variant?: "teal" | "tealNew" | "gold" | "coral";
+  align?: "left" | "right";
 };
 
 const edgeSources = {
@@ -14,9 +15,11 @@ const edgeSources = {
 
 export function AuthEdgeDecorations({
   variant = "teal",
+  align,
 }: AuthEdgeDecorationsProps) {
   const { width } = useWindowDimensions();
-  const alignRight = variant === "tealNew";
+  const isRightVariant = variant === "tealNew" || variant === "coral";
+  const alignRight = align !== undefined ? align === "right" : isRightVariant;
   const edgeSize = Math.min(Math.max(width * 0.78, 285), 430);
 
   return (

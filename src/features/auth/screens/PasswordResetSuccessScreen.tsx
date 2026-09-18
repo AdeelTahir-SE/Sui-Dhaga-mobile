@@ -11,7 +11,7 @@ export default function PasswordResetSuccessScreen() {
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
-      <AuthEdgeDecorations variant="coral" />
+      <AuthEdgeDecorations variant="coral" align="right" />
       <View className="flex-1 px-6 justify-center pt-8 pb-4">
         {/* Success Illustration */}
         <View className="items-center mt-4 mb-4">
