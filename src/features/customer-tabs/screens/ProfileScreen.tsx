@@ -508,12 +508,14 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout Action */}
-        <View className="mt-6">
+        <View className="mt-8 items-center">
           <AuthButton
             title="Log Out"
             icon="log-out-outline"
             variant="danger"
             onPress={handleLogout}
+            className="w-full max-w-[200px]"
+            borderRadius={14}
           />
         </View>
 

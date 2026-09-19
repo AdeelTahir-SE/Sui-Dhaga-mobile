@@ -19,6 +19,8 @@ type AuthButtonProps = {
   disabled?: boolean;
   showTexture?: boolean;
   style?: ViewStyle;
+  className?: string;
+  borderRadius?: number;
 };
 
 export function AuthButton({
@@ -31,6 +33,8 @@ export function AuthButton({
   disabled = false,
   showTexture = true,
   style,
+  className = "",
+  borderRadius,
 }: AuthButtonProps) {
   const isPrimary = variant === "primary";
   const isDanger = variant === "danger";
@@ -41,12 +45,15 @@ export function AuthButton({
     textureVariant ??
     (isPrimary ? "greenish" : isDanger ? "reddish" : "none");
 
+  const radius = borderRadius ?? 12;
+
   const bgStyle = isPrimary
     ? "bg-[#00949D] shadow-sm"
     : isDanger
-    ? "bg-[#F05A57] shadow-sm"
+    ? "bg-[#3B1E22]"
     : "bg-white border-[1.5px] border-brand-border";
 
+  const heightStyle = isDanger ? "h-[44px]" : "h-[54px]";
   const textColor = isOutlined ? "text-[#00949D]" : "text-white";
   const iconColor = isOutlined ? "#00949D" : "#FFFFFF";
 
@@ -55,16 +62,18 @@ export function AuthButton({
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.85}
-      className={`relative flex-row items-center justify-center h-[54px] rounded-xl overflow-hidden ${bgStyle} ${
+      className={`relative flex-row items-center justify-center ${heightStyle} rounded-xl overflow-hidden ${bgStyle} ${
         disabled ? "opacity-50" : ""
-      }`}
-      style={style}
+      } ${className}`}
+      style={[{ borderRadius: radius }, style]}
     >
       {/* Texture from assets/texture (greenish / reddish) */}
       {showTexture && resolvedTextureVariant !== "none" && (
         <ButtonTexture
           variant={resolvedTextureVariant}
-          borderRadius={12}
+          borderRadius={radius}
+          opacity={isDanger ? 0.45 : 1}
+          backgroundColor={isDanger ? "#3B1E22" : undefined}
         />
       )}
 

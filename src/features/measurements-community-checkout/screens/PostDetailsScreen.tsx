@@ -19,14 +19,14 @@ export default function PostDetailsScreen() {
       <View className="px-5">
         <View className="mb-3 flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <PlaceholderVisual image={authorRekha} variant="person" size="xs" tone="coral" />
+            <PlaceholderVisual image={authorRekha} variant="person" size="xs" tone="teal" />
             <View className="ml-3">
               <Text className="text-[13px] font-bold text-brand-dark">Rekha Designs</Text>
               <Text className="text-[10px] text-brand-gray">@rekhadesigns</Text>
             </View>
           </View>
-          <TouchableOpacity className="rounded-lg border border-[#F05A57] px-3 py-2">
-            <Text className="text-[11px] font-semibold text-[#F05A57]">Follow</Text>
+          <TouchableOpacity className="rounded-full border border-primary bg-primary-50 px-3.5 py-1.5">
+            <Text className="text-[11px] font-semibold text-primary">Follow</Text>
           </TouchableOpacity>
         </View>
         <View className="h-[300px] overflow-hidden rounded-xl bg-brand-surface">
@@ -40,7 +40,7 @@ export default function PostDetailsScreen() {
           Pastel green Anarkali with delicate floral embroidery.
         </Text>
         <View className="mt-3 flex-row items-center border-b border-brand-border pb-4">
-          <Ionicons name="heart" size={18} color="#F05A57" />
+          <Ionicons name="heart" size={18} color="#14919B" />
           <Text className="ml-2 mr-8 text-[12px] text-brand-dark">128</Text>
           <Ionicons name="chatbubble-outline" size={18} color="#1A1D1F" />
           <Text className="ml-2 flex-1 text-[12px] text-brand-dark">24</Text>

@@ -16,10 +16,10 @@ import { InfoRow } from "../components/InfoRow";
 import { MccButton } from "../components/MccButton";
 import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
-import { MccTabsPreview } from "../components/MccTabsPreview";
 import { MeasurementDiagram } from "../components/MeasurementDiagram";
 import { SectionTitle } from "../components/SectionTitle";
 import { useMeasurements } from "../hooks/useMeasurements";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 const RTW_SIZES = [
   { size: "XS (32)", bust: 32, waist: 26, hips: 36, shoulder: 13.5, length: 38 },
@@ -70,34 +70,62 @@ export default function MeasurementsScreen() {
   };
 
   return (
-    <MccScreenShell bottomTabs={<MccTabsPreview active="Profile" />}>
-      <MccHeader title="Measurements" rightIcon="notifications-outline" />
+    <MccScreenShell>
+      <MccHeader title="Measurements" showBack={true} hideRight={true} />
       <View className="px-5 pb-8">
+        {/* Prominent Header matching customer tabs home */}
+        <View className="mb-4 mt-1">
+          <Text className="text-[22px] font-black text-brand-dark tracking-tight">
+            Measurements
+          </Text>
+          <Text className="mt-0.5 text-[13px] font-medium text-brand-gray">
+            Manage bespoke body dimensions & tailoring profiles
+          </Text>
+        </View>
+
         {measurements.length === 0 ? (
-          <View className="py-12 items-center justify-center">
-            <View className="w-20 h-20 rounded-full bg-[#078b87]/10 items-center justify-center mb-4">
-              <Ionicons name="body-outline" size={38} color="#078b87" />
+          <View className="py-10 items-center justify-center">
+            <View className="w-20 h-20 rounded-full bg-[#00949D]/10 items-center justify-center mb-4">
+              <Ionicons name="body-outline" size={38} color="#00949D" />
             </View>
-            <Text className="text-[19px] font-bold text-brand-dark mb-2 text-center">
+            <Text className="text-[20px] font-black text-brand-dark mb-2 text-center tracking-tight">
               No Measurements Saved Yet
             </Text>
             <Text className="text-[13px] text-brand-gray text-center px-4 mb-6 leading-5">
               You haven&apos;t saved measurements for anyone yet. Create a measurement profile to set a person&apos;s name and universal body details for any dress or garment.
             </Text>
+
+            {/* Create Measurement button with wide px and greenish texture */}
             <TouchableOpacity
               onPress={() => router.push("/measurements/new" as never)}
-              className="h-[48px] px-8 rounded-xl bg-primary items-center justify-center flex-row shadow-sm"
+              activeOpacity={0.85}
+              className="relative h-[52px] w-full max-w-[280px] items-center justify-center rounded-xl overflow-hidden shadow-sm"
             >
-              <Ionicons name="add" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
-              <Text className="text-[14px] font-bold text-white">Create Measurement</Text>
+              <ButtonTexture variant="greenish" borderRadius={12} />
+              <View className="z-10 flex-row items-center justify-center px-6">
+                <Ionicons name="add" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text
+                  className="text-[15px] font-bold text-white"
+                  style={{
+                    textShadowColor: "rgba(0,0,0,0.22)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}
+                >
+                  Create Measurement
+                </Text>
+              </View>
             </TouchableOpacity>
 
+            {/* Improved Standard Size Guide Card Button */}
             <TouchableOpacity
               onPress={() => setShowSizeGuide(true)}
-              className="mt-4 py-2 px-4 rounded-lg flex-row items-center"
+              activeOpacity={0.75}
+              className="mt-4 flex-row items-center justify-center rounded-xl border border-[#00949D]/30 bg-[#00949D]/8 px-5 py-3 w-full max-w-[280px]"
             >
-              <Text className="text-[13px] font-semibold text-primary">
-                📏 View Standard Size Guide
+              <Ionicons name="book-outline" size={17} color="#00949D" style={{ marginRight: 8 }} />
+              <Text className="text-[13px] font-bold text-[#00949D]">
+                View Standard Sizing Guide
               </Text>
             </TouchableOpacity>
           </View>

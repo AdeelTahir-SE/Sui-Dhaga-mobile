@@ -116,9 +116,6 @@ export function useMeasurements() {
     }
 
     cachedProfiles = cachedProfiles.filter((m) => m.id !== id);
-    if (cachedProfiles.length === 0) {
-      cachedProfiles = [...INITIAL_DEFAULT_PROFILES];
-    }
     setMeasurements([...cachedProfiles]);
     setActiveProfile(cachedProfiles[0] || null);
   };

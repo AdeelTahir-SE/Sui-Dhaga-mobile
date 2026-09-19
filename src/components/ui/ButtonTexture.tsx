@@ -12,6 +12,7 @@ type ButtonTextureProps = {
   variant?: ButtonTextureVariant;
   opacity?: number;
   borderRadius?: number;
+  backgroundColor?: string;
 };
 
 /**
@@ -21,6 +22,7 @@ export function ButtonTexture({
   variant = "greenish",
   opacity = 1,
   borderRadius = 12,
+  backgroundColor,
 }: ButtonTextureProps) {
   if (variant === "none") return null;
 
@@ -34,7 +36,9 @@ export function ButtonTexture({
         {
           borderRadius,
           overflow: "hidden",
-          backgroundColor: variant === "greenish" ? "#00949D" : "#F05A57",
+          backgroundColor:
+            backgroundColor ??
+            (variant === "greenish" ? "#00949D" : "#8A2D2D"),
         },
       ]}
     >

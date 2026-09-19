@@ -4,24 +4,40 @@ import { Ionicons } from "@expo/vector-icons";
 
 type MccHeaderProps = {
   title: string;
+  subtitle?: string;
   showBack?: boolean;
   rightText?: string;
-  rightIcon?: keyof typeof Ionicons.glyphMap;
+  rightIcon?: keyof typeof Ionicons.glyphMap | null;
+  hideRight?: boolean;
+  onBackPress?: () => void;
 };
 
 export function MccHeader({
   title,
+  subtitle,
   showBack,
   rightText,
-  rightIcon = "notifications-outline",
+  rightIcon,
+  hideRight = false,
+  onBackPress,
 }: MccHeaderProps) {
+  const handleBack =
+    onBackPress ||
+    (() => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/home" as any);
+      }
+    });
+
   return (
     <View className="h-14 flex-row items-center justify-between px-4">
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={showBack ? "Go back" : "Menu"}
-        onPress={() => (showBack ? router.back() : undefined)}
-        className="h-10 w-10 items-center justify-center"
+        onPress={() => (showBack ? handleBack() : undefined)}
+        className="h-10 w-10 items-center justify-center rounded-full"
       >
         <Ionicons
           name={showBack ? "arrow-back" : "menu"}
@@ -29,16 +45,31 @@ export function MccHeader({
           color="#1A1D1F"
         />
       </TouchableOpacity>
-      <Text className="text-[15px] font-semibold text-brand-dark">{title}</Text>
-      <TouchableOpacity className="h-10 min-w-10 items-center justify-center px-1">
-        {rightText ? (
-          <Text className="text-[12px] font-semibold text-primary">
-            {rightText}
+
+      <View className="flex-1 items-center px-2">
+        <Text numberOfLines={1} className="text-[16px] font-bold text-brand-dark">
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text numberOfLines={1} className="text-[11px] font-medium text-brand-gray">
+            {subtitle}
           </Text>
-        ) : (
-          <Ionicons name={rightIcon} size={20} color="#1A1D1F" />
-        )}
-      </TouchableOpacity>
+        ) : null}
+      </View>
+
+      {!hideRight && (rightText || rightIcon) ? (
+        <TouchableOpacity className="h-10 min-w-10 items-center justify-center px-1">
+          {rightText ? (
+            <Text className="text-[12px] font-semibold text-primary">
+              {rightText}
+            </Text>
+          ) : rightIcon ? (
+            <Ionicons name={rightIcon} size={20} color="#1A1D1F" />
+          ) : null}
+        </TouchableOpacity>
+      ) : (
+        <View className="h-10 w-10" />
+      )}
     </View>
   );
 }
