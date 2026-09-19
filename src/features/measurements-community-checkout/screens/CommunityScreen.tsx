@@ -254,6 +254,7 @@ export default function CommunityScreen() {
                   author={authorName}
                   caption={postCaption}
                   avatarImage={authorAvatar}
+                  images={post.images}
                   postImage={postImg}
                   category={postCategory}
                   likesCount={likes}

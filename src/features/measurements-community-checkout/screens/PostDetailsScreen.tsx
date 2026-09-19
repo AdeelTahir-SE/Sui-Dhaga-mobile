@@ -18,6 +18,7 @@ import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
 import { PlaceholderVisual } from "../components/PlaceholderVisual";
 import { SectionTitle } from "../components/SectionTitle";
+import { CommunityMediaCarousel } from "../components/CommunityMediaCarousel";
 import { usePostDetails } from "../hooks/useCommunity";
 
 export default function PostDetailsScreen() {
@@ -165,8 +166,16 @@ export default function PostDetailsScreen() {
                 ) : null}
               </View>
 
-              {/* Post Image */}
-              {postImage ? (
+              {/* Post Media (Single or Carousel) */}
+              {post.images && post.images.length > 0 ? (
+                <View className="mb-3">
+                  <CommunityMediaCarousel
+                    media={post.images}
+                    height={320}
+                    borderRadius={18}
+                  />
+                </View>
+              ) : postImage ? (
                 <View className="h-[300px] overflow-hidden rounded-2xl bg-brand-surface mb-3 border border-brand-border/60 shadow-xs">
                   <Image
                     source={{ uri: postImage }}

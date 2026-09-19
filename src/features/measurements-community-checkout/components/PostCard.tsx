@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { PlaceholderVisual } from "./PlaceholderVisual";
+import { CommunityMediaCarousel } from "./CommunityMediaCarousel";
 
 type PostCardProps = {
   author: string;
@@ -11,6 +12,7 @@ type PostCardProps = {
   caption: string;
   avatarImage?: any;
   postImage?: any;
+  images?: (string | null | undefined)[];
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   category?: string;
   timeAgo?: string;
@@ -30,6 +32,7 @@ export function PostCard({
   caption,
   avatarImage,
   postImage,
+  images,
   tone = "teal",
   category,
   timeAgo = "Recently",
@@ -67,6 +70,18 @@ export function PostCard({
 
   const avatarSource =
     typeof avatarImage === "string" ? { uri: avatarImage } : avatarImage;
+
+  // Resolve media list for single vs carousel presentation
+  const mediaList: string[] = [];
+  if (images && images.length > 0) {
+    images.forEach((img) => {
+      if (typeof img === "string" && img.trim().length > 0) {
+        mediaList.push(img.trim());
+      }
+    });
+  } else if (typeof postImage === "string" && postImage.trim().length > 0) {
+    mediaList.push(postImage.trim());
+  }
 
   return (
     <View className="mb-4 rounded-2xl border border-brand-border bg-white p-3.5 shadow-sm">
@@ -133,8 +148,18 @@ export function PostCard({
           </Text>
         ) : null}
 
-        {/* Media Container (only if image exists) */}
-        {imageSource ? (
+        {/* Media Container (Carousel if > 1, single item if 1) */}
+        {mediaList.length > 0 ? (
+          <View className="mb-2">
+            <CommunityMediaCarousel
+              media={mediaList}
+              fallbackImage={imageSource}
+              height={260}
+              borderRadius={16}
+              onPress={onPress}
+            />
+          </View>
+        ) : imageSource ? (
           <View className="h-[260px] w-full overflow-hidden rounded-xl bg-brand-surface mb-1">
             <Image
               source={imageSource}

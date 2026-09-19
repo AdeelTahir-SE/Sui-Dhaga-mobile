@@ -1,7 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import { useDesigns } from "../../design-studio/hooks/useDesigns";
 import { CustomerHeader } from "../components/CustomerHeader";
@@ -13,6 +19,7 @@ import { TabPlaceholder } from "../components/TabPlaceholder";
 const newDesignDress = require("@/assets/illustrations/customer-tabs/design/new-design-dress.png");
 const buttonGreenishTexture = require("@/assets/texture/button-greenish-texture.original.png");
 const aiAssistantIcon = require("@/assets/illustrations/customer-tabs/home/ai-assistant-icon.png");
+const aiAssistantIcon2 = require("@/assets/illustrations/customer-tabs/home/image-ai-assistant.png");
 
 function DesignOption({
   title,
@@ -34,7 +41,11 @@ function DesignOption({
     >
       <View className="w-10 h-10 items-center justify-center">
         {image ? (
-          <Image source={image} style={{ width: 38, height: 38 }} contentFit="contain" />
+          <Image
+            source={image}
+            style={{ width: 38, height: 38 }}
+            contentFit="contain"
+          />
         ) : (
           <Ionicons name={icon || "sparkles"} size={32} color="#14919B" />
         )}
@@ -62,7 +73,12 @@ export default function DesignTabScreen() {
       />
       <View className="px-5 pb-8">
         <TouchableOpacity
-          onPress={() => router.push({ pathname: "/design-studio/chat", params: { mode: "designer" } } as never)}
+          onPress={() =>
+            router.push({
+              pathname: "/design-studio/chat",
+              params: { mode: "designer" },
+            } as never)
+          }
           activeOpacity={0.85}
           className="relative mb-4 min-h-[130px] flex-row items-center justify-between overflow-hidden rounded-md bg-primary px-5 pb-0 shadow-sm"
         >
@@ -105,6 +121,7 @@ export default function DesignTabScreen() {
           title="Image to Design"
           subtitle="Upload image & transform"
           icon="image-outline"
+          image={aiAssistantIcon2}
           href="/design-studio/image-to-design"
         />
 

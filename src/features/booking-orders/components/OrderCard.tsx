@@ -1,9 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-
-import { PlaceholderImage } from "./PlaceholderImage";
 
 type OrderCardProps = {
   id: string;
@@ -13,11 +12,22 @@ type OrderCardProps = {
   price: string | number;
   delivery: string;
   status: string;
+  image?: string | any;
+  designImages?: string[];
   statusTone?: "gold" | "blue" | "green" | "red";
   buttonLabel?: string;
   placeholderTone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   onPress?: () => void;
   tags?: string[];
+};
+
+const toneConfig: Record<string, { bg: string; text: string; border: string; iconBg: string }> = {
+  teal: { bg: "#EBF8F9", text: "#078B87", border: "#B2EBF2", iconBg: "#D4F4F5" },
+  coral: { bg: "#FFF1EE", text: "#E11D48", border: "#FECDD3", iconBg: "#FFE4E6" },
+  gold: { bg: "#FFF9E6", text: "#D97706", border: "#FDE68A", iconBg: "#FEF3C7" },
+  blue: { bg: "#EFF6FF", text: "#2563EB", border: "#BFDBFE", iconBg: "#DBEAFE" },
+  mint: { bg: "#ECFDF5", text: "#059669", border: "#A7F3D0", iconBg: "#D1FAE5" },
+  cream: { bg: "#FDF8F0", text: "#B45309", border: "#FDE68A", iconBg: "#FEF3C7" },
 };
 
 export function OrderCard({
@@ -28,12 +38,15 @@ export function OrderCard({
   price,
   delivery,
   status,
+  image,
+  designImages,
   statusTone,
   buttonLabel = "Track Order",
   placeholderTone = "teal",
   onPress,
   tags,
 }: OrderCardProps) {
+  const [imageError, setImageError] = useState(false);
   const normalizedStatus = (status || "").toLowerCase();
   const isCompleted =
     normalizedStatus === "completed" ||
@@ -118,6 +131,15 @@ export function OrderCard({
     return list;
   }, [tags, delivery, placedOn]);
 
+  const firstDesignImg =
+    (Array.isArray(designImages) && designImages.length > 0 ? designImages[0] : null) ||
+    (typeof image === "string" && image.trim().length > 0 ? image.trim() : null) ||
+    (image && typeof image === "object" && image.uri ? image.uri : null);
+  const hasValidImage = Boolean(firstDesignImg) && !imageError;
+
+  const activeTone = toneConfig[placeholderTone] || toneConfig.teal;
+  const initialLetter = (item || "O").charAt(0).toUpperCase();
+
   return (
     <TouchableOpacity
       activeOpacity={0.93}
@@ -127,11 +149,34 @@ export function OrderCard({
       {/* TOP ROW: THUMBNAIL + DETAILS */}
       <View style={styles.topRow}>
         <View style={styles.avatarWrapper}>
-          <PlaceholderImage
-            variant="garment"
-            size="md"
-            tone={placeholderTone as any}
-          />
+          {hasValidImage ? (
+            <Image
+              source={{ uri: firstDesignImg }}
+              contentFit="cover"
+              style={styles.avatarImage}
+              onError={() => setImageError(true)}
+              transition={200}
+            />
+          ) : (
+            <View
+              style={[
+                styles.avatarDivStyle,
+                { backgroundColor: activeTone.bg, borderColor: activeTone.border },
+              ]}
+            >
+              <View
+                style={[
+                  styles.avatarDivIconWrap,
+                  { backgroundColor: activeTone.iconBg },
+                ]}
+              >
+                <Ionicons name="shirt-outline" size={19} color={activeTone.text} />
+              </View>
+              <Text style={[styles.avatarDivInitial, { color: activeTone.text }]}>
+                {initialLetter}
+              </Text>
+            </View>
+          )}
           {/* Status Overlay Badge */}
           <View
             style={[
@@ -290,6 +335,34 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     position: "relative",
+  },
+  avatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    backgroundColor: "#F1F5F9",
+  },
+  avatarDivStyle: {
+    width: 64,
+    height: 64,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 6,
+  },
+  avatarDivIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
+  avatarDivInitial: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   avatarStatusBadge: {
     position: "absolute",

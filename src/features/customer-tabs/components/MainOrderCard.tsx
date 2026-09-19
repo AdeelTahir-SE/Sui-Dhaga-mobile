@@ -4,8 +4,6 @@ import { Image, type ImageSource } from "expo-image";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const orderItems = require("@/assets/illustrations/customer-tabs/order-items.png");
-
 type MainOrderCardProps = {
   id: string;
   item: string;
@@ -14,7 +12,8 @@ type MainOrderCardProps = {
   placedOn?: string;
   price: string | number;
   status: string;
-  image?: ImageSource | string;
+  image?: ImageSource | string | null;
+  designImages?: string[];
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   button?: string;
   orderId?: string;
@@ -22,13 +21,13 @@ type MainOrderCardProps = {
   onPress?: () => void;
 };
 
-const toneConfig: Record<string, { bg: string; text: string }> = {
-  teal: { bg: "#EBF8F9", text: "#078B87" },
-  coral: { bg: "#FFF1EE", text: "#E11D48" },
-  gold: { bg: "#FFF9E6", text: "#D97706" },
-  blue: { bg: "#EFF6FF", text: "#2563EB" },
-  mint: { bg: "#ECFDF5", text: "#059669" },
-  cream: { bg: "#FDF8F0", text: "#B45309" },
+const toneConfig: Record<string, { bg: string; text: string; border: string; iconBg: string }> = {
+  teal: { bg: "#EBF8F9", text: "#078B87", border: "#B2EBF2", iconBg: "#D4F4F5" },
+  coral: { bg: "#FFF1EE", text: "#E11D48", border: "#FECDD3", iconBg: "#FFE4E6" },
+  gold: { bg: "#FFF9E6", text: "#D97706", border: "#FDE68A", iconBg: "#FEF3C7" },
+  blue: { bg: "#EFF6FF", text: "#2563EB", border: "#BFDBFE", iconBg: "#DBEAFE" },
+  mint: { bg: "#ECFDF5", text: "#059669", border: "#A7F3D0", iconBg: "#D1FAE5" },
+  cream: { bg: "#FDF8F0", text: "#B45309", border: "#FDE68A", iconBg: "#FEF3C7" },
 };
 
 export function MainOrderCard({
@@ -40,6 +39,7 @@ export function MainOrderCard({
   price,
   status,
   image,
+  designImages,
   tone = "teal",
   button,
   orderId,
@@ -138,8 +138,11 @@ export function MainOrderCard({
   // Button label
   const ctaLabel = button || (isCompleted ? "View Details" : isCancelled ? "Order Details" : "Track Order");
 
-  const resolvedImage = image ?? orderItems;
-  const hasValidImage = resolvedImage && !imageError;
+  const firstDesignImg =
+    (Array.isArray(designImages) && designImages.length > 0 ? designImages[0] : null) ||
+    (typeof image === "string" && image.trim().length > 0 ? image.trim() : null) ||
+    (image && typeof image === "object" && (image as any).uri ? (image as any).uri : null);
+  const hasValidImage = Boolean(firstDesignImg) && !imageError;
 
   return (
     <TouchableOpacity
@@ -150,10 +153,10 @@ export function MainOrderCard({
       {/* TOP ROW: AVATAR / GARMENT IMAGE + ORDER DETAILS */}
       <View style={styles.topRow}>
         {/* AVATAR / IMAGE CONTAINER */}
-        <View style={[styles.avatarContainer, { backgroundColor: activeTone.bg }]}>
+        <View style={[styles.avatarContainer, { backgroundColor: activeTone.bg, borderColor: activeTone.border }]}>
           {hasValidImage ? (
             <Image
-              source={resolvedImage}
+              source={{ uri: firstDesignImg }}
               contentFit="cover"
               style={styles.avatarImage}
               onError={() => setImageError(true)}
@@ -161,12 +164,13 @@ export function MainOrderCard({
             />
           ) : (
             <View style={styles.initialsWrap}>
-              <Ionicons
-                name="shirt-outline"
-                size={22}
-                color={activeTone.text}
-                style={{ opacity: 0.7, marginBottom: 2 }}
-              />
+              <View style={[styles.divIconWrap, { backgroundColor: activeTone.iconBg }]}>
+                <Ionicons
+                  name="shirt-outline"
+                  size={18}
+                  color={activeTone.text}
+                />
+              </View>
               <Text style={[styles.initialText, { color: activeTone.text }]}>
                 {initialLetter}
               </Text>
@@ -351,13 +355,24 @@ const styles = StyleSheet.create({
     borderRadius: 15,
   },
   initialsWrap: {
+    width: "100%",
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
+    padding: 4,
+  },
+  divIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
   },
   initialText: {
-    fontSize: 20,
-    fontWeight: "900",
-    letterSpacing: -0.5,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.2,
   },
   avatarStatusBadge: {
     position: "absolute",

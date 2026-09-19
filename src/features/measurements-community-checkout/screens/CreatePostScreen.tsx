@@ -18,6 +18,8 @@ import * as ImagePicker from "expo-image-picker";
 import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
 import { SectionTitle } from "../components/SectionTitle";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
+import { isVideoMedia } from "../components/CommunityMediaCarousel";
 import { communityApi } from "../../../api/community.api";
 
 const CATEGORIES = [
@@ -42,8 +44,13 @@ const PRESET_TAGS = [
   "#PureSilk",
 ];
 
+export type PostMediaItem = {
+  uri: string;
+  type: "image" | "video";
+};
+
 export default function CreatePostScreen() {
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<PostMediaItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("Lehenga");
   const [caption, setCaption] = useState("");
   const [tailorTag, setTailorTag] = useState("");
@@ -57,45 +64,82 @@ export default function CreatePostScreen() {
   const handlePickFromGallery = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
+        mediaTypes: ["images", "videos"],
         allowsMultipleSelection: true,
-        selectionLimit: 4 - selectedImages.length,
+        selectionLimit: 5 - selectedMedia.length,
         quality: 0.8,
+        videoMaxDuration: 60,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const uris = result.assets.map((a) => a.uri).filter(Boolean);
-        setSelectedImages((prev) => [...prev, ...uris].slice(0, 4));
+        const newItems: PostMediaItem[] = result.assets
+          .filter((a) => Boolean(a.uri))
+          .map((a) => {
+            const isVid = a.type === "video" || isVideoMedia(a.uri);
+            return {
+              uri: a.uri,
+              type: isVid ? "video" : "image",
+            };
+          });
+
+        setSelectedMedia((prev) => [...prev, ...newItems].slice(0, 5));
       }
     } catch {
       Alert.alert(
         "Permission Error",
-        "Could not open photo library. Please check app permissions."
+        "Could not open media library. Please check app permissions."
       );
     }
   };
 
-  const handleTakePhoto = async () => {
+  const handleCaptureMedia = async (mode: "photo" | "video" = "photo") => {
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
         Alert.alert(
           "Camera Permission",
-          "Camera permission is required to take photos."
+          "Camera permission is required to capture photos or videos."
         );
         return;
       }
+
+      if (mode === "video") {
+        const micPerm = await (ImagePicker as any).requestMicrophonePermissionsAsync?.();
+        if (micPerm && !micPerm.granted) {
+          Alert.alert(
+            "Microphone Permission",
+            "Microphone permission is required to record video reels."
+          );
+          return;
+        }
+      }
+
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images"],
+        mediaTypes: mode === "video" ? ["videos"] : ["images"],
         quality: 0.8,
+        videoMaxDuration: 60,
       });
 
-      if (!result.canceled && result.assets[0]?.uri) {
-        setSelectedImages((prev) => [...prev, result.assets[0].uri].slice(0, 4));
+      if (!result.canceled && result.assets && result.assets[0]?.uri) {
+        const asset = result.assets[0];
+        const isVid = mode === "video" || asset.type === "video" || isVideoMedia(asset.uri);
+        const mediaType: "video" | "image" = isVid ? "video" : "image";
+        setSelectedMedia((prev) => [
+          ...prev,
+          { uri: asset.uri, type: mediaType },
+        ].slice(0, 5));
       }
     } catch {
       Alert.alert("Camera Error", "Could not launch camera.");
     }
+  };
+
+  const promptCameraOptions = () => {
+    Alert.alert("Capture Media", "Take a photo or record a video reel for your post", [
+      { text: "Take Photo 📸", onPress: () => handleCaptureMedia("photo") },
+      { text: "Record Reel 🎬", onPress: () => handleCaptureMedia("video") },
+      { text: "Cancel", style: "cancel" },
+    ]);
   };
 
   const toggleTag = (tag: string) => {
@@ -119,10 +163,10 @@ export default function CreatePostScreen() {
   };
 
   const handlePost = async () => {
-    if (!caption.trim() && selectedImages.length === 0) {
+    if (!caption.trim() && selectedMedia.length === 0) {
       Alert.alert(
         "Incomplete Post",
-        "Please add at least one photo or write a caption to share."
+        "Please add at least one photo, reel, or write a caption to share."
       );
       return;
     }
@@ -132,7 +176,6 @@ export default function CreatePostScreen() {
 
       const formData = new FormData();
       formData.append("category", selectedCategory);
-      formData.append("caption", caption.trim());
       formData.append("content", caption.trim() || `${selectedCategory} design`);
       formData.append("title", selectedCategory);
 
@@ -140,15 +183,26 @@ export default function CreatePostScreen() {
         formData.append("tags", activeTags.join(","));
       }
 
-      selectedImages.forEach((uri, index) => {
-        const filename = uri.split("/").pop() || `post_${Date.now()}_${index}.jpg`;
+      selectedMedia.forEach((item, index) => {
+        const isVid = item.type === "video";
+        const filename =
+          item.uri.split("/").pop() ||
+          `post_${Date.now()}_${index}.${isVid ? "mp4" : "jpg"}`;
         const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1].toLowerCase()}` : "image/jpeg";
+        let ext = match ? match[1].toLowerCase() : (isVid ? "mp4" : "jpg");
+        if (isVid && !["mp4", "mov", "webm", "m4v"].includes(ext)) {
+          ext = "mp4";
+        }
+        const mimeType = isVid
+          ? ext === "mov"
+            ? "video/quicktime"
+            : "video/mp4"
+          : `image/${ext === "jpg" ? "jpeg" : ext}`;
 
         formData.append("images", {
-          uri: Platform.OS === "ios" ? uri.replace("file://", "") : uri,
+          uri: Platform.OS === "ios" ? item.uri.replace("file://", "") : item.uri,
           name: filename,
-          type,
+          type: mimeType,
         } as any);
       });
 
@@ -216,18 +270,18 @@ export default function CreatePostScreen() {
             </View>
           </View>
 
-          {/* Upload Images Section */}
-          <SectionTitle title="Outfit Photos" />
-          {selectedImages.length === 0 ? (
+          {/* Upload Media Section (Photos & Reels) */}
+          <SectionTitle title="Photos & Reels" />
+          {selectedMedia.length === 0 ? (
             <View className="items-center rounded-2xl border-2 border-dashed border-primary/40 bg-primary-50/40 p-6">
               <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <Ionicons name="camera" size={24} color="#14919B" />
+                <Ionicons name="videocam-outline" size={24} color="#14919B" />
               </View>
               <Text className="mt-2.5 text-[14px] font-semibold text-brand-dark">
-                Upload Outfit Photos
+                Upload Photos or Reels
               </Text>
               <Text className="mt-1 text-center text-[11px] leading-4 text-brand-gray">
-                Add up to 4 photos to showcase the silhouette, stitching, and fabric.
+                Add up to 5 photos or video reels to showcase your stitched look and fabrics.
               </Text>
 
               <View className="mt-4 flex-row gap-3">
@@ -238,18 +292,18 @@ export default function CreatePostScreen() {
                 >
                   <Ionicons name="images-outline" size={16} color="#FFFFFF" />
                   <Text className="ml-2 text-[12px] font-semibold text-white">
-                    Choose from Gallery
+                    Choose Media
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={handleTakePhoto}
+                  onPress={promptCameraOptions}
                   activeOpacity={0.8}
                   className="flex-row items-center rounded-xl border border-primary bg-white px-4 py-2.5"
                 >
                   <Ionicons name="camera-outline" size={16} color="#14919B" />
                   <Text className="ml-2 text-[12px] font-semibold text-primary">
-                    Camera
+                    Camera / Reel
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -262,37 +316,61 @@ export default function CreatePostScreen() {
                 className="-mx-5 px-5"
               >
                 <View className="flex-row gap-3 py-1">
-                  {selectedImages.map((uri, index) => (
-                    <View
-                      key={uri}
-                      className="relative h-28 w-28 overflow-hidden rounded-2xl border border-brand-border bg-brand-surface"
-                    >
-                      <Image
-                        source={{ uri }}
-                        style={{ width: "100%", height: "100%" }}
-                        contentFit="cover"
-                      />
-                      {index === 0 && (
-                        <View className="absolute left-1.5 top-1.5 rounded-full bg-primary px-2 py-0.5">
-                          <Text className="text-[9px] font-bold text-white">
-                            Cover
-                          </Text>
-                        </View>
-                      )}
-                      <TouchableOpacity
-                        onPress={() =>
-                          setSelectedImages(
-                            selectedImages.filter((_, i) => i !== index)
-                          )
-                        }
-                        className="absolute right-1.5 top-1.5 h-6 w-6 items-center justify-center rounded-full bg-black/70"
+                  {selectedMedia.map((item, index) => {
+                    const isVid = item.type === "video";
+                    return (
+                      <View
+                        key={`${item.uri}-${index}`}
+                        className="relative h-28 w-28 overflow-hidden rounded-2xl border border-brand-border bg-brand-surface"
                       >
-                        <Ionicons name="close" size={14} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
+                        <Image
+                          source={{ uri: item.uri }}
+                          style={{ width: "100%", height: "100%" }}
+                          contentFit="cover"
+                        />
 
-                  {selectedImages.length < 4 && (
+                        {/* Video overlay indicator */}
+                        {isVid && (
+                          <View
+                            pointerEvents="none"
+                            className="absolute inset-0 items-center justify-center bg-black/25"
+                          >
+                            <Ionicons
+                              name="play-circle"
+                              size={30}
+                              color="#FFFFFF"
+                            />
+                            <View className="absolute bottom-1.5 left-1.5 flex-row items-center rounded-full bg-black/60 px-1.5 py-0.5">
+                              <Ionicons name="film-outline" size={10} color="#FFFFFF" />
+                              <Text className="ml-1 text-[8.5px] font-bold text-white">
+                                Reel
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+
+                        {index === 0 && (
+                          <View className="absolute left-1.5 top-1.5 rounded-full bg-primary px-2 py-0.5">
+                            <Text className="text-[9px] font-bold text-white">
+                              Cover
+                            </Text>
+                          </View>
+                        )}
+                        <TouchableOpacity
+                          onPress={() =>
+                            setSelectedMedia(
+                              selectedMedia.filter((_, i) => i !== index)
+                            )
+                          }
+                          className="absolute right-1.5 top-1.5 h-6 w-6 items-center justify-center rounded-full bg-black/70"
+                        >
+                          <Ionicons name="close" size={14} color="#FFFFFF" />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+
+                  {selectedMedia.length < 5 && (
                     <TouchableOpacity
                       onPress={handlePickFromGallery}
                       activeOpacity={0.7}
@@ -303,7 +381,7 @@ export default function CreatePostScreen() {
                         Add More
                       </Text>
                       <Text className="text-[9px] text-brand-gray">
-                        ({selectedImages.length}/4)
+                        ({selectedMedia.length}/5)
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -431,22 +509,33 @@ export default function CreatePostScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Share Button */}
+          {/* Share Button with Bespoke Tailor Texture */}
           <TouchableOpacity
             onPress={handlePost}
             disabled={isSubmitting}
             activeOpacity={0.85}
-            className="mt-6 h-[54px] flex-row items-center justify-center rounded-2xl bg-primary shadow-md shadow-primary/30"
+            className={`relative mt-6 h-[54px] flex-row items-center justify-center rounded-2xl overflow-hidden bg-primary shadow-md shadow-primary/30 ${
+              isSubmitting ? "opacity-60" : ""
+            }`}
+            style={{ borderRadius: 16 }}
           >
+            <ButtonTexture variant="greenish" borderRadius={16} />
             {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-              <>
+              <View className="z-10 flex-row items-center justify-center">
                 <Ionicons name="sparkles" size={18} color="#FFFFFF" />
-                <Text className="ml-2 text-[15px] font-bold text-white">
+                <Text
+                  className="ml-2 text-[15px] font-bold tracking-wide text-white"
+                  style={{
+                    textShadowColor: "rgba(0,0,0,0.22)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}
+                >
                   Share to Community
                 </Text>
-              </>
+              </View>
             )}
           </TouchableOpacity>
         </View>

@@ -85,14 +85,21 @@ export default function OrderDetailsScreen() {
 
         {/* Main Garment Card */}
         <View className="flex-row rounded-xl border border-brand-border bg-white p-3">
-          {designImages && designImages.length > 0 ? (
+          {(designImages && designImages.length > 0 ? designImages[0] : (order?.imageUrl || order?.image)) ? (
             <Image
-              source={{ uri: designImages[0] }}
+              source={{ uri: (designImages && designImages.length > 0 ? designImages[0] : (order?.imageUrl || order?.image)) }}
               style={{ width: 70, height: 70, borderRadius: 10 }}
               contentFit="cover"
             />
           ) : (
-            <PlaceholderImage image={order?.image || order?.imageUrl} variant="garment" size="md" tone="coral" />
+            <View className="w-[70px] h-[70px] rounded-xl border border-primary/20 bg-primary-50 items-center justify-center p-1">
+              <View className="w-8 h-8 rounded-full bg-primary/15 items-center justify-center mb-1">
+                <Ionicons name="shirt-outline" size={17} color="#14919B" />
+              </View>
+              <Text className="text-[10px] font-extrabold text-primary">
+                {(itemName || "O").charAt(0).toUpperCase()}
+              </Text>
+            </View>
           )}
           <View className="ml-3 flex-1">
             <Text className="text-[14px] font-bold text-brand-dark">

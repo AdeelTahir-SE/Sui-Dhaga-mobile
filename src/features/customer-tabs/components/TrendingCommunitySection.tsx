@@ -1,4 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { router } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -7,13 +10,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
 
 import { communityApi } from "../../../api/community.api";
 import { CommunityPost } from "../../../types/api";
 import { SectionTitle } from "./SectionTitle";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 type TrendingCommunitySectionProps = {
   title?: string;
@@ -21,7 +22,7 @@ type TrendingCommunitySectionProps = {
 };
 
 export function TrendingCommunitySection({
-  title = "Trending Designs in Community",
+  title = "Trending Design",
   onViewAll,
 }: TrendingCommunitySectionProps) {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -43,9 +44,7 @@ export function TrendingCommunitySection({
 
       setPosts(records);
     } catch (err: any) {
-      setError(
-        err?.message || "Could not load trending community designs."
-      );
+      setError(err?.message || "Could not load trending community designs.");
       setPosts([]);
     } finally {
       setIsLoading(false);
@@ -63,7 +62,9 @@ export function TrendingCommunitySection({
           const currentlyLiked = Boolean(p.isLiked ?? p.is_liked);
           const currentCount = p.likesCount ?? p.likes_count ?? 0;
           const nextLiked = !currentlyLiked;
-          const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
+          const nextCount = nextLiked
+            ? currentCount + 1
+            : Math.max(0, currentCount - 1);
           return {
             ...p,
             isLiked: nextLiked,
@@ -73,7 +74,7 @@ export function TrendingCommunitySection({
           };
         }
         return p;
-      })
+      }),
     );
 
     try {
@@ -90,8 +91,8 @@ export function TrendingCommunitySection({
                   isLiked: serverLiked,
                   is_liked: serverLiked,
                 }
-              : p
-          )
+              : p,
+          ),
         );
       }
     } catch {
@@ -111,7 +112,7 @@ export function TrendingCommunitySection({
             };
           }
           return p;
-        })
+        }),
       );
     }
   };
@@ -167,12 +168,15 @@ export function TrendingCommunitySection({
             Be the first to share an outfit or design with the community!
           </Text>
           <TouchableOpacity
-            activeOpacity={0.8}
+            activeOpacity={0.85}
             onPress={() => router.push("/community/create" as any)}
             style={styles.createBtn}
           >
-            <Ionicons name="add" size={14} color="#FFFFFF" />
-            <Text style={styles.createBtnText}>Create Post</Text>
+            <ButtonTexture variant="greenish" borderRadius={8} />
+            <View style={styles.createBtnContent}>
+              <Ionicons name="add" size={15} color="#FFFFFF" />
+              <Text style={styles.createBtnText}>Create Post</Text>
+            </View>
           </TouchableOpacity>
         </View>
       )}
@@ -198,7 +202,9 @@ export function TrendingCommunitySection({
               item.author?.avatar;
 
             const postImg =
-              item.images && item.images.length > 0 ? item.images[0] : undefined;
+              item.images && item.images.length > 0
+                ? item.images[0]
+                : undefined;
 
             const postCategory =
               item.category || (item.tags && item.tags[0]) || "Custom";
@@ -209,7 +215,8 @@ export function TrendingCommunitySection({
             const likes = item.likesCount ?? item.likes_count ?? 0;
             const isLiked = Boolean(item.isLiked ?? item.is_liked);
             const comments = item.commentsCount ?? item.comments_count ?? 0;
-            const isVerified = item.author?.role === "tailor" || item.author?.isVerified;
+            const isVerified =
+              item.author?.role === "tailor" || item.author?.isVerified;
 
             return (
               <TouchableOpacity
@@ -229,7 +236,11 @@ export function TrendingCommunitySection({
                     />
                   ) : (
                     <View style={styles.noImagePlaceholder}>
-                      <Ionicons name="image-outline" size={32} color="#CBD5E1" />
+                      <Ionicons
+                        name="image-outline"
+                        size={32}
+                        color="#CBD5E1"
+                      />
                     </View>
                   )}
 
@@ -617,18 +628,30 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   createBtn: {
+    position: "relative",
+    overflow: "hidden",
     marginTop: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#00949D",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  createBtnContent: {
+    zIndex: 10,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#14919B",
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 8,
-    gap: 4,
+    justifyContent: "center",
+    gap: 5,
   },
   createBtnText: {
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: "700",
     color: "#FFFFFF",
+    letterSpacing: 0.2,
+    textShadowColor: "rgba(0,0,0,0.22)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });

@@ -25,6 +25,7 @@ import {
 
 const skinTexture = require("@/assets/texture/skin-texture.png");
 const aiAssistantIcon = require("@/assets/illustrations/customer-tabs/home/ai-assistant-icon.png");
+const aiAssistantIcon2 = require("@/assets/illustrations/customer-tabs/home/image-ai-assistant.png");
 
 export type ChatTab = "assistant" | "designer";
 
@@ -181,6 +182,8 @@ export default function AiChatScreen() {
 
   const currentMessages =
     activeTab === "assistant" ? assistantMessages : designerMessages;
+  const currentAiIcon =
+    activeTab === "assistant" ? aiAssistantIcon : aiAssistantIcon2;
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -552,11 +555,11 @@ export default function AiChatScreen() {
             <Ionicons name="arrow-back" size={20} color="#1A1D1F" />
           </TouchableOpacity>
 
-          {/* AI Identity Info with aiAssistantIcon */}
+          {/* AI Identity Info with currentAiIcon */}
           <View style={{ alignItems: "center", flex: 1, marginHorizontal: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Image
-                source={aiAssistantIcon}
+                source={currentAiIcon}
                 style={{ width: 24, height: 24, marginRight: 7 }}
                 contentFit="contain"
               />
@@ -663,11 +666,15 @@ export default function AiChatScreen() {
                 elevation: activeTab === "assistant" ? 2 : 0,
               }}
             >
-              <Ionicons
-                name="chatbubble-ellipses"
-                size={16}
-                color={activeTab === "assistant" ? "#14919B" : "#6F767E"}
-                style={{ marginRight: 6 }}
+              <Image
+                source={aiAssistantIcon}
+                style={{
+                  width: 18,
+                  height: 18,
+                  marginRight: 6,
+                  opacity: activeTab === "assistant" ? 1 : 0.6,
+                }}
+                contentFit="contain"
               />
               <Text
                 style={{
@@ -720,11 +727,15 @@ export default function AiChatScreen() {
                 elevation: activeTab === "designer" ? 2 : 0,
               }}
             >
-              <Ionicons
-                name="color-wand"
-                size={16}
-                color={activeTab === "designer" ? "#14919B" : "#6F767E"}
-                style={{ marginRight: 6 }}
+              <Image
+                source={aiAssistantIcon2}
+                style={{
+                  width: 18,
+                  height: 18,
+                  marginRight: 6,
+                  opacity: activeTab === "designer" ? 1 : 0.6,
+                }}
+                contentFit="contain"
               />
               <Text
                 style={{
@@ -801,7 +812,7 @@ export default function AiChatScreen() {
                   }}
                 >
                   <Image
-                    source={aiAssistantIcon}
+                    source={currentAiIcon}
                     style={{ width: 52, height: 52 }}
                     contentFit="contain"
                   />
@@ -970,7 +981,7 @@ export default function AiChatScreen() {
                     }}
                   >
                     <Image
-                      source={aiAssistantIcon}
+                      source={currentAiIcon}
                       style={{ width: 18, height: 18, marginRight: 6 }}
                       contentFit="contain"
                     />
@@ -1290,7 +1301,7 @@ export default function AiChatScreen() {
               }}
             >
               <Image
-                source={aiAssistantIcon}
+                source={currentAiIcon}
                 style={{ width: 18, height: 18, marginRight: 8 }}
                 contentFit="contain"
               />

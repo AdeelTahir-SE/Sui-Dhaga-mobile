@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ActivityIndicator,
+  Modal,
   RefreshControl,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -11,54 +13,171 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
 import { AppointmentCard } from "../components/AppointmentCard";
-import { BookingOrdersHeader } from "../components/BookingOrdersHeader";
 import { BookingOrdersScreenShell } from "../components/BookingOrdersScreenShell";
-import { BottomTabsPreview } from "../components/BottomTabsPreview";
-import { SectionLabel } from "../components/SectionLabel";
-import { SegmentedTabs } from "../components/SegmentedTabs";
 import { useAppointments } from "../hooks/useAppointments";
 
 export default function AppointmentsScreen() {
   const { appointments, isLoading, isRefreshing, refresh, error } = useAppointments();
-  const [selectedTabIndex, setSelectedTabIndex] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  const filterOptions = [
+    {
+      label: "All Appointments",
+      value: null,
+      desc: "Show all your scheduled and past appointments",
+      icon: "calendar-outline" as const,
+      badge: "All",
+    },
+    {
+      label: "Upcoming",
+      value: "upcoming",
+      desc: "Confirmed and scheduled tailor visits",
+      icon: "time-outline" as const,
+      badge: "Upcoming",
+    },
+    {
+      label: "Completed",
+      value: "completed",
+      desc: "Past consultations and finished fittings",
+      icon: "checkmark-done-circle-outline" as const,
+      badge: "Completed",
+    },
+    {
+      label: "Cancelled",
+      value: "cancelled",
+      desc: "Appointments that were cancelled or declined",
+      icon: "close-circle-outline" as const,
+      badge: "Cancelled",
+    },
+  ];
+
+  const isUpcoming = (status?: string) => {
+    const s = (status || "").toLowerCase();
+    return s === "upcoming" || s === "confirmed" || s === "pending" || s === "scheduled" || !s;
+  };
+
+  const isCompleted = (status?: string) => {
+    const s = (status || "").toLowerCase();
+    return s === "completed";
+  };
+
+  const isCancelled = (status?: string) => {
+    const s = (status || "").toLowerCase();
+    return s === "cancelled" || s === "canceled" || s === "rejected";
+  };
+
+  const getAppointmentCount = (filterVal: string | null) => {
+    if (filterVal === null) return appointments.length;
+    if (filterVal === "upcoming") {
+      return appointments.filter((a) => isUpcoming(a.status)).length;
+    }
+    if (filterVal === "completed") {
+      return appointments.filter((a) => isCompleted(a.status)).length;
+    }
+    if (filterVal === "cancelled") {
+      return appointments.filter((a) => isCancelled(a.status)).length;
+    }
+    return appointments.length;
+  };
+
+  const filteredAppointments = useMemo(() => {
+    let result = [...appointments];
+
+    // 1. Status Filter
+    if (activeFilter === "upcoming") {
+      result = result.filter((a) => isUpcoming(a.status));
+    } else if (activeFilter === "completed") {
+      result = result.filter((a) => isCompleted(a.status));
+    } else if (activeFilter === "cancelled") {
+      result = result.filter((a) => isCancelled(a.status));
+    }
+
+    // 2. Search Query Filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter((apt) => {
+        const tailor = (apt.tailorName || apt.tailor?.name || apt.tailor?.shopName || "").toLowerCase();
+        const service = (apt.serviceType || apt.service?.name || "").toLowerCase();
+        const status = (apt.status || "").toLowerCase();
+        const date = (apt.appointmentDate || apt.date || "").toLowerCase();
+        const location = (apt.location || "").toLowerCase();
+        return (
+          tailor.includes(q) ||
+          service.includes(q) ||
+          status.includes(q) ||
+          date.includes(q) ||
+          location.includes(q)
+        );
+      });
+    }
+
+    return result;
+  }, [appointments, activeFilter, searchQuery]);
+
+  const modalFilteredCount = useMemo(() => {
+    let result = [...appointments];
+    if (selectedFilter === "upcoming") {
+      result = result.filter((a) => isUpcoming(a.status));
+    } else if (selectedFilter === "completed") {
+      result = result.filter((a) => isCompleted(a.status));
+    } else if (selectedFilter === "cancelled") {
+      result = result.filter((a) => isCancelled(a.status));
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter((apt) => {
+        const tailor = (apt.tailorName || apt.tailor?.name || apt.tailor?.shopName || "").toLowerCase();
+        const service = (apt.serviceType || apt.service?.name || "").toLowerCase();
+        const status = (apt.status || "").toLowerCase();
+        const date = (apt.appointmentDate || apt.date || "").toLowerCase();
+        return (
+          tailor.includes(q) ||
+          service.includes(q) ||
+          status.includes(q) ||
+          date.includes(q)
+        );
+      });
+    }
+    return result.length;
+  }, [appointments, selectedFilter, searchQuery]);
 
   const getTone = (index: number): "coral" | "blue" | "gold" | "teal" => {
-    const tones: ("coral" | "blue" | "gold" | "teal")[] = ["coral", "blue", "gold", "teal"];
+    const tones: ("coral" | "blue" | "gold" | "teal")[] = ["teal", "blue", "gold", "coral"];
     return tones[index % tones.length];
   };
 
-  const upcoming = appointments.filter((a) => {
-    const s = (a.status || "").toLowerCase();
-    return s === "upcoming" || s === "confirmed" || s === "pending" || !s;
-  });
-
-  const completed = appointments.filter(
-    (a) => (a.status || "").toLowerCase() === "completed"
-  );
-
-  const cancelled = appointments.filter((a) => {
-    const s = (a.status || "").toLowerCase();
-    return s === "cancelled" || s === "rejected";
-  });
-
-  const tabs = [
-    `Upcoming (${upcoming.length})`,
-    `Completed (${completed.length})`,
-    `Cancelled (${cancelled.length})`,
-  ];
+  const activeFilterOption = filterOptions.find((f) => f.value === activeFilter);
 
   return (
-    <BookingOrdersScreenShell bottomTabs={<BottomTabsPreview active="Tailors" />}>
-      <BookingOrdersHeader
-        title="Appointments"
-        leftIcon="arrow-back"
-        onPressLeft={() => router.back()}
-        rightIcon="notifications-outline"
-        rightLabel="Notifications"
-        onPressRight={() => router.push("/home" as any)}
-      />
+    // Note: bottomTabs omitted to remove bottom tabs as requested
+    <BookingOrdersScreenShell>
+      {/* Header matching Orders page font style, back button on left, no bell icon at top right */}
+      <View className="px-5 pb-3 pt-3 flex-row items-center justify-between">
+        <View className="flex-row items-center flex-1">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+            className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-slate-100 active:bg-slate-200"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="arrow-back" size={20} color="#1A1D1F" />
+          </TouchableOpacity>
+          <View className="flex-1">
+            <Text className="text-[20px] font-black text-brand-dark tracking-tight">
+              Appointments
+            </Text>
+            <Text className="mt-0.5 text-[13px] font-medium text-brand-gray">
+              Manage fittings & tailor consultations
+            </Text>
+          </View>
+        </View>
+      </View>
+
       <ScrollView
-        className="flex-1 px-5 pb-8"
+        className="flex-1 px-5 pb-6"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
@@ -70,12 +189,86 @@ export default function AppointmentsScreen() {
           />
         }
       >
-        <SegmentedTabs
-          tabs={tabs}
-          activeIndex={selectedTabIndex}
-          onChange={(index) => setSelectedTabIndex(index)}
-        />
+        {/* Search Bar & Dedicated Filter Button (Identical to Orders page) */}
+        <View className="flex-row items-center gap-2.5 mb-4 mt-1">
+          <View
+            className="flex-1 flex-row items-center px-3.5 bg-[#F8FAFC] shadow-xs"
+            style={{ height: 48, borderRadius: 12, borderWidth: 1, borderColor: "#E2E8F0" }}
+          >
+            <Ionicons name="search" size={19} color="#14919B" />
+            <TextInput
+              style={{ paddingVertical: 0 }}
+              className="ml-2.5 flex-1 text-[13px] font-medium text-brand-dark"
+              placeholder="Search by tailor, service, status..."
+              placeholderTextColor="#94A3B8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery("")}
+                className="p-1"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close-circle" size={17} color="#94A3B8" />
+              </TouchableOpacity>
+            )}
+          </View>
 
+          {/* Filter Button */}
+          <TouchableOpacity
+            onPress={() => {
+              setSelectedFilter(activeFilter);
+              setIsFilterModalVisible(true);
+            }}
+            activeOpacity={0.8}
+            className="items-center justify-center shadow-xs"
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 12,
+              backgroundColor: "#FFFFFF",
+              borderWidth: 1,
+              borderColor: "#E2E8F0",
+            }}
+            accessibilityLabel="Filter appointments"
+          >
+            <Ionicons name="filter" size={21} color="#14919B" />
+            {activeFilter !== null && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  width: 7,
+                  height: 7,
+                  borderRadius: 3.5,
+                  backgroundColor: "#14919B",
+                }}
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Active Filter Pill if Filter Applied */}
+        {activeFilter !== null && (
+          <View className="flex-row items-center mb-3.5">
+            <View className="flex-row items-center bg-[#E0F7F7] px-3 py-1.5 rounded-full">
+              <Text className="text-[12px] font-semibold text-[#0D7377] mr-1.5">
+                Status: {activeFilterOption?.badge || activeFilter}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setActiveFilter(null)}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Ionicons name="close-circle" size={16} color="#0D7377" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Error Alert */}
         {error && !isLoading ? (
           <View className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4">
             <View className="flex-row items-center">
@@ -94,6 +287,7 @@ export default function AppointmentsScreen() {
           </View>
         ) : null}
 
+        {/* Loading Indicator */}
         {isLoading && !isRefreshing ? (
           <View className="py-16 items-center justify-center">
             <ActivityIndicator size="large" color="#14919B" />
@@ -101,131 +295,238 @@ export default function AppointmentsScreen() {
               Loading appointments...
             </Text>
           </View>
-        ) : selectedTabIndex === 0 ? (
-          // Upcoming Tab
-          <View className="mt-2">
-            <SectionLabel title="Upcoming Appointments" />
-            {upcoming.length > 0 ? (
-              upcoming.map((appt, index) => (
-                <AppointmentCard
-                  key={appt.id || index}
-                  tailor={appt.tailorName || "Tailor"}
-                  avatar={appt.tailorAvatar || appt.tailor?.avatar || appt.tailor?.avatar_url || appt.tailor?.imageUrl || appt.tailor?.image}
-                  service={appt.serviceType || "Tailoring Appointment"}
-                  date={appt.appointmentDate || appt.date || "Scheduled"}
-                  time={appt.appointmentTime || appt.time || ""}
-                  status={appt.status || "Upcoming"}
-                  tone="blue"
-                  placeholderTone={getTone(index)}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/appointments/[appointmentId]",
-                      params: { appointmentId: appt.id },
-                    } as any)
-                  }
-                />
-              ))
-            ) : (
-              <View className="items-center justify-center rounded-md border border-brand-border bg-white py-12 px-4 shadow-xs">
-                <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-3">
-                  <Ionicons name="calendar-outline" size={32} color="#14919B" />
-                </View>
-                <Text className="text-[16px] font-bold text-brand-dark">
-                  No Upcoming Appointments
-                </Text>
-                <Text className="mt-1 text-center text-[12px] font-medium text-brand-gray max-w-[240px]">
-                  Book an appointment with our master tailors for custom stitching.
-                </Text>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => router.push("/tailors" as any)}
-                  className="mt-4 rounded-md bg-primary px-5 py-2.5 shadow-xs active:bg-primary-dark"
-                >
-                  <Text className="text-[13px] font-bold text-white">
-                    Explore Tailors
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        ) : selectedTabIndex === 1 ? (
-          // Completed Tab
-          <View className="mt-2">
-            <SectionLabel title="Completed Appointments" />
-            {completed.length > 0 ? (
-              completed.map((appt, index) => (
-                <AppointmentCard
-                  key={appt.id || index}
-                  tailor={appt.tailorName || "Tailor"}
-                  avatar={appt.tailorAvatar || appt.tailor?.avatar || appt.tailor?.avatar_url || appt.tailor?.imageUrl || appt.tailor?.image}
-                  service={appt.serviceType || "Tailoring Appointment"}
-                  date={appt.appointmentDate || appt.date || "Completed"}
-                  time={appt.appointmentTime || appt.time || ""}
-                  status={appt.status || "Completed"}
-                  tone="green"
-                  placeholderTone={getTone(index + 1)}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/appointments/[appointmentId]",
-                      params: { appointmentId: appt.id },
-                    } as any)
-                  }
-                />
-              ))
-            ) : (
-              <View className="items-center justify-center rounded-md border border-brand-border bg-white py-12 px-4 shadow-xs">
-                <View className="h-16 w-16 items-center justify-center rounded-full bg-green-50 mb-3">
-                  <Ionicons name="checkmark-done-circle-outline" size={32} color="#10B981" />
-                </View>
-                <Text className="text-[16px] font-bold text-brand-dark">
-                  No Completed Appointments
-                </Text>
-                <Text className="mt-1 text-center text-[12px] font-medium text-brand-gray">
-                  Your past completed appointments will show up here.
-                </Text>
-              </View>
-            )}
-          </View>
         ) : (
-          // Cancelled Tab
-          <View className="mt-2">
-            <SectionLabel title="Cancelled Appointments" />
-            {cancelled.length > 0 ? (
-              cancelled.map((appt, index) => (
-                <AppointmentCard
-                  key={appt.id || index}
-                  tailor={appt.tailorName || "Tailor"}
-                  avatar={appt.tailorAvatar || appt.tailor?.avatar || appt.tailor?.avatar_url || appt.tailor?.imageUrl || appt.tailor?.image}
-                  service={appt.serviceType || "Tailoring Appointment"}
-                  date={appt.appointmentDate || appt.date || "Cancelled"}
-                  time={appt.appointmentTime || appt.time || ""}
-                  status={appt.status || "Cancelled"}
-                  tone="red"
-                  placeholderTone={getTone(index + 2)}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/appointments/[appointmentId]",
-                      params: { appointmentId: appt.id },
-                    } as any)
-                  }
-                />
-              ))
+          <View className="mt-1">
+            {/* Appointments Count & Header Row */}
+            <View className="flex-row items-center justify-between mb-3">
+              <Text className="text-[13px] font-bold text-brand-dark uppercase tracking-wider">
+                {activeFilter ? `${activeFilterOption?.badge} Appointments` : "All Appointments"}
+              </Text>
+              <Text className="text-[12px] font-medium text-brand-gray">
+                {filteredAppointments.length} {filteredAppointments.length === 1 ? "result" : "results"}
+              </Text>
+            </View>
+
+            {filteredAppointments.length > 0 ? (
+              filteredAppointments.map((appt, index) => {
+                const tailorAvatar =
+                  appt.tailorAvatar ||
+                  appt.tailor?.avatar ||
+                  appt.tailor?.avatar_url ||
+                  appt.tailor?.imageUrl ||
+                  appt.tailor?.image;
+
+                return (
+                  <AppointmentCard
+                    key={appt.id || index}
+                    id={appt.id}
+                    tailor={appt.tailorName || appt.tailor?.name || "Master Tailor"}
+                    avatar={tailorAvatar}
+                    service={appt.serviceType || "Custom Stitching & Fitting"}
+                    date={appt.appointmentDate || appt.date || "Scheduled"}
+                    time={appt.appointmentTime || appt.time || ""}
+                    status={appt.status || "Upcoming"}
+                    location={appt.location}
+                    placeholderTone={getTone(index)}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/appointments/[appointmentId]",
+                        params: { appointmentId: appt.id },
+                      } as any)
+                    }
+                  />
+                );
+              })
             ) : (
-              <View className="items-center justify-center rounded-md border border-brand-border bg-white py-12 px-4 shadow-xs">
-                <View className="h-16 w-16 items-center justify-center rounded-full bg-red-50 mb-3">
-                  <Ionicons name="close-circle-outline" size={32} color="#EF4444" />
+              <View className="items-center justify-center rounded-2xl border border-dashed border-brand-border bg-gray-50/60 py-12 px-4 shadow-xs my-2">
+                <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-3">
+                  <Ionicons name="calendar-outline" size={30} color="#14919B" />
                 </View>
                 <Text className="text-[16px] font-bold text-brand-dark">
-                  No Cancelled Appointments
+                  {searchQuery ? "No Matching Appointments" : "No Appointments Found"}
                 </Text>
-                <Text className="mt-1 text-center text-[12px] font-medium text-brand-gray">
-                  Cancelled appointments will appear in this history list.
+                <Text className="mt-1 text-center text-[12px] font-medium text-brand-gray max-w-[250px]">
+                  {searchQuery
+                    ? "Try adjusting your search query or clear the filter."
+                    : "Schedule a fitting or measurement visit with expert tailors."}
                 </Text>
+                {searchQuery ? (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      setSearchQuery("");
+                      setActiveFilter(null);
+                    }}
+                    className="mt-4 rounded-xl bg-slate-100 px-4 py-2"
+                  >
+                    <Text className="text-[12.5px] font-bold text-brand-dark">
+                      Clear Search & Filters
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => router.push("/tailors" as any)}
+                    className="mt-4 rounded-xl bg-primary px-5 py-2.5 shadow-xs active:bg-primary-dark"
+                  >
+                    <Text className="text-[13px] font-bold text-white">
+                      Explore Tailors
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
         )}
       </ScrollView>
+
+      {/* Modal: Appointment Filter (Identical styling to Orders filter modal) */}
+      <Modal
+        visible={isFilterModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsFilterModalVisible(false)}
+      >
+        <View
+          className="flex-1 justify-end"
+          style={{ backgroundColor: "rgba(15, 23, 42, 0.45)" }}
+        >
+          <View className="rounded-t-[36px] bg-white px-5 pb-8 pt-3 shadow-2xl max-h-[88%]">
+            {/* Drag handle indicator */}
+            <View className="h-1.5 w-12 rounded-full bg-slate-200 self-center mb-3 mt-1" />
+
+            {/* Header */}
+            <View className="flex-row items-center justify-between pb-3">
+              <View className="flex-row items-center flex-1">
+                <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#E0F7F7] mr-3">
+                  <Ionicons name="filter" size={20} color="#14919B" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[17px] font-bold text-brand-dark">
+                    Filter Appointments
+                  </Text>
+                  <Text className="text-[12px] font-medium text-brand-gray">
+                    Filter your visits by appointment status
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsFilterModalVisible(false)}
+                className="h-8 w-8 items-center justify-center rounded-xl bg-slate-100 active:bg-slate-200"
+              >
+                <Ionicons name="close" size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Subtle hairline divider */}
+            <View className="h-[1px] bg-slate-100 mb-3.5" />
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text className="text-[12px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+                Appointment Status
+              </Text>
+
+              <View className="gap-2.5 mb-4">
+                {filterOptions.map((opt) => {
+                  const isSelected = selectedFilter === opt.value;
+                  const count = getAppointmentCount(opt.value);
+
+                  return (
+                    <TouchableOpacity
+                      key={opt.label}
+                      activeOpacity={0.7}
+                      onPress={() => setSelectedFilter(opt.value)}
+                      className={`flex-row items-center justify-between p-3.5 rounded-2xl border transition-all ${
+                        isSelected
+                          ? "border-[#14919B] bg-[#E0F7F7]/30"
+                          : "border-slate-100 bg-white active:bg-slate-50"
+                      }`}
+                    >
+                      <View className="flex-row items-center flex-1 mr-3">
+                        <View
+                          className={`h-9 w-9 items-center justify-center rounded-xl mr-3 ${
+                            isSelected ? "bg-[#14919B]" : "bg-slate-100"
+                          }`}
+                        >
+                          <Ionicons
+                            name={opt.icon}
+                            size={18}
+                            color={isSelected ? "#FFFFFF" : "#64748B"}
+                          />
+                        </View>
+                        <View className="flex-1">
+                          <Text
+                            className={`text-[14px] font-bold ${
+                              isSelected ? "text-[#0D7377]" : "text-brand-dark"
+                            }`}
+                          >
+                            {opt.label}
+                          </Text>
+                          <Text className="text-[11.5px] font-medium text-slate-400 mt-0.5">
+                            {opt.desc}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View className="flex-row items-center gap-2.5">
+                        <View
+                          className={`px-2 py-0.5 rounded-full ${
+                            isSelected ? "bg-[#14919B]" : "bg-slate-100"
+                          }`}
+                        >
+                          <Text
+                            className={`text-[11px] font-bold ${
+                              isSelected ? "text-white" : "text-slate-600"
+                            }`}
+                          >
+                            {count}
+                          </Text>
+                        </View>
+                        <View
+                          className={`h-5 w-5 rounded-full border items-center justify-center ${
+                            isSelected
+                              ? "border-[#14919B] bg-[#14919B]"
+                              : "border-slate-300 bg-white"
+                          }`}
+                        >
+                          {isSelected && (
+                            <View className="h-2 w-2 rounded-full bg-white" />
+                          )}
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+
+            {/* Bottom Actions */}
+            <View className="flex-row items-center gap-3 pt-3 border-t border-slate-100">
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setSelectedFilter(null)}
+                className="flex-1 items-center justify-center py-3.5 rounded-xl border border-slate-200 active:bg-slate-50"
+              >
+                <Text className="text-[13.5px] font-bold text-slate-600">
+                  Reset
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => {
+                  setActiveFilter(selectedFilter);
+                  setIsFilterModalVisible(false);
+                }}
+                className="flex-2 items-center justify-center py-3.5 rounded-xl bg-[#14919B] active:bg-[#0D7377] shadow-sm"
+              >
+                <Text className="text-[13.5px] font-bold text-white">
+                  Apply Filter ({modalFilteredCount})
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </BookingOrdersScreenShell>
   );
 }

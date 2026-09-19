@@ -138,6 +138,12 @@ export default function OrdersScreen() {
               currentList.map((order, index) => {
                 const isDeliv = isCompleted(order.status);
                 const isCancel = isCancelled(order.status);
+                const firstDesignImg =
+                  (order.designImages && order.designImages.length > 0 ? order.designImages[0] : null) ||
+                  (order.design_images && order.design_images.length > 0 ? order.design_images[0] : null) ||
+                  order.imageUrl ||
+                  order.image ||
+                  null;
 
                 return (
                   <OrderCard
@@ -145,6 +151,8 @@ export default function OrdersScreen() {
                     id={order.orderNumber || order.id || `ORD${index + 1000}`}
                     item={order.itemName || "Custom Outfit"}
                     tailor={order.tailorName || "Tailor"}
+                    image={firstDesignImg}
+                    designImages={order.designImages || order.design_images}
                     onPress={() => router.push(`/orders/${order.id || order.orderNumber || index + 1}` as any)}
                     placedOn={
                       order.createdAt ||

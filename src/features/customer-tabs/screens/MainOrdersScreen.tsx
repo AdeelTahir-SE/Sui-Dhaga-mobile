@@ -18,11 +18,7 @@ import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MainOrderCard } from "../components/MainOrderCard";
 import { useOrders } from "../../booking-orders/hooks/useOrders";
 
-const defaultImages = [
-  require("@/assets/illustrations/customer-tabs/orders/order-anarkali.png"),
-  require("@/assets/illustrations/customer-tabs/orders/order-kurta.png"),
-  require("@/assets/illustrations/customer-tabs/orders/order-lehenga.png"),
-];
+
 
 export default function MainOrdersScreen() {
   const { orders, isLoading, isRefreshing, error, refresh } = useOrders();
@@ -538,6 +534,13 @@ export default function MainOrdersScreen() {
                   })
                 : undefined;
 
+              const firstDesignImg =
+                (order.designImages && order.designImages.length > 0 ? order.designImages[0] : null) ||
+                (order.design_images && order.design_images.length > 0 ? order.design_images[0] : null) ||
+                order.imageUrl ||
+                order.image ||
+                null;
+
               return (
                 <MainOrderCard
                   key={order.id || index}
@@ -549,7 +552,8 @@ export default function MainOrdersScreen() {
                   placedOn={placedOnText}
                   price={`Rs ${order.price?.toLocaleString?.() || order.price || 0}`}
                   status={displayStatus}
-                  image={order.imageUrl || order.image || defaultImages[index % defaultImages.length]}
+                  image={firstDesignImg}
+                  designImages={order.designImages || order.design_images}
                   tone={getTone(index)}
                   button={isDelivered ? "View Details" : isCancel ? "Order Details" : "Track Order"}
                 />
