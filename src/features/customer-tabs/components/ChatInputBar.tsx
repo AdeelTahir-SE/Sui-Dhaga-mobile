@@ -626,7 +626,7 @@ export function ChatInputBar({
               <Animated.View
                 style={[
                   styles.slideHintRow,
-                  StyleSheet.absoluteFillObject,
+                  StyleSheet.absoluteFill,
                   { opacity: deleteTextOpacity, justifyContent: "flex-end" },
                 ]}
               >

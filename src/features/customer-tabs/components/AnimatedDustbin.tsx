@@ -105,7 +105,7 @@ export function AnimatedDustbin({
       {/* Background layer: Gray */}
       <Animated.View
         style={[
-          StyleSheet.absoluteFillObject,
+          StyleSheet.absoluteFill,
           {
             borderRadius: size / 2,
             backgroundColor: "#F3F4F6",
@@ -117,7 +117,7 @@ export function AnimatedDustbin({
       {/* Background layer: Red glowing */}
       <Animated.View
         style={[
-          StyleSheet.absoluteFillObject,
+          StyleSheet.absoluteFill,
           {
             borderRadius: size / 2,
             backgroundColor: "#FEE2E2",
@@ -136,7 +136,7 @@ export function AnimatedDustbin({
       <Animated.View
         style={[
           styles.iconContainer,
-          StyleSheet.absoluteFillObject,
+          StyleSheet.absoluteFill,
           { opacity: redOpacity, alignItems: "center", justifyContent: "center" },
         ]}
       >
