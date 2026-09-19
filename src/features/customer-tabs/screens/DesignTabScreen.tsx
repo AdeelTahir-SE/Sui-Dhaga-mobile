@@ -55,7 +55,7 @@ export default function DesignTabScreen() {
       />
       <View className="px-5 pb-8">
         <TouchableOpacity
-          onPress={() => router.push("/design-studio" as never)}
+          onPress={() => router.push("/design-studio/chat" as never)}
           activeOpacity={0.85}
           className="relative mb-4 min-h-[130px] flex-row items-center justify-between overflow-hidden rounded-md bg-primary px-5 pb-0 shadow-sm"
         >

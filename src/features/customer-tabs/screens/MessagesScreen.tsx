@@ -226,7 +226,6 @@ export default function MessagesScreen() {
   const { isOnline } = usePresence();
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [isOptionsSheetVisible, setIsOptionsSheetVisible] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
@@ -422,9 +421,7 @@ export default function MessagesScreen() {
     >
       <CustomerHeader
         title="Messages"
-        hideRightIcon={false}
-        rightIcon="ellipsis-vertical"
-        onRightPress={() => setIsOptionsSheetVisible(true)}
+        hideRightIcon={true}
       />
 
       <View className="flex-1 px-5 pb-6">
@@ -771,6 +768,10 @@ export default function MessagesScreen() {
                 "mint",
               ];
               const tone = tones[index % tones.length];
+              const lastMsg = item.lastMessage || (item as any).last_message;
+              const lastSenderId = typeof lastMsg === "object" ? (lastMsg?.senderId || (lastMsg as any)?.sender_id) : undefined;
+              const isLastMsgOutgoing = Boolean(lastSenderId && currentUser?.id && String(lastSenderId).toLowerCase() === String(currentUser.id).toLowerCase());
+              const isLastMsgRead = typeof lastMsg === "object" ? (lastMsg?.isRead === true || (lastMsg as any)?.is_read === true) : false;
 
               return (
                 <MessageRow
@@ -783,6 +784,8 @@ export default function MessagesScreen() {
                   unread={item.unreadCount ?? (item as any).unread_count}
                   tone={tone}
                   isOnline={isOnline(other.id)}
+                  isOutgoing={isLastMsgOutgoing}
+                  isRead={isLastMsgRead}
                   onPress={() => {
                     const tailorId = item.participant2_id || item.tailorId || (item as any).tailor_id || other.id;
                     const clientId = item.participant1_id || item.customerId || (item as any).customer_id || currentUser?.id;
@@ -804,186 +807,6 @@ export default function MessagesScreen() {
           </View>
         )}
       </View>
-
-      {/* Messages Top-Right Options Action Sheet */}
-      <Modal
-        visible={isOptionsSheetVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsOptionsSheetVisible(false)}
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => setIsOptionsSheetVisible(false)}
-          style={{
-            flex: 1,
-            justifyContent: "flex-end",
-            backgroundColor: "rgba(15, 23, 42, 0.45)",
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
-              paddingHorizontal: 20,
-              paddingTop: 12,
-              paddingBottom: 32,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 10,
-              elevation: 10,
-            }}
-          >
-            <View
-              style={{
-                height: 5,
-                width: 44,
-                borderRadius: 2.5,
-                backgroundColor: "#EAE5DD",
-                alignSelf: "center",
-                marginBottom: 16,
-                marginTop: 4,
-              }}
-            />
-
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingBottom: 14,
-                borderBottomWidth: 1,
-                borderBottomColor: "#EAE5DD",
-                marginBottom: 12,
-              }}
-            >
-              <View>
-                <Text
-                  style={{ fontSize: 16, fontWeight: "800", color: "#1A1D1F" }}
-                >
-                  Messages Options
-                </Text>
-                <Text
-                  style={{ fontSize: 12, color: "#6F767E", fontWeight: "500" }}
-                >
-                  Quick actions & measurements
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setIsOptionsSheetVisible(false)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  backgroundColor: "#FFFFFF",
-                  borderWidth: 1,
-                  borderColor: "#EAE5DD",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Ionicons name="close" size={17} color="#6F767E" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ gap: 10, paddingVertical: 4 }}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  setIsOptionsSheetVisible(false);
-                  router.push("/measurements" as any);
-                }}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  padding: 14,
-                  borderRadius: 14,
-                  backgroundColor: "#F0FAFA",
-                  borderWidth: 1.5,
-                  borderColor: "#14919B",
-                }}
-              >
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: "#14919B",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: 12,
-                  }}
-                >
-                  <Ionicons name="resize-outline" size={20} color="#FFFFFF" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: "800",
-                      color: "#0D7377",
-                    }}
-                  >
-                    My Saved Measurements
-                  </Text>
-                  <Text style={{ fontSize: 12, color: "#6F767E" }}>
-                    View, manage, or prepare measurements to share
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={17} color="#14919B" />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  setIsOptionsSheetVisible(false);
-                  refresh();
-                }}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  padding: 14,
-                  borderRadius: 14,
-                  backgroundColor: "#FFFFFF",
-                  borderWidth: 1,
-                  borderColor: "#EAE5DD",
-                }}
-              >
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: "#F3F4F6",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: 12,
-                  }}
-                >
-                  <Ionicons name="refresh" size={19} color="#475569" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: "700",
-                      color: "#1A1D1F",
-                    }}
-                  >
-                    Refresh Inbox
-                  </Text>
-                  <Text style={{ fontSize: 12, color: "#6F767E" }}>
-                    Check for latest incoming messages
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={17} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </CustomerTabShell>
   );
 }

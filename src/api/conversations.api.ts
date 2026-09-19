@@ -645,6 +645,13 @@ export const conversationsApi = {
     });
   },
 
+  // PATCH /conversations/{conversationId}/read - Mark all unread messages in conversation as read
+  async markConversationAsRead(conversationId: string) {
+    return apiClient(`/conversations/${conversationId}/read`, {
+      method: 'PATCH',
+    });
+  },
+
   // POST /messages/{messageId}/attachments - Add an attachment to a message
   async addAttachment(
     messageId: string,

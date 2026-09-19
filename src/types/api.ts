@@ -233,13 +233,19 @@ export interface ConversationParticipant {
 export interface MessageItem {
   id: string;
   conversationId: string;
+  conversation_id?: string;
   senderId?: string;
+  sender_id?: string;
   senderName?: string;
   senderAvatar?: string;
   text: string;
   attachments?: string[];
   isRead?: boolean;
+  is_read?: boolean;
+  readAt?: string;
+  read_at?: string;
   createdAt: string;
+  created_at?: string;
 }
 
 export interface ConversationItem {

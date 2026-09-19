@@ -14,6 +14,8 @@ type MessageRowProps = {
   onPress?: () => void;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   isOnline?: boolean;
+  isOutgoing?: boolean;
+  isRead?: boolean;
 };
 
 const toneBg: Record<string, string> = {
@@ -36,6 +38,8 @@ export function MessageRow({
   onPress,
   tone = "teal",
   isOnline = false,
+  isOutgoing = false,
+  isRead = false,
 }: MessageRowProps) {
   const [imageError, setImageError] = React.useState(false);
   const rawSrc = avatar_url || avatarUrl || image;
@@ -102,6 +106,14 @@ export function MessageRow({
           {name}
         </Text>
         <View className="flex-row items-center mt-1">
+          {isOutgoing && (
+            <Ionicons
+              name={isRead ? "checkmark-done" : "checkmark"}
+              size={13}
+              color={isRead ? "#0284C7" : "#94A3B8"}
+              style={{ marginRight: 3 }}
+            />
+          )}
           {message && (message.toLowerCase().includes("voice message") || message.toLowerCase().includes("voice_message")) ? (
             <View className="flex-row items-center mr-1">
               <Ionicons name="mic" size={13} color="#14919B" />

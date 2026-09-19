@@ -23,6 +23,7 @@ import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { QuickAction } from "../components/QuickAction";
 import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
+import { TrendingCommunitySection } from "../components/TrendingCommunitySection";
 
 const homeHero = require("@/assets/illustrations/customer-tabs/home-hero.png");
 const skinTexture = require("@/assets/texture/skin-texture.png");
@@ -79,7 +80,7 @@ export default function HomeScreen() {
       description: "Create bespoke outfits with AI visualization",
       icon: "color-wand-outline" as const,
       image: aiStudioIcon,
-      route: "/design-studio",
+      route: "/design",
       color: "#7C3AED",
       bgColor: "#F5F3FF",
       borderColor: "#EDE9FE",
@@ -259,6 +260,9 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+
+        {/* Section: Trending Designs in Community */}
+        <TrendingCommunitySection />
       </View>
 
       {/* Modal: All Quick Actions */}

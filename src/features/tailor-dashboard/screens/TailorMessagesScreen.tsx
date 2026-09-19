@@ -583,6 +583,10 @@ export default function TailorMessagesScreen() {
                 "mint",
               ];
               const tone = tones[index % tones.length];
+              const lastMsg = item.lastMessage || (item as any).last_message;
+              const lastSenderId = typeof lastMsg === "object" ? (lastMsg?.senderId || (lastMsg as any)?.sender_id) : undefined;
+              const isLastMsgOutgoing = Boolean(lastSenderId && currentUser?.id && String(lastSenderId).toLowerCase() === String(currentUser.id).toLowerCase());
+              const isLastMsgRead = typeof lastMsg === "object" ? (lastMsg?.isRead === true || (lastMsg as any)?.is_read === true) : false;
 
               return (
                 <MessageRow
@@ -594,6 +598,8 @@ export default function TailorMessagesScreen() {
                   avatarUrl={other.avatarUrl || other.avatar_url || undefined}
                   unread={item.unreadCount ?? (item as any).unread_count}
                   tone={tone}
+                  isOutgoing={isLastMsgOutgoing}
+                  isRead={isLastMsgRead}
                   onPress={() => {
                     const tailorId = item.participant2_id || item.tailorId || (item as any).tailor_id || currentUser?.id;
                     const clientId = item.participant1_id || item.customerId || (item as any).customer_id || other.id;

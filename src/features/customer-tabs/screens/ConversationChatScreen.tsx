@@ -248,6 +248,45 @@ const QUICK_SUGGESTIONS = [
   "✨ Do you handle alterations and resizing?",
 ];
 
+function normalizeMessage(raw: any): MessageItem {
+  if (!raw) return raw;
+  const isRead = raw.is_read === true || raw.isRead === true;
+  const readAt = raw.read_at || raw.readAt || undefined;
+  const senderId = (
+    raw.sender_id ||
+    raw.senderId ||
+    raw.sender?.id ||
+    raw.sender?._id ||
+    raw.userId ||
+    raw.user_id ||
+    ""
+  ).toString();
+
+  return {
+    ...raw,
+    id: String(raw.id || raw._id || ""),
+    conversationId: String(raw.conversation_id || raw.conversationId || ""),
+    senderId,
+    senderName:
+      raw.senderName ||
+      raw.sender_name ||
+      raw.sender?.fullName ||
+      raw.sender?.name,
+    senderAvatar:
+      raw.senderAvatar ||
+      raw.sender_avatar ||
+      raw.sender?.avatarUrl ||
+      raw.sender?.avatar_url,
+    text: raw.text || raw.content || raw.message || raw.body || "",
+    attachments: extractMessageAttachments(raw),
+    isRead,
+    is_read: isRead,
+    readAt,
+    read_at: readAt,
+    createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
+  };
+}
+
 export default function ConversationChatScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
@@ -304,14 +343,62 @@ export default function ConversationChatScreen() {
     (msgs: MessageItem[]) => {
       if (!currentUser?.id || !Array.isArray(msgs)) return;
       const curId = String(currentUser.id).toLowerCase();
-      msgs.forEach((m) => {
-        const senderId = m.senderId ? String(m.senderId).toLowerCase() : "";
-        if (m.id && senderId && senderId !== curId && m.isRead === false) {
-          conversationsApi.markAsRead(m.id).catch(() => {});
-        }
+
+      // Find all unread incoming messages from other participant
+      const unreadIncoming = msgs.filter((m) => {
+        const senderId = (
+          m.senderId ||
+          (m as any).sender_id ||
+          ""
+        )
+          .toString()
+          .toLowerCase();
+        const isMsgRead = m.isRead === true || (m as any).is_read === true;
+        return (
+          m.id &&
+          senderId &&
+          senderId !== curId &&
+          !isMsgRead &&
+          !String(m.id).startsWith("temp_")
+        );
       });
+
+      if (unreadIncoming.length === 0) return;
+
+      // 1. Mark entire conversation as read via batch endpoint
+      if (activeConvId && activeConvId !== "new") {
+        conversationsApi.markConversationAsRead(activeConvId).catch(() => {});
+      }
+
+      // 2. Also mark unread messages individually as fallback
+      unreadIncoming.forEach((m) => {
+        conversationsApi.markAsRead(m.id).catch(() => {});
+      });
+
+      // 3. Immediately mark local state as read
+      setMessages((prev) =>
+        prev.map((m) => {
+          const senderId = (
+            m.senderId ||
+            (m as any).sender_id ||
+            ""
+          )
+            .toString()
+            .toLowerCase();
+          const isMsgRead = m.isRead === true || (m as any).is_read === true;
+          if (senderId && senderId !== curId && !isMsgRead) {
+            return {
+              ...m,
+              isRead: true,
+              is_read: true,
+              readAt: new Date().toISOString(),
+            };
+          }
+          return m;
+        }),
+      );
     },
-    [currentUser?.id],
+    [currentUser?.id, activeConvId],
   );
 
   const loadData = useCallback(async () => {
@@ -338,9 +425,10 @@ export default function ConversationChatScreen() {
           }
         }
         if (msgsRes?.data && Array.isArray(msgsRes.data)) {
-          setMessages(msgsRes.data);
+          const normalized = msgsRes.data.map(normalizeMessage);
+          setMessages(normalized);
           setHasMore(Boolean(msgsRes.hasMore));
-          markUnreadMessagesAsRead(msgsRes.data);
+          markUnreadMessagesAsRead(normalized);
           setTimeout(() => {
             scrollViewRef.current?.scrollToEnd({ animated: false });
           }, 100);
@@ -360,9 +448,10 @@ export default function ConversationChatScreen() {
 
         if (convRes?.data) setConversation(convRes.data);
         if (msgsRes?.data && Array.isArray(msgsRes.data)) {
-          setMessages(msgsRes.data);
+          const normalized = msgsRes.data.map(normalizeMessage);
+          setMessages(normalized);
           setHasMore(Boolean(msgsRes.hasMore));
-          markUnreadMessagesAsRead(msgsRes.data);
+          markUnreadMessagesAsRead(normalized);
           setTimeout(() => {
             scrollViewRef.current?.scrollToEnd({ animated: false });
           }, 100);
@@ -409,7 +498,7 @@ export default function ConversationChatScreen() {
       }
 
       if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-        const olderBatch: MessageItem[] = res.data;
+        const olderBatch: MessageItem[] = res.data.map(normalizeMessage);
         setHasMore(Boolean(res.hasMore));
 
         // Deduplicate against existing messages
@@ -444,7 +533,7 @@ export default function ConversationChatScreen() {
     loadData();
   }, [loadData]);
 
-  // Supabase Realtime Subscription for live incoming messages
+  // Supabase Realtime Subscription for live incoming messages and read receipts
   useEffect(() => {
     if (!activeConvId || activeConvId === "new") return;
 
@@ -477,35 +566,27 @@ export default function ConversationChatScreen() {
             );
             if (tempIdx !== -1) {
               const updated = [...prev];
+              const normalized = normalizeMessage(newRecord);
               updated[tempIdx] = {
                 ...updated[tempIdx],
-                ...newRecord,
+                ...normalized,
                 id: newRecord.id,
                 conversationId:
                   newRecord.conversation_id || newRecord.conversationId,
                 senderId: newRecord.sender_id || newRecord.senderId,
-                attachments: newRecord.attachments,
+                attachments: normalized.attachments,
                 createdAt: newRecord.created_at || newRecord.createdAt,
               };
               return updated;
             }
           }
 
-          const formattedMsg: MessageItem = {
-            id: newRecord.id,
-            conversationId:
-              newRecord.conversation_id || newRecord.conversationId,
-            senderId: newRecord.sender_id || newRecord.senderId,
-            text: newRecord.text || "",
-            attachments: newRecord.attachments || [],
-            isRead: newRecord.is_read ?? newRecord.isRead ?? false,
-            createdAt:
-              newRecord.created_at ||
-              newRecord.createdAt ||
-              new Date().toISOString(),
-          };
+          const formattedMsg = normalizeMessage(newRecord);
 
           if (!isFromSelf) {
+            if (activeConvId && activeConvId !== "new") {
+              conversationsApi.markConversationAsRead(activeConvId).catch(() => {});
+            }
             conversationsApi.markAsRead(newRecord.id).catch(() => {});
           }
 
@@ -519,16 +600,21 @@ export default function ConversationChatScreen() {
 
       onUpdate: (updatedRecord) => {
         if (!isMounted || !updatedRecord) return;
+        const normalized = normalizeMessage(updatedRecord);
         setMessages((prev) =>
           prev.map((m) => {
-            if (String(m.id) === String(updatedRecord.id)) {
+            if (String(m.id) === String(normalized.id)) {
               return {
                 ...m,
-                ...updatedRecord,
-                isRead:
-                  updatedRecord.is_read ?? updatedRecord.isRead ?? m.isRead,
-                attachments: updatedRecord.attachments ?? m.attachments,
-                text: updatedRecord.text ?? m.text,
+                ...normalized,
+                isRead: normalized.isRead,
+                is_read: normalized.isRead,
+                readAt: normalized.readAt || m.readAt,
+                attachments:
+                  normalized.attachments && normalized.attachments.length > 0
+                    ? normalized.attachments
+                    : m.attachments,
+                text: normalized.text || m.text,
               };
             }
             return m;
@@ -557,6 +643,78 @@ export default function ConversationChatScreen() {
       }
     };
   }, [activeConvId, currentUser?.id]);
+
+  // Periodic background sync of read receipts while user is active on chat
+  useEffect(() => {
+    if (!activeConvId || activeConvId === "new") return;
+
+    const interval = setInterval(async () => {
+      try {
+        let msgsRes: any = null;
+        if (resolvedTailorId && resolvedClientId) {
+          msgsRes = await conversationsApi.getMessagesBetween(
+            resolvedTailorId,
+            resolvedClientId,
+            { limit: 25 },
+          );
+        } else if (activeConvId) {
+          msgsRes = await conversationsApi.getMessages(activeConvId, {
+            limit: 25,
+          });
+        }
+
+        if (msgsRes?.data && Array.isArray(msgsRes.data)) {
+          const fresh = msgsRes.data.map(normalizeMessage);
+          setMessages((prev) => {
+            let hasChanged = false;
+            const updated = prev.map((oldMsg) => {
+              const match = fresh.find(
+                (f: MessageItem) => String(f.id) === String(oldMsg.id),
+              );
+              if (match && match.isRead !== oldMsg.isRead) {
+                hasChanged = true;
+                return {
+                  ...oldMsg,
+                  isRead: match.isRead,
+                  is_read: match.isRead,
+                  readAt: match.readAt || oldMsg.readAt,
+                };
+              }
+              return oldMsg;
+            });
+            return hasChanged ? updated : prev;
+          });
+        }
+      } catch {}
+    }, 4500);
+
+    return () => clearInterval(interval);
+  }, [activeConvId, resolvedTailorId, resolvedClientId]);
+
+  const showMessageStatusInfo = (msg: MessageItem) => {
+    const isMsgRead = msg.isRead === true || (msg as any).is_read === true;
+    const isSending = String(msg.id).startsWith("temp_");
+    if (isSending) {
+      Alert.alert("Message Status", "Sending to server...");
+      return;
+    }
+    const otherName = participantName || "recipient";
+    if (isMsgRead) {
+      const readTime = msg.readAt || (msg as any).read_at;
+      const formattedReadTime = readTime ? formatMessageTime(readTime) : "";
+      Alert.alert(
+        "Read Receipt",
+        formattedReadTime
+          ? `Read by ${otherName} at ${formattedReadTime}.`
+          : `Read by ${otherName}.`,
+      );
+    } else {
+      Alert.alert(
+        "Delivered",
+        `Delivered to ${otherName}. Not read yet.`,
+      );
+    }
+  };
 
   const [previewImageUri, setPreviewImageUri] = useState<string | null>(null);
 
@@ -2088,7 +2246,9 @@ export default function ConversationChatScreen() {
                           ) : null}
 
                           {/* Timestamp & Status Footer */}
-                          <View
+                          <TouchableOpacity
+                            activeOpacity={isOutgoing ? 0.75 : 1}
+                            onPress={() => isOutgoing && showMessageStatusInfo(item)}
                             style={{
                               flexDirection: "row",
                               alignItems: "center",
@@ -2103,22 +2263,61 @@ export default function ConversationChatScreen() {
                                 style={{
                                   fontSize: 10,
                                   fontWeight: "500",
-                                  color: isOutgoing ? "#D1FAF4" : "#9CA3AF",
+                                  color: isOutgoing
+                                    ? "rgba(255, 255, 255, 0.75)"
+                                    : "#9CA3AF",
                                 }}
                               >
                                 {formattedTime}
                               </Text>
                             ) : null}
                             {isOutgoing && (
-                              <Ionicons
-                                name={
-                                  item.isRead ? "checkmark-done" : "checkmark"
-                                }
-                                size={13}
-                                color={item.isRead ? "#6EE7B7" : "#CCFBF1"}
-                              />
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                }}
+                              >
+                                {String(item.id).startsWith("temp_") ? (
+                                  <Ionicons
+                                    name="time-outline"
+                                    size={11}
+                                    color="rgba(255, 255, 255, 0.7)"
+                                  />
+                                ) : item.isRead || (item as any).is_read ? (
+                                  <View
+                                    style={{
+                                      flexDirection: "row",
+                                      alignItems: "center",
+                                      gap: 2,
+                                    }}
+                                  >
+                                    <Ionicons
+                                      name="checkmark-done"
+                                      size={14}
+                                      color="#38BDF8"
+                                    />
+                                    <Text
+                                      style={{
+                                        fontSize: 9,
+                                        fontWeight: "700",
+                                        color: "#38BDF8",
+                                        letterSpacing: 0.2,
+                                      }}
+                                    >
+                                      Read
+                                    </Text>
+                                  </View>
+                                ) : (
+                                  <Ionicons
+                                    name="checkmark"
+                                    size={13}
+                                    color="rgba(255, 255, 255, 0.75)"
+                                  />
+                                )}
+                              </View>
                             )}
-                          </View>
+                          </TouchableOpacity>
                         </View>
                       </View>
                     </View>

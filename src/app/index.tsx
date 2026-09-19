@@ -56,10 +56,8 @@ const routeGroups: RouteGroup[] = [
   {
     title: "AI Design Studio",
     items: [
-      { label: "AI Studio", href: "/design-studio" },
       { label: "Text to Design", href: "/design-studio/text-to-design" },
       { label: "Image to Design", href: "/design-studio/image-to-design" },
-      { label: "Sketch to Design", href: "/design-studio/sketch-to-design" },
       { label: "AI Chat", href: "/design-studio/chat" },
       { label: "Editor", href: "/design-studio/editor/sample-design" },
       { label: "Export", href: "/design-studio/export/sample-design" },
