@@ -19,7 +19,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { ProfileMenuRow } from "../components/ProfileMenuRow";
-import { AuthButton } from "../../auth/components/AuthButton";
 import { useAuthStore } from "../../../stores/auth.store";
 import { storage } from "../../../api/client";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
@@ -381,21 +380,14 @@ export default function ProfileScreen() {
 
             {/* Name, Role & Contact */}
             <View className="ml-3.5 flex-1 justify-center">
-              <View className="flex-row items-center gap-2">
-                <Text
-                  className="text-[17px] font-black text-brand-dark tracking-tight flex-1"
-                  numberOfLines={1}
-                >
-                  {displayName}
-                </Text>
-                <View className="rounded-full bg-primary/10 px-2 py-0.5 border border-primary/20">
-                  <Text className="text-[10px] font-black text-primary">
-                    Customer
-                  </Text>
-                </View>
-              </View>
+              <Text
+                className="text-[18px] font-black text-brand-dark tracking-tight"
+                numberOfLines={1}
+              >
+                {displayName}
+              </Text>
 
-              <View className="mt-1 flex-row items-center">
+              <View className="mt-1.5 flex-row items-center">
                 <Ionicons name="mail-outline" size={12} color="#6F767E" />
                 <Text
                   className="ml-1.5 text-[12px] font-medium text-brand-gray flex-1"
@@ -432,7 +424,7 @@ export default function ProfileScreen() {
 
         {/* Group 1: Bespoke Tailoring & Activity */}
         <View className="mt-6">
-          <Text className="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-brand-gray">
+          <Text className="mb-2.5 px-1 text-[14px] font-bold text-primary">
             Bespoke Studio & Activity
           </Text>
           <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
@@ -440,40 +432,24 @@ export default function ProfileScreen() {
               title="My Measurements"
               subtitle="Precision body dimension profiles"
               icon="body-outline"
-              badge={measurements.length > 0 ? `${measurements.length} Saved` : undefined}
               onPress={() => router.push("/measurements" as any)}
             />
             <ProfileMenuRow
               title="Saved Designs"
               subtitle="Custom sketches & studio outfits"
               icon="color-wand-outline"
-              badge={designs.length > 0 ? `${designs.length} Saved` : undefined}
               onPress={() => router.push("/design" as any)}
             />
             <ProfileMenuRow
               title="Orders & Tracking"
               subtitle="Monitor stitching status & past deliveries"
               icon="bag-handle-outline"
-              badge={
-                activeOrdersCount > 0
-                  ? `${activeOrdersCount} Active`
-                  : orders.length > 0
-                  ? `${orders.length} Orders`
-                  : undefined
-              }
               onPress={() => router.push("/orders" as any)}
             />
             <ProfileMenuRow
               title="Appointments"
               subtitle="Tailor consultations & fitting schedules"
               icon="calendar-outline"
-              badge={
-                upcomingAppointmentsCount > 0
-                  ? `${upcomingAppointmentsCount} Upcoming`
-                  : appointments.length > 0
-                  ? `${appointments.length} Booked`
-                  : undefined
-              }
               isLast
               onPress={() => router.push("/appointments" as any)}
             />
@@ -482,7 +458,7 @@ export default function ProfileScreen() {
 
         {/* Group 2: Account & Support */}
         <View className="mt-5">
-          <Text className="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-brand-gray">
+          <Text className="mb-2.5 px-1 text-[14px] font-bold text-primary">
             Account & Support
           </Text>
           <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
@@ -495,7 +471,7 @@ export default function ProfileScreen() {
             <ProfileMenuRow
               title="Help & Customer Care"
               subtitle="support@suidhaga.app • 1800-SUI-DHAGA"
-              icon="headset-outline"
+              icon="help-circle-outline"
               isLast
               onPress={() => {
                 Alert.alert(
@@ -508,16 +484,24 @@ export default function ProfileScreen() {
         </View>
 
         {/* Logout Action */}
-        <View className="mt-8 items-center">
-          <AuthButton
-            title="Log Out"
-            icon="log-out-outline"
-            variant="danger"
-            onPress={handleLogout}
-            className="w-full max-w-[200px]"
-            borderRadius={14}
-          />
-        </View>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={handleLogout}
+          className="mt-6 flex-row items-center rounded-2xl border border-red-200 bg-white p-3.5 shadow-2xs"
+        >
+          <View className="h-10 w-10 items-center justify-center rounded-full bg-red-600">
+            <Ionicons name="log-out" size={18} color="#FFFFFF" />
+          </View>
+          <View className="ml-3 flex-1">
+            <Text className="text-[15px] font-bold text-red-600">
+              Log Out
+            </Text>
+            <Text className="mt-0.5 text-[12px] font-medium text-red-400">
+              Sign out of this account
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#DC2626" />
+        </TouchableOpacity>
 
         <Text className="mt-5 text-center text-[11px] font-medium text-brand-gray/60">
           Sui Dhaga • v1.0.0

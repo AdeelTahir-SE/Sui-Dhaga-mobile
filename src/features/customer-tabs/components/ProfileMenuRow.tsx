@@ -7,7 +7,6 @@ export type ProfileMenuRowProps = {
   subtitle?: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconColor?: string;
-  iconBg?: string;
   badge?: string | number;
   onPress?: () => void;
   showChevron?: boolean;
@@ -19,8 +18,7 @@ export function ProfileMenuRow({
   title,
   subtitle,
   icon,
-  iconColor = "#FFFFFF",
-  iconBg = "bg-primary",
+  iconColor = "#1A1D1F",
   badge,
   onPress,
   showChevron = true,
@@ -37,23 +35,19 @@ export function ProfileMenuRow({
       }`}
     >
       {/* Icon */}
-      <View
-        className={`h-9 w-9 items-center justify-center rounded-xl ${
-          danger ? "bg-red-500" : iconBg
-        }`}
-      >
+      <View className="w-8 items-center justify-center">
         <Ionicons
           name={icon}
-          size={18}
-          color={danger ? "#FFFFFF" : iconColor}
+          size={22}
+          color={danger ? "#EF4444" : iconColor}
         />
       </View>
 
       {/* Content */}
-      <View className="ml-3.5 flex-1 pr-2">
+      <View className="ml-3 flex-1 pr-2">
         <View className="flex-row items-center justify-between">
           <Text
-            className={`text-[15px] font-semibold tracking-tight ${
+            className={`text-[15px] font-bold tracking-tight ${
               danger ? "text-red-500" : "text-brand-dark"
             }`}
           >
