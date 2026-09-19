@@ -107,4 +107,18 @@ export const usersApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  async reportUser(targetId: string, reason: string, details?: string): Promise<ApiResponse<any>> {
+    return apiClient<any>('/users/report', {
+      method: 'POST',
+      body: JSON.stringify({ targetId, reason, details }),
+    });
+  },
+
+  async blockUser(targetId: string): Promise<ApiResponse<any>> {
+    return apiClient<any>('/users/block', {
+      method: 'POST',
+      body: JSON.stringify({ targetId }),
+    });
+  },
 };

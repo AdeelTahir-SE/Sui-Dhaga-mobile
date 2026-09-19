@@ -13,6 +13,7 @@ type MessageRowProps = {
   unread?: string | number;
   onPress?: () => void;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
+  isOnline?: boolean;
 };
 
 const toneBg: Record<string, string> = {
@@ -34,6 +35,7 @@ export function MessageRow({
   unread,
   onPress,
   tone = "teal",
+  isOnline = false,
 }: MessageRowProps) {
   const [imageError, setImageError] = React.useState(false);
   const rawSrc = avatar_url || avatarUrl || image;
@@ -47,35 +49,52 @@ export function MessageRow({
       activeOpacity={0.7}
       className="flex-row items-center border-b border-brand-border py-3.5 px-0.5"
     >
-      {/* Avatar / Initial */}
-      <View
-        style={{ width: 44, height: 44, borderRadius: 22 }}
-        className="overflow-hidden mr-3.5 items-center justify-center border border-brand-border bg-brand-surface"
-      >
-        {imgSrc ? (
-          <Image
-            source={typeof imgSrc === "string" ? { uri: imgSrc } : imgSrc}
-            style={{ width: 44, height: 44, borderRadius: 22 }}
-            contentFit="cover"
-            transition={200}
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <View
-            style={{ width: 44, height: 44, borderRadius: 22 }}
-            className={`w-full h-full items-center justify-center ${
-              toneBg[tone] || "bg-[#E0F7F7]"
-            }`}
-          >
-            <Text className="text-[16px] font-black text-primary-dark">
-              {initial}
-            </Text>
-          </View>
-        )}
+      {/* Avatar / Initial with Realtime Presence Dot */}
+      <View style={{ position: "relative", marginRight: 14 }}>
+        <View
+          style={{ width: 44, height: 44, borderRadius: 22 }}
+          className="overflow-hidden items-center justify-center border border-brand-border bg-brand-surface"
+        >
+          {imgSrc ? (
+            <Image
+              source={typeof imgSrc === "string" ? { uri: imgSrc } : imgSrc}
+              style={{ width: 44, height: 44, borderRadius: 22 }}
+              contentFit="cover"
+              transition={200}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <View
+              style={{ width: 44, height: 44, borderRadius: 22 }}
+              className={`w-full h-full items-center justify-center ${
+                toneBg[tone] || "bg-[#E0F7F7]"
+              }`}
+            >
+              <Text className="text-[16px] font-black text-primary-dark">
+                {initial}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Realtime Online (Green) or Offline (Grey) Presence Dot */}
+        <View
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: 12,
+            height: 12,
+            borderRadius: 6,
+            backgroundColor: isOnline ? "#22C55E" : "#94A3B8",
+            borderWidth: 2,
+            borderColor: "#FFFFFF",
+          }}
+        />
       </View>
 
       {/* Message Info */}
-      <View className="ml-3.5 flex-1 pr-2">
+      <View className="flex-1 pr-2">
         <Text
           numberOfLines={1}
           className="text-[15px] font-bold text-brand-dark"

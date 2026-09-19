@@ -18,6 +18,7 @@ import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MessageRow } from "../components/MessageRow";
 import { useConversations } from "../hooks/useConversations";
 import { useAuthStore } from "../../../stores/auth.store";
+import { usePresence } from "../../../hooks/usePresence";
 
 function formatMessageTime(dateString?: string): string {
   if (!dateString) return "";
