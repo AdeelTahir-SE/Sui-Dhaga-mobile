@@ -518,7 +518,7 @@ export default function AiChatScreen() {
           paddingTop: Math.max(insets.top, 12),
           backgroundColor: "#FFFFFF",
           borderBottomWidth: 1,
-          borderBottomColor: "#EAE5DD",
+          borderBottomColor: "#E5E7EB",
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.04,
@@ -547,7 +547,7 @@ export default function AiChatScreen() {
               borderRadius: 19,
               backgroundColor: "#FFFFFF",
               borderWidth: 1,
-              borderColor: "#EAE5DD",
+              borderColor: "#E5E7EB",
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -556,11 +556,11 @@ export default function AiChatScreen() {
           </TouchableOpacity>
 
           {/* AI Identity Info with currentAiIcon */}
-          <View style={{ alignItems: "center", flex: 1, marginHorizontal: 8 }}>
+          <View style={{ alignItems: "center", justifyContent: "center", flex: 1, marginHorizontal: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Image
                 source={currentAiIcon}
-                style={{ width: 24, height: 24, marginRight: 7 }}
+                style={{ width: 22, height: 22, marginRight: 7 }}
                 contentFit="contain"
               />
               <Text
@@ -572,28 +572,6 @@ export default function AiChatScreen() {
                 }}
               >
                 Sui Dhaga AI
-              </Text>
-            </View>
-            <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
-              <View
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: "#10B981",
-                  marginRight: 5,
-                }}
-              />
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: "600",
-                  color: "#6F767E",
-                }}
-              >
-                {activeTab === "assistant"
-                  ? "Style & Queries Assistant • Online"
-                  : "Couture Outfit Designer • Online"}
               </Text>
             </View>
           </View>
@@ -610,18 +588,18 @@ export default function AiChatScreen() {
               height: 36,
               paddingHorizontal: 12,
               borderRadius: 18,
-              backgroundColor: "#F0FAFA",
+              backgroundColor: "#E6F7F7",
               borderWidth: 1,
-              borderColor: "#CCF0EE",
+              borderColor: "#B2EBF2",
             }}
           >
-            <Ionicons name="add" size={16} color="#14919B" />
+            <Ionicons name="create-outline" size={16} color="#0E7490" />
             <Text
               style={{
-                marginLeft: 4,
+                marginLeft: 5,
                 fontSize: 12,
                 fontWeight: "700",
-                color: "#14919B",
+                color: "#0E7490",
               }}
             >
               New Chat
@@ -655,7 +633,7 @@ export default function AiChatScreen() {
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                paddingVertical: 8,
+                paddingVertical: 9,
                 borderRadius: 10,
                 backgroundColor:
                   activeTab === "assistant" ? "#FFFFFF" : "transparent",
@@ -685,26 +663,6 @@ export default function AiChatScreen() {
               >
                 Assistant
               </Text>
-              <View
-                style={{
-                  marginLeft: 6,
-                  backgroundColor:
-                    activeTab === "assistant" ? "#E0F7F6" : "#E5E7EB",
-                  borderRadius: 8,
-                  paddingHorizontal: 6,
-                  paddingVertical: 1,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: "700",
-                    color: activeTab === "assistant" ? "#0E7490" : "#6B7280",
-                  }}
-                >
-                  Queries
-                </Text>
-              </View>
             </TouchableOpacity>
 
             {/* Tab 2: Designer */}
@@ -716,7 +674,7 @@ export default function AiChatScreen() {
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",
-                paddingVertical: 8,
+                paddingVertical: 9,
                 borderRadius: 10,
                 backgroundColor:
                   activeTab === "designer" ? "#FFFFFF" : "transparent",
@@ -746,26 +704,6 @@ export default function AiChatScreen() {
               >
                 Designer
               </Text>
-              <View
-                style={{
-                  marginLeft: 6,
-                  backgroundColor:
-                    activeTab === "designer" ? "#E0F7F6" : "#E5E7EB",
-                  borderRadius: 8,
-                  paddingHorizontal: 6,
-                  paddingVertical: 1,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: "700",
-                    color: activeTab === "designer" ? "#0E7490" : "#6B7280",
-                  }}
-                >
-                  Create
-                </Text>
-              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -1367,7 +1305,7 @@ export default function AiChatScreen() {
                 borderRadius: 12,
                 padding: 8,
                 borderWidth: 1,
-                borderColor: "#EAE5DD",
+                borderColor: "#E5E7EB",
                 alignSelf: "flex-start",
               }}
             >
@@ -1420,7 +1358,7 @@ export default function AiChatScreen() {
               backgroundColor: "#FFFFFF",
               borderRadius: 24,
               borderWidth: 1.2,
-              borderColor: "#EAE5DD",
+              borderColor: "#E5E7EB",
               paddingLeft: 8,
               paddingRight: 6,
               paddingVertical: 6,
@@ -1443,11 +1381,17 @@ export default function AiChatScreen() {
                 borderRadius: 18,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "#F3F4F6",
+                backgroundColor: selectedImage ? "#14919B" : "#F0FAFA",
+                borderWidth: 1.2,
+                borderColor: selectedImage ? "#14919B" : "#CCF0EE",
                 marginBottom: 2,
               }}
             >
-              <Ionicons name="image-outline" size={20} color="#6F767E" />
+              <Ionicons
+                name="image-outline"
+                size={19}
+                color={selectedImage ? "#FFFFFF" : "#14919B"}
+              />
             </TouchableOpacity>
 
             {/* Expanding Text Input */}
@@ -1505,15 +1449,22 @@ export default function AiChatScreen() {
                   height: 36,
                   borderRadius: 18,
                   backgroundColor:
-                    inputText.trim() || selectedImage ? "#14919B" : "#EAE5DD",
+                    inputText.trim() || selectedImage ? "#14919B" : "#F3F4F6",
+                  borderWidth: inputText.trim() || selectedImage ? 0 : 1,
+                  borderColor: inputText.trim() || selectedImage ? "transparent" : "#E5E7EB",
                   alignItems: "center",
                   justifyContent: "center",
                   marginBottom: 2,
+                  shadowColor: inputText.trim() || selectedImage ? "#14919B" : "transparent",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: inputText.trim() || selectedImage ? 0.25 : 0,
+                  shadowRadius: 3,
+                  elevation: inputText.trim() || selectedImage ? 2 : 0,
                 }}
               >
                 <Ionicons
                   name="arrow-up"
-                  size={20}
+                  size={19}
                   color={inputText.trim() || selectedImage ? "#FFFFFF" : "#9CA3AF"}
                 />
               </TouchableOpacity>

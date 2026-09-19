@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CommunityPost } from "../../../types/api";
 import { isVideoMedia } from "./CommunityMediaCarousel";
 
+import { getCachedVideoUri } from "../../../utils/mediaCache";
+
 type ReelItemViewProps = {
   post: CommunityPost;
   isActive: boolean;
@@ -57,8 +59,26 @@ export function ReelItemView({
   const primaryMedia = mediaList[activeMediaIndex] || mediaList[0] || null;
   const isVideo = isVideoMedia(primaryMedia);
 
+  const [videoUri, setVideoUri] = useState<string | null>(isVideo ? primaryMedia : null);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (isVideo && primaryMedia) {
+      getCachedVideoUri(primaryMedia)
+        .then((cached) => {
+          if (isMounted && cached) {
+            setVideoUri(cached);
+          }
+        })
+        .catch(() => {});
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [isVideo, primaryMedia]);
+
   // Video player configuration
-  const player = useVideoPlayer(isVideo ? primaryMedia : null, (p) => {
+  const player = useVideoPlayer(isVideo ? videoUri || primaryMedia : null, (p) => {
     p.loop = true;
     p.muted = isMuted;
   });
@@ -163,6 +183,8 @@ export function ReelItemView({
             ) : (
               <Image
                 source={{ uri: mediaList[0] }}
+                cachePolicy="memory-disk"
+                priority="high"
                 contentFit="cover"
                 style={StyleSheet.absoluteFill}
                 transition={200}
@@ -212,6 +234,8 @@ export function ReelItemView({
                   ) : (
                     <Image
                       source={{ uri }}
+                      cachePolicy="memory-disk"
+                      priority="high"
                       contentFit="cover"
                       style={StyleSheet.absoluteFill}
                       transition={150}
@@ -279,6 +303,7 @@ export function ReelItemView({
             {authorAvatar ? (
               <Image
                 source={{ uri: authorAvatar }}
+                cachePolicy="memory-disk"
                 contentFit="cover"
                 style={{ width: "100%", height: "100%" }}
               />
@@ -358,7 +383,10 @@ export function ReelItemView({
             activeOpacity={0.7}
             className="items-center"
           >
-            <View className="h-9 w-9 items-center justify-center rounded-full bg-black/45 border border-white/20">
+            <View
+              className="h-9 w-9 items-center justify-center rounded-full bg-black/45"
+              style={{ borderWidth: 0 }}
+            >
               <Ionicons
                 name={isMuted ? "volume-mute" : "volume-high"}
                 size={17}
@@ -384,14 +412,32 @@ export function ReelItemView({
             {authorName}
           </Text>
           {isTailor && (
-            <View className="ml-2 flex-row items-center rounded-full bg-primary/90 px-2 py-0.5">
+            <View
+              className="ml-2 flex-row items-center rounded-full px-2 py-0.5"
+              style={{ backgroundColor: "#14919B", borderWidth: 0 }}
+            >
               <Ionicons name="cut-outline" size={10} color="#FFFFFF" />
-              <Text className="ml-1 text-[10px] font-bold text-white">Master Tailor</Text>
+              <Text style={{ color: "#FFFFFF", fontSize: 10, fontWeight: "700", marginLeft: 4 }}>
+                Master Tailor
+              </Text>
             </View>
           )}
           {post.category && (
-            <View className="ml-2 rounded-full bg-white/20 px-2.5 py-0.5 backdrop-blur-sm">
-              <Text className="text-[10px] font-semibold text-white tracking-wide">
+            <View
+              className="ml-2 rounded-full px-2.5 py-0.5"
+              style={{ backgroundColor: "rgba(255, 255, 255, 0.25)", borderWidth: 0 }}
+            >
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 10.5,
+                  fontWeight: "600",
+                  letterSpacing: 0.5,
+                  textShadowColor: "rgba(0, 0, 0, 0.8)",
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 3,
+                }}
+              >
                 {post.category}
               </Text>
             </View>
@@ -417,13 +463,28 @@ export function ReelItemView({
           </TouchableOpacity>
         ) : null}
 
-        {/* Tags */}
+        {/* Tags (Pure White) */}
         {post.tags && post.tags.length > 0 && (
-          <View className="flex-row flex-wrap gap-1 mb-2">
-            {post.tags.slice(0, 4).map((tag, idx) => (
-              <Text key={`tag-${idx}`} className="text-[11.5px] font-semibold text-teal-300 mr-1.5">
-                {tag.startsWith("#") ? tag : `#${tag}`}
-              </Text>
+          <View className="flex-row flex-wrap gap-1.5 mb-2">
+            {post.tags.slice(0, 5).map((tag, idx) => (
+              <View
+                key={`tag-${idx}`}
+                className="rounded-md px-2 py-0.5"
+                style={{ backgroundColor: "rgba(255, 255, 255, 0.2)", borderWidth: 0 }}
+              >
+                <Text
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: 11.5,
+                    fontWeight: "600",
+                    textShadowColor: "rgba(0, 0, 0, 0.8)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 3,
+                  }}
+                >
+                  {tag.startsWith("#") ? tag : `#${tag}`}
+                </Text>
+              </View>
             ))}
           </View>
         )}

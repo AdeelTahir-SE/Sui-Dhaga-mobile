@@ -19,6 +19,8 @@ import { CommunityPost } from "../../../types/api";
 import { ReelItemView } from "../components/ReelItemView";
 import { ReelCommentsModal } from "../components/ReelCommentsModal";
 
+import { prefetchPostMedia } from "../../../utils/mediaCache";
+
 export default function PostDetailsScreen() {
   const { postId } = useLocalSearchParams<{ postId: string }>();
   const insets = useSafeAreaInsets();
@@ -303,13 +305,17 @@ export default function PostDetailsScreen() {
         <TouchableOpacity
           onPress={() => router.back()}
           activeOpacity={0.8}
-          className="h-10 w-10 items-center justify-center rounded-full bg-black/45 shadow-lg border border-white/10"
+          className="h-10 w-10 items-center justify-center rounded-full bg-black/45 shadow-lg"
+          style={{ borderWidth: 0 }}
         >
           <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
 
         {/* Header Title: "Community Designs" */}
-        <View className="rounded-full bg-black/40 px-4 py-1.5 border border-white/15">
+        <View
+          className="rounded-full bg-black/40 px-4 py-1.5"
+          style={{ borderWidth: 0 }}
+        >
           <Text className="text-[13px] font-bold text-white tracking-wide">
             Community Designs
           </Text>
@@ -319,7 +325,8 @@ export default function PostDetailsScreen() {
         <TouchableOpacity
           onPress={() => router.push("/community/create" as any)}
           activeOpacity={0.8}
-          className="h-10 w-10 items-center justify-center rounded-full bg-black/45 shadow-lg border border-white/10"
+          className="h-10 w-10 items-center justify-center rounded-full bg-black/45 shadow-lg"
+          style={{ borderWidth: 0 }}
         >
           <Ionicons name="camera-outline" size={20} color="#FFFFFF" />
         </TouchableOpacity>

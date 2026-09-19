@@ -18,6 +18,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { communityApi } from "../../../api/community.api";
 import { CommunityComment } from "../../../types/api";
+import {
+  getCachedComments,
+  setCachedComments,
+  appendCachedComment,
+} from "../../../utils/mediaCache";
 
 type ReelCommentsModalProps = {
   visible: boolean;
@@ -35,7 +40,9 @@ export function ReelCommentsModal({
   onCommentAdded,
 }: ReelCommentsModalProps) {
   const insets = useSafeAreaInsets();
-  const [comments, setComments] = useState<CommunityComment[]>([]);
+  const [comments, setComments] = useState<CommunityComment[]>(() => {
+    return postId ? getCachedComments(postId) || [] : [];
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -44,32 +51,48 @@ export function ReelCommentsModal({
   const screenHeight = Dimensions.get("window").height;
   const modalHeight = Math.min(screenHeight * 0.72, 600);
 
-  const fetchComments = useCallback(async () => {
-    if (!postId || !visible) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await communityApi.getComments(postId);
-      if (Array.isArray(res.data)) {
-        setComments(res.data);
-      } else {
-        setComments([]);
+  const fetchComments = useCallback(
+    async (isSilent = false) => {
+      if (!postId || !visible) return;
+      if (!isSilent) setIsLoading(true);
+      setError(null);
+      try {
+        const res = await communityApi.getComments(postId);
+        if (Array.isArray(res.data)) {
+          setComments(res.data);
+          setCachedComments(postId, res.data);
+        } else {
+          setComments([]);
+        }
+      } catch (err: any) {
+        if (!isSilent) {
+          setError(err?.message || "Failed to load comments");
+        }
+      } finally {
+        if (!isSilent) {
+          setIsLoading(false);
+        }
       }
-    } catch (err: any) {
-      setError(err?.message || "Failed to load comments");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [postId, visible]);
+    },
+    [postId, visible]
+  );
 
   useEffect(() => {
-    if (visible) {
-      fetchComments();
+    if (visible && postId) {
+      const cached = getCachedComments(postId);
+      if (cached && cached.length > 0) {
+        setComments(cached);
+        setIsLoading(false);
+        // Silent background refresh to keep comments up to date without showing a loader
+        fetchComments(true);
+      } else {
+        fetchComments(false);
+      }
     } else {
       setCommentText("");
       setError(null);
     }
-  }, [visible, fetchComments]);
+  }, [visible, postId, fetchComments]);
 
   const handleSend = async () => {
     const text = commentText.trim();
@@ -81,6 +104,7 @@ export function ReelCommentsModal({
       if (res && res.data) {
         const newCmt = res.data;
         setComments((prev) => [...prev, newCmt]);
+        appendCachedComment(postId, newCmt);
         setCommentText("");
         if (onCommentAdded) {
           onCommentAdded();
@@ -125,6 +149,7 @@ export function ReelCommentsModal({
         {avatar ? (
           <Image
             source={{ uri: avatar }}
+            cachePolicy="memory-disk"
             style={{ width: 36, height: 36, borderRadius: 18 }}
             contentFit="cover"
           />
@@ -149,11 +174,6 @@ export function ReelCommentsModal({
           </View>
           <Text className="mt-1 text-[13px] text-gray-800 leading-4">{item.content}</Text>
         </View>
-
-        {/* Small aesthetic like heart for comment */}
-        <TouchableOpacity activeOpacity={0.6} className="ml-2 pt-1 items-center">
-          <Ionicons name="heart-outline" size={14} color="#9CA3AF" />
-        </TouchableOpacity>
       </View>
     );
   };
@@ -205,7 +225,7 @@ export function ReelCommentsModal({
                 <Ionicons name="alert-circle-outline" size={28} color="#EF4444" />
                 <Text className="mt-2 text-[12px] text-gray-600 text-center">{error}</Text>
                 <TouchableOpacity
-                  onPress={fetchComments}
+                  onPress={() => fetchComments(false)}
                   className="mt-3 rounded-lg bg-gray-100 px-3 py-1.5"
                 >
                   <Text className="text-[12px] font-semibold text-gray-700">Retry</Text>
@@ -233,8 +253,18 @@ export function ReelCommentsModal({
           </View>
 
           {/* Comment Input Bar */}
-          <View className="border-t border-gray-100 px-4 pt-2.5 bg-white">
-            <View className="flex-row items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5">
+          <View
+            className="px-4 pt-2.5 bg-white"
+            style={{ borderTopWidth: 1, borderTopColor: "#F3F4F6" }}
+          >
+            <View
+              className="flex-row items-center rounded-full px-4 py-1.5"
+              style={{
+                borderWidth: 1,
+                borderColor: "#E5E7EB",
+                backgroundColor: "#F9FAFB",
+              }}
+            >
               <TextInput
                 placeholder="Add a comment for this tailor..."
                 placeholderTextColor="#9CA3AF"
