@@ -507,14 +507,12 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Group 3: Sign Out */}
-        <View className="mt-5 rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
-          <ProfileMenuRow
-            title="Sign Out"
+        {/* Logout Action */}
+        <View className="mt-6">
+          <AuthButton
+            title="Log Out"
             icon="log-out-outline"
-            danger
-            showChevron={false}
-            isLast
+            variant="danger"
             onPress={handleLogout}
           />
         </View>
