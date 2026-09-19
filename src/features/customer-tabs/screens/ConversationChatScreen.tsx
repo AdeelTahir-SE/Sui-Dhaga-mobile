@@ -39,7 +39,8 @@ import {
 } from "../../../api/conversations.api";
 import { CONFIG } from "../../../constants/config";
 import { useAuthStore } from "../../../stores/auth.store";
-import { ConversationItem, MessageItem } from "../../../types/api";
+import { ConversationItem, MessageItem, MeasurementItem } from "../../../types/api";
+import { useMeasurements } from "../../measurements-community-checkout/hooks/useMeasurements";
 import { ChatInputBar } from "../components/ChatInputBar";
 import { VoiceMessagePlayer } from "../components/VoiceMessagePlayer";
 import {
@@ -286,6 +287,8 @@ export default function ConversationChatScreen() {
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
+  const [isMeasurementsModalVisible, setIsMeasurementsModalVisible] = useState(false);
+  const { measurements } = useMeasurements();
   const scrollViewRef = useRef<ScrollView>(null);
   const previousContentHeightRef = useRef<number>(0);
   const isPrependScrollAdjustRef = useRef<boolean>(false);
@@ -901,6 +904,117 @@ export default function ConversationChatScreen() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleSendCustomText = async (textToSend: string) => {
+    if (!textToSend.trim() || isSending) return;
+    setIsSending(true);
+
+    const tempId = "temp_" + Date.now();
+    const tempMessage: MessageItem = {
+      id: tempId,
+      conversationId: activeConvId || "temp",
+      senderId: currentUser?.id,
+      text: textToSend.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, tempMessage]);
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+
+    try {
+      let createdMessage: MessageItem | null = null;
+      const messagePayload = {
+        text: textToSend.trim(),
+        senderId: currentUser?.id,
+      };
+
+      if (activeConvId && activeConvId !== "new") {
+        const res = await conversationsApi.sendMessage(
+          activeConvId,
+          messagePayload,
+        );
+        let rawData: any = res?.data;
+        if (rawData && typeof rawData === "object") {
+          createdMessage = rawData.message || rawData.data || rawData;
+        }
+      } else if (resolvedTailorId && resolvedClientId) {
+        const res = await conversationsApi.sendMessageBetween(
+          resolvedTailorId,
+          resolvedClientId,
+          messagePayload,
+        );
+        let rawData: any = res?.data;
+        if (rawData && typeof rawData === "object") {
+          createdMessage = rawData.message || rawData.data || rawData;
+          if ((createdMessage as any)?.conversationId && !activeConvId) {
+            setActiveConvId((createdMessage as any).conversationId);
+          }
+        }
+      } else if (params.recipientId) {
+        const targetNames = [params.name].filter(Boolean) as string[];
+        const startRes = await conversationsApi.getOrCreateConversation(
+          params.recipientId,
+          undefined,
+          currentUser?.id,
+          textToSend.trim(),
+          targetNames,
+        );
+        const createdConv =
+          (startRes?.data as any)?.conversation || startRes?.data;
+        const newId = createdConv?.id || (createdConv as any)?._id;
+        if (newId) {
+          setActiveConvId(newId);
+          if (createdConv) setConversation(createdConv);
+        }
+      }
+
+      if (createdMessage) {
+        const finalMsg: MessageItem = {
+          ...createdMessage,
+          id:
+            createdMessage.id || (createdMessage as any)._id || tempMessage.id,
+        };
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempMessage.id ? finalMsg : m)),
+        );
+      }
+    } catch (err: any) {
+      console.warn("Failed to send measurement message:", err);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleSendMeasurementCard = async (profile: MeasurementItem) => {
+    const unit = profile.unit === "cm" ? "cm" : "in";
+    let text = `📏 SAVED MEASUREMENTS CARD\n`;
+    text += `👤 Profile: ${profile.profileName}\n`;
+    text += `📐 Unit: ${profile.unit === "cm" ? "Centimeters (cm)" : "Inches (in)"}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    if (profile.chest) text += `• Chest / Bust: ${profile.chest} ${unit}\n`;
+    if (profile.waist) text += `• Waist: ${profile.waist} ${unit}\n`;
+    if (profile.hips) text += `• Hips: ${profile.hips} ${unit}\n`;
+    if (profile.shoulder) text += `• Shoulder Width: ${profile.shoulder} ${unit}\n`;
+    if (profile.sleeveLength) text += `• Sleeve Length: ${profile.sleeveLength} ${unit}\n`;
+    if (profile.shirtLength) text += `• Shirt / Top: ${profile.shirtLength} ${unit}\n`;
+    if (profile.trouserLength) text += `• Trouser / Bottom: ${profile.trouserLength} ${unit}\n`;
+    if (profile.inseam) text += `• Inseam: ${profile.inseam} ${unit}\n`;
+    if (profile.neck) text += `• Collar / Neck: ${profile.neck} ${unit}\n`;
+    if (profile.notes) {
+      const cleanNotes = profile.notes
+        .replace(/\[Fit:[^\]]+\]\s*/g, "")
+        .replace(/\[For:[^\]]+\]\s*/g, "")
+        .trim();
+      if (cleanNotes) {
+        text += `\n📝 Tailor Notes: ${cleanNotes}\n`;
+      }
+    }
+    text += `━━━━━━━━━━━━━━━━━━━━━\nShared via Sui Dhaga Measurements`;
+
+    await handleSendCustomText(text);
   };
 
   const curUserId = currentUser?.id ? String(currentUser.id).toLowerCase() : "";
@@ -2144,6 +2258,53 @@ export default function ConversationChatScreen() {
                 </TouchableOpacity>
               )}
 
+              {/* Share Saved Measurements Action Sheet Item */}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  setIsActionSheetVisible(false);
+                  setIsMeasurementsModalVisible(true);
+                }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  padding: 14,
+                  borderRadius: 14,
+                  backgroundColor: "#FFFFFF",
+                  borderWidth: 1,
+                  borderColor: "#EAE5DD",
+                }}
+              >
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: "#F0FAFA",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
+                  }}
+                >
+                  <Ionicons name="resize-outline" size={19} color="#14919B" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: "#1A1D1F",
+                    }}
+                  >
+                    Share Saved Measurements
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#6F767E" }}>
+                    Select and send a saved measurement profile
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={17} color="#9CA3AF" />
+              </TouchableOpacity>
+
               {resolvedTailorId && !isTailor && (
                 <TouchableOpacity
                   activeOpacity={0.7}
@@ -2286,6 +2447,445 @@ export default function ConversationChatScreen() {
             </View>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Share Saved Measurements Selection Modal */}
+      <Modal
+        visible={isMeasurementsModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsMeasurementsModalVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(15, 23, 42, 0.45)",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              maxHeight: "85%",
+              paddingTop: 12,
+              paddingBottom: Math.max(insets.bottom + 12, 28),
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 0.1,
+              shadowRadius: 10,
+              elevation: 10,
+            }}
+          >
+            {/* Drag Handle */}
+            <View
+              style={{
+                height: 5,
+                width: 44,
+                borderRadius: 2.5,
+                backgroundColor: "#EAE5DD",
+                alignSelf: "center",
+                marginBottom: 14,
+                marginTop: 4,
+              }}
+            />
+
+            {/* Header */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: 20,
+                paddingBottom: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: "#F1F5F9",
+              }}
+            >
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text
+                  style={{ fontSize: 17, fontWeight: "800", color: "#1A1D1F" }}
+                >
+                  Share Saved Measurements
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: "#6F767E",
+                    fontWeight: "500",
+                    marginTop: 2,
+                  }}
+                >
+                  Select a profile to send fitting details directly in chat
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsMeasurementsModalVisible(false)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#F4F5F6",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="close" size={18} color="#6F767E" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Measurement List */}
+            <ScrollView
+              contentContainerStyle={{
+                paddingHorizontal: 20,
+                paddingVertical: 16,
+                gap: 12,
+              }}
+              showsVerticalScrollIndicator={false}
+            >
+              {measurements && measurements.length > 0 ? (
+                measurements.map((profile) => (
+                  <View
+                    key={profile.id}
+                    style={{
+                      backgroundColor: "#F8FAFC",
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      borderColor: "#E2E8F0",
+                      padding: 14,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: 10,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 8,
+                          flex: 1,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 15,
+                            fontWeight: "700",
+                            color: "#0F172A",
+                          }}
+                          numberOfLines={1}
+                        >
+                          {profile.profileName || "Measurement Profile"}
+                        </Text>
+                        <View
+                          style={{
+                            backgroundColor: "#E0F7F7",
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            borderRadius: 6,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              fontWeight: "700",
+                              color: "#0D7377",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {profile.unit || "in"}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          setIsMeasurementsModalVisible(false);
+                          handleSendMeasurementCard(profile);
+                        }}
+                        style={{
+                          backgroundColor: "#14919B",
+                          paddingHorizontal: 14,
+                          paddingVertical: 7,
+                          borderRadius: 8,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <Ionicons name="send" size={13} color="#FFFFFF" />
+                        <Text
+                          style={{
+                            color: "#FFFFFF",
+                            fontSize: 12,
+                            fontWeight: "700",
+                          }}
+                        >
+                          Share
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Quick Specs Grid */}
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        gap: 6,
+                        paddingTop: 8,
+                        borderTopWidth: 1,
+                        borderTopColor: "#E2E8F0",
+                      }}
+                    >
+                      {profile.chest ? (
+                        <View
+                          style={{
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: "#EAE5DD",
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, color: "#64748B" }}>
+                            Chest:{" "}
+                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                              {profile.chest} {profile.unit}
+                            </Text>
+                          </Text>
+                        </View>
+                      ) : null}
+                      {profile.waist ? (
+                        <View
+                          style={{
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: "#EAE5DD",
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, color: "#64748B" }}>
+                            Waist:{" "}
+                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                              {profile.waist} {profile.unit}
+                            </Text>
+                          </Text>
+                        </View>
+                      ) : null}
+                      {profile.hips ? (
+                        <View
+                          style={{
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: "#EAE5DD",
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, color: "#64748B" }}>
+                            Hips:{" "}
+                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                              {profile.hips} {profile.unit}
+                            </Text>
+                          </Text>
+                        </View>
+                      ) : null}
+                      {profile.shoulder ? (
+                        <View
+                          style={{
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: "#EAE5DD",
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, color: "#64748B" }}>
+                            Shoulder:{" "}
+                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                              {profile.shoulder} {profile.unit}
+                            </Text>
+                          </Text>
+                        </View>
+                      ) : null}
+                      {profile.sleeveLength ? (
+                        <View
+                          style={{
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: "#EAE5DD",
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, color: "#64748B" }}>
+                            Sleeve:{" "}
+                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                              {profile.sleeveLength} {profile.unit}
+                            </Text>
+                          </Text>
+                        </View>
+                      ) : null}
+                      {profile.shirtLength ? (
+                        <View
+                          style={{
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: "#EAE5DD",
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, color: "#64748B" }}>
+                            Length:{" "}
+                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                              {profile.shirtLength} {profile.unit}
+                            </Text>
+                          </Text>
+                        </View>
+                      ) : null}
+                      {profile.trouserLength ? (
+                        <View
+                          style={{
+                            backgroundColor: "#FFFFFF",
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 6,
+                            borderWidth: 1,
+                            borderColor: "#EAE5DD",
+                          }}
+                        >
+                          <Text style={{ fontSize: 11, color: "#64748B" }}>
+                            Trouser:{" "}
+                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                              {profile.trouserLength} {profile.unit}
+                            </Text>
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View
+                  style={{
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingVertical: 32,
+                    paddingHorizontal: 20,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 28,
+                      backgroundColor: "#F0FAFA",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Ionicons name="resize-outline" size={28} color="#14919B" />
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "700",
+                      color: "#1A1D1F",
+                      marginBottom: 6,
+                    }}
+                  >
+                    No Saved Measurements
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: "#6F767E",
+                      textAlign: "center",
+                      lineHeight: 18,
+                      marginBottom: 16,
+                    }}
+                  >
+                    You haven't saved any measurement profiles yet. Create one to easily share your fitting details with tailors.
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setIsMeasurementsModalVisible(false);
+                      router.push("/measurements/new" as any);
+                    }}
+                    style={{
+                      backgroundColor: "#14919B",
+                      paddingHorizontal: 18,
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 13,
+                        fontWeight: "700",
+                      }}
+                    >
+                      + Create Measurement Profile
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {measurements && measurements.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsMeasurementsModalVisible(false);
+                    router.push("/measurements/new" as any);
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingVertical: 12,
+                    borderWidth: 1,
+                    borderColor: "#14919B",
+                    borderStyle: "dashed",
+                    borderRadius: 12,
+                    backgroundColor: "#F0FAFA",
+                    marginTop: 4,
+                  }}
+                >
+                  <Ionicons
+                    name="add-circle-outline"
+                    size={18}
+                    color="#14919B"
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={{
+                      color: "#0D7377",
+                      fontSize: 13,
+                      fontWeight: "700",
+                    }}
+                  >
+                    Add Another Measurement Profile
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
 
       {/* Full-screen Image Preview Modal */}
