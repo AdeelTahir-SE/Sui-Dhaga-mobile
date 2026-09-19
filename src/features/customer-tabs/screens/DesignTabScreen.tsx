@@ -12,25 +12,32 @@ import { TabPlaceholder } from "../components/TabPlaceholder";
 
 const newDesignDress = require("@/assets/illustrations/customer-tabs/design/new-design-dress.png");
 const buttonGreenishTexture = require("@/assets/texture/button-greenish-texture.original.png");
+const aiAssistantIcon = require("@/assets/illustrations/customer-tabs/home/ai-assistant-icon.png");
 
 function DesignOption({
   title,
   subtitle,
   icon,
+  image,
   href,
 }: {
   title: string;
   subtitle: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Ionicons.glyphMap;
+  image?: any;
   href: string;
 }) {
   return (
     <TouchableOpacity
       onPress={() => router.push(href as never)}
-      className="mb-3 flex-row items-center rounded-md border border-brand-border p-4"
+      className="mb-3 flex-row items-center rounded-md border border-brand-border p-4 bg-white"
     >
-      <View className="h-10 w-10 items-center justify-center rounded-md bg-primary-50">
-        <Ionicons name={icon} size={20} color="#14919B" />
+      <View className="w-10 h-10 items-center justify-center">
+        {image ? (
+          <Image source={image} style={{ width: 38, height: 38 }} contentFit="contain" />
+        ) : (
+          <Ionicons name={icon || "sparkles"} size={32} color="#14919B" />
+        )}
       </View>
       <View className="ml-3 flex-1">
         <Text className="text-[14px] font-bold text-brand-dark">{title}</Text>
@@ -55,7 +62,7 @@ export default function DesignTabScreen() {
       />
       <View className="px-5 pb-8">
         <TouchableOpacity
-          onPress={() => router.push("/design-studio/chat" as never)}
+          onPress={() => router.push({ pathname: "/design-studio/chat", params: { mode: "designer" } } as never)}
           activeOpacity={0.85}
           className="relative mb-4 min-h-[130px] flex-row items-center justify-between overflow-hidden rounded-md bg-primary px-5 pb-0 shadow-sm"
         >
@@ -89,9 +96,9 @@ export default function DesignTabScreen() {
         </TouchableOpacity>
 
         <DesignOption
-          title="Text to Chat"
-          subtitle="Chat with AI fashion stylist & designer"
-          icon="chatbubbles-outline"
+          title="AI Chat"
+          subtitle="Assistant queries & outfit designer"
+          image={aiAssistantIcon}
           href="/design-studio/chat"
         />
         <DesignOption

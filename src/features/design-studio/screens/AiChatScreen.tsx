@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -24,6 +24,9 @@ import {
 } from "../constants/designStudioAssets";
 
 const skinTexture = require("@/assets/texture/skin-texture.png");
+const aiAssistantIcon = require("@/assets/illustrations/customer-tabs/home/ai-assistant-icon.png");
+
+export type ChatTab = "assistant" | "designer";
 
 interface DesignCardData {
   title: string;
@@ -44,34 +47,65 @@ interface ChatMessage {
   suggestions?: string[];
 }
 
-const STARTER_PROMPTS = [
+const ASSISTANT_STARTER_PROMPTS = [
   {
-    id: "starter-1",
+    id: "as-1",
+    title: "Fabric Drape Advice",
+    icon: "leaf-outline" as const,
+    prompt: "Which fabric drape and lining work best for a flared Pakistani wedding silhouette?",
+    tag: "Fabrics",
+  },
+  {
+    id: "as-2",
+    title: "Fabric Meters Needed",
+    icon: "resize-outline" as const,
+    prompt: "How many meters of fabric do I need for a 16-kali Anarkali with a dupatta?",
+    tag: "Measurements",
+  },
+  {
+    id: "as-3",
+    title: "Color Palette Matching",
+    icon: "color-palette-outline" as const,
+    prompt: "What dupatta and jewelry colors complement a warm golden ivory silk outfit?",
+    tag: "Color Styling",
+  },
+  {
+    id: "as-4",
+    title: "Garment Care & Storage",
+    icon: "shield-checkmark-outline" as const,
+    prompt: "How should I clean and preserve pure velvet and heavy zardozi garments?",
+    tag: "Care Guide",
+  },
+];
+
+const DESIGNER_STARTER_PROMPTS = [
+  {
+    id: "des-1",
     title: "Bridal Lehenga",
     icon: "sparkles" as const,
     prompt: "Design a royal blue bridal lehenga with intricate gold zardozi embroidery and velvet finish",
     tag: "Trending",
   },
   {
-    id: "starter-2",
+    id: "des-2",
     title: "Pastel Anarkali",
     icon: "flower-outline" as const,
     prompt: "A pastel mint green Anarkali with floral embroidery, sheer organza sleeves, and a boat neckline",
     tag: "Festive",
   },
   {
-    id: "starter-3",
+    id: "des-3",
     title: "Summer Kurta Set",
     icon: "shirt-outline" as const,
     prompt: "Suggest a breathable pastel lawn kurta set with delicate Schiffli lace borders and straight trousers",
     tag: "Casual",
   },
   {
-    id: "starter-4",
-    title: "Fabric & Drape Advice",
-    icon: "cut-outline" as const,
-    prompt: "Which fabric drape and lining work best for a flared Pakistani wedding silhouette?",
-    tag: "Tailor Advice",
+    id: "des-4",
+    title: "Tissue Silk Saree",
+    icon: "diamond-outline" as const,
+    prompt: "Create a gold tissue silk saree concept with hand-scalloped zari border and designer blouse",
+    tag: "Classic",
   },
 ];
 
@@ -86,9 +120,16 @@ function getFormattedTime(): string {
 
 export default function AiChatScreen() {
   const insets = useSafeAreaInsets();
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const initialTab: ChatTab = mode === "designer" ? "designer" : "assistant";
+  const [activeTab, setActiveTab] = useState<ChatTab>(initialTab);
+
+  // Maintain separate conversation histories for Assistant vs Designer
+  const [assistantMessages, setAssistantMessages] = useState<ChatMessage[]>([]);
+  const [designerMessages, setDesignerMessages] = useState<ChatMessage[]>([]);
+
   const [inputText, setInputText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -138,6 +179,9 @@ export default function AiChatScreen() {
     }
   }, [isGenerating]);
 
+  const currentMessages =
+    activeTab === "assistant" ? assistantMessages : designerMessages;
+
   const scrollToBottom = () => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -162,7 +206,11 @@ export default function AiChatScreen() {
   };
 
   const handleNewChat = () => {
-    setMessages([]);
+    if (activeTab === "assistant") {
+      setAssistantMessages([]);
+    } else {
+      setDesignerMessages([]);
+    }
     setInputText("");
     setSelectedImage(null);
     setIsGenerating(false);
@@ -175,16 +223,111 @@ export default function AiChatScreen() {
     } as any);
   };
 
-  const generateAiResponse = (userPrompt: string): {
+  // Assistant Logic: Answers queries, advice, fabrics, cuts, maintenance
+  const generateAssistantResponse = (
+    userPrompt: string
+  ): {
+    text: string;
+    suggestions: string[];
+  } => {
+    const lower = userPrompt.toLowerCase();
+
+    if (
+      lower.includes("fabric") ||
+      lower.includes("drape") ||
+      lower.includes("lining") ||
+      lower.includes("material")
+    ) {
+      return {
+        text: `Here is our expert tailoring guide for ethnic drapes and fabrics:\n\n• For Flared Silhouettes (Anarkali/Lehenga): Pure Organza, Chiffon, or Raw Silk offer optimal drape. Pair with butter crepe or soft cotton silk lining to prevent clinging.\n• Flare Structure: Add a 2-inch horsehair canvas hem or soft can-can net inside the lower third for effortless runway volume without stiffness.\n• Summer Daywear: 100% fine cotton lawn or modal mulmul ensures breathability while holding tailored darts neatly.`,
+        suggestions: [
+          "How many meters of fabric do I need?",
+          "Best lining for raw silk",
+          "Which fabrics don't wrinkle easily?",
+          "Switch to Designer tab to create this outfit",
+        ],
+      };
+    }
+
+    if (
+      lower.includes("meter") ||
+      lower.includes("yard") ||
+      lower.includes("measure") ||
+      lower.includes("size") ||
+      lower.includes("kali")
+    ) {
+      return {
+        text: `Here are the standard fabric calculations tailored to your silhouette:\n\n• 16-24 Kali Anarkali / Gown: 5.5 to 6.5 meters of main fabric (44" width) + 4.5 meters lining.\n• Full Flare Bridal Lehenga: 4.5 to 5.5 meters main fabric + 3.5 meters inner can-can lining.\n• Straight Kurta with Trousers: 4.5 to 5 meters total for both shirt and cigarette pants.\n• Standard Dupatta: 2.5 meters length (1.25 meters width).\n\nTip: If choosing wide-width fabric (54"+), you can save approximately 20% on total yardage.`,
+        suggestions: [
+          "How to measure waist and bust at home?",
+          "What length is best for floor-length Anarkali?",
+          "Save measurements to my profile",
+          "Open Designer tab to style this",
+        ],
+      };
+    }
+
+    if (
+      lower.includes("color") ||
+      lower.includes("combination") ||
+      lower.includes("contrast") ||
+      lower.includes("match")
+    ) {
+      return {
+        text: `Styling & Color Contrast Recommendations:\n\n• Ivory / Off-White Silks: Pair beautifully with emerald green, burnt rust organza, or vintage gold zari borders.\n• Royal Navy & Deep Jewel Tones: Contrast with antique champagne gold or dusty rose pink dupattas for regal balance.\n• Pastel Lilac & Mint: Complement with mother-of-pearl sequin work and soft silver French wire embroidery.\n• Evening Wedding Rule: Choose warm metallic accents (zari/tilla) if attending under candlelight or warm banquet lighting.`,
+        suggestions: [
+          "Suggest jewelry options for this palette",
+          "Which color suits day wedding events?",
+          "How to balance heavy embroidery with dupatta?",
+        ],
+      };
+    }
+
+    if (
+      lower.includes("clean") ||
+      lower.includes("wash") ||
+      lower.includes("care") ||
+      lower.includes("store") ||
+      lower.includes("iron")
+    ) {
+      return {
+        text: `Care & Preservation Guidelines for Artisanal Outfits:\n\n• Hand-Embroidered Zardozi / Tilla: Never wash at home. Dry clean only at specialized heritage cleaners.\n• Storage: Wrap in unbleached pure cotton or muslin cloth. Avoid plastic zip covers as trapped moisture can tarnish metallic threads.\n• Ironing: Always iron on the reverse side over a padded towel or use a vertical garment steamer.\n• Velvet Care: Never press iron directly onto velvet pile; steam gently from the inner side while hanging.`,
+        suggestions: [
+          "How often should festive garments be dry cleaned?",
+          "Prevent silver gota tarnish",
+          "Ask another tailoring query",
+        ],
+      };
+    }
+
+    return {
+      text: `Regarding "${userPrompt}":\n\nOur master stylists recommend focusing on balanced proportions and precise body fit. For tailored Pakistani and South Asian silhouettes, getting the shoulder slope, armhole depth, and flare drop measured accurately makes all the difference.\n\nWould you like guidance on fabric selection, measuring yourself, or shall we generate a full custom outfit concept in the Designer tab?`,
+      suggestions: [
+        "Which fabrics are trending this season?",
+        "How to prepare custom measurements for a tailor?",
+        "Show color recommendations",
+        "Switch to Designer tab to visualize",
+      ],
+    };
+  };
+
+  // Designer Logic: Generates visual couture concepts with design cards and ordering
+  const generateDesignerResponse = (
+    userPrompt: string
+  ): {
     text: string;
     designCard?: DesignCardData;
     suggestions: string[];
   } => {
     const lower = userPrompt.toLowerCase();
 
-    if (lower.includes("lehenga") || lower.includes("bridal") || lower.includes("wedding")) {
+    if (
+      lower.includes("lehenga") ||
+      lower.includes("bridal") ||
+      lower.includes("wedding")
+    ) {
       return {
-        text: "Here is a bespoke bridal silhouette crafted for you. The deep royal palette is paired with hand-embroidered zardozi and dabka motifs across a 16-panel circular flare. The velvet choli features a classic sweetheart neckline and French piping along the edges.",
+        text: "Here is a bespoke bridal silhouette crafted for you. The deep royal palette is paired with hand-embroidered zardozi and dabka motifs across a 16-panel circular flare. The micro-velvet choli features a classic sweetheart neckline and French piping along the edges.",
         designCard: {
           title: "Royal Velvet Bridal Lehenga",
           subtitle: "16-panel circular cut with handcrafted zardozi",
@@ -197,14 +340,18 @@ export default function AiChatScreen() {
           "Show in pastel blush pink",
           "Can I do a lighter net dupatta?",
           "Recommend matching jewelry",
-          "Add tailor notes for custom sizing",
+          "Order custom stitching with tailor",
         ],
       };
     }
 
-    if (lower.includes("anarkali") || lower.includes("gown") || lower.includes("pastel")) {
+    if (
+      lower.includes("anarkali") ||
+      lower.includes("gown") ||
+      lower.includes("pastel")
+    ) {
       return {
-        text: "For this look, I recommend a floor-length Anarkali crafted in pure organza and silk satin lining. The bodice features fine floral resham embroidery with a boat neckline, flowing into 24 panels that give a graceful, lightweight swirl.",
+        text: "For this look, I recommend a floor-length Anarkali crafted in pure organza with silk satin lining. The bodice features fine floral resham embroidery with a boat neckline, flowing into 24 panels that give a graceful, lightweight swirl.",
         designCard: {
           title: "Pastel Flora Floor-Length Anarkali",
           subtitle: "24-kali flared organza with floral resham work",
@@ -217,12 +364,16 @@ export default function AiChatScreen() {
           "Suggest back neckline cut",
           "Show matching churidar options",
           "Make sleeves full sheer",
-          "Book a tailor for stitching",
+          "Book tailor consultation",
         ],
       };
     }
 
-    if (lower.includes("kurta") || lower.includes("lawn") || lower.includes("casual")) {
+    if (
+      lower.includes("kurta") ||
+      lower.includes("lawn") ||
+      lower.includes("casual")
+    ) {
       return {
         text: "A breathable summer ensemble featuring pure Pakistani lawn with intricate Schiffli lace accents on the daman and sleeve cuffs. Paired with straight-cut cotton cigarette trousers and an airy printed chiffon dupatta.",
         designCard: {
@@ -242,17 +393,6 @@ export default function AiChatScreen() {
       };
     }
 
-    if (lower.includes("fabric") || lower.includes("drape") || lower.includes("lining")) {
-      return {
-        text: "For flared ethnic cuts like Anarkalis and Lehengas, the secret is layering:\n\n• Base Shell: Pure Organza, Raw Silk, or Georgette for natural volume.\n• Inner Lining: Butter Crepe or Soft Cotton Silk prevents clinging.\n• Flare Support: A lightweight horsehair braid or stiff net hem creates that effortless runway swoosh without weighing you down.",
-        suggestions: [
-          "Which fabric is best for humid weather?",
-          "How many meters of fabric needed?",
-          "Suggest silk blends for party wear",
-        ],
-      };
-    }
-
     if (lower.includes("saree") || lower.includes("sari")) {
       return {
         text: "A timeless drape concept: woven gold tissue silk saree with a scalloped zari border, paired with an embroidered jewel-neck blouse. Perfect for evening receptions and celebratory soirees.",
@@ -268,15 +408,16 @@ export default function AiChatScreen() {
           "Suggest blouse back designs",
           "How to drape for a slimmer look?",
           "Can I do pre-stitched pleats?",
+          "Order stitching for blouse",
         ],
       };
     }
 
     return {
-      text: `I've analyzed your request for "${userPrompt}". We can style this with balanced proportions, tailored darts for a flattering drape, and artisanal threadwork tailored specifically to your measurements.`,
+      text: `I've created a custom couture concept for "${userPrompt}". Designed with balanced proportions, tailored darts for a flattering drape, and artisanal threadwork tailored specifically to your measurements.`,
       designCard: {
         title: "Bespoke Couture Concept",
-        subtitle: "Custom silhouette based on your vision",
+        subtitle: "Custom silhouette crafted for your measurements",
         image: aiSuggestionImages[1],
         tags: ["Custom Cut", "Hand Finish", "Premium Fabric"],
         priceEstimate: "Custom Quote",
@@ -284,7 +425,7 @@ export default function AiChatScreen() {
       },
       suggestions: [
         "Tell me about suitable fabrics",
-        "Add heavier embroidery",
+        "Add heavier embroidery on sleeves",
         "Show color swatches",
         "Book a tailor consultation",
       ],
@@ -295,6 +436,16 @@ export default function AiChatScreen() {
     const messageContent = (textToSend ?? inputText).trim();
     if (!messageContent && !selectedImage) return;
 
+    // Check if suggestion wants to switch tab
+    if (
+      messageContent.toLowerCase().includes("switch to designer") ||
+      messageContent.toLowerCase().includes("open designer tab")
+    ) {
+      setActiveTab("designer");
+      setInputText("");
+      return;
+    }
+
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: "user",
@@ -303,27 +454,44 @@ export default function AiChatScreen() {
       attachedImageUri: selectedImage ?? undefined,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    if (activeTab === "assistant") {
+      setAssistantMessages((prev) => [...prev, userMessage]);
+    } else {
+      setDesignerMessages((prev) => [...prev, userMessage]);
+    }
+
     setInputText("");
     setSelectedImage(null);
     setIsGenerating(true);
     scrollToBottom();
 
     setTimeout(() => {
-      const aiResult = generateAiResponse(messageContent);
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
-        sender: "assistant",
-        text: aiResult.text,
-        timestamp: getFormattedTime(),
-        designCard: aiResult.designCard,
-        suggestions: aiResult.suggestions,
-      };
+      if (activeTab === "assistant") {
+        const aiResult = generateAssistantResponse(messageContent);
+        const assistantMessage: ChatMessage = {
+          id: `assistant-${Date.now()}`,
+          sender: "assistant",
+          text: aiResult.text,
+          timestamp: getFormattedTime(),
+          suggestions: aiResult.suggestions,
+        };
+        setAssistantMessages((prev) => [...prev, assistantMessage]);
+      } else {
+        const aiResult = generateDesignerResponse(messageContent);
+        const designerMessage: ChatMessage = {
+          id: `designer-${Date.now()}`,
+          sender: "assistant",
+          text: aiResult.text,
+          timestamp: getFormattedTime(),
+          designCard: aiResult.designCard,
+          suggestions: aiResult.suggestions,
+        };
+        setDesignerMessages((prev) => [...prev, designerMessage]);
+      }
 
-      setMessages((prev) => [...prev, assistantMessage]);
       setIsGenerating(false);
       scrollToBottom();
-    }, 1100);
+    }, 1000);
   };
 
   const handleStopGenerating = () => {
@@ -384,22 +552,14 @@ export default function AiChatScreen() {
             <Ionicons name="arrow-back" size={20} color="#1A1D1F" />
           </TouchableOpacity>
 
-          {/* AI Identity Info */}
+          {/* AI Identity Info with aiAssistantIcon */}
           <View style={{ alignItems: "center", flex: 1, marginHorizontal: 8 }}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <View
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 12,
-                  backgroundColor: "#14919B",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 6,
-                }}
-              >
-                <Ionicons name="sparkles" size={13} color="#FFFFFF" />
-              </View>
+              <Image
+                source={aiAssistantIcon}
+                style={{ width: 24, height: 24, marginRight: 7 }}
+                contentFit="contain"
+              />
               <Text
                 style={{
                   fontSize: 16,
@@ -428,7 +588,9 @@ export default function AiChatScreen() {
                   color: "#6F767E",
                 }}
               >
-                Fashion Stylist • Online
+                {activeTab === "assistant"
+                  ? "Style & Queries Assistant • Online"
+                  : "Couture Outfit Designer • Online"}
               </Text>
             </View>
           </View>
@@ -450,18 +612,151 @@ export default function AiChatScreen() {
               borderColor: "#CCF0EE",
             }}
           >
-            <Ionicons name="create-outline" size={15} color="#14919B" />
+            <Ionicons name="add" size={16} color="#14919B" />
             <Text
               style={{
-                marginLeft: 5,
+                marginLeft: 4,
                 fontSize: 12,
                 fontWeight: "700",
                 color: "#14919B",
               }}
             >
-              New
+              New Chat
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Dual Mode Tabs: Assistant vs Designer */}
+        <View
+          style={{
+            paddingHorizontal: 16,
+            paddingBottom: 10,
+            paddingTop: 4,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              backgroundColor: "#F3F4F6",
+              borderRadius: 14,
+              padding: 4,
+              gap: 4,
+            }}
+          >
+            {/* Tab 1: Assistant */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setActiveTab("assistant")}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor:
+                  activeTab === "assistant" ? "#FFFFFF" : "transparent",
+                shadowColor: activeTab === "assistant" ? "#000" : "transparent",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: activeTab === "assistant" ? 0.08 : 0,
+                shadowRadius: 2,
+                elevation: activeTab === "assistant" ? 2 : 0,
+              }}
+            >
+              <Ionicons
+                name="chatbubble-ellipses"
+                size={16}
+                color={activeTab === "assistant" ? "#14919B" : "#6F767E"}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: activeTab === "assistant" ? "800" : "600",
+                  color: activeTab === "assistant" ? "#14919B" : "#6F767E",
+                }}
+              >
+                Assistant
+              </Text>
+              <View
+                style={{
+                  marginLeft: 6,
+                  backgroundColor:
+                    activeTab === "assistant" ? "#E0F7F6" : "#E5E7EB",
+                  borderRadius: 8,
+                  paddingHorizontal: 6,
+                  paddingVertical: 1,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 10,
+                    fontWeight: "700",
+                    color: activeTab === "assistant" ? "#0E7490" : "#6B7280",
+                  }}
+                >
+                  Queries
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Tab 2: Designer */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setActiveTab("designer")}
+              style={{
+                flex: 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingVertical: 8,
+                borderRadius: 10,
+                backgroundColor:
+                  activeTab === "designer" ? "#FFFFFF" : "transparent",
+                shadowColor: activeTab === "designer" ? "#000" : "transparent",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: activeTab === "designer" ? 0.08 : 0,
+                shadowRadius: 2,
+                elevation: activeTab === "designer" ? 2 : 0,
+              }}
+            >
+              <Ionicons
+                name="color-wand"
+                size={16}
+                color={activeTab === "designer" ? "#14919B" : "#6F767E"}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: activeTab === "designer" ? "800" : "600",
+                  color: activeTab === "designer" ? "#14919B" : "#6F767E",
+                }}
+              >
+                Designer
+              </Text>
+              <View
+                style={{
+                  marginLeft: 6,
+                  backgroundColor:
+                    activeTab === "designer" ? "#E0F7F6" : "#E5E7EB",
+                  borderRadius: 8,
+                  paddingHorizontal: 6,
+                  paddingVertical: 1,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 10,
+                    fontWeight: "700",
+                    color: activeTab === "designer" ? "#0E7490" : "#6B7280",
+                  }}
+                >
+                  Create
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -483,41 +778,47 @@ export default function AiChatScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {messages.length === 0 ? (
-            /* Empty State: ChatGPT / DeepSeek / Claude Welcome Screen */
-            <View style={{ flex: 1, justifyContent: "center", paddingVertical: 20 }}>
-              {/* Sui Dhaga AI Badge */}
-              <View style={{ alignItems: "center", marginBottom: 20 }}>
+          {currentMessages.length === 0 ? (
+            /* Empty State with aiAssistantIcon and tailored starters */
+            <View style={{ paddingTop: 12, paddingBottom: 24 }}>
+              {/* Hero Banner with aiAssistantIcon */}
+              <View style={{ alignItems: "center", marginBottom: 24 }}>
                 <View
                   style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: 36,
-                    backgroundColor: "#E0F7F7",
-                    borderWidth: 2,
-                    borderColor: "#14919B",
+                    width: 78,
+                    height: 78,
+                    borderRadius: 24,
+                    backgroundColor: "#FFFFFF",
                     alignItems: "center",
                     justifyContent: "center",
                     shadowColor: "#14919B",
                     shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.15,
+                    shadowOpacity: 0.12,
                     shadowRadius: 8,
                     elevation: 4,
+                    borderWidth: 1.5,
+                    borderColor: "#CCF0EE",
                   }}
                 >
-                  <Ionicons name="sparkles" size={36} color="#14919B" />
+                  <Image
+                    source={aiAssistantIcon}
+                    style={{ width: 52, height: 52 }}
+                    contentFit="contain"
+                  />
                 </View>
                 <Text
                   style={{
                     marginTop: 14,
-                    fontSize: 22,
+                    fontSize: 21,
                     fontWeight: "800",
                     color: "#1A1D1F",
                     textAlign: "center",
                     letterSpacing: -0.3,
                   }}
                 >
-                  What outfit are we creating?
+                  {activeTab === "assistant"
+                    ? "How can I help you today?"
+                    : "What outfit are we creating?"}
                 </Text>
                 <Text
                   style={{
@@ -529,13 +830,14 @@ export default function AiChatScreen() {
                     maxWidth: "88%",
                   }}
                 >
-                  Chat with your personal AI stylist. Ask for bridal lehengas,
-                  lawn kurtas, fabric draping, or custom silhouettes.
+                  {activeTab === "assistant"
+                    ? "Ask styling queries, fabric drape guides, meter calculations, garment care, or tailor advice."
+                    : "Describe an outfit idea or upload inspiration. I'll craft a bespoke couture concept with stitching estimates."}
                 </Text>
               </View>
 
               {/* Starter Prompt Cards */}
-              <View style={{ marginTop: 10 }}>
+              <View style={{ marginTop: 4 }}>
                 <Text
                   style={{
                     fontSize: 12,
@@ -547,10 +849,15 @@ export default function AiChatScreen() {
                     marginLeft: 2,
                   }}
                 >
-                  Suggested Design Starters
+                  {activeTab === "assistant"
+                    ? "Suggested Queries"
+                    : "Suggested Design Starters"}
                 </Text>
                 <View style={{ gap: 10 }}>
-                  {STARTER_PROMPTS.map((item) => (
+                  {(activeTab === "assistant"
+                    ? ASSISTANT_STARTER_PROMPTS
+                    : DESIGNER_STARTER_PROMPTS
+                  ).map((item) => (
                     <TouchableOpacity
                       key={item.id}
                       activeOpacity={0.8}
@@ -584,7 +891,12 @@ export default function AiChatScreen() {
                         <Ionicons name={item.icon} size={20} color="#14919B" />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                          }}
+                        >
                           <Text
                             style={{
                               fontSize: 14,
@@ -639,7 +951,7 @@ export default function AiChatScreen() {
             </View>
           ) : (
             /* Conversation Messages */
-            messages.map((msg) => (
+            currentMessages.map((msg) => (
               <View
                 key={msg.id}
                 style={{
@@ -648,7 +960,7 @@ export default function AiChatScreen() {
                   maxWidth: msg.sender === "user" ? "82%" : "92%",
                 }}
               >
-                {/* Assistant Label and Avatar */}
+                {/* Assistant Label and Avatar using aiAssistantIcon */}
                 {msg.sender === "assistant" && (
                   <View
                     style={{
@@ -657,19 +969,11 @@ export default function AiChatScreen() {
                       marginBottom: 6,
                     }}
                   >
-                    <View
-                      style={{
-                        width: 22,
-                        height: 22,
-                        borderRadius: 11,
-                        backgroundColor: "#14919B",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginRight: 6,
-                      }}
-                    >
-                      <Ionicons name="sparkles" size={11} color="#FFFFFF" />
-                    </View>
+                    <Image
+                      source={aiAssistantIcon}
+                      style={{ width: 18, height: 18, marginRight: 6 }}
+                      contentFit="contain"
+                    />
                     <Text
                       style={{
                         fontSize: 12,
@@ -677,7 +981,9 @@ export default function AiChatScreen() {
                         color: "#14919B",
                       }}
                     >
-                      Sui Dhaga AI
+                      {activeTab === "assistant"
+                        ? "Sui Dhaga Assistant"
+                        : "Sui Dhaga Designer"}
                     </Text>
                     <Text
                       style={{
@@ -983,19 +1289,11 @@ export default function AiChatScreen() {
                 elevation: 1,
               }}
             >
-              <View
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 10,
-                  backgroundColor: "#14919B",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 8,
-                }}
-              >
-                <Ionicons name="sparkles" size={10} color="#FFFFFF" />
-              </View>
+              <Image
+                source={aiAssistantIcon}
+                style={{ width: 18, height: 18, marginRight: 8 }}
+                contentFit="contain"
+              />
               <Text
                 style={{
                   fontSize: 13,
@@ -1004,7 +1302,9 @@ export default function AiChatScreen() {
                   marginRight: 8,
                 }}
               >
-                Sui Dhaga AI is designing
+                {activeTab === "assistant"
+                  ? "Sui Dhaga AI is finding advice"
+                  : "Sui Dhaga AI is designing"}
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
                 <Animated.View
@@ -1143,7 +1443,11 @@ export default function AiChatScreen() {
             <TextInput
               value={inputText}
               onChangeText={setInputText}
-              placeholder="Message Sui Dhaga AI or describe an outfit..."
+              placeholder={
+                activeTab === "assistant"
+                  ? "Ask styling, fabric, or tailoring query..."
+                  : "Describe an outfit to design (e.g. emerald lehenga)..."
+              }
               placeholderTextColor="#9CA3AF"
               multiline
               maxLength={600}

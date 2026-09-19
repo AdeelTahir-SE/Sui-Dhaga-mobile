@@ -18,6 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
 import { SectionTitle } from "../components/SectionTitle";
+import { communityApi } from "../../../api/community.api";
 
 const CATEGORIES = [
   "Lehenga",
@@ -126,20 +127,55 @@ export default function CreatePostScreen() {
       return;
     }
 
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      setIsSubmitting(true);
+
+      const formData = new FormData();
+      formData.append("category", selectedCategory);
+      formData.append("caption", caption.trim());
+      formData.append("content", caption.trim() || `${selectedCategory} design`);
+      formData.append("title", selectedCategory);
+
+      if (activeTags.length > 0) {
+        formData.append("tags", activeTags.join(","));
+      }
+
+      selectedImages.forEach((uri, index) => {
+        const filename = uri.split("/").pop() || `post_${Date.now()}_${index}.jpg`;
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1].toLowerCase()}` : "image/jpeg";
+
+        formData.append("images", {
+          uri: Platform.OS === "ios" ? uri.replace("file://", "") : uri,
+          name: filename,
+          type,
+        } as any);
+      });
+
+      const res = await communityApi.createPost(formData);
+
+      if (res.success || res.data) {
+        Alert.alert(
+          "Post Published! ✨",
+          "Your outfit post has been shared to the Sui Dhaga community.",
+          [
+            {
+              text: "View Community",
+              onPress: () => router.replace("/community" as any),
+            },
+          ]
+        );
+      } else {
+        throw new Error(res.error || "Failed to publish post");
+      }
+    } catch (err: any) {
       Alert.alert(
-        "Post Published! ✨",
-        "Your outfit post has been shared to the Sui Dhaga community.",
-        [
-          {
-            text: "View Community",
-            onPress: () => router.push("/community" as any),
-          },
-        ]
+        "Publication Failed",
+        err?.message || "Could not publish your post. Please check your connection and try again."
       );
-    }, 600);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

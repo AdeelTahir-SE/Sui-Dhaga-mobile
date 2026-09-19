@@ -1,26 +1,27 @@
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { Image, type ImageSource } from "expo-image";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
 import { PlaceholderVisual } from "./PlaceholderVisual";
 
-const communityPost = require("@/assets/illustrations/generated/community-post.png");
-
 type PostCardProps = {
   author: string;
-  handle: string;
+  handle?: string;
   caption: string;
-  avatarImage?: ImageSource;
-  postImage?: ImageSource;
+  avatarImage?: any;
+  postImage?: any;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   category?: string;
   timeAgo?: string;
+  likesCount?: number;
   initialLikes?: number;
+  isLiked?: boolean;
   commentsCount?: number;
   verifiedTailor?: boolean;
   onPress?: () => void;
   onCommentPress?: () => void;
+  onLikePress?: () => void;
 };
 
 export function PostCard({
@@ -31,25 +32,41 @@ export function PostCard({
   postImage,
   tone = "teal",
   category,
-  timeAgo = "2h ago",
-  initialLikes = 128,
-  commentsCount = 24,
+  timeAgo = "Recently",
+  likesCount,
+  initialLikes = 0,
+  isLiked: controlledIsLiked,
+  commentsCount = 0,
   verifiedTailor = false,
   onPress,
   onCommentPress,
+  onLikePress,
 }: PostCardProps) {
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(initialLikes);
+  const [internalLiked, setInternalLiked] = useState(false);
+  const [internalLikeCount, setInternalLikeCount] = useState(initialLikes);
   const [bookmarked, setBookmarked] = useState(false);
 
-  const toggleLike = () => {
-    setLiked(!liked);
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
+  const isLiked = controlledIsLiked !== undefined ? controlledIsLiked : internalLiked;
+  const currentLikes = likesCount !== undefined ? likesCount : internalLikeCount;
+
+  const handleLike = () => {
+    if (onLikePress) {
+      onLikePress();
+    } else {
+      setInternalLiked(!internalLiked);
+      setInternalLikeCount((prev) => (internalLiked ? Math.max(0, prev - 1) : prev + 1));
+    }
   };
 
   const toggleBookmark = () => {
     setBookmarked(!bookmarked);
   };
+
+  const imageSource =
+    typeof postImage === "string" ? { uri: postImage } : postImage;
+
+  const avatarSource =
+    typeof avatarImage === "string" ? { uri: avatarImage } : avatarImage;
 
   return (
     <View className="mb-4 rounded-2xl border border-brand-border bg-white p-3.5 shadow-sm">
@@ -60,15 +77,22 @@ export function PostCard({
           activeOpacity={0.7}
           className="flex-1 flex-row items-center"
         >
-          <PlaceholderVisual
-            image={avatarImage}
-            variant="person"
-            size="xs"
-            tone={tone}
-          />
+          {avatarSource ? (
+            <Image
+              source={avatarSource}
+              contentFit="cover"
+              style={{ width: 34, height: 34, borderRadius: 17 }}
+            />
+          ) : (
+            <PlaceholderVisual
+              variant="person"
+              size="xs"
+              tone={tone}
+            />
+          )}
           <View className="ml-3 flex-1">
             <View className="flex-row items-center">
-              <Text className="text-[13px] font-bold text-brand-dark">
+              <Text className="text-[13px] font-bold text-brand-dark" numberOfLines={1}>
                 {author}
               </Text>
               {verifiedTailor && (
@@ -81,8 +105,12 @@ export function PostCard({
               )}
             </View>
             <View className="flex-row items-center">
-              <Text className="text-[10px] text-brand-gray">{handle}</Text>
-              <Text className="mx-1.5 text-[10px] text-brand-gray">•</Text>
+              {handle ? (
+                <>
+                  <Text className="text-[10px] text-brand-gray">{handle}</Text>
+                  <Text className="mx-1.5 text-[10px] text-brand-gray">•</Text>
+                </>
+              ) : null}
               <Text className="text-[10px] text-brand-gray">{timeAgo}</Text>
             </View>
           </View>
@@ -94,65 +122,61 @@ export function PostCard({
               {category}
             </Text>
           </View>
-        ) : (
-          <TouchableOpacity className="p-1">
-            <Ionicons name="ellipsis-horizontal" size={18} color="#6F767E" />
-          </TouchableOpacity>
-        )}
+        ) : null}
       </View>
 
-      {/* Caption */}
+      {/* Caption & Media */}
       <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
-        <Text className="mb-3 text-[12.5px] leading-5 text-brand-dark">
-          {caption}
-        </Text>
+        {caption ? (
+          <Text className="mb-3 text-[12.5px] leading-5 text-brand-dark">
+            {caption}
+          </Text>
+        ) : null}
 
-        {/* Media Container */}
-        <View className="h-[260px] w-full overflow-hidden rounded-xl bg-brand-surface">
-          <Image
-            source={postImage ?? communityPost}
-            contentFit="cover"
-            style={{ height: "100%", width: "100%" }}
-            transition={200}
-          />
-        </View>
+        {/* Media Container (only if image exists) */}
+        {imageSource ? (
+          <View className="h-[260px] w-full overflow-hidden rounded-xl bg-brand-surface mb-1">
+            <Image
+              source={imageSource}
+              contentFit="cover"
+              style={{ height: "100%", width: "100%" }}
+              transition={200}
+            />
+          </View>
+        ) : null}
       </TouchableOpacity>
 
       {/* Action Footer */}
-      <View className="mt-3 flex-row items-center justify-between pt-1">
+      <View className="mt-2.5 flex-row items-center justify-between pt-1">
         <View className="flex-row items-center gap-5">
           <TouchableOpacity
-            onPress={toggleLike}
+            onPress={handleLike}
             activeOpacity={0.7}
-            className="flex-row items-center"
+            className="flex-row items-center py-1 pr-2"
           >
             <Ionicons
-              name={liked ? "heart" : "heart-outline"}
+              name={isLiked ? "heart" : "heart-outline"}
               size={20}
-              color={liked ? "#14919B" : "#1A1D1F"}
+              color={isLiked ? "#E11D48" : "#1A1D1F"}
             />
             <Text
               className={`ml-1.5 text-[12px] font-medium ${
-                liked ? "text-primary font-semibold" : "text-brand-dark"
+                isLiked ? "text-red-500 font-semibold" : "text-brand-dark"
               }`}
             >
-              {likeCount}
+              {currentLikes}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={onCommentPress || onPress}
             activeOpacity={0.7}
-            className="flex-row items-center"
+            className="flex-row items-center py-1 pr-2"
           >
             <Ionicons name="chatbubble-outline" size={18} color="#1A1D1F" />
             <Text className="ml-1.5 text-[12px] font-medium text-brand-dark">
               {commentsCount}
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity activeOpacity={0.7} className="flex-row items-center">
-            <Ionicons name="paper-plane-outline" size={18} color="#1A1D1F" />
           </TouchableOpacity>
         </View>
 

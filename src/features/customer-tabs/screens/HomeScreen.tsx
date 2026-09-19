@@ -76,8 +76,8 @@ export default function HomeScreen() {
     },
     {
       id: "qa-3",
-      title: "AI Studio",
-      description: "Create bespoke outfits with AI visualization",
+      title: "Design Studio",
+      description: "Create bespoke outfits & view saved designs",
       icon: "color-wand-outline" as const,
       image: aiStudioIcon,
       route: "/design",
@@ -109,8 +109,8 @@ export default function HomeScreen() {
     },
     {
       id: "qa-6",
-      title: "AI Assistant",
-      description: "Chat with AI stylist for fabric & cut advice",
+      title: "AI Chat",
+      description: "Styling queries & custom outfit designer",
       icon: "sparkles-outline" as const,
       image: aiAssistantIcon,
       route: "/design-studio/chat",

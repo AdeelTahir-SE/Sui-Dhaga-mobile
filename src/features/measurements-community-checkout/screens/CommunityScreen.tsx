@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import {
+  ActivityIndicator,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -13,24 +15,35 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
 import { PostCard } from "../components/PostCard";
-
-const authorRekha = require("@/assets/illustrations/measurements-community-checkout/community/author-rekha.png");
-const authorStitchStyle = require("@/assets/illustrations/measurements-community-checkout/community/author-stitch-style.png");
-const postPastelAnarkali = require("@/assets/illustrations/measurements-community-checkout/community/post-pastel-anarkali.png");
-const postNavyLehenga = require("@/assets/illustrations/measurements-community-checkout/community/post-navy-lehenga.png");
+import { useCommunity } from "../hooks/useCommunity";
 
 const CATEGORIES = [
   "For You",
   "Trending",
+  "Lehenga",
+  "Anarkali",
+  "Kurti",
+  "Salwar Suit",
+  "Blouse",
+  "Sherwani",
   "Tailor Work",
-  "Bespoke Fits",
   "Fabrics & Care",
 ];
 
 export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
-  const [selectedCategory, setSelectedCategory] = useState("For You");
-  const [searchQuery, setSearchQuery] = useState("");
+  const {
+    posts,
+    category,
+    setCategory,
+    searchQuery,
+    setSearchQuery,
+    isLoading,
+    isRefreshing,
+    error,
+    refresh,
+    toggleLike,
+  } = useCommunity("For You");
 
   return (
     <MccScreenShell
@@ -39,6 +52,14 @@ export default function CommunityScreen() {
           title="Community"
           showBack
           titleClassName="text-[22px] font-bold text-brand-dark"
+        />
+      }
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={refresh}
+          tintColor="#14919B"
+          colors={["#14919B"]}
         />
       }
       floatingAction={
@@ -96,11 +117,11 @@ export default function CommunityScreen() {
         >
           <View className="flex-row gap-2">
             {CATEGORIES.map((tab) => {
-              const isActive = selectedCategory === tab;
+              const isActive = category === tab;
               return (
                 <TouchableOpacity
                   key={tab}
-                  onPress={() => setSelectedCategory(tab)}
+                  onPress={() => setCategory(tab)}
                   activeOpacity={0.7}
                   className={`rounded-full px-4 py-2 ${
                     isActive
@@ -138,36 +159,115 @@ export default function CommunityScreen() {
           </View>
         </View>
 
-        {/* Posts */}
-        <PostCard
-          author="Rekha Designs"
-          handle="@rekhadesigns"
-          caption="Pastel green Anarkali with delicate floral threadwork and hand-pleated organza dupatta. Custom stitched for summer wedding guest."
-          avatarImage={authorRekha}
-          postImage={postPastelAnarkali}
-          tone="mint"
-          category="Anarkali"
-          timeAgo="1h ago"
-          initialLikes={142}
-          commentsCount={28}
-          verifiedTailor={true}
-          onPress={() => router.push("/community/1" as any)}
-        />
+        {/* Loading Indicator */}
+        {isLoading && posts.length === 0 && (
+          <View className="my-12 items-center justify-center py-8">
+            <ActivityIndicator size="large" color="#14919B" />
+            <Text className="mt-3 text-[13px] font-medium text-brand-gray">
+              Loading community designs...
+            </Text>
+          </View>
+        )}
 
-        <PostCard
-          author="Stitch & Style"
-          handle="@stitchstyle"
-          caption="Navy blue silk lehenga with hand-embroidered sequin border and custom sweetheart neckline blouse."
-          avatarImage={authorStitchStyle}
-          postImage={postNavyLehenga}
-          tone="blue"
-          category="Bridal Lehenga"
-          timeAgo="3h ago"
-          initialLikes={215}
-          commentsCount={45}
-          verifiedTailor={true}
-          onPress={() => router.push("/community/2" as any)}
-        />
+        {/* Connection Error State */}
+        {!isLoading && error && posts.length === 0 && (
+          <View className="my-8 items-center justify-center rounded-2xl border border-red-100 bg-red-50/60 p-6">
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-red-100 mb-3">
+              <Ionicons name="cloud-offline-outline" size={24} color="#EF4444" />
+            </View>
+            <Text className="text-center text-[15px] font-bold text-brand-dark">
+              Connection Error
+            </Text>
+            <Text className="mt-1 text-center text-[12px] text-brand-gray leading-4 px-2">
+              {error}
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={refresh}
+              className="mt-4 rounded-xl bg-primary px-5 py-2.5 shadow-sm shadow-primary/20 flex-row items-center gap-1.5"
+            >
+              <Ionicons name="refresh" size={15} color="#FFFFFF" />
+              <Text className="text-[13px] font-bold text-white">Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Empty Feed State */}
+        {!isLoading && !error && posts.length === 0 && (
+          <View className="my-8 items-center justify-center rounded-2xl border border-dashed border-brand-border bg-white p-8">
+            <View className="h-14 w-14 items-center justify-center rounded-full bg-primary-50 mb-3">
+              <Ionicons name="images-outline" size={26} color="#14919B" />
+            </View>
+            <Text className="text-center text-[16px] font-bold text-brand-dark">
+              {searchQuery ? `No results for "${searchQuery}"` : "No Posts Yet"}
+            </Text>
+            <Text className="mt-1.5 text-center text-[12px] text-brand-gray leading-5 max-w-[260px]">
+              {searchQuery
+                ? "Try searching with a different term or browse other categories."
+                : `Be the first to share a bespoke ${
+                    category !== "For You" && category !== "Trending" ? category : "design"
+                  } with the community!`}
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/community/create" as any)}
+              className="mt-5 rounded-xl bg-primary px-5 py-2.5 shadow-sm shadow-primary/20 flex-row items-center gap-1.5"
+            >
+              <Ionicons name="add" size={16} color="#FFFFFF" />
+              <Text className="text-[13px] font-bold text-white">Create First Post</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Real Dynamic Posts Feed */}
+        {!isLoading && posts.length > 0 && (
+          <View>
+            {posts.map((post) => {
+              const authorName =
+                post.author?.fullName ||
+                post.author?.full_name ||
+                post.author?.name ||
+                "Community Member";
+
+              const authorAvatar =
+                post.author?.avatarUrl ||
+                post.author?.avatar_url ||
+                post.author?.avatar;
+
+              const postImg =
+                post.images && post.images.length > 0 ? post.images[0] : undefined;
+
+              const postCategory =
+                post.category || (post.tags && post.tags[0]) || undefined;
+
+              const postCaption =
+                post.content || post.caption || post.title || "";
+
+              const likes = post.likesCount ?? post.likes_count ?? 0;
+              const isLiked = Boolean(post.isLiked ?? post.is_liked);
+              const comments = post.commentsCount ?? post.comments_count ?? 0;
+              const isTailor = post.author?.role === "tailor" || post.author?.isVerified;
+
+              return (
+                <PostCard
+                  key={post.id}
+                  author={authorName}
+                  caption={postCaption}
+                  avatarImage={authorAvatar}
+                  postImage={postImg}
+                  category={postCategory}
+                  likesCount={likes}
+                  isLiked={isLiked}
+                  commentsCount={comments}
+                  verifiedTailor={isTailor}
+                  onPress={() => router.push(`/community/${post.id}` as any)}
+                  onCommentPress={() => router.push(`/community/${post.id}` as any)}
+                  onLikePress={() => toggleLike(post.id)}
+                />
+              );
+            })}
+          </View>
+        )}
       </View>
     </MccScreenShell>
   );

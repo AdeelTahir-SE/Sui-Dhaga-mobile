@@ -274,3 +274,64 @@ export interface ConversationItem {
   updatedAt?: string;
   updated_at?: string;
 }
+
+export interface CommunityAuthor {
+  id: string;
+  name?: string;
+  fullName?: string;
+  full_name?: string;
+  avatarUrl?: string;
+  avatar_url?: string;
+  avatar?: string;
+  role?: string;
+  isVerified?: boolean;
+}
+
+export interface CommunityComment {
+  id: string;
+  postId?: string;
+  post_id?: string;
+  userId?: string;
+  user_id?: string;
+  content: string;
+  createdAt: string;
+  created_at?: string;
+  user?: CommunityAuthor;
+}
+
+export interface CommunityPost {
+  id: string;
+  userId?: string;
+  user_id?: string;
+  title?: string;
+  content?: string;
+  caption?: string;
+  images?: string[];
+  tags?: string[];
+  category?: string;
+  likesCount?: number;
+  likes_count?: number;
+  savesCount?: number;
+  saves_count?: number;
+  commentsCount?: number;
+  comments_count?: number;
+  isLiked?: boolean;
+  is_liked?: boolean;
+  isSaved?: boolean;
+  is_saved?: boolean;
+  author?: CommunityAuthor;
+  comments?: CommunityComment[];
+  createdAt: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
+}
+
+export interface CreateCommunityPostPayload {
+  title?: string;
+  content?: string;
+  caption?: string;
+  category?: string;
+  tags?: string[] | string;
+  images?: string[];
+}

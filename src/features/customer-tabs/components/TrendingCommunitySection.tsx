@@ -1,106 +1,19 @@
-import { Ionicons } from "@expo/vector-icons";
-import { Image, ImageSource } from "expo-image";
-import { router } from "expo-router";
-import { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
+import { communityApi } from "../../../api/community.api";
+import { CommunityPost } from "../../../types/api";
 import { SectionTitle } from "./SectionTitle";
-
-const postPastelAnarkali = require("@/assets/illustrations/measurements-community-checkout/community/post-pastel-anarkali.png");
-const postNavyLehenga = require("@/assets/illustrations/measurements-community-checkout/community/post-navy-lehenga.png");
-const authorRekha = require("@/assets/illustrations/measurements-community-checkout/community/author-rekha.png");
-const authorStitchStyle = require("@/assets/illustrations/measurements-community-checkout/community/author-stitch-style.png");
-const royalBlueLehenga = require("@/assets/illustrations/design-studio/previews/royal-blue-lehenga.png");
-const goldSaree = require("@/assets/illustrations/design-studio/previews/gold-saree.png");
-const tealSherwani = require("@/assets/illustrations/design-studio/previews/teal-sherwani.png");
-
-export type TrendingDesignItem = {
-  id: string;
-  title: string;
-  category: string;
-  image: ImageSource | number | { uri: string };
-  author: string;
-  handle: string;
-  authorAvatar?: ImageSource | number | { uri: string };
-  verified?: boolean;
-  likes: number;
-  comments: number;
-  route: string;
-};
-
-const TRENDING_DESIGNS: TrendingDesignItem[] = [
-  {
-    id: "1",
-    title: "Pastel Floral Anarkali",
-    category: "Anarkali",
-    image: postPastelAnarkali,
-    author: "Rekha Designs",
-    handle: "@rekhadesigns",
-    authorAvatar: authorRekha,
-    verified: true,
-    likes: 248,
-    comments: 28,
-    route: "/community/1",
-  },
-  {
-    id: "2",
-    title: "Navy Silk Bridal Lehenga",
-    category: "Bridal",
-    image: postNavyLehenga,
-    author: "Stitch & Style",
-    handle: "@stitchstyle",
-    authorAvatar: authorStitchStyle,
-    verified: true,
-    likes: 315,
-    comments: 45,
-    route: "/community/2",
-  },
-  {
-    id: "3",
-    title: "Royal Zardozi Lehenga",
-    category: "Lehenga",
-    image: royalBlueLehenga,
-    author: "Meera Studio",
-    handle: "@meerastudio",
-    authorAvatar: authorRekha,
-    verified: true,
-    likes: 189,
-    comments: 19,
-    route: "/community/1",
-  },
-  {
-    id: "4",
-    title: "Hand-worked Gold Saree",
-    category: "Saree",
-    image: goldSaree,
-    author: "Crafted Fits",
-    handle: "@craftedfits",
-    authorAvatar: authorStitchStyle,
-    verified: true,
-    likes: 164,
-    comments: 12,
-    route: "/community/2",
-  },
-  {
-    id: "5",
-    title: "Ivory & Teal Sherwani",
-    category: "Sherwani",
-    image: tealSherwani,
-    author: "Master Asif",
-    handle: "@asiftailors",
-    authorAvatar: authorRekha,
-    verified: true,
-    likes: 210,
-    comments: 34,
-    route: "/community/1",
-  },
-];
 
 type TrendingCommunitySectionProps = {
   title?: string;
@@ -108,31 +21,99 @@ type TrendingCommunitySectionProps = {
 };
 
 export function TrendingCommunitySection({
-  title = "Trending Designs",
+  title = "Trending Designs in Community",
   onViewAll,
 }: TrendingCommunitySectionProps) {
-  const [likesMap, setLikesMap] = useState<
-    Record<string, { liked: boolean; count: number }>
-  >(() => {
-    const initial: Record<string, { liked: boolean; count: number }> = {};
-    TRENDING_DESIGNS.forEach((item) => {
-      initial[item.id] = { liked: false, count: item.likes };
-    });
-    return initial;
-  });
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleLike = (id: string) => {
-    setLikesMap((prev) => {
-      const current = prev[id] || { liked: false, count: 0 };
-      const nextLiked = !current.liked;
-      return {
-        ...prev,
-        [id]: {
-          liked: nextLiked,
-          count: nextLiked ? current.count + 1 : current.count - 1,
-        },
-      };
-    });
+  const fetchTrending = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await communityApi.getPosts({
+        limit: 10,
+        category: "Trending",
+      });
+
+      const records = Array.isArray(res.data)
+        ? res.data
+        : (res.data as any)?.records || [];
+
+      setPosts(records);
+    } catch (err: any) {
+      setError(
+        err?.message || "Could not load trending community designs."
+      );
+      setPosts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTrending();
+  }, [fetchTrending]);
+
+  const toggleLike = async (postId: string) => {
+    setPosts((prevPosts) =>
+      prevPosts.map((p) => {
+        if (p.id === postId) {
+          const currentlyLiked = Boolean(p.isLiked ?? p.is_liked);
+          const currentCount = p.likesCount ?? p.likes_count ?? 0;
+          const nextLiked = !currentlyLiked;
+          const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
+          return {
+            ...p,
+            isLiked: nextLiked,
+            is_liked: nextLiked,
+            likesCount: nextCount,
+            likes_count: nextCount,
+          };
+        }
+        return p;
+      })
+    );
+
+    try {
+      const res = await communityApi.toggleLike(postId);
+      if (res.data?.post) {
+        const serverPost = res.data.post;
+        const serverLiked = res.data.liked;
+        setPosts((prevPosts) =>
+          prevPosts.map((p) =>
+            p.id === postId
+              ? {
+                  ...p,
+                  ...serverPost,
+                  isLiked: serverLiked,
+                  is_liked: serverLiked,
+                }
+              : p
+          )
+        );
+      }
+    } catch {
+      // Revert on failure
+      setPosts((prevPosts) =>
+        prevPosts.map((p) => {
+          if (p.id === postId) {
+            const currentlyLiked = Boolean(p.isLiked ?? p.is_liked);
+            const currentCount = p.likesCount ?? p.likes_count ?? 0;
+            const nextLiked = !currentlyLiked;
+            return {
+              ...p,
+              isLiked: nextLiked,
+              is_liked: nextLiked,
+              likesCount: currentCount,
+              likes_count: currentCount,
+            };
+          }
+          return p;
+        })
+      );
+    }
   };
 
   const handleViewAll = () => {
@@ -152,145 +133,214 @@ export function TrendingCommunitySection({
         onPressAction={handleViewAll}
       />
 
-      {/* Horizontal Scroll of Trending Cards */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        className="-mx-5 px-5"
-      >
-        {TRENDING_DESIGNS.map((item) => {
-          const itemLike = likesMap[item.id] || {
-            liked: false,
-            count: item.likes,
-          };
+      {/* Loading state */}
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#14919B" />
+          <Text style={styles.loadingText}>Loading trending designs...</Text>
+        </View>
+      )}
 
-          return (
-            <TouchableOpacity
-              key={item.id}
-              activeOpacity={0.88}
-              onPress={() => router.push(item.route as never)}
-              style={styles.card}
-            >
-              {/* Image Showcase */}
-              <View style={styles.imageWrapper}>
-                <Image
-                  source={item.image}
-                  contentFit="cover"
-                  transition={200}
-                  style={styles.image}
-                />
+      {/* Connection error state */}
+      {!isLoading && error && (
+        <View style={styles.errorContainer}>
+          <Ionicons name="cloud-offline-outline" size={22} color="#EF4444" />
+          <Text style={styles.errorTitle}>Connection Error</Text>
+          <Text style={styles.errorSubtitle}>{error}</Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={fetchTrending}
+            style={styles.retryBtn}
+          >
+            <Ionicons name="refresh" size={13} color="#FFFFFF" />
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-                {/* Category Pill Tag */}
-                <View style={styles.categoryBadge}>
-                  <Text style={styles.categoryBadgeText}>{item.category}</Text>
-                </View>
+      {/* Empty state (No posts in database) */}
+      {!isLoading && !error && posts.length === 0 && (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="sparkles-outline" size={24} color="#14919B" />
+          <Text style={styles.emptyTitle}>No Posts Yet</Text>
+          <Text style={styles.emptySubtitle}>
+            Be the first to share an outfit or design with the community!
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push("/community/create" as any)}
+            style={styles.createBtn}
+          >
+            <Ionicons name="add" size={14} color="#FFFFFF" />
+            <Text style={styles.createBtnText}>Create Post</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-                {/* Quick Like Button on Card */}
-                <TouchableOpacity
-                  activeOpacity={0.75}
-                  onPress={() => toggleLike(item.id)}
-                  style={styles.likeBtn}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons
-                    name={itemLike.liked ? "heart" : "heart-outline"}
-                    size={16}
-                    color={itemLike.liked ? "#E11D48" : "#FFFFFF"}
-                  />
-                  <Text
-                    style={[
-                      styles.likeCountText,
-                      itemLike.liked ? styles.likeCountActive : null,
-                    ]}
-                  >
-                    {itemLike.count}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+      {/* Horizontal Scroll of Real Trending Cards */}
+      {!isLoading && posts.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          className="-mx-5 px-5"
+        >
+          {posts.map((item) => {
+            const authorName =
+              item.author?.fullName ||
+              item.author?.full_name ||
+              item.author?.name ||
+              "Community Member";
 
-              {/* Design Details */}
-              <View style={styles.contentContainer}>
-                <Text numberOfLines={1} style={styles.designTitle}>
-                  {item.title}
-                </Text>
+            const authorAvatar =
+              item.author?.avatarUrl ||
+              item.author?.avatar_url ||
+              item.author?.avatar;
 
-                {/* Tailor / Creator row */}
-                <View style={styles.authorRow}>
-                  {item.authorAvatar ? (
+            const postImg =
+              item.images && item.images.length > 0 ? item.images[0] : undefined;
+
+            const postCategory =
+              item.category || (item.tags && item.tags[0]) || "Custom";
+
+            const postTitle =
+              item.title || item.caption || item.content || "Custom Outfit";
+
+            const likes = item.likesCount ?? item.likes_count ?? 0;
+            const isLiked = Boolean(item.isLiked ?? item.is_liked);
+            const comments = item.commentsCount ?? item.comments_count ?? 0;
+            const isVerified = item.author?.role === "tailor" || item.author?.isVerified;
+
+            return (
+              <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.88}
+                onPress={() => router.push(`/community/${item.id}` as any)}
+                style={styles.card}
+              >
+                {/* Image Showcase */}
+                <View style={styles.imageWrapper}>
+                  {postImg ? (
                     <Image
-                      source={item.authorAvatar}
+                      source={{ uri: postImg }}
                       contentFit="cover"
-                      style={styles.avatar}
+                      transition={200}
+                      style={styles.image}
                     />
                   ) : (
-                    <View style={styles.avatarPlaceholder}>
-                      <Ionicons name="person" size={12} color="#14919B" />
+                    <View style={styles.noImagePlaceholder}>
+                      <Ionicons name="image-outline" size={32} color="#CBD5E1" />
                     </View>
                   )}
-                  <View style={styles.authorTextContainer}>
-                    <View style={styles.authorNameRow}>
-                      <Text numberOfLines={1} style={styles.authorName}>
-                        {item.author}
-                      </Text>
-                      {item.verified && (
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={13}
-                          color="#14919B"
-                          style={{ marginLeft: 3 }}
-                        />
-                      )}
-                    </View>
-                    <Text numberOfLines={1} style={styles.handleText}>
-                      {item.handle}
+
+                  {/* Category Pill Tag */}
+                  <View style={styles.categoryBadge}>
+                    <Text style={styles.categoryBadgeText}>{postCategory}</Text>
+                  </View>
+
+                  {/* Quick Like Button on Card */}
+                  <TouchableOpacity
+                    activeOpacity={0.75}
+                    onPress={() => toggleLike(item.id)}
+                    style={styles.likeBtn}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons
+                      name={isLiked ? "heart" : "heart-outline"}
+                      size={16}
+                      color={isLiked ? "#E11D48" : "#FFFFFF"}
+                    />
+                    <Text
+                      style={[
+                        styles.likeCountText,
+                        isLiked ? styles.likeCountActive : null,
+                      ]}
+                    >
+                      {likes}
                     </Text>
-                  </View>
+                  </TouchableOpacity>
                 </View>
 
-                {/* Engagement / Action Footer */}
-                <View style={styles.footerRow}>
-                  <View style={styles.commentRow}>
-                    <Ionicons
-                      name="chatbubble-outline"
-                      size={13}
-                      color="#6F767E"
-                    />
-                    <Text style={styles.commentText}>{item.comments}</Text>
+                {/* Design Details */}
+                <View style={styles.contentContainer}>
+                  <Text numberOfLines={1} style={styles.designTitle}>
+                    {postTitle}
+                  </Text>
+
+                  {/* Tailor / Creator row */}
+                  <View style={styles.authorRow}>
+                    {authorAvatar ? (
+                      <Image
+                        source={{ uri: authorAvatar }}
+                        contentFit="cover"
+                        style={styles.avatar}
+                      />
+                    ) : (
+                      <View style={styles.avatarPlaceholder}>
+                        <Ionicons name="person" size={12} color="#14919B" />
+                      </View>
+                    )}
+                    <View style={styles.authorTextContainer}>
+                      <View style={styles.authorNameRow}>
+                        <Text numberOfLines={1} style={styles.authorName}>
+                          {authorName}
+                        </Text>
+                        {isVerified && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={13}
+                            color="#14919B"
+                            style={{ marginLeft: 3 }}
+                          />
+                        )}
+                      </View>
+                    </View>
                   </View>
-                  <View style={styles.viewBadge}>
-                    <Text style={styles.viewBadgeText}>View Details</Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={12}
-                      color="#14919B"
-                    />
+
+                  {/* Engagement / Action Footer */}
+                  <View style={styles.footerRow}>
+                    <View style={styles.commentRow}>
+                      <Ionicons
+                        name="chatbubble-outline"
+                        size={13}
+                        color="#6F767E"
+                      />
+                      <Text style={styles.commentText}>{comments}</Text>
+                    </View>
+                    <View style={styles.viewBadge}>
+                      <Text style={styles.viewBadgeText}>View Details</Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={12}
+                        color="#14919B"
+                      />
+                    </View>
                   </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+              </TouchableOpacity>
+            );
+          })}
 
-        {/* "View All in Community" Card at End of Slider */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleViewAll}
-          style={styles.exploreMoreCard}
-        >
-          <View style={styles.exploreIconCircle}>
-            <Ionicons name="people" size={24} color="#14919B" />
-          </View>
-          <Text style={styles.exploreTitle}>Explore All Community</Text>
-          <Text style={styles.exploreSubtitle}>
-            Connect, share & find tailor inspiration
-          </Text>
-          <View style={styles.exploreBtn}>
-            <Text style={styles.exploreBtnText}>Open Feed</Text>
-            <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
-          </View>
-        </TouchableOpacity>
-      </ScrollView>
+          {/* "View All in Community" Card at End of Slider */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleViewAll}
+            style={styles.exploreMoreCard}
+          >
+            <View style={styles.exploreIconCircle}>
+              <Ionicons name="people" size={24} color="#14919B" />
+            </View>
+            <Text style={styles.exploreTitle}>Explore All Community</Text>
+            <Text style={styles.exploreSubtitle}>
+              Connect, share & find tailor inspiration
+            </Text>
+            <View style={styles.exploreBtn}>
+              <Text style={styles.exploreBtnText}>Open Feed</Text>
+              <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -323,6 +373,13 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
+  },
+  noImagePlaceholder: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F1F5F9",
   },
   categoryBadge: {
     position: "absolute",
@@ -405,11 +462,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#1A1D1F",
   },
-  handleText: {
-    fontSize: 10,
-    color: "#6F767E",
-    marginTop: 0.5,
-  },
   footerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -490,6 +542,92 @@ const styles = StyleSheet.create({
   },
   exploreBtnText: {
     fontSize: 11,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  loadingContainer: {
+    paddingVertical: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#6F767E",
+    fontWeight: "500",
+  },
+  errorContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+    backgroundColor: "#FEF2F2",
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorTitle: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#991B1B",
+  },
+  errorSubtitle: {
+    marginTop: 2,
+    fontSize: 11,
+    color: "#B91C1C",
+    textAlign: "center",
+  },
+  retryBtn: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#14919B",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 4,
+  },
+  retryBtnText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  emptyContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#EAEAEA",
+    borderStyle: "dashed",
+    backgroundColor: "#FAFAFA",
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTitle: {
+    marginTop: 6,
+    fontSize: 13.5,
+    fontWeight: "800",
+    color: "#1A1D1F",
+  },
+  emptySubtitle: {
+    marginTop: 2,
+    fontSize: 11,
+    color: "#6F767E",
+    textAlign: "center",
+    maxWidth: 240,
+    lineHeight: 15,
+  },
+  createBtn: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#14919B",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
+    gap: 4,
+  },
+  createBtnText: {
+    fontSize: 11.5,
     fontWeight: "700",
     color: "#FFFFFF",
   },
