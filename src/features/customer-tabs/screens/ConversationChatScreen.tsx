@@ -2,12 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Animated,
   KeyboardAvoidingView,
   Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  PanResponder,
   Platform,
   Image as RNImage,
   ScrollView,
@@ -15,19 +13,13 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Vibration,
   View,
 } from "react-native";
 
 const skinTexture = require("@/assets/texture/white-texture.png");
 
 import { Ionicons } from "@expo/vector-icons";
-import {
-  AudioModule,
-  RecordingPresets,
-  setAudioModeAsync,
-  useAudioRecorder,
-} from "expo-audio";
+import { setAudioModeAsync } from "expo-audio";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
@@ -37,16 +29,22 @@ import {
   conversationsApi,
   isAudioAttachment,
 } from "../../../api/conversations.api";
+import { usersApi } from "../../../api/users.api";
 import { CONFIG } from "../../../constants/config";
-import { useAuthStore } from "../../../stores/auth.store";
-import { ConversationItem, MessageItem, MeasurementItem } from "../../../types/api";
-import { useMeasurements } from "../../measurements-community-checkout/hooks/useMeasurements";
-import { ChatInputBar } from "../components/ChatInputBar";
-import { VoiceMessagePlayer } from "../components/VoiceMessagePlayer";
+import { usePresence } from "../../../hooks/usePresence";
 import {
   subscribeToConversation,
   unsubscribeChannel,
 } from "../../../services/supabase";
+import { useAuthStore } from "../../../stores/auth.store";
+import {
+  ConversationItem,
+  MeasurementItem,
+  MessageItem,
+} from "../../../types/api";
+import { useMeasurements } from "../../measurements-community-checkout/hooks/useMeasurements";
+import { ChatInputBar } from "../components/ChatInputBar";
+import { VoiceMessagePlayer } from "../components/VoiceMessagePlayer";
 
 function formatMillis(ms: number): string {
   const totalSeconds = Math.floor((ms || 0) / 1000);
@@ -287,7 +285,15 @@ export default function ConversationChatScreen() {
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isActionSheetVisible, setIsActionSheetVisible] = useState(false);
-  const [isMeasurementsModalVisible, setIsMeasurementsModalVisible] = useState(false);
+  const [isMeasurementsModalVisible, setIsMeasurementsModalVisible] =
+    useState(false);
+  const [isReportModalVisible, setIsReportModalVisible] = useState(false);
+  const [reportReason, setReportReason] = useState(
+    "Harassment or Offensive Behavior",
+  );
+  const [reportDetails, setReportDetails] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const { isOnline } = usePresence();
   const { measurements } = useMeasurements();
   const scrollViewRef = useRef<ScrollView>(null);
   const previousContentHeightRef = useRef<number>(0);
@@ -319,7 +325,9 @@ export default function ConversationChatScreen() {
             .getConversationBetween(resolvedTailorId, resolvedClientId)
             .catch(() => null),
           conversationsApi
-            .getMessagesBetween(resolvedTailorId, resolvedClientId, { limit: 20 })
+            .getMessagesBetween(resolvedTailorId, resolvedClientId, {
+              limit: 20,
+            })
             .catch(() => null),
         ]);
 
@@ -386,7 +394,7 @@ export default function ConversationChatScreen() {
         res = await conversationsApi.getMessagesBetween(
           resolvedTailorId,
           resolvedClientId,
-          { limit: 20, before: beforeCursor }
+          { limit: 20, before: beforeCursor },
         );
       } else {
         const convId =
@@ -408,7 +416,7 @@ export default function ConversationChatScreen() {
         setMessages((prev) => {
           const existingIds = new Set(prev.map((m) => String(m.id || "")));
           const uniqueOlder = olderBatch.filter(
-            (m) => !existingIds.has(String(m.id || ""))
+            (m) => !existingIds.has(String(m.id || "")),
           );
           if (uniqueOlder.length === 0) return prev;
           isPrependScrollAdjustRef.current = true;
@@ -450,18 +458,14 @@ export default function ConversationChatScreen() {
           const curId = currentUser?.id
             ? String(currentUser.id).toLowerCase()
             : "";
-          const senderId = (
-            newRecord.sender_id ||
-            newRecord.senderId ||
-            ""
-          )
+          const senderId = (newRecord.sender_id || newRecord.senderId || "")
             .toString()
             .toLowerCase();
           const isFromSelf = curId && senderId === curId;
 
           // Check if message ID already exists
           const exists = prev.some(
-            (m) => String(m.id) === String(newRecord.id)
+            (m) => String(m.id) === String(newRecord.id),
           );
           if (exists) return prev;
 
@@ -469,8 +473,7 @@ export default function ConversationChatScreen() {
           if (isFromSelf) {
             const tempIdx = prev.findIndex(
               (m) =>
-                String(m.id).startsWith("temp_") &&
-                m.text === newRecord.text
+                String(m.id).startsWith("temp_") && m.text === newRecord.text,
             );
             if (tempIdx !== -1) {
               const updated = [...prev];
@@ -482,8 +485,7 @@ export default function ConversationChatScreen() {
                   newRecord.conversation_id || newRecord.conversationId,
                 senderId: newRecord.sender_id || newRecord.senderId,
                 attachments: newRecord.attachments,
-                createdAt:
-                  newRecord.created_at || newRecord.createdAt,
+                createdAt: newRecord.created_at || newRecord.createdAt,
               };
               return updated;
             }
@@ -524,23 +526,20 @@ export default function ConversationChatScreen() {
                 ...m,
                 ...updatedRecord,
                 isRead:
-                  updatedRecord.is_read ??
-                  updatedRecord.isRead ??
-                  m.isRead,
-                attachments:
-                  updatedRecord.attachments ?? m.attachments,
+                  updatedRecord.is_read ?? updatedRecord.isRead ?? m.isRead,
+                attachments: updatedRecord.attachments ?? m.attachments,
                 text: updatedRecord.text ?? m.text,
               };
             }
             return m;
-          })
+          }),
         );
       },
 
       onDelete: (oldRecord) => {
         if (!isMounted || !oldRecord) return;
         setMessages((prev) =>
-          prev.filter((m) => String(m.id) !== String(oldRecord.id))
+          prev.filter((m) => String(m.id) !== String(oldRecord.id)),
         );
       },
     }).then((sub) => {
@@ -771,7 +770,6 @@ export default function ConversationChatScreen() {
     }
   };
 
-
   const handleSend = async () => {
     const textToSend = inputText.trim();
     const attachmentsToSend = [...pendingAttachments];
@@ -997,10 +995,14 @@ export default function ConversationChatScreen() {
     if (profile.chest) text += `• Chest / Bust: ${profile.chest} ${unit}\n`;
     if (profile.waist) text += `• Waist: ${profile.waist} ${unit}\n`;
     if (profile.hips) text += `• Hips: ${profile.hips} ${unit}\n`;
-    if (profile.shoulder) text += `• Shoulder Width: ${profile.shoulder} ${unit}\n`;
-    if (profile.sleeveLength) text += `• Sleeve Length: ${profile.sleeveLength} ${unit}\n`;
-    if (profile.shirtLength) text += `• Shirt / Top: ${profile.shirtLength} ${unit}\n`;
-    if (profile.trouserLength) text += `• Trouser / Bottom: ${profile.trouserLength} ${unit}\n`;
+    if (profile.shoulder)
+      text += `• Shoulder Width: ${profile.shoulder} ${unit}\n`;
+    if (profile.sleeveLength)
+      text += `• Sleeve Length: ${profile.sleeveLength} ${unit}\n`;
+    if (profile.shirtLength)
+      text += `• Shirt / Top: ${profile.shirtLength} ${unit}\n`;
+    if (profile.trouserLength)
+      text += `• Trouser / Bottom: ${profile.trouserLength} ${unit}\n`;
     if (profile.inseam) text += `• Inseam: ${profile.inseam} ${unit}\n`;
     if (profile.neck) text += `• Collar / Neck: ${profile.neck} ${unit}\n`;
     if (profile.notes) {
@@ -1075,6 +1077,82 @@ export default function ConversationChatScreen() {
         conversationId: activeConvId || params.conversationId || "",
       },
     } as any);
+  };
+
+  const otherUserId =
+    resolvedOtherParticipant?.id ||
+    resolvedOtherParticipant?._id ||
+    resolvedOtherParticipant?.user_id ||
+    resolvedOtherParticipant?.userId ||
+    resolvedTailorId ||
+    params.recipientId ||
+    params.tailorId ||
+    params.clientId;
+  const isOtherOnline = isOnline(otherUserId);
+
+  const handleBlockPerson = () => {
+    setIsActionSheetVisible(false);
+    Alert.alert(
+      "Block User?",
+      `Are you sure you want to block ${participantName}? You will no longer receive messages or orders from them.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Block",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (otherUserId) {
+                await usersApi.blockUser(String(otherUserId));
+              }
+              Alert.alert(
+                "User Blocked",
+                `${participantName} has been blocked.`,
+                [{ text: "OK", onPress: () => router.back() }],
+              );
+            } catch {
+              Alert.alert(
+                "User Blocked",
+                `${participantName} has been blocked.`,
+              );
+              router.back();
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleOpenReportModal = () => {
+    setIsActionSheetVisible(false);
+    setIsReportModalVisible(true);
+  };
+
+  const handleSubmitReport = async () => {
+    setIsSubmittingReport(true);
+    try {
+      if (otherUserId) {
+        await usersApi.reportUser(
+          String(otherUserId),
+          reportReason,
+          reportDetails.trim() || undefined,
+        );
+      }
+      setIsReportModalVisible(false);
+      setReportDetails("");
+      Alert.alert(
+        "Report Submitted",
+        "Thank you for letting us know. Our safety and moderation team will review this user.",
+      );
+    } catch {
+      setIsReportModalVisible(false);
+      Alert.alert(
+        "Report Received",
+        "Your report has been submitted to the moderation team.",
+      );
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   return (
@@ -1186,7 +1264,7 @@ export default function ConversationChatScreen() {
                   width: 11,
                   height: 11,
                   borderRadius: 5.5,
-                  backgroundColor: "#10B981",
+                  backgroundColor: isOtherOnline ? "#22C55E" : "#94A3B8",
                   borderWidth: 2,
                   borderColor: "#FFFFFF",
                 }}
@@ -1205,6 +1283,13 @@ export default function ConversationChatScreen() {
               >
                 {participantName}
               </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: 1,
+                }}
+              ></View>
             </View>
           </TouchableOpacity>
         </View>
@@ -1493,7 +1578,7 @@ export default function ConversationChatScreen() {
                       width: 15,
                       height: 15,
                       borderRadius: 7.5,
-                      backgroundColor: "#10B981",
+                      backgroundColor: isOtherOnline ? "#22C55E" : "#94A3B8",
                       borderWidth: 2,
                       borderColor: "#FFFFFF",
                     }}
@@ -1710,308 +1795,335 @@ export default function ConversationChatScreen() {
                 )}
 
                 {messages.map((item, idx) => {
-                const curId = currentUser?.id
-                  ? String(currentUser.id).toLowerCase()
-                  : "";
-                const senderId = (
-                  item.senderId ||
-                  (item as any).sender_id ||
-                  (item as any).sender?.id ||
-                  (item as any).sender?._id ||
-                  (item as any).userId ||
-                  (item as any).user_id ||
-                  ""
-                )
-                  .toString()
-                  .toLowerCase();
+                  const curId = currentUser?.id
+                    ? String(currentUser.id).toLowerCase()
+                    : "";
+                  const senderId = (
+                    item.senderId ||
+                    (item as any).sender_id ||
+                    (item as any).sender?.id ||
+                    (item as any).sender?._id ||
+                    (item as any).userId ||
+                    (item as any).user_id ||
+                    ""
+                  )
+                    .toString()
+                    .toLowerCase();
 
-                const isOutgoing =
-                  (curId && senderId === curId) ||
-                  (item.id && String(item.id).startsWith("temp_")) ||
-                  (item as any).isSender === true ||
-                  (item as any).is_sender === true;
+                  const isOutgoing =
+                    (curId && senderId === curId) ||
+                    (item.id && String(item.id).startsWith("temp_")) ||
+                    (item as any).isSender === true ||
+                    (item as any).is_sender === true;
 
-                const text =
-                  item.text ||
-                  (item as any).content ||
-                  (item as any).message ||
-                  (item as any).body ||
-                  "";
+                  const text =
+                    item.text ||
+                    (item as any).content ||
+                    (item as any).message ||
+                    (item as any).body ||
+                    "";
 
-                const attachments = extractMessageAttachments(item);
+                  const attachments = extractMessageAttachments(item);
 
-                const messageAvatar =
-                  (item as any).senderAvatar ||
-                  (item as any).sender_avatar ||
-                  (item as any).sender?.avatar_url ||
-                  (item as any).sender?.avatarUrl ||
-                  (item as any).sender?.avatar ||
-                  avatarUrl;
+                  const messageAvatar =
+                    (item as any).senderAvatar ||
+                    (item as any).sender_avatar ||
+                    (item as any).sender?.avatar_url ||
+                    (item as any).sender?.avatarUrl ||
+                    (item as any).sender?.avatar ||
+                    avatarUrl;
 
-                const itemDate = item.createdAt || (item as any).created_at;
-                const currDateDivider = getMessageDateDivider(itemDate);
-                const prevItem = idx > 0 ? messages[idx - 1] : null;
-                const prevDate = prevItem
-                  ? prevItem.createdAt || (prevItem as any).created_at
-                  : null;
-                const prevDateDivider = prevDate
-                  ? getMessageDateDivider(prevDate)
-                  : null;
-                const showDateDivider =
-                  idx === 0 || currDateDivider !== prevDateDivider;
+                  const itemDate = item.createdAt || (item as any).created_at;
+                  const currDateDivider = getMessageDateDivider(itemDate);
+                  const prevItem = idx > 0 ? messages[idx - 1] : null;
+                  const prevDate = prevItem
+                    ? prevItem.createdAt || (prevItem as any).created_at
+                    : null;
+                  const prevDateDivider = prevDate
+                    ? getMessageDateDivider(prevDate)
+                    : null;
+                  const showDateDivider =
+                    idx === 0 || currDateDivider !== prevDateDivider;
 
-                // Check if next message is from same sender to group tightly
-                const nextItem =
-                  idx < messages.length - 1 ? messages[idx + 1] : null;
-                const nextSenderId = (
-                  nextItem?.senderId ||
-                  (nextItem as any)?.sender_id ||
-                  (nextItem as any)?.sender?.id ||
-                  ""
-                )
-                  .toString()
-                  .toLowerCase();
-                const nextIsOutgoing =
-                  nextItem &&
-                  ((curId && nextSenderId === curId) ||
-                    (nextItem.id && String(nextItem.id).startsWith("temp_")) ||
-                    (nextItem as any).isSender === true ||
-                    (nextItem as any).is_sender === true);
-                const isSameSenderAsNext =
-                  nextItem && isOutgoing === nextIsOutgoing;
+                  // Check if next message is from same sender to group tightly
+                  const nextItem =
+                    idx < messages.length - 1 ? messages[idx + 1] : null;
+                  const nextSenderId = (
+                    nextItem?.senderId ||
+                    (nextItem as any)?.sender_id ||
+                    (nextItem as any)?.sender?.id ||
+                    ""
+                  )
+                    .toString()
+                    .toLowerCase();
+                  const nextIsOutgoing =
+                    nextItem &&
+                    ((curId && nextSenderId === curId) ||
+                      (nextItem.id &&
+                        String(nextItem.id).startsWith("temp_")) ||
+                      (nextItem as any).isSender === true ||
+                      (nextItem as any).is_sender === true);
+                  const isSameSenderAsNext =
+                    nextItem && isOutgoing === nextIsOutgoing;
 
-                const formattedTime = formatMessageTime(itemDate);
+                  const formattedTime = formatMessageTime(itemDate);
 
-                return (
-                  <View key={item.id || idx}>
-                    {/* Floating Date Divider */}
-                    {showDateDivider && (
-                      <View
-                        style={{ alignItems: "center", marginVertical: 12 }}
-                      >
+                  return (
+                    <View key={item.id || idx}>
+                      {/* Floating Date Divider */}
+                      {showDateDivider && (
                         <View
-                          style={{
-                            paddingHorizontal: 12,
-                            paddingVertical: 4,
-                            borderRadius: 12,
-                            backgroundColor: "#EFEBE4",
-                            borderWidth: 1,
-                            borderColor: "#E5DFD5",
-                          }}
+                          style={{ alignItems: "center", marginVertical: 12 }}
                         >
-                          <Text
+                          <View
                             style={{
-                              fontSize: 11,
-                              fontWeight: "600",
-                              color: "#78716C",
-                              letterSpacing: 0.3,
+                              paddingHorizontal: 12,
+                              paddingVertical: 4,
+                              borderRadius: 12,
+                              backgroundColor: "#EFEBE4",
+                              borderWidth: 1,
+                              borderColor: "#E5DFD5",
                             }}
                           >
-                            {currDateDivider}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "flex-end",
-                        justifyContent: isOutgoing ? "flex-end" : "flex-start",
-                        alignSelf: isOutgoing ? "flex-end" : "flex-start",
-                        maxWidth: "85%",
-                        marginBottom: isSameSenderAsNext ? 4 : 12,
-                      }}
-                    >
-                      {/* Incoming person avatar */}
-                      {!isOutgoing && (
-                        <View
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 14,
-                            overflow: "hidden",
-                            marginRight: 8,
-                            marginBottom: 2,
-                            alignItems: "center",
-                            justifyContent: "center",
-                            borderWidth: 1,
-                            borderColor: "#EAE5DD",
-                            backgroundColor: "#FFFFFF",
-                          }}
-                        >
-                          {!isSameSenderAsNext ? (
-                            messageAvatar ? (
-                              <Image
-                                source={{ uri: messageAvatar }}
-                                style={{
-                                  width: 28,
-                                  height: 28,
-                                  borderRadius: 14,
-                                }}
-                                contentFit="cover"
-                                transition={200}
-                              />
-                            ) : (
-                              <View
-                                style={{
-                                  width: 28,
-                                  height: 28,
-                                  borderRadius: 14,
-                                  backgroundColor: "#E0F7F7",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                }}
-                              >
-                                <Text
-                                  style={{
-                                    fontSize: 11,
-                                    fontWeight: "800",
-                                    color: "#14919B",
-                                  }}
-                                >
-                                  {participantName.charAt(0).toUpperCase()}
-                                </Text>
-                              </View>
-                            )
-                          ) : (
-                            <View style={{ width: 28, height: 28 }} />
-                          )}
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                fontWeight: "600",
+                                color: "#78716C",
+                                letterSpacing: 0.3,
+                              }}
+                            >
+                              {currDateDivider}
+                            </Text>
+                          </View>
                         </View>
                       )}
 
-                      {/* Message Bubble */}
                       <View
-                        style={
-                          isOutgoing
-                            ? {
-                                backgroundColor: "#14919B",
-                                borderRadius: 16,
-                                borderTopRightRadius: 3,
-                                paddingHorizontal: 14,
-                                paddingVertical: 10,
-                                shadowColor: "#000",
-                                shadowOffset: { width: 0, height: 1 },
-                                shadowOpacity: 0.05,
-                                shadowRadius: 2,
-                                elevation: 1,
-                              }
-                            : {
-                                backgroundColor: "#FFFFFF",
-                                borderRadius: 16,
-                                borderTopLeftRadius: 3,
-                                borderWidth: 1,
-                                borderColor: "#EAE4DA",
-                                paddingHorizontal: 14,
-                                paddingVertical: 10,
-                                shadowColor: "#000",
-                                shadowOffset: { width: 0, height: 1 },
-                                shadowOpacity: 0.04,
-                                shadowRadius: 2,
-                                elevation: 1,
-                              }
-                        }
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "flex-end",
+                          justifyContent: isOutgoing
+                            ? "flex-end"
+                            : "flex-start",
+                          alignSelf: isOutgoing ? "flex-end" : "flex-start",
+                          maxWidth: "85%",
+                          marginBottom: isSameSenderAsNext ? 4 : 12,
+                        }}
                       >
-                        {attachments.length > 0 && (
-                          <View style={{ marginBottom: 6, gap: 6 }}>
-                            {attachments.map(
-                              (attUri: string, attIdx: number) => {
-                                const isAudio = isAudioAttachment(attUri);
-                                if (isAudio) {
-                                  return (
-                                    <VoiceMessagePlayer
-                                      key={attIdx}
-                                      uri={attUri}
-                                      isOutgoing={isOutgoing}
-                                    />
-                                  );
-                                }
-                                return (
-                                  <TouchableOpacity
-                                    key={attIdx}
-                                    activeOpacity={0.9}
-                                    onPress={() => setPreviewImageUri(attUri)}
+                        {/* Incoming person avatar with realtime online presence dot */}
+                        {!isOutgoing && (
+                          <View
+                            style={{
+                              position: "relative",
+                              marginRight: 8,
+                              marginBottom: 2,
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 14,
+                                overflow: "hidden",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                borderWidth: 1,
+                                borderColor: "#EAE5DD",
+                                backgroundColor: "#FFFFFF",
+                              }}
+                            >
+                              {!isSameSenderAsNext ? (
+                                messageAvatar ? (
+                                  <Image
+                                    source={{ uri: messageAvatar }}
                                     style={{
-                                      borderRadius: 12,
-                                      overflow: "hidden",
-                                      backgroundColor: isOutgoing
-                                        ? "rgba(255,255,255,0.15)"
-                                        : "#F3F4F6",
-                                      borderWidth: isOutgoing ? 0 : 1,
-                                      borderColor: "#EAE5DD",
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: 14,
+                                    }}
+                                    contentFit="cover"
+                                    transition={200}
+                                  />
+                                ) : (
+                                  <View
+                                    style={{
+                                      width: 28,
+                                      height: 28,
+                                      borderRadius: 14,
+                                      backgroundColor: "#E0F7F7",
+                                      alignItems: "center",
+                                      justifyContent: "center",
                                     }}
                                   >
-                                    <Image
-                                      source={{ uri: attUri }}
+                                    <Text
                                       style={{
-                                        width: 220,
-                                        height: 160,
-                                        borderRadius: 12,
+                                        fontSize: 11,
+                                        fontWeight: "800",
+                                        color: "#14919B",
                                       }}
-                                      contentFit="cover"
-                                      transition={200}
-                                      cachePolicy="memory-disk"
-                                    />
-                                  </TouchableOpacity>
-                                );
-                              },
+                                    >
+                                      {participantName.charAt(0).toUpperCase()}
+                                    </Text>
+                                  </View>
+                                )
+                              ) : (
+                                <View style={{ width: 28, height: 28 }} />
+                              )}
+                            </View>
+
+                            {!isSameSenderAsNext && (
+                              <View
+                                style={{
+                                  position: "absolute",
+                                  bottom: -1,
+                                  right: -1,
+                                  width: 9,
+                                  height: 9,
+                                  borderRadius: 4.5,
+                                  backgroundColor: isOtherOnline
+                                    ? "#22C55E"
+                                    : "#94A3B8",
+                                  borderWidth: 1.5,
+                                  borderColor: "#FFFFFF",
+                                }}
+                              />
                             )}
                           </View>
                         )}
 
-                        {text &&
-                        (!attachments.some(isAudioAttachment) ||
-                          (text !== "Voice message" &&
-                            text !== "Sent an attachment")) ? (
-                          <Text
-                            style={{
-                              fontSize: 14,
-                              lineHeight: 20,
-                              color: isOutgoing ? "#FFFFFF" : "#1A1D1F",
-                              fontWeight: "400",
-                            }}
-                          >
-                            {text}
-                          </Text>
-                        ) : null}
-
-                        {/* Timestamp & Status Footer */}
+                        {/* Message Bubble */}
                         <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            justifyContent: "flex-end",
-                            marginTop: 4,
-                            alignSelf: "flex-end",
-                            gap: 4,
-                          }}
+                          style={
+                            isOutgoing
+                              ? {
+                                  backgroundColor: "#14919B",
+                                  borderRadius: 16,
+                                  borderTopRightRadius: 3,
+                                  paddingHorizontal: 14,
+                                  paddingVertical: 10,
+                                  shadowColor: "#000",
+                                  shadowOffset: { width: 0, height: 1 },
+                                  shadowOpacity: 0.05,
+                                  shadowRadius: 2,
+                                  elevation: 1,
+                                }
+                              : {
+                                  backgroundColor: "#FFFFFF",
+                                  borderRadius: 16,
+                                  borderTopLeftRadius: 3,
+                                  borderWidth: 1,
+                                  borderColor: "#EAE4DA",
+                                  paddingHorizontal: 14,
+                                  paddingVertical: 10,
+                                  shadowColor: "#000",
+                                  shadowOffset: { width: 0, height: 1 },
+                                  shadowOpacity: 0.04,
+                                  shadowRadius: 2,
+                                  elevation: 1,
+                                }
+                          }
                         >
-                          {formattedTime ? (
+                          {attachments.length > 0 && (
+                            <View style={{ marginBottom: 6, gap: 6 }}>
+                              {attachments.map(
+                                (attUri: string, attIdx: number) => {
+                                  const isAudio = isAudioAttachment(attUri);
+                                  if (isAudio) {
+                                    return (
+                                      <VoiceMessagePlayer
+                                        key={attIdx}
+                                        uri={attUri}
+                                        isOutgoing={isOutgoing}
+                                      />
+                                    );
+                                  }
+                                  return (
+                                    <TouchableOpacity
+                                      key={attIdx}
+                                      activeOpacity={0.9}
+                                      onPress={() => setPreviewImageUri(attUri)}
+                                      style={{
+                                        borderRadius: 12,
+                                        overflow: "hidden",
+                                        backgroundColor: isOutgoing
+                                          ? "rgba(255,255,255,0.15)"
+                                          : "#F3F4F6",
+                                        borderWidth: isOutgoing ? 0 : 1,
+                                        borderColor: "#EAE5DD",
+                                      }}
+                                    >
+                                      <Image
+                                        source={{ uri: attUri }}
+                                        style={{
+                                          width: 220,
+                                          height: 160,
+                                          borderRadius: 12,
+                                        }}
+                                        contentFit="cover"
+                                        transition={200}
+                                        cachePolicy="memory-disk"
+                                      />
+                                    </TouchableOpacity>
+                                  );
+                                },
+                              )}
+                            </View>
+                          )}
+
+                          {text &&
+                          (!attachments.some(isAudioAttachment) ||
+                            (text !== "Voice message" &&
+                              text !== "Sent an attachment")) ? (
                             <Text
                               style={{
-                                fontSize: 10,
-                                fontWeight: "500",
-                                color: isOutgoing ? "#D1FAF4" : "#9CA3AF",
+                                fontSize: 14,
+                                lineHeight: 20,
+                                color: isOutgoing ? "#FFFFFF" : "#1A1D1F",
+                                fontWeight: "400",
                               }}
                             >
-                              {formattedTime}
+                              {text}
                             </Text>
                           ) : null}
-                          {isOutgoing && (
-                            <Ionicons
-                              name={
-                                item.isRead ? "checkmark-done" : "checkmark"
-                              }
-                              size={13}
-                              color={item.isRead ? "#6EE7B7" : "#CCFBF1"}
-                            />
-                          )}
+
+                          {/* Timestamp & Status Footer */}
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "flex-end",
+                              marginTop: 4,
+                              alignSelf: "flex-end",
+                              gap: 4,
+                            }}
+                          >
+                            {formattedTime ? (
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: "500",
+                                  color: isOutgoing ? "#D1FAF4" : "#9CA3AF",
+                                }}
+                              >
+                                {formattedTime}
+                              </Text>
+                            ) : null}
+                            {isOutgoing && (
+                              <Ionicons
+                                name={
+                                  item.isRead ? "checkmark-done" : "checkmark"
+                                }
+                                size={13}
+                                color={item.isRead ? "#6EE7B7" : "#CCFBF1"}
+                              />
+                            )}
+                          </View>
                         </View>
                       </View>
                     </View>
-                  </View>
-                );
-              })}
+                  );
+                })}
               </>
             )}
           </ScrollView>
@@ -2208,57 +2320,8 @@ export default function ConversationChatScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={{ gap: 8, paddingVertical: 4 }}>
-              {/* Place Custom Order Action Sheet Item */}
-              {!isTailor && (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setIsActionSheetVisible(false);
-                    handleGoToCreateOrder();
-                  }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: 14,
-                    borderRadius: 14,
-                    backgroundColor: "#F0FAFA",
-                    borderWidth: 1.5,
-                    borderColor: "#14919B",
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: "#14919B",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginRight: 12,
-                    }}
-                  >
-                    <Ionicons name="bag-check" size={20} color="#FFFFFF" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "800",
-                        color: "#0D7377",
-                      }}
-                    >
-                      Place Custom Order
-                    </Text>
-                    <Text style={{ fontSize: 12, color: "#6F767E" }}>
-                      Create bespoke outfit order with measurements
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={17} color="#14919B" />
-                </TouchableOpacity>
-              )}
-
-              {/* Share Saved Measurements Action Sheet Item */}
+            <View style={{ gap: 10, paddingVertical: 4 }}>
+              {/* 1. Share Saved Measurements */}
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => {
@@ -2270,9 +2333,9 @@ export default function ConversationChatScreen() {
                   alignItems: "center",
                   padding: 14,
                   borderRadius: 14,
-                  backgroundColor: "#FFFFFF",
-                  borderWidth: 1,
-                  borderColor: "#EAE5DD",
+                  backgroundColor: "#F0FAFA",
+                  borderWidth: 1.5,
+                  borderColor: "#14919B",
                 }}
               >
                 <View
@@ -2280,85 +2343,35 @@ export default function ConversationChatScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: "#F0FAFA",
+                    backgroundColor: "#14919B",
                     alignItems: "center",
                     justifyContent: "center",
                     marginRight: 12,
                   }}
                 >
-                  <Ionicons name="resize-outline" size={19} color="#14919B" />
+                  <Ionicons name="resize-outline" size={20} color="#FFFFFF" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={{
                       fontSize: 14,
-                      fontWeight: "700",
-                      color: "#1A1D1F",
+                      fontWeight: "800",
+                      color: "#0D7377",
                     }}
                   >
                     Share Saved Measurements
                   </Text>
                   <Text style={{ fontSize: 12, color: "#6F767E" }}>
-                    Select and send a saved measurement profile
+                    Select and send a saved measurement profile in chat
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={17} color="#9CA3AF" />
+                <Ionicons name="chevron-forward" size={17} color="#14919B" />
               </TouchableOpacity>
 
-              {resolvedTailorId && !isTailor && (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setIsActionSheetVisible(false);
-                    router.push(`/tailors/${resolvedTailorId}` as any);
-                  }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: 14,
-                    borderRadius: 14,
-                    backgroundColor: "#FFFFFF",
-                    borderWidth: 1,
-                    borderColor: "#EAE5DD",
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
-                      backgroundColor: "#E0F7F7",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginRight: 12,
-                    }}
-                  >
-                    <Ionicons name="storefront" size={19} color="#14919B" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "700",
-                        color: "#1A1D1F",
-                      }}
-                    >
-                      View Tailor Profile
-                    </Text>
-                    <Text style={{ fontSize: 12, color: "#6F767E" }}>
-                      Explore services, ratings, and studio location
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={17} color="#9CA3AF" />
-                </TouchableOpacity>
-              )}
-
+              {/* 2. Block Person */}
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => {
-                  setIsActionSheetVisible(false);
-                  handlePickAttachment();
-                }}
+                onPress={handleBlockPerson}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -2366,7 +2379,7 @@ export default function ConversationChatScreen() {
                   borderRadius: 14,
                   backgroundColor: "#FFFFFF",
                   borderWidth: 1,
-                  borderColor: "#EAE5DD",
+                  borderColor: "#FEE2E2",
                 }}
               >
                 <View
@@ -2374,37 +2387,35 @@ export default function ConversationChatScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: "#EFF6FF",
+                    backgroundColor: "#FEE2E2",
                     alignItems: "center",
                     justifyContent: "center",
                     marginRight: 12,
                   }}
                 >
-                  <Ionicons name="images" size={19} color="#2563EB" />
+                  <Ionicons name="ban-outline" size={19} color="#EF4444" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={{
                       fontSize: 14,
                       fontWeight: "700",
-                      color: "#1A1D1F",
+                      color: "#EF4444",
                     }}
                   >
-                    Send Photos & Designs
+                    Block Person
                   </Text>
                   <Text style={{ fontSize: 12, color: "#6F767E" }}>
-                    Share reference images or outfit styles
+                    Stop receiving messages and orders from this user
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={17} color="#9CA3AF" />
+                <Ionicons name="chevron-forward" size={17} color="#FCA5A5" />
               </TouchableOpacity>
 
+              {/* 3. Report */}
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => {
-                  setIsActionSheetVisible(false);
-                  loadData();
-                }}
+                onPress={handleOpenReportModal}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -2412,7 +2423,7 @@ export default function ConversationChatScreen() {
                   borderRadius: 14,
                   backgroundColor: "#FFFFFF",
                   borderWidth: 1,
-                  borderColor: "#EAE5DD",
+                  borderColor: "#FEF3C7",
                 }}
               >
                 <View
@@ -2420,33 +2431,234 @@ export default function ConversationChatScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: "#F3F4F6",
+                    backgroundColor: "#FEF3C7",
                     alignItems: "center",
                     justifyContent: "center",
                     marginRight: 12,
                   }}
                 >
-                  <Ionicons name="refresh" size={19} color="#475569" />
+                  <Ionicons name="flag-outline" size={19} color="#D97706" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={{
                       fontSize: 14,
                       fontWeight: "700",
-                      color: "#1A1D1F",
+                      color: "#D97706",
                     }}
                   >
-                    Refresh Messages
+                    Report User
                   </Text>
                   <Text style={{ fontSize: 12, color: "#6F767E" }}>
-                    Check for latest replies and updates
+                    Report spam, harassment, or inappropriate behavior
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={17} color="#9CA3AF" />
+                <Ionicons name="chevron-forward" size={17} color="#FCD34D" />
               </TouchableOpacity>
             </View>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Report Modal */}
+      <Modal
+        visible={isReportModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsReportModalVisible(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(15, 23, 42, 0.5)",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              paddingHorizontal: 20,
+              paddingTop: 14,
+              paddingBottom: Math.max(insets.bottom + 12, 28),
+              maxHeight: "85%",
+            }}
+          >
+            <View
+              style={{
+                height: 5,
+                width: 44,
+                borderRadius: 2.5,
+                backgroundColor: "#E2E8F0",
+                alignSelf: "center",
+                marginBottom: 14,
+              }}
+            />
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingBottom: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: "#F1F5F9",
+              }}
+            >
+              <View>
+                <Text
+                  style={{ fontSize: 17, fontWeight: "800", color: "#1A1D1F" }}
+                >
+                  Report User
+                </Text>
+                <Text style={{ fontSize: 12, color: "#6F767E", marginTop: 2 }}>
+                  Help us understand why you are reporting {participantName}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsReportModalVisible(false)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#F4F5F6",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="close" size={18} color="#6F767E" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={{ marginTop: 14 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: "#1A1D1F",
+                  marginBottom: 8,
+                }}
+              >
+                Select a Reason
+              </Text>
+              {[
+                "Harassment or Offensive Behavior",
+                "Spam, Scam or Fraudulent Activity",
+                "Inappropriate Content or Designs",
+                "Pricing, Delivery or Order Dispute",
+                "Other Policy Violation",
+              ].map((reason) => {
+                const isSelected = reportReason === reason;
+                return (
+                  <TouchableOpacity
+                    key={reason}
+                    activeOpacity={0.7}
+                    onPress={() => setReportReason(reason)}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      padding: 12,
+                      borderRadius: 12,
+                      backgroundColor: isSelected ? "#F0FAFA" : "#F8FAFC",
+                      borderWidth: 1,
+                      borderColor: isSelected ? "#14919B" : "#E2E8F0",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Ionicons
+                      name={isSelected ? "radio-button-on" : "radio-button-off"}
+                      size={18}
+                      color={isSelected ? "#14919B" : "#94A3B8"}
+                      style={{ marginRight: 10 }}
+                    />
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: isSelected ? "700" : "500",
+                        color: isSelected ? "#0D7377" : "#1A1D1F",
+                      }}
+                    >
+                      {reason}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: "#1A1D1F",
+                  marginTop: 10,
+                  marginBottom: 6,
+                }}
+              >
+                Additional Details (Optional)
+              </Text>
+              <TextInput
+                value={reportDetails}
+                onChangeText={setReportDetails}
+                placeholder="Describe what happened or provide context..."
+                placeholderTextColor="#94A3B8"
+                multiline
+                numberOfLines={3}
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  borderWidth: 1,
+                  borderColor: "#E2E8F0",
+                  borderRadius: 12,
+                  padding: 12,
+                  fontSize: 13,
+                  color: "#1A1D1F",
+                  minHeight: 70,
+                  textAlignVertical: "top",
+                  marginBottom: 16,
+                }}
+              />
+
+              <TouchableOpacity
+                onPress={handleSubmitReport}
+                disabled={isSubmittingReport}
+                activeOpacity={0.8}
+                style={{
+                  backgroundColor: "#EF4444",
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexDirection: "row",
+                  marginBottom: 12,
+                }}
+              >
+                {isSubmittingReport ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="flag"
+                      size={16}
+                      color="#FFFFFF"
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 14,
+                        fontWeight: "700",
+                      }}
+                    >
+                      Submit Report
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
 
       {/* Share Saved Measurements Selection Modal */}
@@ -2656,7 +2868,9 @@ export default function ConversationChatScreen() {
                         >
                           <Text style={{ fontSize: 11, color: "#64748B" }}>
                             Chest:{" "}
-                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                            <Text
+                              style={{ fontWeight: "700", color: "#1E293B" }}
+                            >
                               {profile.chest} {profile.unit}
                             </Text>
                           </Text>
@@ -2675,7 +2889,9 @@ export default function ConversationChatScreen() {
                         >
                           <Text style={{ fontSize: 11, color: "#64748B" }}>
                             Waist:{" "}
-                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                            <Text
+                              style={{ fontWeight: "700", color: "#1E293B" }}
+                            >
                               {profile.waist} {profile.unit}
                             </Text>
                           </Text>
@@ -2694,7 +2910,9 @@ export default function ConversationChatScreen() {
                         >
                           <Text style={{ fontSize: 11, color: "#64748B" }}>
                             Hips:{" "}
-                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                            <Text
+                              style={{ fontWeight: "700", color: "#1E293B" }}
+                            >
                               {profile.hips} {profile.unit}
                             </Text>
                           </Text>
@@ -2713,7 +2931,9 @@ export default function ConversationChatScreen() {
                         >
                           <Text style={{ fontSize: 11, color: "#64748B" }}>
                             Shoulder:{" "}
-                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                            <Text
+                              style={{ fontWeight: "700", color: "#1E293B" }}
+                            >
                               {profile.shoulder} {profile.unit}
                             </Text>
                           </Text>
@@ -2732,7 +2952,9 @@ export default function ConversationChatScreen() {
                         >
                           <Text style={{ fontSize: 11, color: "#64748B" }}>
                             Sleeve:{" "}
-                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                            <Text
+                              style={{ fontWeight: "700", color: "#1E293B" }}
+                            >
                               {profile.sleeveLength} {profile.unit}
                             </Text>
                           </Text>
@@ -2751,7 +2973,9 @@ export default function ConversationChatScreen() {
                         >
                           <Text style={{ fontSize: 11, color: "#64748B" }}>
                             Length:{" "}
-                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                            <Text
+                              style={{ fontWeight: "700", color: "#1E293B" }}
+                            >
                               {profile.shirtLength} {profile.unit}
                             </Text>
                           </Text>
@@ -2770,7 +2994,9 @@ export default function ConversationChatScreen() {
                         >
                           <Text style={{ fontSize: 11, color: "#64748B" }}>
                             Trouser:{" "}
-                            <Text style={{ fontWeight: "700", color: "#1E293B" }}>
+                            <Text
+                              style={{ fontWeight: "700", color: "#1E293B" }}
+                            >
                               {profile.trouserLength} {profile.unit}
                             </Text>
                           </Text>
@@ -2820,7 +3046,8 @@ export default function ConversationChatScreen() {
                       marginBottom: 16,
                     }}
                   >
-                    You haven't saved any measurement profiles yet. Create one to easily share your fitting details with tailors.
+                    You haven't saved any measurement profiles yet. Create one
+                    to easily share your fitting details with tailors.
                   </Text>
                   <TouchableOpacity
                     onPress={() => {

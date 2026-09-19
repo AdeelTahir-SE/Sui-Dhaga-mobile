@@ -223,6 +223,7 @@ export default function MessagesScreen() {
   const currentUser = useAuthStore((state) => state.user);
   const { conversations, isLoading, isRefreshing, error, refresh } =
     useConversations();
+  const { isOnline } = usePresence();
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [isOptionsSheetVisible, setIsOptionsSheetVisible] = useState(false);
@@ -781,6 +782,7 @@ export default function MessagesScreen() {
                   avatarUrl={other.avatarUrl || other.avatar_url || undefined}
                   unread={item.unreadCount ?? (item as any).unread_count}
                   tone={tone}
+                  isOnline={isOnline(other.id)}
                   onPress={() => {
                     const tailorId = item.participant2_id || item.tailorId || (item as any).tailor_id || other.id;
                     const clientId = item.participant1_id || item.customerId || (item as any).customer_id || currentUser?.id;

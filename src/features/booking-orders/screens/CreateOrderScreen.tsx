@@ -55,6 +55,7 @@ export default function CreateOrderScreen() {
   const tailorAvatar = params.avatar;
 
   // Form State
+  const [currentStage, setCurrentStage] = useState<1 | 2 | 3>(1);
   const [selectedCategory, setSelectedCategory] = useState<GarmentCategory>(
     GARMENT_CATEGORIES.find(
       (c) => params.itemName && c.name.toLowerCase().includes(params.itemName.toLowerCase())
@@ -300,7 +301,7 @@ export default function CreateOrderScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FAF8F5", paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF", paddingTop: insets.top }}>
       {/* Header */}
       <View
         style={{
@@ -311,19 +312,25 @@ export default function CreateOrderScreen() {
           paddingVertical: 12,
           backgroundColor: "#FFFFFF",
           borderBottomWidth: 1,
-          borderBottomColor: "#EAE5DD",
+          borderBottomColor: "#E2E8F0",
         }}
       >
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => {
+            if (currentStage > 1) {
+              setCurrentStage((prev) => (prev - 1) as 1 | 2 | 3);
+            } else {
+              router.back();
+            }
+          }}
           activeOpacity={0.7}
           style={{
             width: 38,
             height: 38,
             borderRadius: 19,
-            backgroundColor: "#F8F6F0",
+            backgroundColor: "#F8FAFC",
             borderWidth: 1,
-            borderColor: "#EAE5DD",
+            borderColor: "#E2E8F0",
             alignItems: "center",
             justifyContent: "center",
           }}
@@ -336,12 +343,195 @@ export default function CreateOrderScreen() {
           <Text style={{ fontSize: 16, fontWeight: "800", color: "#1A1D1F" }}>
             Create Custom Order
           </Text>
-          <Text style={{ fontSize: 11, fontWeight: "500", color: "#6F767E" }}>
-            Bespoke tailoring with {tailorName}
+          <Text style={{ fontSize: 11, fontWeight: "500", color: "#64748B" }}>
+            Step {currentStage} of 3 •{" "}
+            {currentStage === 1
+              ? "Style & Design"
+              : currentStage === 2
+              ? "Fit & Measurements"
+              : "Review & Pricing"}
           </Text>
         </View>
 
         <View style={{ width: 38 }} />
+      </View>
+
+      {/* 3-Stage Progress Stepper */}
+      <View
+        style={{
+          backgroundColor: "#FFFFFF",
+          paddingHorizontal: 20,
+          paddingVertical: 10,
+          borderBottomWidth: 1,
+          borderBottomColor: "#F1F5F9",
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          {/* Step 1 */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => setCurrentStage(1)}
+            style={{ flexDirection: "row", alignItems: "center" }}
+          >
+            <View
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 13,
+                backgroundColor:
+                  currentStage === 1
+                    ? "#14919B"
+                    : currentStage > 1
+                    ? "#0D7377"
+                    : "#F1F5F9",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 6,
+              }}
+            >
+              {currentStage > 1 ? (
+                <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+              ) : (
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "800",
+                    color: currentStage === 1 ? "#FFFFFF" : "#64748B",
+                  }}
+                >
+                  1
+                </Text>
+              )}
+            </View>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: currentStage === 1 ? "800" : "600",
+                color: currentStage === 1 ? "#0D7377" : "#64748B",
+              }}
+            >
+              Style
+            </Text>
+          </TouchableOpacity>
+
+          {/* Divider 1-2 */}
+          <View
+            style={{
+              flex: 1,
+              height: 2,
+              backgroundColor: currentStage > 1 ? "#14919B" : "#E2E8F0",
+              marginHorizontal: 8,
+            }}
+          />
+
+          {/* Step 2 */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => {
+              if (itemName.trim()) setCurrentStage(2);
+              else Alert.alert("Required", "Please enter the garment name first.");
+            }}
+            style={{ flexDirection: "row", alignItems: "center" }}
+          >
+            <View
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 13,
+                backgroundColor:
+                  currentStage === 2
+                    ? "#14919B"
+                    : currentStage > 2
+                    ? "#0D7377"
+                    : "#F1F5F9",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 6,
+              }}
+            >
+              {currentStage > 2 ? (
+                <Ionicons name="checkmark" size={15} color="#FFFFFF" />
+              ) : (
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "800",
+                    color: currentStage === 2 ? "#FFFFFF" : "#64748B",
+                  }}
+                >
+                  2
+                </Text>
+              )}
+            </View>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: currentStage === 2 ? "800" : "600",
+                color: currentStage === 2 ? "#0D7377" : "#64748B",
+              }}
+            >
+              Fit
+            </Text>
+          </TouchableOpacity>
+
+          {/* Divider 2-3 */}
+          <View
+            style={{
+              flex: 1,
+              height: 2,
+              backgroundColor: currentStage > 2 ? "#14919B" : "#E2E8F0",
+              marginHorizontal: 8,
+            }}
+          />
+
+          {/* Step 3 */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => {
+              if (itemName.trim()) setCurrentStage(3);
+              else Alert.alert("Required", "Please complete garment details first.");
+            }}
+            style={{ flexDirection: "row", alignItems: "center" }}
+          >
+            <View
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 13,
+                backgroundColor:
+                  currentStage === 3 ? "#14919B" : "#F1F5F9",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 6,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: "800",
+                  color: currentStage === 3 ? "#FFFFFF" : "#64748B",
+                }}
+              >
+                3
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: currentStage === 3 ? "800" : "600",
+                color: currentStage === 3 ? "#0D7377" : "#64748B",
+              }}
+            >
+              Review
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <KeyboardAvoidingView
@@ -349,8 +539,12 @@ export default function CreateOrderScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16, paddingBottom: insets.bottom + 40 }}
+          style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+            paddingBottom: 24,
+          }}
           showsVerticalScrollIndicator={false}
         >
           {/* Tailor Summary Card */}
@@ -358,28 +552,23 @@ export default function CreateOrderScreen() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: "#FFFFFF",
+              backgroundColor: "#F8FAFC",
               borderRadius: 16,
-              padding: 14,
+              padding: 12,
               borderWidth: 1,
-              borderColor: "#EAE5DD",
+              borderColor: "#E2E8F0",
               marginBottom: 16,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.04,
-              shadowRadius: 2,
-              elevation: 1,
             }}
           >
             <View
               style={{
-                width: 46,
-                height: 46,
-                borderRadius: 23,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
                 overflow: "hidden",
                 borderWidth: 1,
-                borderColor: "#EAE5DD",
-                backgroundColor: "#F8F6F0",
+                borderColor: "#E2E8F0",
+                backgroundColor: "#FFFFFF",
                 alignItems: "center",
                 justifyContent: "center",
                 marginRight: 12,
@@ -388,7 +577,7 @@ export default function CreateOrderScreen() {
               {tailorAvatar ? (
                 <Image
                   source={{ uri: tailorAvatar }}
-                  style={{ width: 46, height: 46, borderRadius: 23 }}
+                  style={{ width: 44, height: 44, borderRadius: 22 }}
                   contentFit="cover"
                 />
               ) : (
@@ -401,7 +590,7 @@ export default function CreateOrderScreen() {
                     justifyContent: "center",
                   }}
                 >
-                  <Text style={{ fontSize: 18, fontWeight: "800", color: "#14919B" }}>
+                  <Text style={{ fontSize: 17, fontWeight: "800", color: "#14919B" }}>
                     {tailorName.charAt(0).toUpperCase()}
                   </Text>
                 </View>
@@ -427,8 +616,8 @@ export default function CreateOrderScreen() {
                   </Text>
                 </View>
               </View>
-              <Text style={{ fontSize: 12, color: "#6F767E", marginTop: 2 }}>
-                Specialized in bridal couture, lehengas & suits
+              <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                Specialized in bespoke couture, lehengas & suits
               </Text>
             </View>
 
@@ -439,565 +628,719 @@ export default function CreateOrderScreen() {
                   4.9
                 </Text>
               </View>
-              <Text style={{ fontSize: 10, color: "#6F767E", marginTop: 2 }}>
+              <Text style={{ fontSize: 10, color: "#64748B", marginTop: 2 }}>
                 Top Rated
               </Text>
             </View>
           </View>
 
-          {/* Section 1: Choose Garment Category */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 10 }}>
-              1. Choose Garment Style
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {GARMENT_CATEGORIES.map((cat) => {
-                const isSelected = selectedCategory.id === cat.id;
-                return (
-                  <TouchableOpacity
-                    key={cat.id}
-                    onPress={() => handleSelectCategory(cat)}
-                    activeOpacity={0.8}
+          {/* ================= STAGE 1: STYLE & INSPIRATION ================= */}
+          {currentStage === 1 && (
+            <View>
+              {/* Choose Garment Category */}
+              <View style={{ marginBottom: 18 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 10 }}>
+                  1. Choose Garment Style
+                </Text>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {GARMENT_CATEGORIES.map((cat) => {
+                    const isSelected = selectedCategory.id === cat.id;
+                    return (
+                      <TouchableOpacity
+                        key={cat.id}
+                        onPress={() => handleSelectCategory(cat)}
+                        activeOpacity={0.8}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          paddingHorizontal: 12,
+                          paddingVertical: 10,
+                          borderRadius: 12,
+                          backgroundColor: isSelected ? "#14919B" : "#FFFFFF",
+                          borderWidth: 1,
+                          borderColor: isSelected ? "#14919B" : "#E2E8F0",
+                          elevation: isSelected ? 2 : 0,
+                        }}
+                      >
+                        <Ionicons
+                          name={cat.icon as any}
+                          size={15}
+                          color={isSelected ? "#FFFFFF" : "#14919B"}
+                          style={{ marginRight: 6 }}
+                        />
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            fontWeight: isSelected ? "700" : "600",
+                            color: isSelected ? "#FFFFFF" : "#1A1D1F",
+                          }}
+                        >
+                          {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Garment Title & Design Notes */}
+              <View style={{ marginBottom: 18 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 8 }}>
+                  2. Outfit Title & Design Notes
+                </Text>
+                <View
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                    padding: 12,
+                    marginBottom: 10,
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#64748B", marginBottom: 4 }}>
+                    GARMENT NAME *
+                  </Text>
+                  <TextInput
+                    value={itemName}
+                    onChangeText={setItemName}
+                    placeholder="e.g. Royal Blue Lehenga with Zari Embroidery"
+                    placeholderTextColor="#94A3B8"
                     style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      borderRadius: 12,
-                      backgroundColor: isSelected ? "#14919B" : "#FFFFFF",
-                      borderWidth: 1,
-                      borderColor: isSelected ? "#14919B" : "#EAE5DD",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.03,
-                      shadowRadius: 2,
-                      elevation: isSelected ? 2 : 0,
+                      fontSize: 14,
+                      fontWeight: "600",
+                      color: "#1A1D1F",
+                      paddingVertical: 4,
                     }}
-                  >
-                    <Ionicons
-                      name={cat.icon as any}
-                      size={15}
-                      color={isSelected ? "#FFFFFF" : "#14919B"}
-                      style={{ marginRight: 6 }}
-                    />
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: isSelected ? "700" : "600",
-                        color: isSelected ? "#FFFFFF" : "#1A1D1F",
-                      }}
-                    >
-                      {cat.name}
+                  />
+                </View>
+
+                <View
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
+                    padding: 12,
+                  }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: "#64748B", marginBottom: 4 }}>
+                    DESIGN DETAILS & SPECIAL REQUESTS
+                  </Text>
+                  <TextInput
+                    value={notes}
+                    onChangeText={setNotes}
+                    placeholder="e.g. Sweetheart neckline, 3/4th sheer sleeves, heavy latkans at waist, inner lining required..."
+                    placeholderTextColor="#94A3B8"
+                    multiline
+                    numberOfLines={3}
+                    style={{
+                      fontSize: 13,
+                      color: "#1A1D1F",
+                      minHeight: 65,
+                      textAlignVertical: "top",
+                    }}
+                  />
+                </View>
+              </View>
+
+              {/* Reference Images & Designs */}
+              <View style={{ marginBottom: 18 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F" }}>
+                      3. Design Photos & Inspiration
+                    </Text>
+                    <Text style={{ fontSize: 11, color: "#64748B", marginTop: 1 }}>
+                      Attach reference images, sketches or fabric photos
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={handlePickReferenceImage} activeOpacity={0.7}>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#14919B" }}>
+                      + Add Photos
                     </Text>
                   </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Section 2: Garment Name & Style Details */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 6 }}>
-              2. Outfit Title & Design Notes
-            </Text>
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: "#EAE5DD",
-                padding: 12,
-                marginBottom: 10,
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: "700", color: "#6F767E", marginBottom: 4 }}>
-                GARMENT NAME
-              </Text>
-              <TextInput
-                value={itemName}
-                onChangeText={setItemName}
-                placeholder="e.g. Royal Blue Lehenga with Zari Embroidery"
-                placeholderTextColor="#9CA3AF"
-                style={{
-                  fontSize: 14,
-                  fontWeight: "600",
-                  color: "#1A1D1F",
-                  paddingVertical: 4,
-                }}
-              />
-            </View>
-
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: "#EAE5DD",
-                padding: 12,
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: "700", color: "#6F767E", marginBottom: 4 }}>
-                DESIGN DETAILS & SPECIAL REQUESTS
-              </Text>
-              <TextInput
-                value={notes}
-                onChangeText={setNotes}
-                placeholder="e.g. Sweetheart neckline, 3/4th sheer sleeves, heavy latkans at waist, inner lining required..."
-                placeholderTextColor="#9CA3AF"
-                multiline
-                numberOfLines={3}
-                style={{
-                  fontSize: 13,
-                  color: "#1A1D1F",
-                  minHeight: 65,
-                  textAlignVertical: "top",
-                }}
-              />
-            </View>
-          </View>
-
-          {/* Section 3: Fabric Preference */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 10 }}>
-              3. Fabric Sourcing
-            </Text>
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <TouchableOpacity
-                onPress={() => setFabricOption("client")}
-                activeOpacity={0.8}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderRadius: 14,
-                  backgroundColor: fabricOption === "client" ? "#F0FAFA" : "#FFFFFF",
-                  borderWidth: 1.5,
-                  borderColor: fabricOption === "client" ? "#14919B" : "#EAE5DD",
-                }}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-                  <Ionicons
-                    name={fabricOption === "client" ? "radio-button-on" : "radio-button-off"}
-                    size={17}
-                    color={fabricOption === "client" ? "#14919B" : "#9CA3AF"}
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>
-                    I Have Fabric
-                  </Text>
                 </View>
-                <Text style={{ fontSize: 11, color: "#6F767E", marginLeft: 23 }}>
-                  I'll send or drop off my own fabric to the tailor.
-                </Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity
-                onPress={() => setFabricOption("tailor")}
-                activeOpacity={0.8}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  borderRadius: 14,
-                  backgroundColor: fabricOption === "tailor" ? "#F0FAFA" : "#FFFFFF",
-                  borderWidth: 1.5,
-                  borderColor: fabricOption === "tailor" ? "#14919B" : "#EAE5DD",
-                }}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-                  <Ionicons
-                    name={fabricOption === "tailor" ? "radio-button-on" : "radio-button-off"}
-                    size={17}
-                    color={fabricOption === "tailor" ? "#14919B" : "#9CA3AF"}
-                    style={{ marginRight: 6 }}
-                  />
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>
-                    Tailor Sourced
-                  </Text>
-                </View>
-                <Text style={{ fontSize: 11, color: "#6F767E", marginLeft: 23 }}>
-                  Tailor sources matching fabric & lining (+₹3,500).
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Section 4: Measurements (Automatically Fetched & Editable) */}
-          <View style={{ marginBottom: 20 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F" }}>
-                4. Custom Measurements
-              </Text>
-              {/* Unit Toggle */}
-              <View style={{ flexDirection: "row", backgroundColor: "#EAE5DD", borderRadius: 8, padding: 2 }}>
-                <TouchableOpacity
-                  onPress={() => setUnit("in")}
-                  style={{
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: 6,
-                    backgroundColor: unit === "in" ? "#14919B" : "transparent",
-                  }}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: unit === "in" ? "#FFFFFF" : "#6F767E" }}>
-                    in
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setUnit("cm")}
-                  style={{
-                    paddingHorizontal: 8,
-                    paddingVertical: 3,
-                    borderRadius: 6,
-                    backgroundColor: unit === "cm" ? "#14919B" : "transparent",
-                  }}
-                >
-                  <Text style={{ fontSize: 11, fontWeight: "700", color: unit === "cm" ? "#FFFFFF" : "#6F767E" }}>
-                    cm
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Fetch Status Banner */}
-            {isLoadingMeasurements ? (
-              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0FAFA", padding: 10, borderRadius: 10, marginBottom: 12 }}>
-                <ActivityIndicator size="small" color="#14919B" style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 12, color: "#14919B", fontWeight: "600" }}>
-                  Fetching your saved measurements...
-                </Text>
-              </View>
-            ) : measurementSource === "fetched" ? (
-              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#ECFDF5", padding: 10, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: "#A7F3D0" }}>
-                <Ionicons name="checkmark-circle" size={16} color="#059669" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 12, color: "#065F46", fontWeight: "600", flex: 1 }}>
-                  Auto-fetched from {measurementProfileName || "your profile"}. You can modify any value below for this order.
-                </Text>
-              </View>
-            ) : (
-              <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#FFFBEB", padding: 10, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: "#FDE68A" }}>
-                <Ionicons name="information-circle" size={16} color="#D97706" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 12, color: "#92400E", fontWeight: "500", flex: 1 }}>
-                  Enter your custom measurements below to guarantee a tailored fit.
-                </Text>
-              </View>
-            )}
-
-            {/* Editable Measurements Grid */}
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 14,
-                padding: 14,
-                borderWidth: 1,
-                borderColor: "#EAE5DD",
-              }}
-            >
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -5 }}>
-                {[
-                  { label: "CHEST / BUST", value: chest, setter: setChest, placeholder: "36" },
-                  { label: "WAIST", value: waist, setter: setWaist, placeholder: "30" },
-                  { label: "HIPS", value: hips, setter: setHips, placeholder: "38" },
-                  { label: "SHOULDER", value: shoulder, setter: setShoulder, placeholder: "15" },
-                  { label: "SLEEVE LENGTH", value: sleeveLength, setter: setSleeveLength, placeholder: "22" },
-                  { label: "INSEAM / PANT", value: inseam, setter: setInseam, placeholder: "39" },
-                  { label: "NECK", value: neck, setter: setNeck, placeholder: "14" },
-                  { label: "SHIRT LENGTH", value: shirtLength, setter: setShirtLength, placeholder: "38" },
-                ].map((field, idx) => (
-                  <View key={idx} style={{ width: "50%", paddingHorizontal: 5, marginBottom: 10 }}>
-                    <Text style={{ fontSize: 10, fontWeight: "700", color: "#6F767E", marginBottom: 3 }}>
-                      {field.label} ({unit})
+                {referenceImages.length === 0 ? (
+                  <TouchableOpacity
+                    onPress={handlePickReferenceImage}
+                    activeOpacity={0.8}
+                    style={{
+                      borderWidth: 1.5,
+                      borderStyle: "dashed",
+                      borderColor: "#CBD5E1",
+                      borderRadius: 14,
+                      padding: 22,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#F8FAFC",
+                    }}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={28} color="#14919B" />
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F", marginTop: 6 }}>
+                      Upload Reference Designs
                     </Text>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        borderWidth: 1,
-                        borderColor: "#EAE5DD",
-                        borderRadius: 10,
-                        backgroundColor: "#FAF8F5",
-                        paddingHorizontal: 10,
-                        height: 40,
-                      }}
-                    >
-                      <TextInput
-                        value={field.value}
-                        onChangeText={field.setter}
-                        placeholder={field.placeholder}
-                        placeholderTextColor="#9CA3AF"
-                        keyboardType="decimal-pad"
-                        style={{
-                          flex: 1,
-                          fontSize: 14,
-                          fontWeight: "700",
-                          color: "#1A1D1F",
-                        }}
-                      />
-                      <Text style={{ fontSize: 11, color: "#9CA3AF", fontWeight: "600" }}>
-                        {unit}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-              <Text style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2, textAlign: "center" }}>
-                ✏️ All measurements can be updated right here specifically for this outfit.
-              </Text>
-            </View>
-          </View>
-
-          {/* Section 5: Reference Images & Designs (order-designs bucket) */}
-          <View style={{ marginBottom: 20 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-              <View>
-                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F" }}>
-                  5. Design Images & Inspiration
-                </Text>
-                <Text style={{ fontSize: 11, color: "#6F767E", marginTop: 1 }}>
-                  Attached photos will be securely saved in the order-designs bucket
-                </Text>
-              </View>
-              <TouchableOpacity onPress={handlePickReferenceImage} activeOpacity={0.7}>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#14919B" }}>
-                  + Add Photos
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {referenceImages.length === 0 ? (
-              <TouchableOpacity
-                onPress={handlePickReferenceImage}
-                activeOpacity={0.8}
-                style={{
-                  borderWidth: 1.5,
-                  borderStyle: "dashed",
-                  borderColor: "#D5CEC2",
-                  borderRadius: 14,
-                  padding: 20,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  backgroundColor: "#FFFFFF",
-                }}
-              >
-                <Ionicons name="cloud-upload-outline" size={28} color="#14919B" />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F", marginTop: 6 }}>
-                  Upload Reference Designs
-                </Text>
-                <Text style={{ fontSize: 11, color: "#6F767E", marginTop: 2 }}>
-                  Attach sketches, neck design photos, embroidery patterns, or fabric swatches
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
-                {referenceImages.map((uri, idx) => (
-                  <View key={idx} style={{ position: "relative" }}>
-                    <Image
-                      source={{ uri }}
-                      style={{ width: 85, height: 85, borderRadius: 12 }}
-                      contentFit="cover"
-                    />
+                    <Text style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                      Attach sketches, neck design photos, embroidery patterns, or fabric swatches
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+                    {referenceImages.map((uri, idx) => (
+                      <View key={idx} style={{ position: "relative" }}>
+                        <Image
+                          source={{ uri }}
+                          style={{ width: 85, height: 85, borderRadius: 12 }}
+                          contentFit="cover"
+                        />
+                        <TouchableOpacity
+                          onPress={() => handleRemoveImage(idx)}
+                          style={{
+                            position: "absolute",
+                            top: -5,
+                            right: -5,
+                            width: 22,
+                            height: 22,
+                            borderRadius: 11,
+                            backgroundColor: "#EF4444",
+                            borderWidth: 1.5,
+                            borderColor: "#FFFFFF",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Ionicons name="close" size={12} color="#FFFFFF" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
                     <TouchableOpacity
-                      onPress={() => handleRemoveImage(idx)}
+                      onPress={handlePickReferenceImage}
                       style={{
-                        position: "absolute",
-                        top: -5,
-                        right: -5,
-                        width: 22,
-                        height: 22,
-                        borderRadius: 11,
-                        backgroundColor: "#EF4444",
+                        width: 85,
+                        height: 85,
+                        borderRadius: 12,
                         borderWidth: 1.5,
-                        borderColor: "#FFFFFF",
+                        borderStyle: "dashed",
+                        borderColor: "#14919B",
                         alignItems: "center",
                         justifyContent: "center",
+                        backgroundColor: "#F0FAFA",
                       }}
                     >
-                      <Ionicons name="close" size={12} color="#FFFFFF" />
+                      <Ionicons name="add" size={24} color="#14919B" />
+                      <Text style={{ fontSize: 10, fontWeight: "700", color: "#14919B" }}>Add</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* ================= STAGE 2: FIT & FABRIC ================= */}
+          {currentStage === 2 && (
+            <View>
+              {/* Fabric Preference */}
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 10 }}>
+                  1. Fabric Sourcing
+                </Text>
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => setFabricOption("client")}
+                    activeOpacity={0.8}
+                    style={{
+                      flex: 1,
+                      padding: 12,
+                      borderRadius: 14,
+                      backgroundColor: fabricOption === "client" ? "#F0FAFA" : "#FFFFFF",
+                      borderWidth: 1.5,
+                      borderColor: fabricOption === "client" ? "#14919B" : "#E2E8F0",
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+                      <Ionicons
+                        name={fabricOption === "client" ? "radio-button-on" : "radio-button-off"}
+                        size={17}
+                        color={fabricOption === "client" ? "#14919B" : "#94A3B8"}
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>
+                        I Have Fabric
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 11, color: "#64748B", marginLeft: 23 }}>
+                      I'll provide or deliver my own fabric to the tailor.
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setFabricOption("tailor")}
+                    activeOpacity={0.8}
+                    style={{
+                      flex: 1,
+                      padding: 12,
+                      borderRadius: 14,
+                      backgroundColor: fabricOption === "tailor" ? "#F0FAFA" : "#FFFFFF",
+                      borderWidth: 1.5,
+                      borderColor: fabricOption === "tailor" ? "#14919B" : "#E2E8F0",
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+                      <Ionicons
+                        name={fabricOption === "tailor" ? "radio-button-on" : "radio-button-off"}
+                        size={17}
+                        color={fabricOption === "tailor" ? "#14919B" : "#94A3B8"}
+                        style={{ marginRight: 6 }}
+                      />
+                      <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>
+                        Tailor Sourced
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 11, color: "#64748B", marginLeft: 23 }}>
+                      Tailor sources matching fabric & lining (+₹3,500).
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Custom Measurements */}
+              <View style={{ marginBottom: 20 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F" }}>
+                    2. Custom Measurements
+                  </Text>
+                  {/* Unit Toggle */}
+                  <View style={{ flexDirection: "row", backgroundColor: "#F1F5F9", borderRadius: 8, padding: 2 }}>
+                    <TouchableOpacity
+                      onPress={() => setUnit("in")}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                        borderRadius: 6,
+                        backgroundColor: unit === "in" ? "#14919B" : "transparent",
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: unit === "in" ? "#FFFFFF" : "#64748B" }}>
+                        in
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setUnit("cm")}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                        borderRadius: 6,
+                        backgroundColor: unit === "cm" ? "#14919B" : "transparent",
+                      }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: "700", color: unit === "cm" ? "#FFFFFF" : "#64748B" }}>
+                        cm
+                      </Text>
                     </TouchableOpacity>
                   </View>
-                ))}
-                <TouchableOpacity
-                  onPress={handlePickReferenceImage}
+                </View>
+
+                {/* Fetch Status Banner */}
+                {isLoadingMeasurements ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0FAFA", padding: 10, borderRadius: 10, marginBottom: 12 }}>
+                    <ActivityIndicator size="small" color="#14919B" style={{ marginRight: 8 }} />
+                    <Text style={{ fontSize: 12, color: "#14919B", fontWeight: "600" }}>
+                      Fetching your saved measurements...
+                    </Text>
+                  </View>
+                ) : measurementSource === "fetched" ? (
+                  <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#ECFDF5", padding: 10, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: "#A7F3D0" }}>
+                    <Ionicons name="checkmark-circle" size={16} color="#059669" style={{ marginRight: 6 }} />
+                    <Text style={{ fontSize: 12, color: "#065F46", fontWeight: "600", flex: 1 }}>
+                      Auto-loaded from {measurementProfileName || "saved profile"}. You can adjust any measurement for this order.
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#F0FAFA", padding: 10, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: "#E0F7F7" }}>
+                    <Ionicons name="information-circle" size={16} color="#14919B" style={{ marginRight: 6 }} />
+                    <Text style={{ fontSize: 12, color: "#0D7377", fontWeight: "500", flex: 1 }}>
+                      Enter your custom dimensions below for a bespoke tailored fit.
+                    </Text>
+                  </View>
+                )}
+
+                {/* Editable Measurements Grid */}
+                <View
                   style={{
-                    width: 85,
-                    height: 85,
-                    borderRadius: 12,
-                    borderWidth: 1.5,
-                    borderStyle: "dashed",
-                    borderColor: "#14919B",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#F0FAFA",
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 14,
+                    padding: 14,
+                    borderWidth: 1,
+                    borderColor: "#E2E8F0",
                   }}
                 >
-                  <Ionicons name="add" size={24} color="#14919B" />
-                  <Text style={{ fontSize: 10, fontWeight: "700", color: "#14919B" }}>Add</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            )}
-          </View>
-
-          {/* Section 6: Additional Notes */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 6 }}>
-              6. Additional Notes & Custom Requests
-            </Text>
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: "#EAE5DD",
-                padding: 12,
-              }}
-            >
-              <TextInput
-                value={additionalNotes}
-                onChangeText={setAdditionalNotes}
-                placeholder="Any special instructions for stitching, fitting preferences, border placement, pocket requirements, or urgent handling..."
-                placeholderTextColor="#9CA3AF"
-                multiline
-                numberOfLines={3}
-                style={{
-                  fontSize: 13,
-                  color: "#1A1D1F",
-                  minHeight: 65,
-                  textAlignVertical: "top",
-                }}
-              />
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -5 }}>
+                    {[
+                      { label: "CHEST / BUST", value: chest, setter: setChest, placeholder: "36" },
+                      { label: "WAIST", value: waist, setter: setWaist, placeholder: "30" },
+                      { label: "HIPS", value: hips, setter: setHips, placeholder: "38" },
+                      { label: "SHOULDER", value: shoulder, setter: setShoulder, placeholder: "15" },
+                      { label: "SLEEVE LENGTH", value: sleeveLength, setter: setSleeveLength, placeholder: "22" },
+                      { label: "SHIRT LENGTH", value: shirtLength, setter: setShirtLength, placeholder: "38" },
+                      { label: "TROUSER LENGTH", value: trouserLength, setter: setTrouserLength, placeholder: "39" },
+                      { label: "INSEAM / PANT", value: inseam, setter: setInseam, placeholder: "30" },
+                      { label: "COLLAR / NECK", value: neck, setter: setNeck, placeholder: "14" },
+                    ].map((field, idx) => (
+                      <View key={idx} style={{ width: "50%", paddingHorizontal: 5, marginBottom: 10 }}>
+                        <Text style={{ fontSize: 10, fontWeight: "700", color: "#64748B", marginBottom: 3 }}>
+                          {field.label} ({unit})
+                        </Text>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            borderWidth: 1,
+                            borderColor: "#E2E8F0",
+                            borderRadius: 10,
+                            backgroundColor: "#F8FAFC",
+                            paddingHorizontal: 10,
+                            height: 40,
+                          }}
+                        >
+                          <TextInput
+                            value={field.value}
+                            onChangeText={field.setter}
+                            placeholder={field.placeholder}
+                            placeholderTextColor="#94A3B8"
+                            keyboardType="decimal-pad"
+                            style={{
+                              flex: 1,
+                              fontSize: 14,
+                              fontWeight: "700",
+                              color: "#1A1D1F",
+                            }}
+                          />
+                          <Text style={{ fontSize: 11, color: "#94A3B8", fontWeight: "600" }}>
+                            {unit}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={{ fontSize: 11, color: "#64748B", marginTop: 2, textAlign: "center" }}>
+                    📐 Custom measurements guarantee a bespoke fit tailored to your silhouette.
+                  </Text>
+                </View>
+              </View>
             </View>
-          </View>
+          )}
 
-          {/* Section 7: Pricing & Total Amount */}
-          <View
-            style={{
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: "#EAE5DD",
-              marginBottom: 24,
-            }}
-          >
-            <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 12 }}>
-              7. Pricing & Total Amount Summary
-            </Text>
-
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <Text style={{ fontSize: 13, color: "#6F767E" }}>Stitching & Tailoring Base</Text>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F", marginRight: 6 }}>
-                  ₹
+          {/* ================= STAGE 3: REVIEW & PRICING ================= */}
+          {currentStage === 3 && (
+            <View>
+              {/* Delivery Timeline Preference */}
+              <View style={{ marginBottom: 18 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 8 }}>
+                  1. Delivery Timeline
                 </Text>
-                <TextInput
-                  value={customBudget}
-                  onChangeText={setCustomBudget}
-                  keyboardType="numeric"
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {[
+                    { id: "standard", label: "Standard", time: `${selectedCategory.estDays} days`, extra: "Free" },
+                    { id: "urgent", label: "Express Urgent", time: `${Math.max(3, Math.floor(selectedCategory.estDays / 2))} days`, extra: "+₹1,500" },
+                    { id: "relaxed", label: "Flexible", time: `${selectedCategory.estDays + 7} days`, extra: "Standard" },
+                  ].map((speed) => {
+                    const isSelected = deliverySpeed === speed.id;
+                    return (
+                      <TouchableOpacity
+                        key={speed.id}
+                        onPress={() => setDeliverySpeed(speed.id as any)}
+                        activeOpacity={0.8}
+                        style={{
+                          flex: 1,
+                          padding: 12,
+                          borderRadius: 12,
+                          backgroundColor: isSelected ? "#F0FAFA" : "#FFFFFF",
+                          borderWidth: 1.5,
+                          borderColor: isSelected ? "#14919B" : "#E2E8F0",
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: "700", color: isSelected ? "#0D7377" : "#1A1D1F" }}>
+                          {speed.label}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                          {speed.time}
+                        </Text>
+                        <Text style={{ fontSize: 10, fontWeight: "700", color: isSelected ? "#14919B" : "#94A3B8", marginTop: 2 }}>
+                          {speed.extra}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Order Summary Snapshot Card */}
+              <View
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  borderRadius: 14,
+                  padding: 14,
+                  borderWidth: 1,
+                  borderColor: "#E2E8F0",
+                  marginBottom: 18,
+                }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: "800", color: "#1A1D1F", marginBottom: 8 }}>
+                  Order Summary Review
+                </Text>
+
+                <View style={{ gap: 6 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <Text style={{ fontSize: 12, color: "#64748B" }}>Outfit:</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#1A1D1F", flex: 1, textAlign: "right" }} numberOfLines={1}>
+                      {itemName}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <Text style={{ fontSize: 12, color: "#64748B" }}>Category:</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#1A1D1F" }}>
+                      {selectedCategory.name}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <Text style={{ fontSize: 12, color: "#64748B" }}>Fabric:</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#1A1D1F" }}>
+                      {fabricOption === "tailor" ? "Tailor Sourced Fabric" : "Customer Provided Fabric"}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <Text style={{ fontSize: 12, color: "#64748B" }}>Delivery:</Text>
+                    <Text style={{ fontSize: 12, fontWeight: "600", color: "#1A1D1F" }}>
+                      {deliverySpeed.toUpperCase()} Delivery
+                    </Text>
+                  </View>
+                  {referenceImages.length > 0 && (
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <Text style={{ fontSize: 12, color: "#64748B" }}>Attached Designs:</Text>
+                      <Text style={{ fontSize: 12, fontWeight: "600", color: "#14919B" }}>
+                        {referenceImages.length} photo(s) attached
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Additional Notes */}
+              <View style={{ marginBottom: 18 }}>
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 6 }}>
+                  2. Special Tailor Instructions
+                </Text>
+                <View
                   style={{
-                    fontSize: 13,
-                    fontWeight: "700",
-                    color: "#1A1D1F",
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 14,
                     borderWidth: 1,
-                    borderColor: "#EAE5DD",
-                    borderRadius: 8,
-                    paddingHorizontal: 8,
-                    paddingVertical: 2,
-                    minWidth: 70,
-                    textAlign: "right",
+                    borderColor: "#E2E8F0",
+                    padding: 12,
+                  }}
+                >
+                  <TextInput
+                    value={additionalNotes}
+                    onChangeText={setAdditionalNotes}
+                    placeholder="Any fitting instructions, border placement, pocket requirements, or urgent handling requests..."
+                    placeholderTextColor="#94A3B8"
+                    multiline
+                    numberOfLines={3}
+                    style={{
+                      fontSize: 13,
+                      color: "#1A1D1F",
+                      minHeight: 60,
+                      textAlignVertical: "top",
+                    }}
+                  />
+                </View>
+              </View>
+
+              {/* Pricing & Total Amount */}
+              <View
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 16,
+                  padding: 16,
+                  borderWidth: 1,
+                  borderColor: "#E2E8F0",
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F", marginBottom: 12 }}>
+                  3. Pricing & Payment Breakdown
+                </Text>
+
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <Text style={{ fontSize: 13, color: "#64748B" }}>Stitching & Tailoring Base</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F", marginRight: 6 }}>
+                      ₹
+                    </Text>
+                    <TextInput
+                      value={customBudget}
+                      onChangeText={setCustomBudget}
+                      keyboardType="numeric"
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#1A1D1F",
+                        borderWidth: 1,
+                        borderColor: "#E2E8F0",
+                        borderRadius: 8,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        minWidth: 70,
+                        textAlign: "right",
+                        backgroundColor: "#F8FAFC",
+                      }}
+                    />
+                  </View>
+                </View>
+
+                {fabricOption === "tailor" && (
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                    <Text style={{ fontSize: 13, color: "#64748B" }}>Fabric & Lining Sourcing</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹3,500</Text>
+                  </View>
+                )}
+
+                {deliverySpeed === "urgent" && (
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                    <Text style={{ fontSize: 13, color: "#64748B" }}>Express Urgent Stitching</Text>
+                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹1,500</Text>
+                  </View>
+                )}
+
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
+                  <Text style={{ fontSize: 13, color: "#64748B" }}>Platform & Assurance Fee</Text>
+                  <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹150</Text>
+                </View>
+
+                <View
+                  style={{
+                    height: 1,
+                    backgroundColor: "#E2E8F0",
+                    marginVertical: 4,
+                    marginBottom: 12,
                   }}
                 />
+
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <View>
+                    <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F" }}>
+                      Total Amount
+                    </Text>
+                    <Text style={{ fontSize: 11, color: "#10B981", fontWeight: "600" }}>
+                      Guaranteed Fit Protection Included
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 20, fontWeight: "900", color: "#14919B" }}>
+                    ₹{totalPrice.toLocaleString("en-IN")}
+                  </Text>
+                </View>
               </View>
             </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-            {fabricOption === "tailor" && (
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-                <Text style={{ fontSize: 13, color: "#6F767E" }}>Fabric & Lining Sourcing</Text>
-                <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹3,500</Text>
-              </View>
-            )}
+      {/* Persistent Bottom Action Bar */}
+      <View
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderTopWidth: 1,
+          borderTopColor: "#E2E8F0",
+          paddingHorizontal: 16,
+          paddingTop: 12,
+          paddingBottom: Math.max(insets.bottom + 8, 16),
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
+        {currentStage > 1 && (
+          <TouchableOpacity
+            onPress={() => setCurrentStage((prev) => (prev - 1) as 1 | 2 | 3)}
+            activeOpacity={0.7}
+            style={{
+              paddingHorizontal: 16,
+              height: 48,
+              borderRadius: 12,
+              backgroundColor: "#F8FAFC",
+              borderWidth: 1,
+              borderColor: "#E2E8F0",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+            }}
+          >
+            <Ionicons name="arrow-back" size={16} color="#64748B" style={{ marginRight: 4 }} />
+            <Text style={{ fontSize: 13, fontWeight: "700", color: "#475569" }}>
+              Back
+            </Text>
+          </TouchableOpacity>
+        )}
 
-            {deliverySpeed === "urgent" && (
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-                <Text style={{ fontSize: 13, color: "#6F767E" }}>Express Urgent Stitching</Text>
-                <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹1,500</Text>
-              </View>
-            )}
-
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
-              <Text style={{ fontSize: 13, color: "#6F767E" }}>Platform & Assurance Fee</Text>
-              <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹150</Text>
-            </View>
-
-            <View
-              style={{
-                height: 1,
-                backgroundColor: "#EAE5DD",
-                marginVertical: 4,
-                marginBottom: 12,
-              }}
-            />
-
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <View>
-                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1A1D1F" }}>
-                  Total Amount
-                </Text>
-                <Text style={{ fontSize: 11, color: "#10B981", fontWeight: "600" }}>
-                  Guaranteed Perfect Fit Protection
-                </Text>
-              </View>
-              <Text style={{ fontSize: 20, fontWeight: "900", color: "#14919B" }}>
-                ₹{totalPrice.toLocaleString("en-IN")}
-              </Text>
-            </View>
-          </View>
-
-          {/* Place Order CTA Button */}
+        {currentStage < 3 ? (
+          <TouchableOpacity
+            onPress={() => {
+              if (currentStage === 1 && !itemName.trim()) {
+                Alert.alert("Required", "Please enter the garment name to proceed.");
+                return;
+              }
+              setCurrentStage((prev) => (prev + 1) as 1 | 2 | 3);
+            }}
+            activeOpacity={0.85}
+            style={{
+              flex: 1,
+              height: 48,
+              borderRadius: 12,
+              backgroundColor: "#14919B",
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+            }}
+          >
+            <Text style={{ fontSize: 14, fontWeight: "800", color: "#FFFFFF", marginRight: 6 }}>
+              {currentStage === 1 ? "Next: Fit & Measurements" : "Next: Review & Pricing"}
+            </Text>
+            <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+        ) : (
           <TouchableOpacity
             onPress={handlePlaceOrder}
             disabled={isSubmitting}
             activeOpacity={0.85}
             style={{
-              height: 52,
-              borderRadius: 14,
+              flex: 1,
+              height: 48,
+              borderRadius: 12,
               backgroundColor: isSubmitting ? "#A5D6D9" : "#14919B",
               alignItems: "center",
               justifyContent: "center",
               flexDirection: "row",
-              shadowColor: "#14919B",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.25,
-              shadowRadius: 6,
-              elevation: 4,
             }}
           >
             {isSubmitting ? (
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <ActivityIndicator color="#FFFFFF" style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 15, fontWeight: "800", color: "#FFFFFF" }}>
-                  {isUploadingImages ? "Uploading Designs to Bucket..." : "Submitting Order..."}
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#FFFFFF" }}>
+                  {isUploadingImages ? "Uploading Designs..." : "Submitting Order..."}
                 </Text>
               </View>
             ) : (
               <>
-                <Ionicons name="bag-check" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 16, fontWeight: "800", color: "#FFFFFF" }}>
-                  Place Custom Order • ₹{totalPrice.toLocaleString("en-IN")}
+                <Ionicons name="bag-check" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#FFFFFF" }}>
+                  Place Order • ₹{totalPrice.toLocaleString("en-IN")}
                 </Text>
               </>
             )}
           </TouchableOpacity>
-
-          <Text
-            style={{
-              fontSize: 11,
-              color: "#9CA3AF",
-              textAlign: "center",
-              marginTop: 10,
-            }}
-          >
-            🔒 You won't be charged until the tailor reviews & confirms the design specs.
-          </Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        )}
+      </View>
     </View>
   );
 }
