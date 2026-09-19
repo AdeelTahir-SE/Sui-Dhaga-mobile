@@ -12,14 +12,11 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { InfoRow } from "../components/InfoRow";
-import { MccButton } from "../components/MccButton";
-import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
-import { MeasurementDiagram } from "../components/MeasurementDiagram";
-import { SectionTitle } from "../components/SectionTitle";
+import { MeasurementCard } from "../components/MeasurementCard";
 import { useMeasurements } from "../hooks/useMeasurements";
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
+import { MeasurementItem } from "../../../types/api";
 
 const RTW_SIZES = [
   { size: "XS (32)", bust: 32, waist: 26, hips: 36, shoulder: 13.5, length: 38 },
@@ -31,34 +28,26 @@ const RTW_SIZES = [
 ];
 
 export default function MeasurementsScreen() {
-  const { measurements, activeProfile, setActiveProfile, isLoading } = useMeasurements();
+  const { measurements, deleteMeasurement, isLoading } = useMeasurements();
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
-  const unit = activeProfile?.unit === "cm" ? "cm" : "in";
-
-  // Build rows dynamically from real profile values
-  const rows: Array<[string, string]> = [];
-  if (activeProfile?.chest) rows.push(["Bust / Chest", `${activeProfile.chest} ${unit}`]);
-  if (activeProfile?.waist) rows.push(["Waist", `${activeProfile.waist} ${unit}`]);
-  if (activeProfile?.hips) rows.push(["Hips", `${activeProfile.hips} ${unit}`]);
-  if (activeProfile?.shoulder) rows.push(["Shoulder Width", `${activeProfile.shoulder} ${unit}`]);
-  if (activeProfile?.sleeveLength) rows.push(["Arm / Sleeve Length", `${activeProfile.sleeveLength} ${unit}`]);
-  if (activeProfile?.shirtLength) rows.push(["Top / Shirt Length", `${activeProfile.shirtLength} ${unit}`]);
-  if (activeProfile?.trouserLength) rows.push(["Trouser / Bottom Length", `${activeProfile.trouserLength} ${unit}`]);
-  if (activeProfile?.inseam) rows.push(["Inseam (Inner Leg)", `${activeProfile.inseam} ${unit}`]);
-  if (activeProfile?.neck) rows.push(["Collar / Neck", `${activeProfile.neck} ${unit}`]);
-
-  const handleShareCard = async () => {
-    if (!activeProfile) return;
+  const handleShareProfile = async (profile: MeasurementItem) => {
+    const unit = profile.unit === "cm" ? "cm" : "in";
     let message = `🧵 Sui Dhaga Measurement Card\n`;
-    message += `Profile: ${activeProfile.profileName}\n`;
-    message += `Unit: ${activeProfile.unit || "inches"}\n`;
+    message += `Profile: ${profile.profileName}\n`;
+    message += `Unit: ${profile.unit || "inches"}\n`;
     message += `------------------------\n`;
-    rows.forEach(([label, val]) => {
-      message += `• ${label}: ${val}\n`;
-    });
-    if (activeProfile.notes) {
-      message += `\nTailor Notes: ${activeProfile.notes}\n`;
+    if (profile.chest) message += `• Chest / Bust: ${profile.chest} ${unit}\n`;
+    if (profile.waist) message += `• Waist: ${profile.waist} ${unit}\n`;
+    if (profile.hips) message += `• Hips: ${profile.hips} ${unit}\n`;
+    if (profile.shoulder) message += `• Shoulder Width: ${profile.shoulder} ${unit}\n`;
+    if (profile.sleeveLength) message += `• Arm / Sleeve: ${profile.sleeveLength} ${unit}\n`;
+    if (profile.shirtLength) message += `• Top / Shirt Length: ${profile.shirtLength} ${unit}\n`;
+    if (profile.trouserLength) message += `• Trouser Length: ${profile.trouserLength} ${unit}\n`;
+    if (profile.inseam) message += `• Inseam: ${profile.inseam} ${unit}\n`;
+    if (profile.neck) message += `• Collar / Neck: ${profile.neck} ${unit}\n`;
+    if (profile.notes) {
+      message += `\nTailor Notes: ${profile.notes}\n`;
     }
     message += `\nMeasured via Sui Dhaga Tailoring`;
 
@@ -69,21 +58,67 @@ export default function MeasurementsScreen() {
     }
   };
 
+  const handleEditProfile = (profile: MeasurementItem) => {
+    router.push({
+      pathname: "/measurements/new",
+      params: { editId: profile.id },
+    } as any);
+  };
+
+  const handleDeleteProfile = (profile: MeasurementItem) => {
+    const name = profile.profileName || "this person";
+    Alert.alert(
+      "Delete Measurement",
+      `Are you sure you want to delete measurements for ${name}?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteMeasurement(profile.id),
+        },
+      ]
+    );
+  };
+
   return (
     <MccScreenShell>
-      <MccHeader title="Measurements" showBack={true} hideRight={true} />
-      <View className="px-5 pb-8">
-        {/* Prominent Header matching customer tabs home */}
-        <View className="mb-4 mt-1">
-          <Text className="text-[22px] font-black text-brand-dark tracking-tight">
-            Measurements
-          </Text>
-          <Text className="mt-0.5 text-[13px] font-medium text-brand-gray">
-            Manage bespoke body dimensions & tailoring profiles
-          </Text>
-        </View>
+      {/* Top Bar with Back button on left, centered title and centered subtitle */}
+      <View className="px-4 pt-2 pb-3 bg-white border-b border-brand-border/40">
+        <View className="flex-row items-center justify-between">
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={() => router.back()}
+            className="h-10 w-10 items-center justify-center rounded-full bg-[#F8FAFC] border border-brand-border/60"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={22} color="#1A1D1F" />
+          </TouchableOpacity>
 
-        {measurements.length === 0 ? (
+          <View className="flex-1 items-center px-2">
+            <Text className="text-[20px] font-black text-brand-dark tracking-tight text-center">
+              Measurements
+            </Text>
+            <Text
+              className="mt-0.5 text-[12px] font-medium text-brand-gray text-center"
+              numberOfLines={1}
+            >
+              Manage bespoke body dimensions & tailoring profiles
+            </Text>
+          </View>
+
+          {/* Symmetrical right placeholder to keep text perfectly centered */}
+          <View className="h-10 w-10" />
+        </View>
+      </View>
+
+      <View className="px-5 pt-3 pb-8">
+        {isLoading ? (
+          <View className="py-14 items-center justify-center">
+            <ActivityIndicator size="large" color="#00949D" />
+          </View>
+        ) : measurements.length === 0 ? (
           <View className="py-10 items-center justify-center">
             <View className="w-20 h-20 rounded-full bg-[#00949D]/10 items-center justify-center mb-4">
               <Ionicons name="body-outline" size={38} color="#00949D" />
@@ -131,123 +166,52 @@ export default function MeasurementsScreen() {
           </View>
         ) : (
           <>
-            <MeasurementDiagram />
+            {/* Action Buttons above saved profiles */}
+            <View className="mb-4 flex-row gap-2.5">
+              <TouchableOpacity
+                onPress={() => router.push("/measurements/new" as never)}
+                activeOpacity={0.8}
+                className="flex-1 flex-row items-center justify-center rounded-xl border border-[#00949D] bg-[#00949D]/6 py-3 px-2 shadow-2xs"
+              >
+                <Ionicons name="add" size={18} color="#00949D" style={{ marginRight: 5 }} />
+                <Text className="text-[13px] font-bold text-[#00949D]">
+                  Create Another Profile
+                </Text>
+              </TouchableOpacity>
 
-            {/* Profiles Selector Pills */}
-            <View className="mt-4 mb-2">
-              <Text className="text-[12px] font-bold tracking-wider text-brand-gray uppercase mb-2">
-                Saved Fit Profiles
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-                {measurements.map((profile) => {
-                  const isSelected = activeProfile?.id === profile.id;
-                  return (
-                    <TouchableOpacity
-                      key={profile.id}
-                      onPress={() => setActiveProfile(profile)}
-                      className={`mr-2 flex-row items-center rounded-full px-3.5 py-2 border ${
-                        isSelected
-                          ? "bg-primary border-primary"
-                          : "bg-white border-brand-border"
-                      }`}
-                    >
-                      <Ionicons
-                        name="person-outline"
-                        size={13}
-                        color={isSelected ? "#FFFFFF" : "#6B7280"}
-                        style={{ marginRight: 5 }}
-                      />
-                      <Text
-                        className={`text-[12px] font-semibold ${
-                          isSelected ? "text-white" : "text-brand-dark"
-                        }`}
-                      >
-                        {profile.profileName}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-
-                <TouchableOpacity
-                  onPress={() => router.push("/measurements/new" as never)}
-                  className="mr-2 flex-row items-center rounded-full px-3.5 py-2 border border-dashed border-primary bg-primary/5"
-                >
-                  <Ionicons name="add" size={14} color="#078b87" style={{ marginRight: 4 }} />
-                  <Text className="text-[12px] font-bold text-primary">
-                    Create More
-                  </Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-
-            <View className="mt-2">
-              <SectionTitle
-                title={activeProfile?.profileName || "My Measurements"}
-                action="Details"
-                onActionPress={() => {
-                  if (activeProfile?.id) {
-                    router.push(`/measurements/${activeProfile.id}` as any);
-                  }
-                }}
-              />
-            </View>
-
-            {isLoading ? (
-              <View className="py-8 items-center justify-center">
-                <ActivityIndicator size="small" color="#FF6B6B" />
-              </View>
-            ) : (
-              <View className="rounded-2xl border border-brand-border bg-white px-4 py-3 shadow-xs">
-                {rows.length > 0 ? (
-                  rows.map(([label, value]) => (
-                    <InfoRow key={label} icon="radio-button-on" label={label} value={value} />
-                  ))
-                ) : (
-                  <Text className="text-[12px] text-brand-gray py-2 text-center italic">
-                    No individual dimensions entered yet for this profile.
-                  </Text>
-                )}
-
-                {activeProfile?.notes ? (
-                  <View className="mt-3 pt-3 border-t border-brand-border/60">
-                    <Text className="text-[11px] font-bold text-brand-dark uppercase tracking-wider mb-1">
-                      Tailor Notes
-                    </Text>
-                    <Text className="text-[12px] text-brand-gray leading-4 italic">
-                      &ldquo;{activeProfile.notes}&rdquo;
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            )}
-
-            {/* Action Buttons Row */}
-            <View className="mt-4 flex-row gap-2.5">
               <TouchableOpacity
                 onPress={() => setShowSizeGuide(true)}
-                className="h-[46px] flex-1 items-center justify-center rounded-xl border border-primary bg-white"
+                activeOpacity={0.8}
+                className="flex-1 flex-row items-center justify-center rounded-xl border border-brand-border bg-[#F8FAFC] py-3 px-2"
               >
-                <Text className="text-[13px] font-semibold text-primary">
-                  📏 Size Guide
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleShareCard}
-                className="h-[46px] flex-1 items-center justify-center rounded-xl border border-brand-border bg-[#F8FAFC]"
-              >
-                <Text className="text-[13px] font-semibold text-brand-dark">
-                  📲 Share Card
+                <Ionicons name="book-outline" size={16} color="#475569" style={{ marginRight: 6 }} />
+                <Text className="text-[13px] font-semibold text-[#475569]">
+                  Standard Size Guide
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <View className="mt-2.5">
-              <MccButton
-                title="+ Create More Profiles"
-                onPress={() => router.push("/measurements/new" as never)}
+            {/* Saved Profiles Section Title */}
+            <View className="mb-3">
+              <Text className="text-[14px] font-bold text-brand-dark">
+                Saved Profiles ({measurements.length})
+              </Text>
+            </View>
+
+            {/* List of measurement cards mimicking MainTailorCard & MainOrderCard */}
+            {measurements.map((profile, idx) => (
+              <MeasurementCard
+                key={profile.id}
+                profile={profile}
+                index={idx}
+                onEdit={handleEditProfile}
+                onDelete={handleDeleteProfile}
+                onShare={handleShareProfile}
+                onPress={(p) => {
+                  router.push(`/measurements/${p.id}` as any);
+                }}
               />
-            </View>
+            ))}
           </>
         )}
       </View>

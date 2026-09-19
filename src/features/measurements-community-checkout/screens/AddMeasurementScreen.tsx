@@ -171,7 +171,7 @@ export default function AddMeasurementScreen() {
     try {
       const payload = {
         profileName: finalProfileName,
-        unit: unit === "in" ? "inches" : "cm",
+        unit: (unit === "in" ? "inches" : "cm") as "inches" | "cm",
         chest: parseFloat(chest) || undefined,
         waist: parseFloat(waist) || undefined,
         hips: parseFloat(hips) || undefined,
@@ -475,38 +475,49 @@ export default function AddMeasurementScreen() {
             </View>
 
             {/* Measurement Unit Selector in Dimensions Stage */}
-            <View className="mb-4 flex-row items-center justify-between rounded-2xl border border-brand-border bg-white p-3.5 shadow-2xs">
-              <View className="flex-1 pr-2">
-                <Text className="text-[13px] font-bold text-brand-dark">Measurement Unit</Text>
-                <Text className="text-[11px] text-brand-gray">All inputs automatically convert</Text>
+            <View className="mb-4 rounded-2xl border border-brand-border bg-white p-4 shadow-2xs">
+              <View className="flex-row items-center justify-between mb-3">
+                <View className="flex-row items-center">
+                  <View className="w-8 h-8 rounded-xl bg-[#00949D]/10 items-center justify-center mr-2.5">
+                    <Ionicons name="resize-outline" size={16} color="#00949D" />
+                  </View>
+                  <View>
+                    <Text className="text-[13px] font-bold text-brand-dark">Measurement Unit</Text>
+                    <Text className="text-[11px] text-brand-gray">Auto-converts values when switched</Text>
+                  </View>
+                </View>
               </View>
-              <View className="flex-row rounded-xl border border-brand-border bg-[#F8FAFC] p-1 w-[130px]">
+
+              {/* Styled Full-Width Segmented Control */}
+              <View className="flex-row rounded-xl border border-brand-border/70 bg-[#F1F5F9] p-1">
                 <TouchableOpacity
                   onPress={() => handleUnitToggle("in")}
-                  className={`flex-1 items-center justify-center rounded-lg py-1.5 ${
-                    unit === "in" ? "bg-[#00949D] shadow-2xs" : "bg-transparent"
+                  activeOpacity={0.85}
+                  className={`flex-1 flex-row items-center justify-center rounded-lg py-2.5 ${
+                    unit === "in" ? "bg-[#00949D] shadow-xs" : "bg-transparent"
                   }`}
                 >
                   <Text
-                    className={`text-[12px] font-bold ${
-                      unit === "in" ? "text-white" : "text-brand-dark"
+                    className={`text-[13px] font-bold ${
+                      unit === "in" ? "text-white" : "text-[#475569]"
                     }`}
                   >
-                    Inches
+                    Inches (in)
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleUnitToggle("cm")}
-                  className={`flex-1 items-center justify-center rounded-lg py-1.5 ${
-                    unit === "cm" ? "bg-[#00949D] shadow-2xs" : "bg-transparent"
+                  activeOpacity={0.85}
+                  className={`flex-1 flex-row items-center justify-center rounded-lg py-2.5 ${
+                    unit === "cm" ? "bg-[#00949D] shadow-xs" : "bg-transparent"
                   }`}
                 >
                   <Text
-                    className={`text-[12px] font-bold ${
-                      unit === "cm" ? "text-white" : "text-brand-dark"
+                    className={`text-[13px] font-bold ${
+                      unit === "cm" ? "text-white" : "text-[#475569]"
                     }`}
                   >
-                    CM
+                    Centimeters (cm)
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -515,7 +526,9 @@ export default function AddMeasurementScreen() {
             {/* Quick Fill Presets */}
             <View className="mb-5 rounded-2xl border border-dashed border-[#CBD5E1] bg-[#F8FAFC] p-3">
               <View className="flex-row items-center justify-between mb-2">
-                <Text className="text-[11px] font-bold text-brand-dark">⚡ Quick Baseline Presets ({unit}):</Text>
+                <Text className="text-[11px] font-bold text-brand-dark">
+                  ⚡ Quick Baseline Presets ({unit === "in" ? "Inches" : "CM"}):
+                </Text>
                 <Text className="text-[10px] text-brand-gray">Tap to auto-fill</Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
@@ -534,31 +547,33 @@ export default function AddMeasurementScreen() {
             {/* Upper Body Card */}
             <View className="mb-4 rounded-2xl border border-brand-border bg-white p-4 shadow-2xs">
               <Text className="mb-3 text-[12px] font-bold text-brand-dark uppercase tracking-wider">
-                Upper Torso & Chest ({unit})
+                Upper Torso & Chest ({unit === "in" ? "Inches" : "CM"})
               </Text>
               <View className="flex-row gap-3 mb-3">
                 <View className="flex-1">
                   <Text className="mb-1 text-[11px] font-medium text-brand-gray">Bust / Chest</Text>
-                  <View className="rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
+                  <View className="flex-row items-center rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
                     <TextInput
                       value={chest}
                       onChangeText={setChest}
                       keyboardType="numeric"
                       placeholder="e.g. 36"
-                      className="text-[14px] font-bold text-brand-dark"
+                      className="flex-1 text-[14px] font-bold text-brand-dark"
                     />
+                    <Text className="text-[11px] font-bold text-[#94A3B8] ml-1">{unit}</Text>
                   </View>
                 </View>
                 <View className="flex-1">
                   <Text className="mb-1 text-[11px] font-medium text-brand-gray">Natural Waist</Text>
-                  <View className="rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
+                  <View className="flex-row items-center rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
                     <TextInput
                       value={waist}
                       onChangeText={setWaist}
                       keyboardType="numeric"
                       placeholder="e.g. 30"
-                      className="text-[14px] font-bold text-brand-dark"
+                      className="flex-1 text-[14px] font-bold text-brand-dark"
                     />
+                    <Text className="text-[11px] font-bold text-[#94A3B8] ml-1">{unit}</Text>
                   </View>
                 </View>
               </View>
@@ -566,26 +581,28 @@ export default function AddMeasurementScreen() {
               <View className="flex-row gap-3">
                 <View className="flex-1">
                   <Text className="mb-1 text-[11px] font-medium text-brand-gray">Hips / Seat</Text>
-                  <View className="rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
+                  <View className="flex-row items-center rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
                     <TextInput
                       value={hips}
                       onChangeText={setHips}
                       keyboardType="numeric"
                       placeholder="e.g. 40"
-                      className="text-[14px] font-bold text-brand-dark"
+                      className="flex-1 text-[14px] font-bold text-brand-dark"
                     />
+                    <Text className="text-[11px] font-bold text-[#94A3B8] ml-1">{unit}</Text>
                   </View>
                 </View>
                 <View className="flex-1">
                   <Text className="mb-1 text-[11px] font-medium text-brand-gray">Shoulder Width</Text>
-                  <View className="rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
+                  <View className="flex-row items-center rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
                     <TextInput
                       value={shoulder}
                       onChangeText={setShoulder}
                       keyboardType="numeric"
                       placeholder="e.g. 15"
-                      className="text-[14px] font-bold text-brand-dark"
+                      className="flex-1 text-[14px] font-bold text-brand-dark"
                     />
+                    <Text className="text-[11px] font-bold text-[#94A3B8] ml-1">{unit}</Text>
                   </View>
                 </View>
               </View>
@@ -594,31 +611,33 @@ export default function AddMeasurementScreen() {
             {/* Lengths & Sleeves Card */}
             <View className="mb-6 rounded-2xl border border-brand-border bg-white p-4 shadow-2xs">
               <Text className="mb-3 text-[12px] font-bold text-brand-dark uppercase tracking-wider">
-                Lengths & Sleeves ({unit})
+                Lengths & Sleeves ({unit === "in" ? "Inches" : "CM"})
               </Text>
               <View className="flex-row gap-3 mb-3">
                 <View className="flex-1">
                   <Text className="mb-1 text-[11px] font-medium text-brand-gray">Arm / Sleeve Length</Text>
-                  <View className="rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
+                  <View className="flex-row items-center rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
                     <TextInput
                       value={sleeveLength}
                       onChangeText={setSleeveLength}
                       keyboardType="numeric"
                       placeholder="e.g. 21"
-                      className="text-[14px] font-bold text-brand-dark"
+                      className="flex-1 text-[14px] font-bold text-brand-dark"
                     />
+                    <Text className="text-[11px] font-bold text-[#94A3B8] ml-1">{unit}</Text>
                   </View>
                 </View>
                 <View className="flex-1">
                   <Text className="mb-1 text-[11px] font-medium text-brand-gray">Shirt / Top Length</Text>
-                  <View className="rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
+                  <View className="flex-row items-center rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
                     <TextInput
                       value={shirtLength}
                       onChangeText={setShirtLength}
                       keyboardType="numeric"
                       placeholder="e.g. 40"
-                      className="text-[14px] font-bold text-brand-dark"
+                      className="flex-1 text-[14px] font-bold text-brand-dark"
                     />
+                    <Text className="text-[11px] font-bold text-[#94A3B8] ml-1">{unit}</Text>
                   </View>
                 </View>
               </View>
@@ -626,26 +645,28 @@ export default function AddMeasurementScreen() {
               <View className="flex-row gap-3 mb-3">
                 <View className="flex-1">
                   <Text className="mb-1 text-[11px] font-medium text-brand-gray">Trouser / Bottom Length</Text>
-                  <View className="rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
+                  <View className="flex-row items-center rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
                     <TextInput
                       value={trouserLength}
                       onChangeText={setTrouserLength}
                       keyboardType="numeric"
                       placeholder="e.g. 38"
-                      className="text-[14px] font-bold text-brand-dark"
+                      className="flex-1 text-[14px] font-bold text-brand-dark"
                     />
+                    <Text className="text-[11px] font-bold text-[#94A3B8] ml-1">{unit}</Text>
                   </View>
                 </View>
                 <View className="flex-1">
                   <Text className="mb-1 text-[11px] font-medium text-brand-gray">Inseam (Inner Leg)</Text>
-                  <View className="rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
+                  <View className="flex-row items-center rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
                     <TextInput
                       value={inseam}
                       onChangeText={setInseam}
                       keyboardType="numeric"
                       placeholder="e.g. 28"
-                      className="text-[14px] font-bold text-brand-dark"
+                      className="flex-1 text-[14px] font-bold text-brand-dark"
                     />
+                    <Text className="text-[11px] font-bold text-[#94A3B8] ml-1">{unit}</Text>
                   </View>
                 </View>
               </View>
@@ -653,14 +674,15 @@ export default function AddMeasurementScreen() {
               <View className="flex-row gap-3">
                 <View className="flex-1">
                   <Text className="mb-1 text-[11px] font-medium text-brand-gray">Neck / Collar</Text>
-                  <View className="rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
+                  <View className="flex-row items-center rounded-xl border border-brand-border px-3 py-2 bg-[#FAFAF9]">
                     <TextInput
                       value={neck}
                       onChangeText={setNeck}
                       keyboardType="numeric"
                       placeholder="e.g. 14.5"
-                      className="text-[14px] font-bold text-brand-dark"
+                      className="flex-1 text-[14px] font-bold text-brand-dark"
                     />
+                    <Text className="text-[11px] font-bold text-[#94A3B8] ml-1">{unit}</Text>
                   </View>
                 </View>
                 <View className="flex-1 justify-center pt-4">

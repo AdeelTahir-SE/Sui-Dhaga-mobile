@@ -51,7 +51,6 @@ export default function CreatePostScreen() {
     "#BridalWear",
   ]);
   const [customTagInput, setCustomTagInput] = useState("");
-  const [visibility, setVisibility] = useState<"public" | "followers">("public");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handlePickFromGallery = async () => {
@@ -144,7 +143,15 @@ export default function CreatePostScreen() {
   };
 
   return (
-    <MccScreenShell header={<MccHeader title="Create Post" showBack />}>
+    <MccScreenShell
+      header={
+        <MccHeader
+          title="Create Post"
+          showBack
+          titleClassName="text-[22px] font-bold text-brand-dark"
+        />
+      }
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
@@ -168,7 +175,7 @@ export default function CreatePostScreen() {
             <View className="flex-row items-center rounded-full border border-primary/20 bg-primary-50 px-2.5 py-1">
               <Ionicons name="globe-outline" size={12} color="#14919B" />
               <Text className="ml-1 text-[10px] font-semibold text-primary">
-                {visibility === "public" ? "Public" : "Followers"}
+                Public Post
               </Text>
             </View>
           </View>
@@ -388,86 +395,12 @@ export default function CreatePostScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Visibility */}
-          <SectionTitle title="Who can see this?" />
-          <View className="mb-6 flex-row gap-3">
-            <TouchableOpacity
-              onPress={() => setVisibility("public")}
-              activeOpacity={0.8}
-              className={`flex-1 rounded-xl p-3.5 border ${
-                visibility === "public"
-                  ? "border-primary bg-primary-50/40"
-                  : "border-brand-border bg-white"
-              }`}
-            >
-              <View className="flex-row items-center justify-between">
-                <Ionicons
-                  name="globe-outline"
-                  size={18}
-                  color={visibility === "public" ? "#14919B" : "#6F767E"}
-                />
-                <View
-                  className={`h-4 w-4 rounded-full border items-center justify-center ${
-                    visibility === "public"
-                      ? "border-primary bg-primary"
-                      : "border-brand-border"
-                  }`}
-                >
-                  {visibility === "public" && (
-                    <View className="h-1.5 w-1.5 rounded-full bg-white" />
-                  )}
-                </View>
-              </View>
-              <Text className="mt-2 text-[12px] font-bold text-brand-dark">
-                Public Feed
-              </Text>
-              <Text className="mt-0.5 text-[10px] text-brand-gray">
-                Visible to everyone in Sui Dhaga
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setVisibility("followers")}
-              activeOpacity={0.8}
-              className={`flex-1 rounded-xl p-3.5 border ${
-                visibility === "followers"
-                  ? "border-primary bg-primary-50/40"
-                  : "border-brand-border bg-white"
-              }`}
-            >
-              <View className="flex-row items-center justify-between">
-                <Ionicons
-                  name="people-outline"
-                  size={18}
-                  color={visibility === "followers" ? "#14919B" : "#6F767E"}
-                />
-                <View
-                  className={`h-4 w-4 rounded-full border items-center justify-center ${
-                    visibility === "followers"
-                      ? "border-primary bg-primary"
-                      : "border-brand-border"
-                  }`}
-                >
-                  {visibility === "followers" && (
-                    <View className="h-1.5 w-1.5 rounded-full bg-white" />
-                  )}
-                </View>
-              </View>
-              <Text className="mt-2 text-[12px] font-bold text-brand-dark">
-                Followers Only
-              </Text>
-              <Text className="mt-0.5 text-[10px] text-brand-gray">
-                Visible only to your followers
-              </Text>
-            </TouchableOpacity>
-          </View>
-
           {/* Share Button */}
           <TouchableOpacity
             onPress={handlePost}
             disabled={isSubmitting}
             activeOpacity={0.85}
-            className="h-[54px] flex-row items-center justify-center rounded-2xl bg-primary shadow-md shadow-primary/30"
+            className="mt-6 h-[54px] flex-row items-center justify-center rounded-2xl bg-primary shadow-md shadow-primary/30"
           >
             {isSubmitting ? (
               <ActivityIndicator color="#FFFFFF" />

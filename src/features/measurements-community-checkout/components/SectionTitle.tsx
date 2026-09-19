@@ -4,12 +4,24 @@ type SectionTitleProps = {
   title: string;
   action?: string;
   onActionPress?: () => void;
+  titleClassName?: string;
 };
 
-export function SectionTitle({ title, action, onActionPress }: SectionTitleProps) {
+export function SectionTitle({
+  title,
+  action,
+  onActionPress,
+  titleClassName,
+}: SectionTitleProps) {
   return (
     <View className="mb-3 mt-5 flex-row items-center justify-between">
-      <Text className="text-[13px] font-semibold text-brand-dark">{title}</Text>
+      <Text
+        className={
+          titleClassName || "text-[15px] font-bold text-brand-dark"
+        }
+      >
+        {title}
+      </Text>
       {action ? (
         onActionPress ? (
           <TouchableOpacity onPress={onActionPress} activeOpacity={0.7}>

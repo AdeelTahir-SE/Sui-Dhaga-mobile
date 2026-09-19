@@ -34,7 +34,13 @@ export default function CommunityScreen() {
 
   return (
     <MccScreenShell
-      header={<MccHeader title="Community" showBack />}
+      header={
+        <MccHeader
+          title="Community"
+          showBack
+          titleClassName="text-[22px] font-bold text-brand-dark"
+        />
+      }
       floatingAction={
         <TouchableOpacity
           onPress={() => router.push("/community/create" as any)}
@@ -43,7 +49,7 @@ export default function CommunityScreen() {
           activeOpacity={0.85}
           style={{
             position: "absolute",
-            left: 20,
+            right: 20,
             bottom: insets.bottom + 16,
             width: 56,
             height: 56,
