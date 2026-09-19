@@ -254,7 +254,10 @@ export default function AppointmentsScreen() {
         {/* Active Filter Pill if Filter Applied */}
         {activeFilter !== null && (
           <View className="flex-row items-center mb-3.5">
-            <View className="flex-row items-center bg-[#E0F7F7] px-3 py-1.5 rounded-full">
+            <View
+              className="flex-row items-center bg-[#E0F7F7] px-3 py-1.5 rounded-full"
+              style={{ borderWidth: 1, borderColor: "#B2EBF2" }}
+            >
               <Text className="text-[12px] font-semibold text-[#0D7377] mr-1.5">
                 Status: {activeFilterOption?.badge || activeFilter}
               </Text>
@@ -270,7 +273,10 @@ export default function AppointmentsScreen() {
 
         {/* Error Alert */}
         {error && !isLoading ? (
-          <View className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4">
+          <View
+            className="mb-4 rounded-xl bg-red-50 p-4"
+            style={{ borderWidth: 1, borderColor: "#FECACA" }}
+          >
             <View className="flex-row items-center">
               <Ionicons name="alert-circle" size={20} color="#EF4444" />
               <Text className="ml-2 flex-1 text-[13px] font-semibold text-red-700">
@@ -338,7 +344,10 @@ export default function AppointmentsScreen() {
                 );
               })
             ) : (
-              <View className="items-center justify-center rounded-2xl border border-dashed border-brand-border bg-gray-50/60 py-12 px-4 shadow-xs my-2">
+              <View
+                className="items-center justify-center rounded-2xl bg-gray-50/60 py-12 px-4 shadow-xs my-2"
+                style={{ borderWidth: 1, borderColor: "#E2E8F0", borderStyle: "dashed" }}
+              >
                 <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-3">
                   <Ionicons name="calendar-outline" size={30} color="#14919B" />
                 </View>
@@ -380,7 +389,7 @@ export default function AppointmentsScreen() {
         )}
       </ScrollView>
 
-      {/* Modal: Appointment Filter (Identical styling to Orders filter modal) */}
+      {/* Modal: Appointment Filter */}
       <Modal
         visible={isFilterModalVisible}
         animationType="slide"
@@ -434,63 +443,90 @@ export default function AppointmentsScreen() {
                   return (
                     <TouchableOpacity
                       key={opt.label}
-                      activeOpacity={0.7}
+                      activeOpacity={0.75}
                       onPress={() => setSelectedFilter(opt.value)}
-                      className={`flex-row items-center justify-between p-3.5 rounded-2xl border transition-all ${
-                        isSelected
-                          ? "border-[#14919B] bg-[#E0F7F7]/30"
-                          : "border-slate-100 bg-white active:bg-slate-50"
-                      }`}
+                      className="flex-row items-center justify-between p-3.5 rounded-xl"
+                      style={{
+                        backgroundColor: isSelected ? "#F0FAFA" : "#FFFFFF",
+                        borderWidth: isSelected ? 1.5 : 1,
+                        borderColor: isSelected ? "#14919B" : "#E2E8F0",
+                      }}
                     >
                       <View className="flex-row items-center flex-1 mr-3">
                         <View
-                          className={`h-9 w-9 items-center justify-center rounded-xl mr-3 ${
-                            isSelected ? "bg-[#14919B]" : "bg-slate-100"
-                          }`}
+                          className="h-10 w-10 items-center justify-center rounded-xl mr-3"
+                          style={{
+                            backgroundColor: isSelected ? "#14919B" : "#F0FAFA",
+                          }}
                         >
                           <Ionicons
                             name={opt.icon}
-                            size={18}
-                            color={isSelected ? "#FFFFFF" : "#64748B"}
+                            size={19}
+                            color={isSelected ? "#FFFFFF" : "#14919B"}
                           />
                         </View>
                         <View className="flex-1">
+                          <View className="flex-row items-center">
+                            <Text
+                              className={`text-[14px] font-bold ${
+                                isSelected ? "text-[#14919B]" : "text-brand-dark"
+                              }`}
+                            >
+                              {opt.label}
+                            </Text>
+                            <View
+                              className="ml-2 px-2 py-0.5 rounded-md"
+                              style={{
+                                backgroundColor: isSelected
+                                  ? "#E0F7F7"
+                                  : "#F1F5F9",
+                              }}
+                            >
+                              <Text
+                                className={`text-[10px] font-bold ${
+                                  isSelected
+                                    ? "text-[#0D7377]"
+                                    : "text-slate-500"
+                                }`}
+                              >
+                                {opt.badge}
+                              </Text>
+                            </View>
+                          </View>
                           <Text
-                            className={`text-[14px] font-bold ${
-                              isSelected ? "text-[#0D7377]" : "text-brand-dark"
+                            className={`text-[11.5px] mt-0.5 ${
+                              isSelected ? "text-[#0D7377]" : "text-brand-gray"
                             }`}
                           >
-                            {opt.label}
-                          </Text>
-                          <Text className="text-[11.5px] font-medium text-slate-400 mt-0.5">
                             {opt.desc}
                           </Text>
                         </View>
                       </View>
 
                       <View className="flex-row items-center gap-2.5">
-                        <View
-                          className={`px-2 py-0.5 rounded-full ${
-                            isSelected ? "bg-[#14919B]" : "bg-slate-100"
+                        <Text
+                          className={`text-[11px] font-bold ${
+                            isSelected ? "text-[#14919B]" : "text-slate-400"
                           }`}
                         >
-                          <Text
-                            className={`text-[11px] font-bold ${
-                              isSelected ? "text-white" : "text-slate-600"
-                            }`}
-                          >
-                            {count}
-                          </Text>
-                        </View>
+                          {count} {count === 1 ? "visit" : "visits"}
+                        </Text>
                         <View
-                          className={`h-5 w-5 rounded-full border items-center justify-center ${
-                            isSelected
-                              ? "border-[#14919B] bg-[#14919B]"
-                              : "border-slate-300 bg-white"
-                          }`}
+                          className="h-5 w-5 rounded-full items-center justify-center"
+                          style={{
+                            backgroundColor: isSelected
+                              ? "#14919B"
+                              : "#FFFFFF",
+                            borderWidth: isSelected ? 0 : 1.5,
+                            borderColor: "#CBD5E1",
+                          }}
                         >
                           {isSelected && (
-                            <View className="h-2 w-2 rounded-full bg-white" />
+                            <Ionicons
+                              name="checkmark"
+                              size={12}
+                              color="#FFFFFF"
+                            />
                           )}
                         </View>
                       </View>
@@ -501,13 +537,20 @@ export default function AppointmentsScreen() {
             </ScrollView>
 
             {/* Bottom Actions */}
-            <View className="flex-row items-center gap-3 pt-3 border-t border-slate-100">
+            <View
+              className="mt-3.5 pt-3 pb-1 flex flex-row items-center justify-center gap-3"
+              style={{ borderTopWidth: 1, borderTopColor: "#E2E8F0" }}
+            >
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => setSelectedFilter(null)}
-                className="flex-1 items-center justify-center py-3.5 rounded-xl border border-slate-200 active:bg-slate-50"
+                onPress={() => {
+                  setSelectedFilter(null);
+                  setActiveFilter(null);
+                }}
+                className="h-[50px] px-5 flex-1 items-center justify-center rounded-xl bg-white shadow-xs"
+                style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
               >
-                <Text className="text-[13.5px] font-bold text-slate-600">
+                <Text className="text-[13px] font-bold text-brand-gray">
                   Reset
                 </Text>
               </TouchableOpacity>
@@ -517,9 +560,9 @@ export default function AppointmentsScreen() {
                   setActiveFilter(selectedFilter);
                   setIsFilterModalVisible(false);
                 }}
-                className="flex-2 items-center justify-center py-3.5 rounded-xl bg-[#14919B] active:bg-[#0D7377] shadow-sm"
+                className="h-[50px] flex-1 items-center justify-center rounded-xl bg-[#14919B] active:bg-[#0D7377] shadow-sm px-4"
               >
-                <Text className="text-[13.5px] font-bold text-white">
+                <Text className="text-[14px] font-bold text-white">
                   Apply Filter ({modalFilteredCount})
                 </Text>
               </TouchableOpacity>

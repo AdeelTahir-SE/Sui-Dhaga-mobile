@@ -88,6 +88,8 @@ export default function PostDetailsScreen() {
       } else {
         setPosts(combined);
         setActivePostId(combined[0].id);
+        // Pre-cache media for initial designs
+        combined.slice(0, 5).forEach((p) => prefetchPostMedia(p));
       }
     } catch (err: any) {
       setError(err?.message || "Failed to load community designs");
@@ -99,6 +101,16 @@ export default function PostDetailsScreen() {
   useEffect(() => {
     loadPostsFeed();
   }, [loadPostsFeed]);
+
+  // Proactively cache upcoming videos and images as user views posts
+  useEffect(() => {
+    if (!activePostId || posts.length === 0) return;
+    const currentIdx = posts.findIndex((p) => p.id === activePostId);
+    if (currentIdx !== -1) {
+      const upcoming = posts.slice(currentIdx + 1, currentIdx + 4);
+      upcoming.forEach((p) => prefetchPostMedia(p));
+    }
+  }, [activePostId, posts]);
 
   // Track currently viewable reel item
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
