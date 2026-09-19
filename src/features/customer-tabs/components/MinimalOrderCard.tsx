@@ -143,23 +143,6 @@ export function MinimalOrderCard({
           </View>
         )}
 
-        {/* Status Pill Overlaid Top-Left */}
-        <View
-          style={[
-            styles.statusPill,
-            { backgroundColor: statusBadge.bg, borderColor: statusBadge.border },
-          ]}
-        >
-          <Ionicons name={statusBadge.icon} size={10} color={statusBadge.text} />
-          <Text style={[styles.statusPillText, { color: statusBadge.text }]}>
-            {statusBadge.label}
-          </Text>
-        </View>
-
-        {/* Order ID Overlaid Top-Right */}
-        <View style={styles.orderIdBadge}>
-          <Text style={styles.orderIdText}>#{displayId}</Text>
-        </View>
       </View>
 
       {/* Card Content */}

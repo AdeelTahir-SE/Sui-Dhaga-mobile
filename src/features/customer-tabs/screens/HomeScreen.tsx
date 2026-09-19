@@ -290,21 +290,21 @@ export default function HomeScreen() {
         <TrendingCommunitySection />
 
         {/* Section: Your Pending Orders */}
-        <View className="mt-2">
+        <View className="mt-3 pb-2">
           <SectionTitle
             title="Pending Orders"
             action="View All"
             onPressAction={() => router.push("/orders" as never)}
           />
           {ordersLoading && orders.length === 0 ? (
-            <View className="py-6 items-center justify-center rounded-xl bg-gray-50 border border-gray-100 my-1">
+            <View className="py-8 px-4 items-center justify-center rounded-xl bg-gray-50 border border-gray-100 my-1">
               <ActivityIndicator size="small" color="#14919B" />
               <Text className="mt-2 text-[12px] font-medium text-brand-gray">
                 Checking pending orders...
               </Text>
             </View>
           ) : pendingOrders.length === 0 ? (
-            <View className="py-6 px-4 items-center justify-center rounded-xl border border-dashed border-brand-border bg-gray-50/50 my-1">
+            <View className="py-8 px-4 items-center justify-center rounded-xl border border-dashed border-brand-border bg-gray-50/50 my-1">
               <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-50 mb-2">
                 <Ionicons name="bag-handle-outline" size={20} color="#14919B" />
               </View>
@@ -329,7 +329,7 @@ export default function HomeScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingRight: 20, gap: 12, paddingVertical: 3 }}
+              contentContainerStyle={{ paddingRight: 20, gap: 12, paddingVertical: 8 }}
               className="-mx-5 px-5"
             >
               {pendingOrders.map((order, idx) => {
@@ -480,21 +480,21 @@ export default function HomeScreen() {
         </View>
 
         {/* Section: Upcoming Appointments */}
-        <View className="mt-2">
+        <View className="mt-3 pb-2">
           <SectionTitle
             title="Upcoming Appointments"
             action="View All"
             onPressAction={() => router.push("/appointments" as never)}
           />
           {appointmentsLoading && appointments.length === 0 ? (
-            <View className="py-6 items-center justify-center rounded-xl bg-gray-50 border border-gray-100 my-1">
+            <View className="py-8 px-4 items-center justify-center rounded-xl bg-gray-50 border border-gray-100 my-1">
               <ActivityIndicator size="small" color="#14919B" />
               <Text className="mt-2 text-[12px] font-medium text-brand-gray">
                 Checking appointments...
               </Text>
             </View>
           ) : upcomingAppointments.length === 0 ? (
-            <View className="py-6 px-4 items-center justify-center rounded-xl border border-dashed border-brand-border bg-gray-50/50 my-1">
+            <View className="py-8 px-4 items-center justify-center rounded-xl border border-dashed border-brand-border bg-gray-50/50 my-1">
               <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-50 mb-2">
                 <Ionicons name="calendar-outline" size={20} color="#14919B" />
               </View>
@@ -519,7 +519,7 @@ export default function HomeScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingRight: 20, gap: 12, paddingVertical: 3 }}
+              contentContainerStyle={{ paddingRight: 20, gap: 12, paddingVertical: 8 }}
               className="-mx-5 px-5"
             >
               {upcomingAppointments.map((apt, idx) => {

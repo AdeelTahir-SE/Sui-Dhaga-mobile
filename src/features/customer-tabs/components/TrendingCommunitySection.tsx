@@ -126,7 +126,7 @@ export function TrendingCommunitySection({
   };
 
   return (
-    <View className="mt-2">
+    <View className="mt-3 pb-2">
       {/* Section Header */}
       <SectionTitle
         title={title}
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingRight: 20,
     gap: 12,
-    paddingVertical: 2,
+    paddingVertical: 8,
   },
   card: {
     width: 220,
@@ -557,9 +557,15 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   loadingContainer: {
-    paddingVertical: 28,
+    paddingVertical: 32,
+    paddingHorizontal: 16,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    marginVertical: 4,
   },
   loadingText: {
     marginTop: 8,

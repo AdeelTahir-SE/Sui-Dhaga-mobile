@@ -23,7 +23,7 @@ import {
   royalDesignImages,
 } from "../constants/designStudioAssets";
 
-const skinTexture = require("@/assets/texture/skin-texture.png");
+const whiteTexture = require("@/assets/texture/white-texture.png");
 const aiAssistantIcon = require("@/assets/illustrations/customer-tabs/home/ai-assistant-icon.png");
 const aiAssistantIcon2 = require("@/assets/illustrations/customer-tabs/home/image-ai-assistant.png");
 
@@ -502,11 +502,11 @@ export default function AiChatScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#FAF8F5" }}>
+    <View style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
       {/* Background Texture */}
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         <RNImage
-          source={skinTexture}
+          source={whiteTexture}
           resizeMode="repeat"
           style={[StyleSheet.absoluteFill, { width: "100%", height: "100%", opacity: 0.7 }]}
         />
@@ -545,7 +545,7 @@ export default function AiChatScreen() {
               width: 38,
               height: 38,
               borderRadius: 19,
-              backgroundColor: "#F8F6F0",
+              backgroundColor: "#FFFFFF",
               borderWidth: 1,
               borderColor: "#EAE5DD",
               alignItems: "center",
@@ -1356,7 +1356,7 @@ export default function AiChatScreen() {
             style={{
               paddingHorizontal: 16,
               paddingBottom: 8,
-              backgroundColor: "#FAF8F5",
+              backgroundColor: "#FFFFFF",
             }}
           >
             <View
@@ -1393,7 +1393,7 @@ export default function AiChatScreen() {
                   width: 22,
                   height: 22,
                   borderRadius: 11,
-                  backgroundColor: "#F1EEE9",
+                  backgroundColor: "#F3F4F6",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -1410,7 +1410,7 @@ export default function AiChatScreen() {
             paddingHorizontal: 16,
             paddingTop: 8,
             paddingBottom: Math.max(insets.bottom, 12),
-            backgroundColor: "#FAF8F5",
+            backgroundColor: "#FFFFFF",
           }}
         >
           <View
@@ -1443,7 +1443,7 @@ export default function AiChatScreen() {
                 borderRadius: 18,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "#F8F6F0",
+                backgroundColor: "#F3F4F6",
                 marginBottom: 2,
               }}
             >

@@ -114,24 +114,6 @@ export function MinimalAppointmentCard({
           )}
         </View>
 
-        {/* Status Pill Overlaid Top-Left */}
-        <View
-          style={[
-            styles.statusPill,
-            { backgroundColor: statusBadge.bg, borderColor: statusBadge.border },
-          ]}
-        >
-          <Ionicons name={statusBadge.icon} size={10} color={statusBadge.text} />
-          <Text style={[styles.statusPillText, { color: statusBadge.text }]}>
-            {statusBadge.label}
-          </Text>
-        </View>
-
-        {/* Fitting / Consultation badge Overlaid Top-Right */}
-        <View style={styles.serviceBadge}>
-          <Ionicons name="cut-outline" size={10} color="#475569" />
-          <Text style={styles.serviceBadgeText}>Fitting</Text>
-        </View>
       </View>
 
       {/* Card Content */}
