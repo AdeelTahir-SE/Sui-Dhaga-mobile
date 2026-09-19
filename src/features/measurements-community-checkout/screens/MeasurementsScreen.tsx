@@ -41,22 +41,12 @@ export default function MeasurementsScreen() {
   if (activeProfile?.chest) rows.push(["Bust / Chest", `${activeProfile.chest} ${unit}`]);
   if (activeProfile?.waist) rows.push(["Waist", `${activeProfile.waist} ${unit}`]);
   if (activeProfile?.hips) rows.push(["Hips", `${activeProfile.hips} ${unit}`]);
-  if (activeProfile?.shoulder) rows.push(["Shoulder (Teera)", `${activeProfile.shoulder} ${unit}`]);
+  if (activeProfile?.shoulder) rows.push(["Shoulder Width", `${activeProfile.shoulder} ${unit}`]);
   if (activeProfile?.sleeveLength) rows.push(["Arm / Sleeve Length", `${activeProfile.sleeveLength} ${unit}`]);
-  if (activeProfile?.shirtLength) rows.push(["Top / Kurti Length", `${activeProfile.shirtLength} ${unit}`]);
+  if (activeProfile?.shirtLength) rows.push(["Top / Shirt Length", `${activeProfile.shirtLength} ${unit}`]);
   if (activeProfile?.trouserLength) rows.push(["Trouser / Bottom Length", `${activeProfile.trouserLength} ${unit}`]);
-  if (activeProfile?.inseam) rows.push(["Inseam", `${activeProfile.inseam} ${unit}`]);
+  if (activeProfile?.inseam) rows.push(["Inseam (Inner Leg)", `${activeProfile.inseam} ${unit}`]);
   if (activeProfile?.neck) rows.push(["Collar / Neck", `${activeProfile.neck} ${unit}`]);
-
-  // Fallback if empty profile
-  if (rows.length === 0) {
-    rows.push(["Bust / Chest", `36 ${unit}`]);
-    rows.push(["Waist", `30 ${unit}`]);
-    rows.push(["Hips", `40 ${unit}`]);
-    rows.push(["Shoulder", `14.5 ${unit}`]);
-    rows.push(["Arm Length", `21 ${unit}`]);
-    rows.push(["Top Length", `40 ${unit}`]);
-  }
 
   const handleShareCard = async () => {
     if (!activeProfile) return;
@@ -83,107 +73,155 @@ export default function MeasurementsScreen() {
     <MccScreenShell bottomTabs={<MccTabsPreview active="Profile" />}>
       <MccHeader title="Measurements" rightIcon="notifications-outline" />
       <View className="px-5 pb-8">
-        <MeasurementDiagram />
+        {measurements.length === 0 ? (
+          <View className="py-12 items-center justify-center">
+            <View className="w-20 h-20 rounded-full bg-[#078b87]/10 items-center justify-center mb-4">
+              <Ionicons name="body-outline" size={38} color="#078b87" />
+            </View>
+            <Text className="text-[19px] font-bold text-brand-dark mb-2 text-center">
+              No Measurements Saved Yet
+            </Text>
+            <Text className="text-[13px] text-brand-gray text-center px-4 mb-6 leading-5">
+              You haven&apos;t saved measurements for anyone yet. Create a measurement profile to set a person&apos;s name and universal body details for any dress or garment.
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/measurements/new" as never)}
+              className="h-[48px] px-8 rounded-xl bg-primary items-center justify-center flex-row shadow-sm"
+            >
+              <Ionicons name="add" size={20} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text className="text-[14px] font-bold text-white">Create Measurement</Text>
+            </TouchableOpacity>
 
-        {/* Profiles Selector Pills */}
-        <View className="mt-4 mb-2">
-          <Text className="text-[12px] font-bold tracking-wider text-brand-gray uppercase mb-2">
-            Saved Fit Profiles
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-            {measurements.map((profile) => {
-              const isSelected = activeProfile?.id === profile.id;
-              return (
-                <TouchableOpacity
-                  key={profile.id}
-                  onPress={() => setActiveProfile(profile)}
-                  className={`mr-2 flex-row items-center rounded-full px-3.5 py-2 border ${
-                    isSelected
-                      ? "bg-primary border-primary"
-                      : "bg-white border-brand-border"
-                  }`}
-                >
-                  <Ionicons
-                    name="person-outline"
-                    size={13}
-                    color={isSelected ? "#FFFFFF" : "#6B7280"}
-                    style={{ marginRight: 5 }}
-                  />
-                  <Text
-                    className={`text-[12px] font-semibold ${
-                      isSelected ? "text-white" : "text-brand-dark"
-                    }`}
-                  >
-                    {profile.profileName}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        <View className="mt-2">
-          <SectionTitle
-            title={activeProfile?.profileName || "My Measurements"}
-            action="Details"
-            onActionPress={() => {
-              if (activeProfile?.id) {
-                router.push(`/measurements/${activeProfile.id}` as any);
-              }
-            }}
-          />
-        </View>
-
-        {isLoading ? (
-          <View className="py-8 items-center justify-center">
-            <ActivityIndicator size="small" color="#FF6B6B" />
+            <TouchableOpacity
+              onPress={() => setShowSizeGuide(true)}
+              className="mt-4 py-2 px-4 rounded-lg flex-row items-center"
+            >
+              <Text className="text-[13px] font-semibold text-primary">
+                📏 View Standard Size Guide
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
-          <View className="rounded-2xl border border-brand-border bg-white px-4 py-3 shadow-xs">
-            {rows.map(([label, value]) => (
-              <InfoRow key={label} icon="radio-button-on" label={label} value={value} />
-            ))}
+          <>
+            <MeasurementDiagram />
 
-            {activeProfile?.notes ? (
-              <View className="mt-3 pt-3 border-t border-brand-border/60">
-                <Text className="text-[11px] font-bold text-brand-dark uppercase tracking-wider mb-1">
-                  Tailor Notes
-                </Text>
-                <Text className="text-[12px] text-brand-gray leading-4 italic">
-                  &ldquo;{activeProfile.notes}&rdquo;
-                </Text>
+            {/* Profiles Selector Pills */}
+            <View className="mt-4 mb-2">
+              <Text className="text-[12px] font-bold tracking-wider text-brand-gray uppercase mb-2">
+                Saved Fit Profiles
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                {measurements.map((profile) => {
+                  const isSelected = activeProfile?.id === profile.id;
+                  return (
+                    <TouchableOpacity
+                      key={profile.id}
+                      onPress={() => setActiveProfile(profile)}
+                      className={`mr-2 flex-row items-center rounded-full px-3.5 py-2 border ${
+                        isSelected
+                          ? "bg-primary border-primary"
+                          : "bg-white border-brand-border"
+                      }`}
+                    >
+                      <Ionicons
+                        name="person-outline"
+                        size={13}
+                        color={isSelected ? "#FFFFFF" : "#6B7280"}
+                        style={{ marginRight: 5 }}
+                      />
+                      <Text
+                        className={`text-[12px] font-semibold ${
+                          isSelected ? "text-white" : "text-brand-dark"
+                        }`}
+                      >
+                        {profile.profileName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                <TouchableOpacity
+                  onPress={() => router.push("/measurements/new" as never)}
+                  className="mr-2 flex-row items-center rounded-full px-3.5 py-2 border border-dashed border-primary bg-primary/5"
+                >
+                  <Ionicons name="add" size={14} color="#078b87" style={{ marginRight: 4 }} />
+                  <Text className="text-[12px] font-bold text-primary">
+                    Create More
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+
+            <View className="mt-2">
+              <SectionTitle
+                title={activeProfile?.profileName || "My Measurements"}
+                action="Details"
+                onActionPress={() => {
+                  if (activeProfile?.id) {
+                    router.push(`/measurements/${activeProfile.id}` as any);
+                  }
+                }}
+              />
+            </View>
+
+            {isLoading ? (
+              <View className="py-8 items-center justify-center">
+                <ActivityIndicator size="small" color="#FF6B6B" />
               </View>
-            ) : null}
-          </View>
+            ) : (
+              <View className="rounded-2xl border border-brand-border bg-white px-4 py-3 shadow-xs">
+                {rows.length > 0 ? (
+                  rows.map(([label, value]) => (
+                    <InfoRow key={label} icon="radio-button-on" label={label} value={value} />
+                  ))
+                ) : (
+                  <Text className="text-[12px] text-brand-gray py-2 text-center italic">
+                    No individual dimensions entered yet for this profile.
+                  </Text>
+                )}
+
+                {activeProfile?.notes ? (
+                  <View className="mt-3 pt-3 border-t border-brand-border/60">
+                    <Text className="text-[11px] font-bold text-brand-dark uppercase tracking-wider mb-1">
+                      Tailor Notes
+                    </Text>
+                    <Text className="text-[12px] text-brand-gray leading-4 italic">
+                      &ldquo;{activeProfile.notes}&rdquo;
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
+
+            {/* Action Buttons Row */}
+            <View className="mt-4 flex-row gap-2.5">
+              <TouchableOpacity
+                onPress={() => setShowSizeGuide(true)}
+                className="h-[46px] flex-1 items-center justify-center rounded-xl border border-primary bg-white"
+              >
+                <Text className="text-[13px] font-semibold text-primary">
+                  📏 Size Guide
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleShareCard}
+                className="h-[46px] flex-1 items-center justify-center rounded-xl border border-brand-border bg-[#F8FAFC]"
+              >
+                <Text className="text-[13px] font-semibold text-brand-dark">
+                  📲 Share Card
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View className="mt-2.5">
+              <MccButton
+                title="+ Create More Profiles"
+                onPress={() => router.push("/measurements/new" as never)}
+              />
+            </View>
+          </>
         )}
-
-        {/* Action Buttons Row */}
-        <View className="mt-4 flex-row gap-2.5">
-          <TouchableOpacity
-            onPress={() => setShowSizeGuide(true)}
-            className="h-[46px] flex-1 items-center justify-center rounded-xl border border-primary bg-white"
-          >
-            <Text className="text-[13px] font-semibold text-primary">
-              📏 Size Guide
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleShareCard}
-            className="h-[46px] flex-1 items-center justify-center rounded-xl border border-brand-border bg-[#F8FAFC]"
-          >
-            <Text className="text-[13px] font-semibold text-brand-dark">
-              📲 Share Card
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View className="mt-2.5">
-          <MccButton
-            title="+ Add New Profile"
-            onPress={() => router.push("/measurements/new" as never)}
-          />
-        </View>
       </View>
 
       {/* Size Guide Modal */}

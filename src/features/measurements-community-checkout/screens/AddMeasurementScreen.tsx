@@ -26,33 +26,34 @@ const RTW_PRESETS: Record<string, Record<string, number>> = {
 
 const PERSON_OPTIONS = ["Myself", "Mother", "Sister", "Spouse", "Daughter", "Son", "Friend"];
 const GARMENT_TYPES = [
+  { id: "universal", label: "📏 Universal (All Clothing)", sub: "Tops, bottoms, suits & dresses" },
   { id: "kurti_suit", label: "👗 Kurti & Shalwar", sub: "Kameez, Kurti & Pants" },
   { id: "blouse_lehenga", label: "🥻 Blouse & Lehenga", sub: "Choli & Flared Skirt" },
   { id: "mens_kurta", label: "👳 Men's Kurta Pajama", sub: "Kurta, Shalwar & Sherwani" },
   { id: "mens_suit", label: "🤵 Suit & Formal", sub: "Blazers, Shirts & Trousers" },
-  { id: "universal", label: "📏 Universal Profile", sub: "All-purpose dimensions" },
 ];
 
 export default function AddMeasurementScreen() {
   const { addMeasurement } = useMeasurements();
 
   const [unit, setUnit] = useState<"in" | "cm">("in");
-  const [person, setPerson] = useState("Myself");
-  const [garmentType, setGarmentType] = useState("kurti_suit");
-  const [profileName, setProfileName] = useState("Ayesha - Formal Kurti");
+  const [person, setPerson] = useState("");
+  const [garmentType, setGarmentType] = useState("universal");
+  const [profileName, setProfileName] = useState("");
+  const [profileNameManuallyEdited, setProfileNameManuallyEdited] = useState(false);
   const [fitPreference, setFitPreference] = useState<"fitted" | "regular" | "loose">("regular");
 
-  // Measurement values
-  const [chest, setChest] = useState("36");
-  const [waist, setWaist] = useState("30");
-  const [hips, setHips] = useState("40");
-  const [shoulder, setShoulder] = useState("14.5");
-  const [sleeveLength, setSleeveLength] = useState("21");
-  const [shirtLength, setShirtLength] = useState("40");
-  const [trouserLength, setTrouserLength] = useState("37.5");
-  const [inseam, setInseam] = useState("28");
-  const [neck, setNeck] = useState("14");
-  const [notes, setNotes] = useState("Leave 2-inch inner seam margin for alterations.");
+  // Measurement values (default empty)
+  const [chest, setChest] = useState("");
+  const [waist, setWaist] = useState("");
+  const [hips, setHips] = useState("");
+  const [shoulder, setShoulder] = useState("");
+  const [sleeveLength, setSleeveLength] = useState("");
+  const [shirtLength, setShirtLength] = useState("");
+  const [trouserLength, setTrouserLength] = useState("");
+  const [inseam, setInseam] = useState("");
+  const [neck, setNeck] = useState("");
+  const [notes, setNotes] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -102,15 +103,16 @@ export default function AddMeasurementScreen() {
   };
 
   const handleSave = async () => {
-    if (!profileName.trim()) {
-      Alert.alert("Missing Profile Name", "Please give this measurement set a memorable name.");
+    if (!person.trim()) {
+      Alert.alert("Missing Person Name", "Please enter the person's name for these measurements (e.g. Fatima, Ahmed, Myself).");
       return;
     }
+    const finalProfileName = profileName.trim() || `${person.trim()}'s Measurements`;
 
     setIsSubmitting(true);
     try {
       await addMeasurement({
-        profileName: profileName.trim(),
+        profileName: finalProfileName,
         unit: unit === "in" ? "inches" : "cm",
         chest: parseFloat(chest) || undefined,
         waist: parseFloat(waist) || undefined,
@@ -121,7 +123,7 @@ export default function AddMeasurementScreen() {
         trouserLength: parseFloat(trouserLength) || undefined,
         inseam: parseFloat(inseam) || undefined,
         neck: parseFloat(neck) || undefined,
-        notes: `[Fit: ${fitPreference}, For: ${person}] ${notes.trim()}`.trim(),
+        notes: `[Fit: ${fitPreference}, For: ${person.trim()}] ${notes.trim()}`.trim(),
       });
 
       Alert.alert("Saved! 📏", "Your bespoke measurement profile is ready.", [
@@ -141,24 +143,46 @@ export default function AddMeasurementScreen() {
     <MccScreenShell>
       <MccHeader title="Add Measurement Profile" showBack rightText="" />
       <ScrollView className="px-5 pb-12" showsVerticalScrollIndicator={false}>
-        {/* Profile Name */}
+        {/* Person Name Input */}
         <View className="mb-4">
-          <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">Profile Name *</Text>
+          <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">Person Name *</Text>
           <View className="rounded-xl border border-brand-border px-3.5 py-2.5 bg-white shadow-xs">
             <TextInput
-              value={profileName}
-              onChangeText={setProfileName}
-              placeholder="e.g. Ayesha - Formal Kurti, Mom Salwar"
+              value={person}
+              onChangeText={(text) => {
+                setPerson(text);
+                if (!profileNameManuallyEdited) {
+                  setProfileName(text.trim() ? `${text.trim()}'s Measurements` : "");
+                }
+              }}
+              placeholder="e.g. Fatima, Ahmed, Sarah, or Myself"
               placeholderTextColor="#9CA3AF"
               className="text-[13px] text-brand-dark"
             />
           </View>
         </View>
 
-        {/* Target Person Pills */}
+        {/* Profile Name (Optional) */}
         <View className="mb-4">
-          <Text className="mb-1.5 text-[12px] font-bold text-brand-dark uppercase tracking-wide">
-            Who is this for?
+          <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">Profile Label / Title (Optional)</Text>
+          <View className="rounded-xl border border-brand-border px-3.5 py-2.5 bg-white shadow-xs">
+            <TextInput
+              value={profileName}
+              onChangeText={(text) => {
+                setProfileName(text);
+                setProfileNameManuallyEdited(true);
+              }}
+              placeholder={person ? `${person}'s Measurements` : "e.g. Daily Fit, Formal Wear"}
+              placeholderTextColor="#9CA3AF"
+              className="text-[13px] text-brand-dark"
+            />
+          </View>
+        </View>
+
+        {/* Quick Suggestion Pills */}
+        <View className="mb-4">
+          <Text className="mb-1.5 text-[11px] font-semibold text-brand-gray uppercase tracking-wide">
+            Quick Suggestions
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
             {PERSON_OPTIONS.map((p) => (
@@ -166,14 +190,16 @@ export default function AddMeasurementScreen() {
                 key={p}
                 onPress={() => {
                   setPerson(p);
-                  if (p !== "Myself") setProfileName(`${p}'s Measurements`);
+                  if (!profileNameManuallyEdited) {
+                    setProfileName(`${p}'s Measurements`);
+                  }
                 }}
-                className={`mr-2 rounded-full px-3.5 py-1.5 border ${
+                className={`mr-2 rounded-full px-3 py-1.5 border ${
                   person === p ? "bg-primary border-primary" : "bg-white border-brand-border"
                 }`}
               >
                 <Text
-                  className={`text-[12px] font-semibold ${
+                  className={`text-[11px] font-semibold ${
                     person === p ? "text-white" : "text-brand-dark"
                   }`}
                 >

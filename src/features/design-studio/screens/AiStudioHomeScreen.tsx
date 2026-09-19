@@ -44,10 +44,10 @@ export default function AiStudioHomeScreen() {
         <SectionTitle title="Design Options" action="View all" />
         <View className="flex-row flex-wrap justify-between gap-y-3">
           <StudioOptionCard
-            icon="text"
-            title="Text to Design"
-            subtitle="Generate from text"
-            href="/design-studio/text-to-design"
+            icon="chatbubbles-outline"
+            title="Text to Chat"
+            subtitle="Chat with AI Stylist"
+            href="/design-studio/chat"
           />
           <StudioOptionCard
             icon="image-outline"

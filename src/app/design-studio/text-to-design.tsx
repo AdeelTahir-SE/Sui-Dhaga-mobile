@@ -1,3 +1,4 @@
-import TextToDesignScreen from "@/features/design-studio/screens/TextToDesignScreen";
+import AiChatScreen from "@/features/design-studio/screens/AiChatScreen";
 
-export default TextToDesignScreen;
+export default AiChatScreen;
+

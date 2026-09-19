@@ -21,19 +21,12 @@ export default function MeasurementDetailsScreen() {
   if (profile?.chest) rows.push(["Bust / Chest", `${profile.chest} ${unit}`]);
   if (profile?.waist) rows.push(["Waist", `${profile.waist} ${unit}`]);
   if (profile?.hips) rows.push(["Hips", `${profile.hips} ${unit}`]);
-  if (profile?.shoulder) rows.push(["Shoulder (Teera)", `${profile.shoulder} ${unit}`]);
+  if (profile?.shoulder) rows.push(["Shoulder Width", `${profile.shoulder} ${unit}`]);
   if (profile?.sleeveLength) rows.push(["Arm / Sleeve Length", `${profile.sleeveLength} ${unit}`]);
-  if (profile?.shirtLength) rows.push(["Top / Kurti Length", `${profile.shirtLength} ${unit}`]);
+  if (profile?.shirtLength) rows.push(["Top / Shirt Length", `${profile.shirtLength} ${unit}`]);
   if (profile?.trouserLength) rows.push(["Trouser / Bottom Length", `${profile.trouserLength} ${unit}`]);
-  if (profile?.inseam) rows.push(["Inseam", `${profile.inseam} ${unit}`]);
+  if (profile?.inseam) rows.push(["Inseam (Inner Leg)", `${profile.inseam} ${unit}`]);
   if (profile?.neck) rows.push(["Collar / Neck", `${profile.neck} ${unit}`]);
-
-  if (rows.length === 0) {
-    rows.push(["Chest / Bust", `36 ${unit}`]);
-    rows.push(["Waist", `30 ${unit}`]);
-    rows.push(["Hips", `40 ${unit}`]);
-    rows.push(["Shoulder", `14.5 ${unit}`]);
-  }
 
   const handleDelete = () => {
     Alert.alert(

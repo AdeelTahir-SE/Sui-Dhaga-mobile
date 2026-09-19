@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuthStore } from "../../../stores/auth.store";
 import { useDesigns } from "../../design-studio/hooks/useDesigns";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { QuickAction } from "../components/QuickAction";
@@ -191,13 +192,23 @@ export default function HomeScreen() {
           </Text>
           <TouchableOpacity
             onPress={() => router.push("/tailors" as never)}
-            activeOpacity={0.8}
-            className="mt-3.5 self-start rounded-md bg-primary px-5 py-3 shadow-sm active:bg-primary-dark flex-row items-center gap-1.5"
+            activeOpacity={0.85}
+            className="relative overflow-hidden mt-3.5 self-start rounded-md bg-[#00949D] px-5 py-3 shadow-sm flex-row items-center gap-1.5"
           >
-            <Text className="text-[13px] font-bold text-white tracking-wide">
-              Explore Tailors
-            </Text>
-            <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
+            <ButtonTexture variant="greenish" borderRadius={6} />
+            <View className="z-10 flex-row items-center gap-1.5">
+              <Text
+                className="text-[13px] font-bold text-white tracking-wide"
+                style={{
+                  textShadowColor: "rgba(0,0,0,0.22)",
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 2,
+                }}
+              >
+                Explore Tailors
+              </Text>
+              <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
+            </View>
           </TouchableOpacity>
           <Image
             source={homeHero}

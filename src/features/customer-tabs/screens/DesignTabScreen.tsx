@@ -89,10 +89,10 @@ export default function DesignTabScreen() {
         </TouchableOpacity>
 
         <DesignOption
-          title="Text to Design"
-          subtitle="Describe your dream outfit"
-          icon="text"
-          href="/design-studio/text-to-design"
+          title="Text to Chat"
+          subtitle="Chat with AI fashion stylist & designer"
+          icon="chatbubbles-outline"
+          href="/design-studio/chat"
         />
         <DesignOption
           title="Image to Design"

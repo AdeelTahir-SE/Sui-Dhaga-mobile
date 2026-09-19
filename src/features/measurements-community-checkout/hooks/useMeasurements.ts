@@ -2,83 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { measurementsApi, CreateMeasurementPayload } from '../../../api/measurements.api';
 import { MeasurementItem } from '../../../types/api';
 
-export const INITIAL_DEFAULT_PROFILES: MeasurementItem[] = [
-  {
-    id: 'm_1',
-    profileName: 'Ayesha - Daily Kurti & Trouser',
-    gender: 'female',
-    unit: 'inches',
-    chest: 36,
-    waist: 30,
-    hips: 40,
-    shoulder: 14.5,
-    sleeveLength: 21,
-    shirtLength: 40,
-    trouserLength: 37.5,
-    inseam: 28,
-    neck: 14,
-    notes: 'Keep 2-inch extra margin inside seams for alterations. Side chaak at 20 inches.',
-    createdAt: '2026-09-15T10:00:00.000Z',
-    updatedAt: '2026-09-15T10:00:00.000Z',
-  },
-  {
-    id: 'm_2',
-    profileName: 'Ayesha - Bridal Lehenga & Choli',
-    gender: 'female',
-    unit: 'inches',
-    chest: 36.5,
-    waist: 29.5,
-    hips: 40,
-    shoulder: 14,
-    sleeveLength: 11,
-    shirtLength: 14.5,
-    trouserLength: 42,
-    inseam: 30,
-    neck: 14,
-    notes: 'In-built padded cups in choli. Deep back neck with latkan ties. Lehenga length measured with 3-inch heels.',
-    createdAt: '2026-09-02T12:00:00.000Z',
-    updatedAt: '2026-09-02T12:00:00.000Z',
-  },
-  {
-    id: 'm_3',
-    profileName: 'Mother - Classic Shalwar Suit',
-    gender: 'female',
-    unit: 'inches',
-    chest: 41,
-    waist: 37,
-    hips: 45,
-    shoulder: 15.5,
-    sleeveLength: 21.5,
-    shirtLength: 42,
-    trouserLength: 39,
-    inseam: 27,
-    neck: 15,
-    notes: 'Comfort relaxed fit. Broad paincha with canvas buckram stiffener.',
-    createdAt: '2026-08-28T09:30:00.000Z',
-    updatedAt: '2026-08-28T09:30:00.000Z',
-  },
-  {
-    id: 'm_4',
-    profileName: 'Ali - Slim Fit Kurta Pajama',
-    gender: 'male',
-    unit: 'inches',
-    chest: 40,
-    waist: 34,
-    hips: 42,
-    shoulder: 18,
-    sleeveLength: 25,
-    shirtLength: 41,
-    trouserLength: 40.5,
-    inseam: 31,
-    neck: 16,
-    notes: 'Modern Sherwani stand collar. Concealed front placket buttons.',
-    createdAt: '2026-09-10T14:00:00.000Z',
-    updatedAt: '2026-09-10T14:00:00.000Z',
-  },
-];
+export const INITIAL_DEFAULT_PROFILES: MeasurementItem[] = [];
 
 // In-memory cache for profiles during the app session
-let cachedProfiles: MeasurementItem[] = [...INITIAL_DEFAULT_PROFILES];
+let cachedProfiles: MeasurementItem[] = [];
 
 export function useMeasurements() {
   const [measurements, setMeasurements] = useState<MeasurementItem[]>(cachedProfiles);
@@ -100,22 +27,21 @@ export function useMeasurements() {
           const found = dataList.find((m) => m.id === prev.id);
           return found || dataList[0];
         });
-      } else if (cachedProfiles.length === 0) {
-        cachedProfiles = [...INITIAL_DEFAULT_PROFILES];
-        setMeasurements(cachedProfiles);
-        setActiveProfile(cachedProfiles[0]);
       } else {
         setMeasurements(cachedProfiles);
-        if (!activeProfile && cachedProfiles.length > 0) {
-          setActiveProfile(cachedProfiles[0]);
-        }
+        setActiveProfile((prev) => {
+          if (!prev) return cachedProfiles[0] || null;
+          const found = cachedProfiles.find((m) => m.id === prev.id);
+          return found || cachedProfiles[0] || null;
+        });
       }
     } catch (err: any) {
-      console.warn('Backend measurements unavailable, using local profiles:', err.message);
       setMeasurements(cachedProfiles);
-      if (!activeProfile && cachedProfiles.length > 0) {
-        setActiveProfile(cachedProfiles[0]);
-      }
+      setActiveProfile((prev) => {
+        if (!prev) return cachedProfiles[0] || null;
+        const found = cachedProfiles.find((m) => m.id === prev.id);
+        return found || cachedProfiles[0] || null;
+      });
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

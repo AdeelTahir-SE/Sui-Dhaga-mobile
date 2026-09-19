@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { ProfileMenuRow } from "../components/ProfileMenuRow";
+import { AuthButton } from "../../auth/components/AuthButton";
 import { useAuthStore } from "../../../stores/auth.store";
 import { storage } from "../../../api/client";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
@@ -28,12 +29,6 @@ import { useOrders } from "../../booking-orders/hooks/useOrders";
 import { useAppointments } from "../../booking-orders/hooks/useAppointments";
 import { useDesigns } from "../../design-studio/hooks/useDesigns";
 import { useMeasurements } from "../../measurements-community-checkout/hooks/useMeasurements";
-
-const profileMeasurements = require("@/assets/illustrations/customer-tabs/profile/measurements.png");
-const profileSavedDesigns = require("@/assets/illustrations/customer-tabs/profile/saved-designs.png");
-const profilePaymentMethods = require("@/assets/illustrations/customer-tabs/profile/payment-methods.png");
-const profileAddresses = require("@/assets/illustrations/customer-tabs/profile/addresses.png");
-const profileSettings = require("@/assets/illustrations/customer-tabs/profile/settings.png");
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -334,27 +329,18 @@ export default function ProfileScreen() {
   return (
     <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Profile" />}>
       {/* Top Header Bar */}
-      <View className="px-5 pt-3 pb-2 flex-row items-center justify-between">
-        <View>
-          <Text className="text-[22px] font-black tracking-tight text-brand-dark">
-            My Account
-          </Text>
-          <Text className="text-[12px] font-medium text-brand-gray">
-            Manage your personal fit & preferences
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={openEditModal}
-          activeOpacity={0.7}
-          className="h-10 w-10 items-center justify-center rounded-full bg-brand-surface border border-brand-border"
-        >
-          <Ionicons name="settings-outline" size={18} color="#1A1D1F" />
-        </TouchableOpacity>
+      <View className="px-5 pt-3 pb-2">
+        <Text className="text-[24px] font-black tracking-tight text-brand-dark">
+          Profile
+        </Text>
+        <Text className="text-[12px] font-medium text-brand-gray">
+          Your personal fit & tailoring preferences
+        </Text>
       </View>
 
       <View className="px-5 pt-3 pb-8">
-        {/* Main Profile Showcase Card */}
-        <View className="rounded-3xl border border-primary/20 bg-[#F4FBFA] p-5 shadow-xs">
+        {/* Main Profile Card */}
+        <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs">
           <View className="flex-row items-center">
             {/* Avatar with Camera Overlay */}
             <TouchableOpacity
@@ -365,7 +351,7 @@ export default function ProfileScreen() {
               accessibilityLabel="Change profile picture"
               accessibilityRole="button"
             >
-              <View className="h-20 w-20 rounded-2xl border-2 border-primary/30 bg-primary-50 overflow-hidden items-center justify-center shadow-xs">
+              <View className="h-16 w-16 rounded-2xl border border-brand-border bg-primary-50 overflow-hidden items-center justify-center">
                 {avatarUri ? (
                   <Image
                     source={{ uri: avatarUri }}
@@ -375,7 +361,7 @@ export default function ProfileScreen() {
                   />
                 ) : (
                   <View className="items-center justify-center w-full h-full bg-primary-50">
-                    <Text className="text-[26px] font-black text-primary">
+                    <Text className="text-[22px] font-black text-primary">
                       {initials}
                     </Text>
                   </View>
@@ -387,22 +373,22 @@ export default function ProfileScreen() {
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 </View>
               ) : (
-                <View className="absolute -bottom-1.5 -right-1.5 h-7 w-7 items-center justify-center rounded-full bg-primary border-2 border-white shadow-sm">
-                  <Ionicons name="camera" size={13} color="#FFFFFF" />
+                <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-primary border-2 border-white shadow-xs">
+                  <Ionicons name="camera" size={11} color="#FFFFFF" />
                 </View>
               )}
             </TouchableOpacity>
 
             {/* Name, Role & Contact */}
-            <View className="ml-4 flex-1">
-              <View className="flex-row items-center">
+            <View className="ml-3.5 flex-1 justify-center">
+              <View className="flex-row items-center gap-2">
                 <Text
-                  className="text-[18px] font-black text-brand-dark tracking-tight flex-1"
+                  className="text-[17px] font-black text-brand-dark tracking-tight flex-1"
                   numberOfLines={1}
                 >
                   {displayName}
                 </Text>
-                <View className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 border border-primary/20">
+                <View className="rounded-full bg-primary/10 px-2 py-0.5 border border-primary/20">
                   <Text className="text-[10px] font-black text-primary">
                     Customer
                   </Text>
@@ -410,9 +396,9 @@ export default function ProfileScreen() {
               </View>
 
               <View className="mt-1 flex-row items-center">
-                <Ionicons name="mail-outline" size={13} color="#6F767E" />
+                <Ionicons name="mail-outline" size={12} color="#6F767E" />
                 <Text
-                  className="ml-1 text-[12px] font-medium text-brand-gray flex-1"
+                  className="ml-1.5 text-[12px] font-medium text-brand-gray flex-1"
                   numberOfLines={1}
                 >
                   {displayEmail}
@@ -420,238 +406,121 @@ export default function ProfileScreen() {
               </View>
 
               <View className="mt-0.5 flex-row items-center">
-                <Ionicons name="call-outline" size={13} color="#6F767E" />
+                <Ionicons name="call-outline" size={12} color="#6F767E" />
                 <Text
-                  className="ml-1 text-[12px] font-medium text-brand-gray flex-1"
+                  className="ml-1.5 text-[12px] font-medium text-brand-gray flex-1"
                   numberOfLines={1}
                 >
                   {displayPhone}
                 </Text>
               </View>
+
+              {user?.address ? (
+                <View className="mt-0.5 flex-row items-center">
+                  <Ionicons name="location-outline" size={12} color="#6F767E" />
+                  <Text
+                    className="ml-1.5 text-[12px] font-medium text-brand-gray flex-1"
+                    numberOfLines={1}
+                  >
+                    {user.address}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </View>
-
-          {/* Edit Profile Button Bar */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={openEditModal}
-            className="mt-4 h-10 flex-row items-center justify-center rounded-xl border border-primary/30 bg-white"
-          >
-            <Ionicons name="create-outline" size={15} color="#14919B" />
-            <Text className="ml-1.5 text-[13px] font-bold text-primary">
-              Edit Profile Info
-            </Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Quick Glance Metric Strip */}
-        <View className="mt-4 flex-row gap-2.5">
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push("/orders" as any)}
-            className="flex-1 rounded-2xl border border-brand-border/70 bg-white p-3 items-center shadow-xs"
-          >
-            <View className="h-8 w-8 items-center justify-center rounded-full bg-[#EBF7F8]">
-              <Ionicons name="bag-handle" size={16} color="#14919B" />
-            </View>
-            <Text className="mt-1.5 text-[16px] font-black text-brand-dark">
-              {activeOrdersCount}
-            </Text>
-            <Text className="text-[10px] font-medium text-brand-gray">
-              Active Orders
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push("/appointments" as any)}
-            className="flex-1 rounded-2xl border border-brand-border/70 bg-white p-3 items-center shadow-xs"
-          >
-            <View className="h-8 w-8 items-center justify-center rounded-full bg-[#FFF5EB]">
-              <Ionicons name="calendar" size={16} color="#F59E0B" />
-            </View>
-            <Text className="mt-1.5 text-[16px] font-black text-brand-dark">
-              {upcomingAppointmentsCount}
-            </Text>
-            <Text className="text-[10px] font-medium text-brand-gray">
-              Appointments
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push("/design" as any)}
-            className="flex-1 rounded-2xl border border-brand-border/70 bg-white p-3 items-center shadow-xs"
-          >
-            <View className="h-8 w-8 items-center justify-center rounded-full bg-[#F3E8FF]">
-              <Ionicons name="color-wand" size={16} color="#9333EA" />
-            </View>
-            <Text className="mt-1.5 text-[16px] font-black text-brand-dark">
-              {designs.length}
-            </Text>
-            <Text className="text-[10px] font-medium text-brand-gray">
-              Designs
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push("/measurements" as any)}
-            className="flex-1 rounded-2xl border border-brand-border/70 bg-white p-3 items-center shadow-xs"
-          >
-            <View className="h-8 w-8 items-center justify-center rounded-full bg-[#FFEAE8]">
-              <Ionicons name="body" size={16} color="#FF6B6B" />
-            </View>
-            <Text className="mt-1.5 text-[16px] font-black text-brand-dark">
-              {measurements.length || 1}
-            </Text>
-            <Text className="text-[10px] font-medium text-brand-gray">
-              Fit Profiles
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Section 1: Tailoring & Studio */}
+        {/* Group 1: Bespoke Tailoring & Activity */}
         <View className="mt-6">
-          <Text className="mb-2.5 text-[13px] font-black tracking-tight text-brand-dark uppercase">
-            Tailoring & Studio
+          <Text className="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-brand-gray">
+            Bespoke Studio & Activity
           </Text>
-
-          <ProfileMenuRow
-            title="My Measurements"
-            subtitle="View, record & edit precise body dimensions"
-            icon="body-outline"
-            image={profileMeasurements}
-            badge={measurements.length ? `${measurements.length} Saved` : undefined}
-            highlighted
-            onPress={() => router.push("/measurements" as any)}
-          />
-
-          <ProfileMenuRow
-            title="Saved Outfit Designs"
-            subtitle="Custom sketches, AI designs & inspiration"
-            icon="bookmark-outline"
-            image={profileSavedDesigns}
-            badge={designs.length ? `${designs.length} Items` : undefined}
-            onPress={() => router.push("/design" as any)}
-          />
-
-          <ProfileMenuRow
-            title="Tailor Appointments"
-            subtitle="View schedule, reschedule or book consultations"
-            icon="calendar-outline"
-            iconColor="#F59E0B"
-            iconBg="bg-amber-50"
-            badge={upcomingAppointmentsCount > 0 ? `${upcomingAppointmentsCount} Upcoming` : undefined}
-            onPress={() => router.push("/appointments" as any)}
-          />
-
-          <ProfileMenuRow
-            title="Order History & Tracking"
-            subtitle="Monitor tailoring progress and past orders"
-            icon="bag-handle-outline"
-            iconColor="#14919B"
-            iconBg="bg-primary-50"
-            badge={orders.length ? `${orders.length} Total` : undefined}
-            onPress={() => router.push("/orders" as any)}
-          />
+          <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
+            <ProfileMenuRow
+              title="My Measurements"
+              subtitle="Precision body dimension profiles"
+              icon="body-outline"
+              badge={measurements.length > 0 ? `${measurements.length} Saved` : undefined}
+              onPress={() => router.push("/measurements" as any)}
+            />
+            <ProfileMenuRow
+              title="Saved Designs"
+              subtitle="Custom sketches & studio outfits"
+              icon="color-wand-outline"
+              badge={designs.length > 0 ? `${designs.length} Saved` : undefined}
+              onPress={() => router.push("/design" as any)}
+            />
+            <ProfileMenuRow
+              title="Orders & Tracking"
+              subtitle="Monitor stitching status & past deliveries"
+              icon="bag-handle-outline"
+              badge={
+                activeOrdersCount > 0
+                  ? `${activeOrdersCount} Active`
+                  : orders.length > 0
+                  ? `${orders.length} Orders`
+                  : undefined
+              }
+              onPress={() => router.push("/orders" as any)}
+            />
+            <ProfileMenuRow
+              title="Appointments"
+              subtitle="Tailor consultations & fitting schedules"
+              icon="calendar-outline"
+              badge={
+                upcomingAppointmentsCount > 0
+                  ? `${upcomingAppointmentsCount} Upcoming`
+                  : appointments.length > 0
+                  ? `${appointments.length} Booked`
+                  : undefined
+              }
+              isLast
+              onPress={() => router.push("/appointments" as any)}
+            />
+          </View>
         </View>
 
-        {/* Section 2: Account & Settings */}
+        {/* Group 2: Account & Support */}
         <View className="mt-5">
-          <Text className="mb-2.5 text-[13px] font-black tracking-tight text-brand-dark uppercase">
-            Account & Preferences
+          <Text className="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-brand-gray">
+            Account & Support
           </Text>
+          <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
+            <ProfileMenuRow
+              title="Edit Profile Information"
+              subtitle="Name, contact & default delivery address"
+              icon="person-outline"
+              onPress={openEditModal}
+            />
+            <ProfileMenuRow
+              title="Help & Customer Care"
+              subtitle="support@suidhaga.app • 1800-SUI-DHAGA"
+              icon="headset-outline"
+              isLast
+              onPress={() => {
+                Alert.alert(
+                  "Sui Dhaga Support",
+                  "Need help with an order, appointment or measurement?\n\nEmail: support@suidhaga.app\nToll-Free: +91 1800-SUI-DHAGA\nMon-Sat: 9:00 AM - 8:00 PM"
+                );
+              }}
+            />
+          </View>
+        </View>
 
+        {/* Group 3: Sign Out */}
+        <View className="mt-5 rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
           <ProfileMenuRow
-            title="Delivery Addresses"
-            subtitle="Manage saved home, work & family locations"
-            icon="location-outline"
-            image={profileAddresses}
-            onPress={() => {
-              Alert.alert(
-                "Delivery Address",
-                `Current Address:\n${displayAddress}\n\nTap "Edit Profile Info" above to update your default delivery address.`
-              );
-            }}
-          />
-
-          <ProfileMenuRow
-            title="Payment Methods"
-            subtitle="UPI, Debit/Credit cards, Cash on Delivery"
-            icon="card-outline"
-            image={profilePaymentMethods}
-            onPress={() => {
-              Alert.alert(
-                "Payment Methods",
-                "Secure payments are processed during order checkout via Razorpay, UPI, & Cash on Delivery."
-              );
-            }}
-          />
-
-          <ProfileMenuRow
-            title="Notifications & Privacy"
-            subtitle="SMS alerts, order updates & security"
-            icon="settings-outline"
-            image={profileSettings}
-            onPress={() => {
-              Alert.alert(
-                "Settings",
-                "App Version: 1.0.0\nPush Notifications: Active\nOrder Tracking: Enabled"
-              );
-            }}
+            title="Sign Out"
+            icon="log-out-outline"
+            danger
+            showChevron={false}
+            isLast
+            onPress={handleLogout}
           />
         </View>
 
-        {/* Section 3: Support & Help */}
-        <View className="mt-5">
-          <Text className="mb-2.5 text-[13px] font-black tracking-tight text-brand-dark uppercase">
-            Help & Information
-          </Text>
-
-          <ProfileMenuRow
-            title="Customer Support"
-            subtitle="Chat with Sui Dhaga care or raise a ticket"
-            icon="headset-outline"
-            iconColor="#0284C7"
-            iconBg="bg-sky-50"
-            onPress={() => {
-              Alert.alert(
-                "Sui Dhaga Support",
-                "Have questions or need assistance? Reach out to support@suidhaga.app or call toll-free +91 1800-SUI-DHAGA."
-              );
-            }}
-          />
-
-          <ProfileMenuRow
-            title="Frequently Asked Questions"
-            subtitle="How alterations, booking & measurement work"
-            icon="help-circle-outline"
-            iconColor="#6366F1"
-            iconBg="bg-indigo-50"
-            onPress={() => {
-              Alert.alert(
-                "Sui Dhaga FAQs",
-                "1. How to book a tailor? Browse tailors, select outfits and schedule an appointment.\n2. How do measurements work? Enter body measurements or request a doorstep tailor visit."
-              );
-            }}
-          />
-        </View>
-
-        {/* Logout Action */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleLogout}
-          className="mt-7 h-12 flex-row items-center justify-center rounded-2xl border border-[#F5D1D1] bg-[#FFF5F5] shadow-xs active:bg-[#FFEAE8]"
-        >
-          <Ionicons name="log-out-outline" size={19} color="#D73232" />
-          <Text className="ml-2 text-[15px] font-black text-[#D73232] tracking-wide">
-            Sign Out
-          </Text>
-        </TouchableOpacity>
-
-        <Text className="mt-4 text-center text-[11px] font-medium text-brand-gray/60">
-          Sui Dhaga v1.0.0 • Handcrafted Tailoring Platform
+        <Text className="mt-5 text-center text-[11px] font-medium text-brand-gray/60">
+          Sui Dhaga • v1.0.0
         </Text>
       </View>
 
