@@ -31,29 +31,64 @@ export function AnimatedDustbin({
     if (!lidAnim) {
       Animated.spring(internalLid, {
         toValue: isOpen ? 1 : 0,
-        friction: 6,
-        tension: 100,
+        friction: 7,
+        tension: 140,
         useNativeDriver: true,
       }).start();
     }
   }, [isOpen, lidAnim, internalLid]);
 
-  // Robust rotation & translation for opening the dustbin lid:
-  // Tilts open -40 degrees and lifts up smoothly
+  // Lid tilts open -42 degrees and shifts up
   const lidRotate = activeLid.interpolate({
     inputRange: [0, 1],
-    outputRange: ["0deg", "-45deg"],
+    outputRange: ["0deg", "-44deg"],
   });
 
   const lidTranslateY = activeLid.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -6],
+    outputRange: [0, -5],
   });
 
   const lidTranslateX = activeLid.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -4],
+    outputRange: [0, -3],
   });
+
+  // Cross-fade opacity between idle (gray) and open (red) for 100% GPU native driver speed
+  const redOpacity = activeLid.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
+  const grayOpacity = activeLid.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
+  });
+
+  const renderLid = (color: string) => (
+    <Animated.View
+      style={[
+        styles.lidContainer,
+        {
+          transform: [
+            { translateX: lidTranslateX },
+            { translateY: lidTranslateY },
+            { rotate: lidRotate },
+          ],
+        },
+      ]}
+    >
+      <View style={[styles.lidHandle, { backgroundColor: color }]} />
+      <View style={[styles.lidFlap, { backgroundColor: color }]} />
+    </Animated.View>
+  );
+
+  const renderBody = (color: string, bgColor: string) => (
+    <View style={[styles.binBody, { borderColor: color, backgroundColor: bgColor }]}>
+      <View style={[styles.binRib, { backgroundColor: color }]} />
+      <View style={[styles.binRib, { backgroundColor: color }]} />
+    </View>
+  );
 
   const content = (
     <Animated.View
@@ -63,65 +98,51 @@ export function AnimatedDustbin({
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: isOpen ? "#FEE2E2" : "#F3F4F6",
           transform: [{ scale: activeScale }, { translateX: activeShake }],
         },
       ]}
     >
-      <View style={styles.iconContainer}>
-        {/* Animated Dustbin Lid Container */}
-        <Animated.View
-          style={[
-            styles.lidContainer,
-            {
-              transform: [
-                { translateX: lidTranslateX },
-                { translateY: lidTranslateY },
-                { rotate: lidRotate },
-              ],
-            },
-          ]}
-        >
-          {/* Lid Handle */}
-          <View
-            style={[
-              styles.lidHandle,
-              { backgroundColor: isOpen ? "#EF4444" : "#6F767E" },
-            ]}
-          />
-          {/* Lid Flap */}
-          <View
-            style={[
-              styles.lidFlap,
-              { backgroundColor: isOpen ? "#EF4444" : "#6F767E" },
-            ]}
-          />
-        </Animated.View>
+      {/* Background layer: Gray */}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFillObject,
+          {
+            borderRadius: size / 2,
+            backgroundColor: "#F3F4F6",
+            opacity: grayOpacity,
+          },
+        ]}
+      />
 
-        {/* Dustbin Body */}
-        <View
-          style={[
-            styles.binBody,
-            {
-              borderColor: isOpen ? "#EF4444" : "#6F767E",
-              backgroundColor: isOpen ? "rgba(239, 68, 68, 0.1)" : "transparent",
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.binRib,
-              { backgroundColor: isOpen ? "#EF4444" : "#6F767E" },
-            ]}
-          />
-          <View
-            style={[
-              styles.binRib,
-              { backgroundColor: isOpen ? "#EF4444" : "#6F767E" },
-            ]}
-          />
-        </View>
-      </View>
+      {/* Background layer: Red glowing */}
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFillObject,
+          {
+            borderRadius: size / 2,
+            backgroundColor: "#FEE2E2",
+            opacity: redOpacity,
+          },
+        ]}
+      />
+
+      {/* Icon layer: Gray (Idle) */}
+      <Animated.View style={[styles.iconContainer, { opacity: grayOpacity }]}>
+        {renderLid("#6F767E")}
+        {renderBody("#6F767E", "transparent")}
+      </Animated.View>
+
+      {/* Icon layer: Red (Open/Active) */}
+      <Animated.View
+        style={[
+          styles.iconContainer,
+          StyleSheet.absoluteFillObject,
+          { opacity: redOpacity, alignItems: "center", justifyContent: "center" },
+        ]}
+      >
+        {renderLid("#EF4444")}
+        {renderBody("#EF4444", "rgba(239, 68, 68, 0.1)")}
+      </Animated.View>
     </Animated.View>
   );
 
@@ -150,6 +171,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 1,
+    overflow: "hidden",
   },
   iconContainer: {
     width: 24,
