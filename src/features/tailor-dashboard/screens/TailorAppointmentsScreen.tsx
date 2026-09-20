@@ -135,7 +135,10 @@ export default function TailorAppointmentsScreen() {
       {/* Fixed Search and Filter Tabs at top */}
       <View className="px-5 pt-1">
         {/* Search Field */}
-        <View className="mb-3.5 h-[46px] flex-row items-center rounded-md border border-brand-border bg-white px-3.5 shadow-xs">
+        <View
+          className="mb-3.5 h-[46px] flex-row items-center rounded-md bg-white px-3.5 shadow-xs"
+          style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
+        >
           <Ionicons name="search-outline" size={17} color="#6F767E" />
           <TextInput
             className="ml-2.5 flex-1 text-[13px] font-medium text-brand-dark"
@@ -152,7 +155,10 @@ export default function TailorAppointmentsScreen() {
         </View>
 
         {/* Interactive Filter Tabs */}
-        <View className="mb-3 flex-row border-b border-brand-border">
+        <View
+          className="mb-3 flex-row"
+          style={{ borderBottomWidth: 1, borderBottomColor: "#E2E8F0" }}
+        >
           {tabs.map((tab) => {
             const isActive = selectedTab === tab.key;
             return (
@@ -160,9 +166,16 @@ export default function TailorAppointmentsScreen() {
                 key={tab.key}
                 activeOpacity={0.7}
                 onPress={() => setSelectedTab(tab.key)}
-                className={`flex-1 items-center pb-3 ${
-                  isActive ? "-mb-[1px] border-b-2 border-primary" : ""
-                }`}
+                className="flex-1 items-center pb-3"
+                style={
+                  isActive
+                    ? {
+                        borderBottomWidth: 2,
+                        borderBottomColor: "#14919B",
+                        marginBottom: -1,
+                      }
+                    : undefined
+                }
               >
                 <Text
                   className={`text-[13px] ${

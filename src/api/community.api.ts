@@ -7,6 +7,7 @@ export interface GetCommunityPostsParams {
   category?: string;
   tag?: string;
   search?: string;
+  authorId?: string;
 }
 
 export const communityApi = {

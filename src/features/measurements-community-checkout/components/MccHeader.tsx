@@ -10,6 +10,7 @@ type MccHeaderProps = {
   rightIcon?: keyof typeof Ionicons.glyphMap | null;
   hideRight?: boolean;
   onBackPress?: () => void;
+  onRightPress?: () => void;
   titleClassName?: string;
 };
 
@@ -21,6 +22,7 @@ export function MccHeader({
   rightIcon,
   hideRight = false,
   onBackPress,
+  onRightPress,
   titleClassName,
 }: MccHeaderProps) {
   const handleBack =
@@ -63,7 +65,11 @@ export function MccHeader({
       </View>
 
       {!hideRight && (rightText || rightIcon) ? (
-        <TouchableOpacity className="h-10 min-w-10 items-center justify-center px-1">
+        <TouchableOpacity
+          onPress={onRightPress}
+          activeOpacity={0.7}
+          className="h-10 min-w-10 items-center justify-center px-1"
+        >
           {rightText ? (
             <Text className="text-[12px] font-semibold text-primary">
               {rightText}

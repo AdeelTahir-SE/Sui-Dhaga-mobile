@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import { CommunityPost } from "../../../types/api";
 import { isVideoMedia } from "./CommunityMediaCarousel";
 
@@ -298,7 +299,11 @@ export function ReelItemView({
         }}
       >
         {/* Author Avatar with Follow/Tailor Badge */}
-        <View className="items-center mb-0.5">
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => router.push("/community/profile" as any)}
+          className="items-center mb-0.5"
+        >
           <View className="h-11 w-11 rounded-full border-2 border-white overflow-hidden bg-gray-800 shadow-lg">
             {authorAvatar ? (
               <Image
@@ -318,7 +323,7 @@ export function ReelItemView({
               <Ionicons name="checkmark" size={10} color="#FFFFFF" />
             </View>
           )}
-        </View>
+        </TouchableOpacity>
 
         {/* Like Button */}
         <TouchableOpacity

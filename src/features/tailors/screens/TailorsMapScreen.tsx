@@ -35,6 +35,22 @@ const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
 
 const CITY_CHIPS = ["All", "Lahore", "Karachi", "Islamabad", "Rawalpindi", "Faisalabad"];
 
+const DISTANCE_OPTIONS = [5, 10, 15] as const;
+type AllowedRadius = (typeof DISTANCE_OPTIONS)[number];
+
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return parseFloat((6371 * c).toFixed(1));
+}
+
 export default function TailorsMapScreen() {
   const insets = useSafeAreaInsets();
 
@@ -44,7 +60,7 @@ export default function TailorsMapScreen() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [minRating, setMinRating] = useState<number | null>(null);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [maxRadius, setMaxRadius] = useState<number | null>(null);
+  const [maxRadius, setMaxRadius] = useState<AllowedRadius>(10);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
 
   // User Geolocation State
@@ -52,29 +68,67 @@ export default function TailorsMapScreen() {
   const [isLocating, setIsLocating] = useState(false);
   const [gpsStatusMsg, setGpsStatusMsg] = useState<string | null>(null);
 
+  // Effective location: device GPS coords if available, otherwise city center or Lahore as default reference
+  const effectiveCoords = useMemo(() => {
+    if (userCoords) return userCoords;
+    if (selectedCity !== "All" && CITY_COORDINATES[selectedCity]) {
+      return CITY_COORDINATES[selectedCity];
+    }
+    return CITY_COORDINATES["Lahore"];
+  }, [userCoords, selectedCity]);
+
   // Selected Tailor State
   const [selectedTailorId, setSelectedTailorId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
 
   const webViewRef = useRef<WebView | null>(null);
 
-  // Fetch tailors with map endpoint
+  // Fetch tailors with map endpoint using effective coordinates & maxRadius
   const { tailors, isLoading } = useTailorsMap({
     city: selectedCity !== "All" ? selectedCity : undefined,
     search: appliedSearch || undefined,
-    lat: userCoords?.lat,
-    lng: userCoords?.lng,
-    radius: maxRadius || undefined,
+    lat: effectiveCoords?.lat,
+    lng: effectiveCoords?.lng,
+    radius: maxRadius,
   });
 
-  // Client-side filtering for rating and verification
+  // Client-side strict filtering for distance, rating, and verification
   const filteredTailors = useMemo(() => {
-    return tailors.filter((t) => {
-      if (minRating && (t.rating || 0) < minRating) return false;
-      if (verifiedOnly && !t.verified && !t.isVerified) return false;
-      return true;
-    });
-  }, [tailors, minRating, verifiedOnly]);
+    const originLat = effectiveCoords?.lat;
+    const originLng = effectiveCoords?.lng;
+
+    return tailors
+      .map((t) => {
+        let dist = typeof t.distanceKm === "number" ? t.distanceKm : undefined;
+        if (
+          typeof originLat === "number" &&
+          typeof originLng === "number" &&
+          typeof t.latitude === "number" &&
+          typeof t.longitude === "number"
+        ) {
+          dist = calculateDistanceKm(originLat, originLng, t.latitude, t.longitude);
+        }
+        return {
+          ...t,
+          distanceKm: dist,
+        };
+      })
+      .filter((t) => {
+        if (minRating && (t.rating || 0) < minRating) return false;
+        if (verifiedOnly && !t.verified && !t.isVerified) return false;
+        // Strictly check distance: only tailors within maxRadius (5, 10, or 15 km)
+        if (typeof t.distanceKm === "number") {
+          return t.distanceKm <= maxRadius;
+        }
+        // Exclude tailors with no distance or invalid coordinates
+        return false;
+      })
+      .sort((a, b) => {
+        const distA = typeof a.distanceKm === "number" ? a.distanceKm : 999999;
+        const distB = typeof b.distanceKm === "number" ? b.distanceKm : 999999;
+        return distA - distB;
+      });
+  }, [tailors, minRating, verifiedOnly, maxRadius, effectiveCoords]);
 
   // Keep a selected tailor in view
   const selectedTailor = useMemo(() => {
@@ -102,6 +156,20 @@ export default function TailorsMapScreen() {
     }
   }, [filteredTailors, selectedTailorId]);
 
+  // Execute JavaScript in Map WebView or iframe
+  const sendMapCommand = useCallback((command: string) => {
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined") {
+        try {
+          const iframe = document.querySelector("#tailors-map-frame") as HTMLIFrameElement;
+          iframe?.contentWindow?.postMessage(command, "*");
+        } catch {}
+      }
+    } else {
+      webViewRef.current?.injectJavaScript(`${command}; true;`);
+    }
+  }, []);
+
   // Handle messages from WebView or iframe
   const processIncomingData = useCallback((data: any) => {
     if (!data) return;
@@ -112,14 +180,15 @@ export default function TailorsMapScreen() {
     } else if (data.type === "USER_LOCATED") {
       setUserCoords({ lat: data.latitude, lng: data.longitude });
       setIsLocating(false);
-      setGpsStatusMsg("GPS Position Acquired");
+      setGpsStatusMsg(`GPS Location Acquired (Filtered within ${maxRadius} km)`);
+      sendMapCommand(`setUserMarker(${data.latitude}, ${data.longitude}, ${maxRadius})`);
       setTimeout(() => setGpsStatusMsg(null), 3500);
     } else if (data.type === "LOCATING_FAILED") {
       setIsLocating(false);
-      setGpsStatusMsg(data.message || "Could not detect GPS");
+      setGpsStatusMsg(data.message || "Could not detect GPS. Using area reference.");
       setTimeout(() => setGpsStatusMsg(null), 3500);
     }
-  }, []);
+  }, [maxRadius, sendMapCommand]);
 
   useEffect(() => {
     if (Platform.OS === "web" && typeof window !== "undefined") {
@@ -146,20 +215,6 @@ export default function TailorsMapScreen() {
     }
   };
 
-  // Execute JavaScript in Map WebView or iframe
-  const sendMapCommand = useCallback((command: string) => {
-    if (Platform.OS === "web") {
-      if (typeof window !== "undefined") {
-        try {
-          const iframe = document.querySelector("#tailors-map-frame") as HTMLIFrameElement;
-          iframe?.contentWindow?.postMessage(command, "*");
-        } catch {}
-      }
-    } else {
-      webViewRef.current?.injectJavaScript(`${command}; true;`);
-    }
-  }, []);
-
   // Sync active tailor pins with map
   useEffect(() => {
     const payload = JSON.stringify({
@@ -179,6 +234,13 @@ export default function TailorsMapScreen() {
     });
     sendMapCommand(`handleMapMessage(${JSON.stringify(payload)})`);
   }, [filteredTailors, selectedTailor?.id, sendMapCommand]);
+
+  // Sync user location marker & radius boundary circle on map whenever coordinates or maxRadius change
+  useEffect(() => {
+    if (effectiveCoords) {
+      sendMapCommand(`setUserMarker(${effectiveCoords.lat}, ${effectiveCoords.lng}, ${maxRadius})`);
+    }
+  }, [effectiveCoords, maxRadius, sendMapCommand]);
 
   // Center on tailor when card changes
   const handleSelectTailor = (tailor: TailorItem) => {
@@ -201,7 +263,7 @@ export default function TailorsMapScreen() {
   };
 
   // Trigger GPS detection
-  const handleTriggerGps = () => {
+  const handleTriggerGps = useCallback(() => {
     setIsLocating(true);
     setGpsStatusMsg("Detecting your location...");
 
@@ -213,13 +275,13 @@ export default function TailorsMapScreen() {
             const lng = pos.coords.longitude;
             setUserCoords({ lat, lng });
             setIsLocating(false);
-            setGpsStatusMsg("Located! Tailors sorted by distance.");
-            sendMapCommand(`setUserMarker(${lat}, ${lng})`);
+            setGpsStatusMsg(`GPS Location Acquired (Filtered within ${maxRadius} km)`);
+            sendMapCommand(`setUserMarker(${lat}, ${lng}, ${maxRadius})`);
             setTimeout(() => setGpsStatusMsg(null), 3500);
           },
           () => {
             setIsLocating(false);
-            setGpsStatusMsg("Location access denied");
+            setGpsStatusMsg("Location access denied. Using area reference.");
             setTimeout(() => setGpsStatusMsg(null), 3500);
           },
           { enableHighAccuracy: true, timeout: 10000 }
@@ -228,7 +290,12 @@ export default function TailorsMapScreen() {
     } else {
       webViewRef.current?.injectJavaScript("locateDevice(); true;");
     }
-  };
+  }, [maxRadius, sendMapCommand]);
+
+  // Auto-detect location on initial screen mount
+  useEffect(() => {
+    handleTriggerGps();
+  }, [handleTriggerGps]);
 
   // City chip selection
   const handleCityChange = (city: string) => {
@@ -543,7 +610,9 @@ export default function TailorsMapScreen() {
       map.fitBounds(group.getBounds().pad(0.18));
     }
 
-    function setUserMarker(lat, lng) {
+    var userCircle = null;
+
+    function setUserMarker(lat, lng, radiusKm) {
       if (userMarker) {
         userMarker.setLatLng([lat, lng]);
       } else {
@@ -555,7 +624,25 @@ export default function TailorsMapScreen() {
         });
         userMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
       }
-      map.flyTo([lat, lng], 14, { duration: 1.2 });
+
+      var rKm = Number(radiusKm) || ${maxRadius};
+      if (rKm > 0) {
+        var radiusMeters = rKm * 1000;
+        if (userCircle) {
+          userCircle.setLatLng([lat, lng]);
+          userCircle.setRadius(radiusMeters);
+        } else {
+          userCircle = L.circle([lat, lng], {
+            radius: radiusMeters,
+            color: '#078B87',
+            fillColor: '#078B87',
+            fillOpacity: 0.08,
+            weight: 1.5,
+            dashArray: '5, 5'
+          }).addTo(map);
+        }
+      }
+      map.flyTo([lat, lng], Math.max(map.getZoom(), 12), { duration: 1.0 });
     }
 
     function locateDevice() {
@@ -567,7 +654,7 @@ export default function TailorsMapScreen() {
         function(pos) {
           var lat = pos.coords.latitude;
           var lng = pos.coords.longitude;
-          setUserMarker(lat, lng);
+          setUserMarker(lat, lng, ${maxRadius});
           sendPayload({ type: 'USER_LOCATED', latitude: lat, longitude: lng });
         },
         function(err) {
@@ -584,6 +671,18 @@ export default function TailorsMapScreen() {
     // Initial render
     var initialData = ${JSON.stringify(sanitizedTailors)};
     renderPins(initialData, currentSelectedId);
+
+    // Initial user location and radius circle
+    var initLat = ${effectiveCoords?.lat ?? "null"};
+    var initLng = ${effectiveCoords?.lng ?? "null"};
+    if (initLat !== null && initLng !== null) {
+      setUserMarker(initLat, initLng, ${maxRadius});
+    }
+
+    // Auto locate device
+    setTimeout(function() {
+      locateDevice();
+    }, 400);
 
     // Dynamic message receiver
     function handleMapMessage(payloadStr) {
@@ -698,13 +797,13 @@ export default function TailorsMapScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => setIsFilterModalVisible(true)}
-            style={[styles.circleBtn, (minRating || verifiedOnly || maxRadius) ? styles.activeFilterBtn : null]}
+            style={[styles.circleBtn, (minRating || verifiedOnly || maxRadius !== 10) ? styles.activeFilterBtn : null]}
             accessibilityLabel="Filter Tailors"
           >
             <Ionicons
               name="options-outline"
               size={19}
-              color={(minRating || verifiedOnly || maxRadius) ? "#078B87" : "#1A1D1F"}
+              color={(minRating || verifiedOnly || maxRadius !== 10) ? "#078B87" : "#1A1D1F"}
             />
           </TouchableOpacity>
         </View>
@@ -738,6 +837,43 @@ export default function TailorsMapScreen() {
             );
           })}
         </ScrollView>
+
+        {/* Quick Distance Radius Bar: 5 km, 10 km, 15 km */}
+        <View style={styles.radiusQuickBar}>
+          <Text style={styles.radiusBarLabel}>Radius:</Text>
+          {DISTANCE_OPTIONS.map((d) => {
+            const isSelected = maxRadius === d;
+            return (
+              <TouchableOpacity
+                key={d}
+                activeOpacity={0.8}
+                onPress={() => setMaxRadius(d)}
+                style={[styles.radiusPill, isSelected && styles.radiusPillActive]}
+              >
+                <Ionicons
+                  name="navigate"
+                  size={11}
+                  color={isSelected ? "#FFFFFF" : "#078B87"}
+                  style={{ marginRight: 3 }}
+                />
+                <Text style={[styles.radiusPillText, isSelected && styles.radiusPillTextActive]}>
+                  {d} km
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+          {userCoords ? (
+            <View style={styles.gpsActiveBadge}>
+              <Ionicons name="navigate-circle" size={12} color="#059669" />
+              <Text style={styles.gpsActiveText}>GPS Active</Text>
+            </View>
+          ) : (
+            <TouchableOpacity onPress={handleTriggerGps} style={styles.gpsDetectBadge}>
+              <Ionicons name="locate" size={11} color="#078B87" />
+              <Text style={styles.gpsDetectText}>Detect GPS</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* GPS Status Message Strip if any */}
         {gpsStatusMsg ? (
@@ -884,24 +1020,39 @@ export default function TailorsMapScreen() {
         ) : (
           <View style={styles.emptyCard}>
             <Ionicons name="location-outline" size={28} color="#9CA3AF" />
-            <Text style={styles.emptyCardTitle}>No tailors found in this area</Text>
+            <Text style={styles.emptyCardTitle}>No tailors within {maxRadius} km</Text>
             <Text style={styles.emptyCardSubtitle}>
-              Try zooming out, switching city, or clearing your search filters
+              {userCoords
+                ? `No registered tailors found within ${maxRadius} km of your GPS coordinates.`
+                : `No registered tailors found within ${maxRadius} km of ${selectedCity === "All" ? "your current area" : selectedCity}.`}
+              {maxRadius < 15 ? " Try expanding distance to 10 km or 15 km." : ""}
             </Text>
-            <TouchableOpacity
-              onPress={() => {
-                setSelectedCity("All");
-                setSearchQuery("");
-                setAppliedSearch("");
-                setMinRating(null);
-                setVerifiedOnly(false);
-                setMaxRadius(null);
-                handleCityChange("All");
-              }}
-              style={styles.resetBtn}
-            >
-              <Text style={styles.resetBtnText}>Reset All Filters</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+              {maxRadius < 15 && (
+                <TouchableOpacity
+                  onPress={() => setMaxRadius((prev) => (prev === 5 ? 10 : 15))}
+                  style={styles.expandRadiusBtn}
+                >
+                  <Text style={styles.expandRadiusBtnText}>
+                    Expand to {maxRadius === 5 ? "10 km" : "15 km"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedCity("All");
+                  setSearchQuery("");
+                  setAppliedSearch("");
+                  setMinRating(null);
+                  setVerifiedOnly(false);
+                  setMaxRadius(10);
+                  handleCityChange("All");
+                }}
+                style={styles.resetBtn}
+              >
+                <Text style={styles.resetBtnText}>Reset Filters</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </View>
@@ -957,19 +1108,28 @@ export default function TailorsMapScreen() {
               </View>
             </TouchableOpacity>
 
-            {/* Maximum Distance (if GPS available) */}
+            {/* Distance Radius (Strictly 5, 10, 15 km) */}
             <Text style={styles.filterSectionTitle}>Distance Radius</Text>
+            <Text style={styles.filterSectionSubtitle}>
+              Checks and displays tailors within this distance from your location (lat & lng)
+            </Text>
             <View style={styles.filterOptionsRow}>
-              {[null, 5, 10, 25].map((d) => {
+              {DISTANCE_OPTIONS.map((d) => {
                 const isSelected = maxRadius === d;
                 return (
                   <TouchableOpacity
-                    key={d === null ? "any" : d.toString()}
+                    key={d.toString()}
                     onPress={() => setMaxRadius(d)}
                     style={[styles.filterChip, isSelected && styles.filterChipActive]}
                   >
+                    <Ionicons
+                      name="navigate-circle"
+                      size={14}
+                      color={isSelected ? "#078B87" : "#6B7280"}
+                      style={{ marginRight: 4 }}
+                    />
                     <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
-                      {d === null ? "Any Distance" : `Within ${d} km`}
+                      Within {d} km
                     </Text>
                   </TouchableOpacity>
                 );
@@ -982,12 +1142,12 @@ export default function TailorsMapScreen() {
                 onPress={() => {
                   setMinRating(null);
                   setVerifiedOnly(false);
-                  setMaxRadius(null);
+                  setMaxRadius(10);
                   setIsFilterModalVisible(false);
                 }}
                 style={styles.modalResetBtn}
               >
-                <Text style={styles.modalResetBtnText}>Clear Filters</Text>
+                <Text style={styles.modalResetBtnText}>Reset to 10 km</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1462,6 +1622,96 @@ const styles = StyleSheet.create({
   },
   modalApplyBtnText: {
     fontSize: 13,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  filterSectionSubtitle: {
+    fontSize: 11,
+    color: "#6B7280",
+    marginTop: -4,
+    marginBottom: 10,
+  },
+  radiusQuickBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  },
+  radiusBarLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#4B5563",
+    marginRight: 2,
+  },
+  radiusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  radiusPillActive: {
+    backgroundColor: "#078B87",
+    borderColor: "#078B87",
+  },
+  radiusPillText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#374151",
+  },
+  radiusPillTextActive: {
+    color: "#FFFFFF",
+  },
+  gpsActiveBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#ECFDF5",
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginLeft: "auto",
+  },
+  gpsActiveText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#065F46",
+  },
+  gpsDetectBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: "#EBF8F9",
+    borderWidth: 1,
+    borderColor: "#BEE8EB",
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 10,
+    marginLeft: "auto",
+  },
+  gpsDetectText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#078B87",
+  },
+  expandRadiusBtn: {
+    backgroundColor: "#078B87",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  expandRadiusBtnText: {
+    fontSize: 12,
     fontWeight: "700",
     color: "#FFFFFF",
   },

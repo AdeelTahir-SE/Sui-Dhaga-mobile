@@ -52,6 +52,8 @@ export default function CommunityScreen() {
           title="Community"
           showBack
           titleClassName="text-[22px] font-bold text-brand-dark"
+          rightIcon="person-circle-outline"
+          onRightPress={() => router.push("/community/profile" as any)}
         />
       }
       refreshControl={
@@ -142,7 +144,7 @@ export default function CommunityScreen() {
           </View>
         </ScrollView>
 
-        {/* Community Highlight Banner */}
+        {/* Community Highlight Banner with Profile Shortcut */}
         <View className="mb-4 rounded-2xl border border-primary/20 bg-primary-50 p-4">
           <View className="flex-row items-center">
             <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/15">
@@ -156,6 +158,24 @@ export default function CommunityScreen() {
                 Discover bespoke tailoring, share your stitched fits & connect with master tailors.
               </Text>
             </View>
+          </View>
+
+          {/* Quick link to user's community profile */}
+          <View className="mt-3 pt-2.5 flex-row items-center justify-between border-t border-primary/10">
+            <Text className="text-[11.5px] font-medium text-[#0D7377]">
+              Manage your shared outfits
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/community/profile" as any)}
+              activeOpacity={0.75}
+              className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-xs"
+              style={{ borderWidth: 1, borderColor: "#B2EBF2" }}
+            >
+              <Ionicons name="person-outline" size={13} color="#0D7377" />
+              <Text className="ml-1 text-[11.5px] font-bold text-[#0D7377]">
+                My Posts & Profile
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 

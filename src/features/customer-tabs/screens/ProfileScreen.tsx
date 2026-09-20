@@ -450,8 +450,14 @@ export default function ProfileScreen() {
               title="Appointments"
               subtitle="Tailor consultations & fitting schedules"
               icon="calendar-outline"
-              isLast
               onPress={() => router.push("/appointments" as any)}
+            />
+            <ProfileMenuRow
+              title="Community Profile & Posts"
+              subtitle="Manage, edit & delete your shared designs"
+              icon="people-outline"
+              isLast
+              onPress={() => router.push("/community/profile" as any)}
             />
           </View>
         </View>
