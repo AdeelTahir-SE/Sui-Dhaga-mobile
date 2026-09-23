@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useMemo, useState } from "react";
 import {
   LayoutChangeEvent,
   StyleSheet,
@@ -17,7 +18,6 @@ import Svg, {
   Stop,
   Text as SvgText,
 } from "react-native-svg";
-import { Ionicons } from "@expo/vector-icons";
 import { OrderItem } from "../../../types/api";
 
 type TimeRange = "Week" | "Month" | "Year";
@@ -37,18 +37,41 @@ interface TailorEarningsChartProps {
 }
 
 const MONTH_NAMES = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 const FULL_MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarningsChartProps) {
+export function TailorEarningsChart({
+  orders = [],
+  totalEarned = 0,
+}: TailorEarningsChartProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("Month");
   const [chartType, setChartType] = useState<ChartType>("line");
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -81,13 +104,18 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
 
         // Filter orders for this day
         const dayOrders = completedOrders.filter((o) => {
-          const orderDate = (o.createdAt || o.created_at || o.deliveryDate || "").split("T")[0];
+          const orderDate = (
+            o.createdAt ||
+            o.created_at ||
+            o.deliveryDate ||
+            ""
+          ).split("T")[0];
           return orderDate === dayStr;
         });
 
         const daySum = dayOrders.reduce(
           (sum, o) => sum + (Number(o.totalAmount || o.price) || 0),
-          0
+          0,
         );
 
         days.push({
@@ -106,7 +134,10 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
         return days.map((d, idx) => ({
           ...d,
           value: baselinePattern[idx % baselinePattern.length],
-          orderCount: Math.max(1, Math.round(baselinePattern[idx % baselinePattern.length] / 1800)),
+          orderCount: Math.max(
+            1,
+            Math.round(baselinePattern[idx % baselinePattern.length] / 1800),
+          ),
         }));
       }
 
@@ -129,7 +160,7 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
 
         const monthSum = monthOrders.reduce(
           (sum, o) => sum + (Number(o.totalAmount || o.price) || 0),
-          0
+          0,
         );
 
         months.push({
@@ -148,7 +179,10 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
         return months.map((m, idx) => ({
           ...m,
           value: baselinePattern[idx % baselinePattern.length],
-          orderCount: Math.max(2, Math.round(baselinePattern[idx % baselinePattern.length] / 3500)),
+          orderCount: Math.max(
+            2,
+            Math.round(baselinePattern[idx % baselinePattern.length] / 3500),
+          ),
         }));
       }
 
@@ -167,7 +201,7 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
 
       const ySum = yOrders.reduce(
         (sum, o) => sum + (Number(o.totalAmount || o.price) || 0),
-        0
+        0,
       );
 
       years.push({
@@ -185,16 +219,20 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
       return years.map((y, idx) => ({
         ...y,
         value: baseline[idx % baseline.length],
-        orderCount: Math.max(12, Math.round(baseline[idx % baseline.length] / 3000)),
+        orderCount: Math.max(
+          12,
+          Math.round(baseline[idx % baseline.length] / 3000),
+        ),
       }));
     }
 
     return years;
   }, [orders, timeRange]);
 
-  const activeIndex = selectedIndex !== null && selectedIndex < chartData.length
-    ? selectedIndex
-    : chartData.length - 1;
+  const activeIndex =
+    selectedIndex !== null && selectedIndex < chartData.length
+      ? selectedIndex
+      : chartData.length - 1;
 
   const activePoint = chartData[activeIndex] || chartData[0];
 
@@ -204,7 +242,10 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
 
   const peakPoint = useMemo(() => {
     if (!chartData.length) return null;
-    return chartData.reduce((prev, cur) => (cur.value > prev.value ? cur : prev), chartData[0]);
+    return chartData.reduce(
+      (prev, cur) => (cur.value > prev.value ? cur : prev),
+      chartData[0],
+    );
   }, [chartData]);
 
   // Dimensions
@@ -227,10 +268,14 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
   // Points coordinates
   const points = useMemo(() => {
     if (!chartData.length || innerWidth <= 0) return [];
-    const step = chartData.length > 1 ? innerWidth / (chartData.length - 1) : innerWidth / 2;
+    const step =
+      chartData.length > 1
+        ? innerWidth / (chartData.length - 1)
+        : innerWidth / 2;
 
     return chartData.map((d, i) => {
-      const x = paddingLeft + (chartData.length > 1 ? i * step : innerWidth / 2);
+      const x =
+        paddingLeft + (chartData.length > 1 ? i * step : innerWidth / 2);
       const ratio = maxValue > 0 ? d.value / maxValue : 0;
       const y = paddingTop + innerHeight * (1 - ratio);
       return { x, y, ...d };
@@ -267,7 +312,8 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
   // Format currency for Y-axis
   const formatYAxis = (val: number) => {
     if (val >= 100000) return `${Math.round(val / 1000)}k`;
-    if (val >= 1000) return `${(val / 1000).toFixed(val % 1000 === 0 ? 0 : 1)}k`;
+    if (val >= 1000)
+      return `${(val / 1000).toFixed(val % 1000 === 0 ? 0 : 1)}k`;
     return `${val}`;
   };
 
@@ -292,14 +338,6 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
             <Text className="text-[20px] font-black text-brand-dark tracking-tight">
               Rs. {totalPeriodEarned.toLocaleString()}
             </Text>
-            {peakPoint && (
-              <View className="flex-row items-center rounded-full bg-[#EAF8EE] px-2 py-0.5">
-                <Ionicons name="trending-up" size={12} color="#2B9A52" />
-                <Text className="ml-1 text-[10px] font-bold text-[#2B9A52]">
-                  Peak: {peakPoint.shortLabel}
-                </Text>
-              </View>
-            )}
           </View>
         </View>
 
@@ -345,7 +383,8 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
             Rs. {activePoint?.value.toLocaleString()}
           </Text>
           <Text className="text-[11px] font-medium text-brand-gray">
-            ({activePoint?.orderCount || 0} {activePoint?.orderCount === 1 ? "order" : "orders"})
+            ({activePoint?.orderCount || 0}{" "}
+            {activePoint?.orderCount === 1 ? "order" : "orders"})
           </Text>
         </View>
       </View>
@@ -364,7 +403,13 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
                 <Stop offset="0%" stopColor="#14919B" stopOpacity="0.9" />
                 <Stop offset="100%" stopColor="#2BB8C4" stopOpacity="0.65" />
               </LinearGradient>
-              <LinearGradient id="barGradientInactive" x1="0" y1="0" x2="0" y2="1">
+              <LinearGradient
+                id="barGradientInactive"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
                 <Stop offset="0%" stopColor="#CAD5E2" stopOpacity="0.8" />
                 <Stop offset="100%" stopColor="#E2E8F0" stopOpacity="0.5" />
               </LinearGradient>
@@ -402,7 +447,9 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
             {chartType === "line" ? (
               <>
                 {/* Area under curve */}
-                {areaPath ? <Path d={areaPath} fill="url(#chartGradient)" /> : null}
+                {areaPath ? (
+                  <Path d={areaPath} fill="url(#chartGradient)" />
+                ) : null}
 
                 {/* Curved Line */}
                 {linePath ? (
@@ -461,9 +508,15 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
               <G>
                 {points.map((pt, i) => {
                   const isSel = i === activeIndex;
-                  const barWidth = Math.min(28, Math.max(14, (innerWidth / points.length) * 0.5));
+                  const barWidth = Math.min(
+                    28,
+                    Math.max(14, (innerWidth / points.length) * 0.5),
+                  );
                   const barX = pt.x - barWidth / 2;
-                  const barHeight = Math.max(4, chartHeight - paddingBottom - pt.y);
+                  const barHeight = Math.max(
+                    4,
+                    chartHeight - paddingBottom - pt.y,
+                  );
 
                   return (
                     <G key={`bar-${i}`}>
@@ -474,7 +527,11 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
                         height={barHeight}
                         rx={barWidth / 3}
                         ry={barWidth / 3}
-                        fill={isSel ? "url(#barGradient)" : "url(#barGradientInactive)"}
+                        fill={
+                          isSel
+                            ? "url(#barGradient)"
+                            : "url(#barGradientInactive)"
+                        }
                       />
                     </G>
                   );
@@ -535,7 +592,9 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
           <TouchableOpacity
             onPress={() => setChartType("line")}
             className={`rounded-md p-1.5 ${
-              chartType === "line" ? "bg-primary-50 text-primary" : "bg-transparent"
+              chartType === "line"
+                ? "bg-primary-50 text-primary"
+                : "bg-transparent"
             }`}
           >
             <Ionicons
@@ -548,7 +607,9 @@ export function TailorEarningsChart({ orders = [], totalEarned = 0 }: TailorEarn
           <TouchableOpacity
             onPress={() => setChartType("bar")}
             className={`rounded-md p-1.5 ${
-              chartType === "bar" ? "bg-primary-50 text-primary" : "bg-transparent"
+              chartType === "bar"
+                ? "bg-primary-50 text-primary"
+                : "bg-transparent"
             }`}
           >
             <Ionicons
