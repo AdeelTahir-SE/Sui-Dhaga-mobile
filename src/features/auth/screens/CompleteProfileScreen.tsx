@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -53,6 +53,12 @@ export default function CompleteProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, completeProfile, logout } = useAuthStore();
 
+  useEffect(() => {
+    if (!user || user.email === "ayesha.khan.google@gmail.com") {
+      router.replace("/auth/login" as any);
+    }
+  }, [user]);
+
   const [selectedRole, setSelectedRole] = useState<Role>(
     user?.role === "tailor" ? "tailor" : "customer"
   );
@@ -70,7 +76,7 @@ export default function CompleteProfileScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const displayName = user?.fullName || user?.name || "User";
+  const displayName = user?.fullName || user?.name || (user?.email ? user.email.split("@")[0] : "User");
   const displayEmail = user?.email || "";
   const avatarUrl = user?.avatarUrl || user?.avatar;
 
@@ -205,7 +211,7 @@ export default function CompleteProfileScreen() {
               <View className="flex-row items-center bg-white px-2.5 py-1.5 rounded-lg border border-brand-border">
                 <Ionicons name="checkmark-circle" size={14} color="#14919B" style={{ marginRight: 4 }} />
                 <Text className="text-[11px] font-medium text-brand-dark">
-                  Google
+                  {user?.avatarUrl ? "Google" : "Verified"}
                 </Text>
               </View>
             </View>

@@ -69,35 +69,39 @@ export default function LoginScreen() {
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
-      const success = await login({ email: email.trim(), password });
-      if (success) {
-        const user = useAuthStore.getState().user;
-        const isTailor = user?.role === "tailor";
-
-        if (isTailor) {
-          // Check if tailor profile already exists in backend database
-          let hasExistingTailorProfile = false;
-          try {
-            const tailorRes = await tailorsApi.getMyTailorProfile(user?.id, user?.email);
-            const t = (tailorRes?.data || tailorRes) as any;
-            if (t && t.id) {
-              hasExistingTailorProfile = true;
-            }
-          } catch {}
-
-          // If tailor already has a profile in database, route directly to dashboard!
-          // Only if no profile exists at all, route to complete-profile setup.
-          if (hasExistingTailorProfile) {
-            router.replace("/tailor-dashboard" as any);
-          } else {
-            router.replace("/tailor-dashboard/complete-profile" as any);
-          }
+      const result = await login({ email: email.trim(), password });
+      if (result.success) {
+        if (result.needsProfileCompletion) {
+          router.replace("/auth/complete-profile" as any);
         } else {
-          router.replace("/home" as any);
+          const user = useAuthStore.getState().user;
+          const isTailor = user?.role === "tailor";
+
+          if (isTailor) {
+            // Check if tailor profile already exists in backend database
+            let hasExistingTailorProfile = false;
+            try {
+              const tailorRes = await tailorsApi.getMyTailorProfile(user?.id, user?.email);
+              const t = (tailorRes?.data || tailorRes) as any;
+              if (t && t.id) {
+                hasExistingTailorProfile = true;
+              }
+            } catch {}
+
+            // If tailor already has a profile in database, route directly to dashboard!
+            // Only if no profile exists at all, route to complete-profile setup.
+            if (hasExistingTailorProfile) {
+              router.replace("/tailor-dashboard" as any);
+            } else {
+              router.replace("/tailor-dashboard/complete-profile" as any);
+            }
+          } else {
+            router.replace("/home" as any);
+          }
         }
       } else {
         const storeError = useAuthStore.getState().error;
-        setErrorMessage(storeError || "Invalid email or password");
+        setErrorMessage(storeError || result.error || "Invalid email or password");
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to log in. Please try again.");

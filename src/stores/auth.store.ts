@@ -14,7 +14,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
 
-  login: (payload: LoginPayload) => Promise<boolean>;
+  login: (payload: LoginPayload) => Promise<{ success: boolean; needsProfileCompletion?: boolean; error?: string }>;
   register: (payload: RegisterPayload) => Promise<boolean>;
   loginWithGoogle: () => Promise<{ success: boolean; needsProfileCompletion?: boolean; error?: string }>;
   handleAuthCallback: (params: {
@@ -179,6 +179,17 @@ export const useAuthStore = create<AuthState>((set) => ({
       const token = await storage.getToken();
       const savedUser = await storage.getUser();
 
+      // Automatically purge stale hardcoded mock user if previously cached
+      if (
+        savedUser?.email === 'ayesha.khan.google@gmail.com' ||
+        savedUser?.id === '11111111-1111-1111-1111-111111111111'
+      ) {
+        await storage.removeToken();
+        await storage.removeUser();
+        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
+        return;
+      }
+
       if (!token) {
         set({ user: null, token: null, isAuthenticated: false, isLoading: false });
         return;
@@ -220,7 +231,13 @@ export const useAuthStore = create<AuthState>((set) => ({
           isLoading: false,
           error: null,
         });
-        return true;
+
+        const needsProfileCompletion =
+          (res as any)?.data?.needsProfileCompletion ??
+          (res as any)?.needsProfileCompletion ??
+          (!authData.user.phone || !authData.user.role);
+
+        return { success: true, needsProfileCompletion };
       } else {
         const errorMsg =
           (res.success === false && (res.error || res.message)) ||
@@ -232,7 +249,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (err: any) {
       const message = err?.message || 'Login failed. Please verify your credentials.';
       set({ error: message, isLoading: false });
-      return false;
+      return { success: false, error: message };
     }
   },
 
@@ -329,10 +346,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (params.name) payload.name = params.name;
 
       if (!payload.accessToken && !payload.code && !payload.email) {
-        payload.email = 'ayesha.khan.google@gmail.com';
-        payload.name = 'Ayesha Khan';
-        payload.fullName = 'Ayesha Khan';
-        payload.avatar = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150';
+        throw new Error('Authentication callback was missing authorization credentials.');
       }
 
       const res = await authApi.googleAuth(payload);
@@ -353,7 +367,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           error: null,
         });
 
-        const needsProfileCompletion = res.data?.needsProfileCompletion ?? true;
+        const needsProfileCompletion = (res as any)?.data?.needsProfileCompletion ?? (res as any)?.needsProfileCompletion ?? true;
         return { success: true, needsProfileCompletion };
       } else {
         throw new Error(res.message || 'Google authentication response was invalid.');
@@ -369,6 +383,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     let subscription: { remove: () => void } | null = null;
     try {
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser?.email === 'ayesha.khan.google@gmail.com') {
+        await storage.removeToken();
+        await storage.removeUser();
+        set({ user: null, token: null, isAuthenticated: false });
+      }
+
       const redirectUri = Linking.createURL('auth/callback');
 
       // 1. Check if backend provides OAuth URL (via Supabase)
@@ -431,15 +452,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
       }
 
-      // If no OAuth token was acquired (e.g. running in Expo Go without configured Google Cloud client or dev mode),
-      // provide a seamless fallback to sign in with standard Google profile
       if (!authPayload) {
-        authPayload = {
-          email: 'ayesha.khan.google@gmail.com',
-          name: 'Ayesha Khan',
-          fullName: 'Ayesha Khan',
-          avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-        };
+        set({ isLoading: false });
+        return { success: false, error: 'Google sign-in could not be completed. Please try again.' };
       }
 
       const res = await authApi.googleAuth(authPayload);
