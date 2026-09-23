@@ -20,8 +20,6 @@ import { ButtonTexture } from "@/components/ui/ButtonTexture";
 import { useTailorDetails } from "../../tailors/hooks/useTailors";
 import { useAppointments } from "../hooks/useAppointments";
 
-const rekhaImage = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
-
 const TIME_SLOT_GROUPS = [
   {
     period: "Morning",
@@ -114,7 +112,7 @@ export default function BookAppointmentScreen() {
     time?: string;
   }>();
 
-  const { tailor } = useTailorDetails(tailorId || "1");
+  const { tailor, isLoading } = useTailorDetails(tailorId || "");
   const { appointments, createAppointment } = useAppointments();
 
   // Multi-step wizard state (1: Schedule, 2: Notes, 3: Review & Confirm)
@@ -235,23 +233,23 @@ export default function BookAppointmentScreen() {
     return `${selectedDate.getDate()} ${monthShort} ${selectedDate.getFullYear()}`;
   }, [selectedDate]);
 
-  // Tailor attributes with faithful design fallbacks
+  // Tailor attributes from backend API
   const tailorName =
     tailor?.shopName ||
     (tailor as any)?.fullName ||
     tailor?.name ||
     (tailor as any)?.businessName ||
-    "Rekha Tailors";
+    "Tailor";
 
   const tailorCity =
     tailor?.location?.city ||
     (tailor as any)?.city ||
     (tailor as any)?.address ||
-    "C-Scheme, Jaipur";
+    "Nearby";
 
-  const tailorRating = tailor?.rating ? Number(tailor.rating).toFixed(1) : "4.8";
+  const tailorRating = tailor?.rating ? Number(tailor.rating).toFixed(1) : undefined;
   const reviewsCount =
-    tailor?.reviewsCount ?? (tailor as any)?.reviews ?? (tailor as any)?.totalReviews ?? 128;
+    tailor?.reviewsCount ?? (tailor as any)?.reviews ?? (tailor as any)?.totalReviews ?? 0;
 
   const rawAvatarUri =
     tailor?.avatarUrl ||
@@ -261,8 +259,8 @@ export default function BookAppointmentScreen() {
     (tailor as any)?.profile?.avatar_url ||
     null;
 
-  const avatarSource = rawAvatarUri ? { uri: rawAvatarUri } : rekhaImage;
-  const targetTailorId = String(tailorId || tailor?.id || "rekha-tailors").toLowerCase();
+  const avatarSource = rawAvatarUri ? { uri: rawAvatarUri } : null;
+  const targetTailorId = String(tailorId || tailor?.id || "").toLowerCase();
 
   /**
    * Checks whether a specific time slot is already booked on a given date for this tailor
@@ -275,9 +273,7 @@ export default function BookAppointmentScreen() {
       const isBookedInSession = sessionBookedSlots.some((item) => {
         const itemTailor = item.tailorId.toLowerCase();
         return (
-          (itemTailor === targetTailorId ||
-            itemTailor === "rekha-tailors" ||
-            targetTailorId === "rekha-tailors") &&
+          itemTailor === targetTailorId &&
           item.date === dateStr &&
           normalizeTimeTo24h(item.time) === slot24
         );
@@ -292,13 +288,7 @@ export default function BookAppointmentScreen() {
           if (status === "cancelled" || status === "rejected") return false;
 
           const apptTailor = String(appt.tailorId || appt.tailor_id || "").toLowerCase();
-          const matchesTailor =
-            !apptTailor ||
-            apptTailor === targetTailorId ||
-            apptTailor === "1" ||
-            apptTailor === "rekha-tailors" ||
-            targetTailorId === "1" ||
-            targetTailorId === "rekha-tailors";
+          const matchesTailor = !targetTailorId || apptTailor === targetTailorId;
 
           const apptDate = normalizeDateStr(appt.appointmentDate || appt.date || appt.appointment_date || "");
           const apptTime = normalizeTimeTo24h(appt.appointmentTime || appt.time || appt.appointment_time || "");
@@ -309,20 +299,9 @@ export default function BookAppointmentScreen() {
         if (found) return true;
       }
 
-      // 3. Demo realistic booked slots for upcoming dates (e.g. 11:00 AM & 04:00 PM on tomorrow)
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowIso = normalizeDateStr(tomorrow.toISOString());
-
-      if (dateStr === tomorrowIso) {
-        if (slot24 === "11:00" || slot24 === "16:00") {
-          return true;
-        }
-      }
-
       return false;
     },
-    [appointments, sessionBookedSlots, targetTailorId, now]
+    [appointments, sessionBookedSlots, targetTailorId]
   );
 
   // Counts of available & booked slots for currently selected date
@@ -427,6 +406,71 @@ export default function BookAppointmentScreen() {
 
   const isCurrentSlotBooked = isSlotBooked(selectedTime, isoDateStr);
 
+  if (isLoading) {
+    return (
+      <BookingOrdersScreenShell>
+        <BookingOrdersHeader
+          title="Book Appointment"
+          alignLeftTitle
+          titleClassName="text-[22px] font-bold text-brand-dark tracking-tight"
+          hideRightIcon
+          onPressLeft={handleHeaderBack}
+        />
+        <View className="py-24 items-center justify-center">
+          <ActivityIndicator size="large" color="#14919B" />
+          <Text className="mt-3 text-[13px] font-medium text-brand-gray">
+            Loading tailor details...
+          </Text>
+        </View>
+      </BookingOrdersScreenShell>
+    );
+  }
+
+  if (!tailor && !isLoading) {
+    return (
+      <BookingOrdersScreenShell>
+        <BookingOrdersHeader
+          title="Book Appointment"
+          alignLeftTitle
+          titleClassName="text-[22px] font-bold text-brand-dark tracking-tight"
+          hideRightIcon
+          onPressLeft={handleHeaderBack}
+        />
+        <View className="flex-1 items-center justify-center py-20 px-6">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+            <Ionicons name="alert-circle-outline" size={32} color="#14919B" />
+          </View>
+          <Text className="text-[18px] font-bold text-brand-dark text-center">
+            Tailor Not Found
+          </Text>
+          <Text className="mt-2 text-center text-[13px] font-medium text-brand-gray max-w-[280px]">
+            We couldn't find the tailor you want to book an appointment with. Please select an active tailor to continue.
+          </Text>
+          <View className="mt-6 w-full max-w-[260px] gap-3">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/tailors" as any)}
+              className="h-[48px] rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+            >
+              <Text className="text-[13px] font-bold text-white">
+                Explore Tailors
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.back()}
+              className="h-[48px] rounded-xl border border-brand-border bg-white items-center justify-center"
+            >
+              <Text className="text-[13px] font-bold text-brand-dark">
+                Go Back
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </BookingOrdersScreenShell>
+    );
+  }
+
   return (
     <BookingOrdersScreenShell>
       {/* Top Navigation Header with prominent title */}
@@ -441,12 +485,16 @@ export default function BookAppointmentScreen() {
       <View className="px-5 pb-8">
         {/* Compact Tailor Header Banner */}
         <View className="mb-4 flex-row items-center rounded-2xl border border-brand-border bg-white p-3.5 shadow-2xs">
-          <View className="overflow-hidden rounded-xl bg-primary-50">
-            <Image
-              source={avatarSource}
-              style={{ width: 56, height: 56 }}
-              contentFit="cover"
-            />
+          <View className="overflow-hidden rounded-xl bg-primary-50 w-14 h-14 items-center justify-center">
+            {avatarSource ? (
+              <Image
+                source={avatarSource}
+                style={{ width: 56, height: 56 }}
+                contentFit="cover"
+              />
+            ) : (
+              <Ionicons name="storefront-outline" size={26} color="#14919B" />
+            )}
           </View>
 
           <View className="ml-3 flex-1 justify-center">

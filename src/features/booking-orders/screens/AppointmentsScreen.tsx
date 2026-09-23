@@ -351,13 +351,13 @@ export default function AppointmentsScreen() {
                 <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-3">
                   <Ionicons name="calendar-outline" size={30} color="#14919B" />
                 </View>
-                <Text className="text-[16px] font-bold text-brand-dark">
+                <Text className="text-[17px] font-bold text-brand-dark">
                   {searchQuery ? "No Matching Appointments" : "No Appointments Found"}
                 </Text>
-                <Text className="mt-1 text-center text-[12px] font-medium text-brand-gray max-w-[250px]">
+                <Text className="mt-1 text-center text-[12.5px] font-medium text-brand-gray max-w-[270px]">
                   {searchQuery
                     ? "Try adjusting your search query or clear the filter."
-                    : "Schedule a fitting or measurement visit with expert tailors."}
+                    : "You don't have any appointments scheduled. Book a visit or fitting with an expert tailor."}
                 </Text>
                 {searchQuery ? (
                   <TouchableOpacity
@@ -379,7 +379,7 @@ export default function AppointmentsScreen() {
                     className="mt-4 rounded-xl bg-primary px-5 py-2.5 shadow-xs active:bg-primary-dark"
                   >
                     <Text className="text-[13px] font-bold text-white">
-                      Explore Tailors
+                      Book New Appointment
                     </Text>
                   </TouchableOpacity>
                 )}

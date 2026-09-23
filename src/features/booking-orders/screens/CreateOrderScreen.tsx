@@ -50,8 +50,8 @@ export default function CreateOrderScreen() {
 
   const currentUser = useAuthStore((state) => state.user);
 
-  const tailorName = params.tailorName || "Master Tailor";
-  const tailorId = params.tailorId || "1";
+  const tailorName = params.tailorName || "Tailor";
+  const tailorId = params.tailorId || "";
   const tailorAvatar = params.avatar;
 
   // Form State
@@ -299,6 +299,49 @@ export default function CreateOrderScreen() {
       setIsUploadingImages(false);
     }
   };
+
+  if (!tailorId) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#FFFFFF", paddingTop: insets.top }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            backgroundColor: "#FFFFFF",
+            borderBottomWidth: 1,
+            borderBottomColor: "#E2E8F0",
+          }}
+        >
+          <TouchableOpacity onPress={() => router.back()} className="mr-3 p-1">
+            <Ionicons name="arrow-back" size={22} color="#1A1D1F" />
+          </TouchableOpacity>
+          <Text className="text-[18px] font-bold text-brand-dark">Create Order</Text>
+        </View>
+        <View className="flex-1 items-center justify-center py-20 px-6">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+            <Ionicons name="cut-outline" size={32} color="#14919B" />
+          </View>
+          <Text className="text-[18px] font-bold text-brand-dark text-center">
+            No Tailor Selected
+          </Text>
+          <Text className="mt-2 text-center text-[13px] font-medium text-brand-gray max-w-[280px]">
+            Please select an expert tailor from our directory to begin your custom outfit order.
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push("/tailors" as any)}
+            className="mt-6 h-[48px] px-8 rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+          >
+            <Text className="text-[13px] font-bold text-white">
+              Explore Tailors
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#FFFFFF", paddingTop: insets.top }}>

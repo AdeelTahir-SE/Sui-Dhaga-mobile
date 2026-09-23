@@ -468,12 +468,12 @@ export default function MainOrdersScreen() {
             <Text className="text-[18px] font-bold text-brand-dark text-center tracking-tight">
               {searchQuery.trim() || activeFilter !== null
                 ? "No Matching Orders"
-                : "No Orders Yet"}
+                : "No Orders Found"}
             </Text>
             <Text className="mt-2 text-[13px] font-medium text-brand-gray text-center leading-[20px] max-w-[280px] mb-6">
               {searchQuery.trim() || activeFilter !== null
                 ? "No orders match your search or filter criteria. Try adjusting your query or resetting filters."
-                : "You don't have any orders right now. Connect with expert tailors to create custom outfits!"}
+                : "No orders found. Create a new custom tailoring order with an expert tailor!"}
             </Text>
 
             {searchQuery.trim() || activeFilter !== null ? (
@@ -497,7 +497,7 @@ export default function MainOrdersScreen() {
                 className="h-[48px] px-6 rounded-md bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
               >
                 <Text className="text-[13px] font-bold text-white tracking-wide">
-                  Explore Tailors
+                  Create New Order
                 </Text>
               </TouchableOpacity>
             )}
@@ -544,7 +544,7 @@ export default function MainOrdersScreen() {
               return (
                 <MainOrderCard
                   key={order.id || index}
-                  id={order.orderNumber || order.id || `SD${1200 + index}`}
+                  id={order.orderNumber || order.id || "—"}
                   orderId={order.id}
                   item={order.itemName || "Custom Garment"}
                   tailor={order.tailorName || "Tailor"}

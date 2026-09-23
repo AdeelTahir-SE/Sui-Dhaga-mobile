@@ -25,9 +25,8 @@ import { SocialLoginButton } from "../components/SocialLoginButton";
 const logoImg = require("@/assets/logos/main-logo.png");
 const customerImg = require("@/assets/illustrations/auth-flow/cutomer-crete-account.png");
 const tailorImg = require("@/assets/illustrations/auth-flow/tailor-create-account.png");
-const designerImg = require("@/assets/illustrations/auth-flow/designer-create-account.png");
 
-type Role = "customer" | "tailor" | "designer";
+type Role = "customer" | "tailor";
 
 const roles: { id: Role; title: string; description: string; image: any }[] = [
   {
@@ -41,12 +40,6 @@ const roles: { id: Role; title: string; description: string; image: any }[] = [
     title: "Tailor",
     description: "Offer services &\ngrow business",
     image: tailorImg,
-  },
-  {
-    id: "designer",
-    title: "Designer",
-    description: "Create designs &\nget discovered",
-    image: designerImg,
   },
 ];
 

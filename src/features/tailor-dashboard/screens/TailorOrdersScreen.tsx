@@ -17,12 +17,6 @@ import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 import { useOrders } from "../../booking-orders/hooks/useOrders";
 
-const orderImages = {
-  anarkali: require("@/assets/illustrations/tailor-dashboard/orders/anarkali-suit.png"),
-  sherwani: require("@/assets/illustrations/tailor-dashboard/orders/sherwani-set.png"),
-  lehenga: require("@/assets/illustrations/tailor-dashboard/orders/lehenga-choli.png"),
-};
-
 export default function TailorOrdersScreen() {
   const { orders, isLoading, isRefreshing, refresh } = useOrders();
   const [searchQuery, setSearchQuery] = useState("");
@@ -543,20 +537,17 @@ export default function TailorOrdersScreen() {
           </View>
         ) : (
           filteredOrders.map((order, index) => {
-            const fallbackImages = [
-              orderImages.anarkali,
-              orderImages.sherwani,
-              orderImages.lehenga,
-            ];
-            const img = order.imageUrl
-              ? { uri: order.imageUrl }
-              : fallbackImages[index % fallbackImages.length];
+            const firstDesign =
+              order.imageUrl ||
+              (order.designImages && order.designImages.length > 0 ? order.designImages[0] : null) ||
+              (order.design_images && order.design_images.length > 0 ? order.design_images[0] : null);
+            const img = firstDesign ? { uri: firstDesign } : undefined;
 
             return (
               <OrderRequestCard
                 key={order.id || index}
                 image={img}
-                id={order.orderNumber || order.id || `ORD${index + 1000}`}
+                id={order.orderNumber || order.id || "—"}
                 item={order.itemName || "Custom Garment"}
                 price={`Rs ${order.price?.toLocaleString?.() || order.price || 0}`}
                 customer={order.customerName || "Customer"}

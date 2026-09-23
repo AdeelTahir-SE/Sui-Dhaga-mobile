@@ -17,15 +17,70 @@ import { useAuthStore } from "@/stores/auth.store";
 
 export default function OrderDetailsScreen() {
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
-  const { order, isLoading } = useOrderDetails(orderId || "1");
+  const { order, isLoading } = useOrderDetails(orderId || "");
   const currentUser = useAuthStore((state) => state.user);
 
-  const orderNumber = order?.orderNumber || order?.id || orderId || "#ORD12345";
+  if (isLoading) {
+    return (
+      <BookingOrdersScreenShell>
+        <BookingOrdersHeader title="Order Details" />
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
+          <ActivityIndicator size="large" color="#14919B" />
+          <Text style={{ marginTop: 12, fontSize: 13, color: "#6F767E" }}>Loading order details...</Text>
+        </View>
+      </BookingOrdersScreenShell>
+    );
+  }
+
+  if (!order) {
+    return (
+      <BookingOrdersScreenShell>
+        <BookingOrdersHeader
+          title="Order Details"
+          leftIcon="arrow-back"
+          onPressLeft={() => router.back()}
+        />
+        <View className="flex-1 items-center justify-center py-20 px-6">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+            <Ionicons name="receipt-outline" size={32} color="#14919B" />
+          </View>
+          <Text className="text-[18px] font-bold text-brand-dark text-center">
+            Order Not Found
+          </Text>
+          <Text className="mt-2 text-center text-[13px] font-medium text-brand-gray max-w-[280px]">
+            No orders found with this reference. Start a new custom tailoring order with an expert tailor.
+          </Text>
+          <View className="mt-6 w-full max-w-[260px] gap-3">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/tailors" as any)}
+              className="h-[48px] rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+            >
+              <Text className="text-[13px] font-bold text-white">
+                Create New Order
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/orders" as any)}
+              className="h-[48px] rounded-xl border border-brand-border bg-white items-center justify-center"
+            >
+              <Text className="text-[13px] font-bold text-brand-dark">
+                Back to Orders
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </BookingOrdersScreenShell>
+    );
+  }
+
+  const orderNumber = order?.orderNumber || order?.id || orderId || "—";
   const itemName = order?.itemName || order?.item_name || "Custom Tailored Outfit";
-  const tailorName = order?.tailorName || "Master Tailor";
+  const tailorName = order?.tailorName || "Tailor";
   const rawPrice = order?.totalAmount ?? order?.total_amount ?? order?.price ?? 0;
-  const price = rawPrice ? `₹${rawPrice.toLocaleString("en-IN")}` : "₹18,900";
-  const delivery = order?.deliveryDate || order?.delivery_date || "Expected Soon";
+  const price = rawPrice ? `₹${rawPrice.toLocaleString("en-IN")}` : "₹0";
+  const delivery = order?.deliveryDate || order?.delivery_date || "Pending Confirmation";
   const status = order?.status || "Pending";
   const designImages = order?.designImages || order?.design_images || [];
   const measurements = order?.measurements || {};
@@ -51,18 +106,6 @@ export default function OrderDetailsScreen() {
       },
     } as any);
   };
-
-  if (isLoading) {
-    return (
-      <BookingOrdersScreenShell>
-        <BookingOrdersHeader title="Order Details" />
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
-          <ActivityIndicator size="large" color="#14919B" />
-          <Text style={{ marginTop: 12, fontSize: 13, color: "#6F767E" }}>Loading order details...</Text>
-        </View>
-      </BookingOrdersScreenShell>
-    );
-  }
 
   return (
     <BookingOrdersScreenShell>
@@ -240,18 +283,20 @@ export default function OrderDetailsScreen() {
                 {tailorName}
               </Text>
               <View className="mt-1 flex-row items-center">
-                <Ionicons name="star" size={12} color="#F4B400" />
+                <Ionicons name="shield-checkmark" size={12} color="#14919B" />
                 <Text className="ml-1 text-[11px] text-brand-dark">
-                  4.8 (128)
+                  Verified Tailor
                 </Text>
               </View>
               <View className="mt-3 flex-row justify-between">
                 <TouchableOpacity onPress={handleMessage}>
                   <Text className="text-[11px] font-medium text-primary">Message</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => router.push(`/tailors/${order?.tailorId || "1"}` as any)}>
-                  <Text className="text-[11px] font-medium text-primary">Profile</Text>
-                </TouchableOpacity>
+                {order?.tailorId ? (
+                  <TouchableOpacity onPress={() => router.push(`/tailors/${order.tailorId}` as any)}>
+                    <Text className="text-[11px] font-medium text-primary">Profile</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </View>
 

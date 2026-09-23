@@ -12,10 +12,49 @@ export default function MeasurementDetailsScreen() {
   const { measurementId } = useLocalSearchParams<{ measurementId?: string }>();
   const { measurements, deleteMeasurement } = useMeasurements();
 
-  // Find the profile matching measurementId or fallback to first
-  const profile = measurements.find((m) => m.id === measurementId) || measurements[0];
+  // Find the profile matching measurementId or fallback to first if no ID specified
+  const profile = measurements.find((m) => m.id === measurementId) || (measurementId ? undefined : measurements[0]);
 
-  const unit = profile?.unit === "cm" ? "cm" : "in";
+  if (!profile) {
+    return (
+      <MccScreenShell>
+        <MccHeader title="Fit Profile Details" showBack rightText="" />
+        <View className="flex-1 items-center justify-center py-20 px-6">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+            <Ionicons name="body-outline" size={32} color="#14919B" />
+          </View>
+          <Text className="text-[18px] font-bold text-brand-dark text-center">
+            Measurement Profile Not Found
+          </Text>
+          <Text className="mt-2 text-center text-[13px] font-medium text-brand-gray max-w-[280px]">
+            No measurement profile found. Create your custom fit profile to get started with precision tailoring.
+          </Text>
+          <View className="mt-6 w-full max-w-[260px] gap-3">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/measurements/new" as any)}
+              className="h-[48px] rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+            >
+              <Text className="text-[13px] font-bold text-white">
+                Create Measurement Profile
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/measurements" as any)}
+              className="h-[48px] rounded-xl border border-brand-border bg-white items-center justify-center"
+            >
+              <Text className="text-[13px] font-bold text-brand-dark">
+                Back to Measurements
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </MccScreenShell>
+    );
+  }
+
+  const unit = profile.unit === "cm" ? "cm" : "in";
 
   const rows: Array<[string, string]> = [];
   if (profile?.chest) rows.push(["Bust / Chest", `${profile.chest} ${unit}`]);

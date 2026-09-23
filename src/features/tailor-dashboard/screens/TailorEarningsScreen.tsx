@@ -99,7 +99,7 @@ export default function TailorEarningsScreen() {
       }
 
       return {
-        id: o.orderNumber || o.id || `ORD${index + 1000}`,
+        id: o.orderNumber || o.id || String(index + 1),
         date: formatTransactionDate(o.createdAt || o.deliveryDate || o.dueDate),
         amount: `Rs. ${priceVal.toLocaleString()}`,
         status: isCompleted ? "Paid" : isCancelled ? "Cancelled" : "Pending",

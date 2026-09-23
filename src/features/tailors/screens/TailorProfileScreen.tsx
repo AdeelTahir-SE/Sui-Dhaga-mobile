@@ -45,7 +45,7 @@ export default function TailorProfileScreen() {
   const [isMapModalVisible, setIsMapModalVisible] = useState(false);
   const [mapZoomLevel, setMapZoomLevel] = useState(1);
 
-  if (isLoading && !tailor) {
+  if (isLoading) {
     return (
       <View
         className="flex-1 items-center justify-center py-20 bg-white"
@@ -55,6 +55,45 @@ export default function TailorProfileScreen() {
         <Text className="mt-4 text-[14px] font-medium text-brand-gray">
           Loading tailor profile...
         </Text>
+      </View>
+    );
+  }
+
+  if (!tailor && !isLoading) {
+    return (
+      <View className="flex-1 bg-white">
+        <TailorHeader title="Tailor Profile" showBack rightIcon={null} />
+        <View className="flex-1 items-center justify-center py-20 px-6">
+          <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+            <Ionicons name="storefront-outline" size={32} color="#14919B" />
+          </View>
+          <Text className="text-[18px] font-bold text-brand-dark text-center">
+            Tailor Not Found
+          </Text>
+          <Text className="mt-2 text-center text-[13px] font-medium text-brand-gray max-w-[280px]">
+            The tailor profile you are looking for does not exist or has been removed.
+          </Text>
+          <View className="mt-6 w-full max-w-[260px] gap-3">
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/tailors" as any)}
+              className="h-[48px] rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+            >
+              <Text className="text-[13px] font-bold text-white">
+                Explore Tailors
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.back()}
+              className="h-[48px] rounded-xl border border-brand-border bg-white items-center justify-center"
+            >
+              <Text className="text-[13px] font-bold text-brand-dark">
+                Go Back
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     );
   }
@@ -130,7 +169,7 @@ export default function TailorProfileScreen() {
     (tailor as any)?.longitude || (tailor as any)?.lng || defaultLng,
   );
 
-  const profileUrl = `https://suidhaga.app/tailors/${tailorId || "1"}`;
+  const profileUrl = `https://suidhaga.app/tailors/${tailor?.id || tailorId || ""}`;
 
   const handleShare = async () => {
     try {

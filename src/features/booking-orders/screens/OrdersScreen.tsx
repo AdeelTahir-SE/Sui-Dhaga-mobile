@@ -110,16 +110,16 @@ export default function OrdersScreen() {
                     color="#14919B"
                   />
                 </View>
-                <Text className="text-[16px] font-bold text-brand-dark text-center">
+                <Text className="text-[17px] font-bold text-brand-dark text-center">
                   {selectedTab === 1
                     ? "No completed orders"
                     : selectedTab === 2
                       ? "No cancelled orders"
-                      : "No active orders"}
+                      : "No orders found"}
                 </Text>
                 <Text className="mt-1.5 text-[13px] text-brand-gray text-center max-w-[260px] mb-5 leading-[19px]">
                   {selectedTab === 0
-                    ? "Start a new tailoring order with an expert tailor."
+                    ? "You don't have any orders yet. Start a new order with our expert tailors."
                     : selectedTab === 1
                       ? "Delivered and completed orders will appear here."
                       : "You do not have any cancelled orders."}
@@ -130,7 +130,7 @@ export default function OrdersScreen() {
                   className="h-[48px] px-6 rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
                 >
                   <Text className="text-[14px] font-semibold text-white">
-                    Explore Tailors
+                    {selectedTab === 0 ? "Create New Order" : "Explore Tailors"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -148,12 +148,16 @@ export default function OrdersScreen() {
                 return (
                   <OrderCard
                     key={order.id || index}
-                    id={order.orderNumber || order.id || `ORD${index + 1000}`}
+                    id={order.orderNumber || order.id || "—"}
                     item={order.itemName || "Custom Outfit"}
                     tailor={order.tailorName || "Tailor"}
                     image={firstDesignImg}
                     designImages={order.designImages || order.design_images}
-                    onPress={() => router.push(`/orders/${order.id || order.orderNumber || index + 1}` as any)}
+                    onPress={() => {
+                      if (order.id || order.orderNumber) {
+                        router.push(`/orders/${order.id || order.orderNumber}` as any);
+                      }
+                    }}
                     placedOn={
                       order.createdAt ||
                       (isDeliv

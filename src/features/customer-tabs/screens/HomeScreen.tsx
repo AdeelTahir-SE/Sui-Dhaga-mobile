@@ -907,40 +907,73 @@ export default function HomeScreen() {
               showsVerticalScrollIndicator={true}
               contentContainerStyle={{ paddingBottom: 24 }}
             >
-              <View className="flex-row flex-wrap justify-between gap-y-3">
-                {designs.map((design, index) => (
+              {designsLoading ? (
+                <View className="py-16 items-center justify-center">
+                  <ActivityIndicator size="small" color="#14919B" />
+                  <Text className="mt-2 text-[12px] font-medium text-brand-gray">
+                    Loading your designs...
+                  </Text>
+                </View>
+              ) : designs.length === 0 ? (
+                <View className="py-14 px-4 items-center justify-center rounded-2xl border border-dashed border-brand-border bg-gray-50/50 my-2">
+                  <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">
+                    <Ionicons name="color-wand-outline" size={24} color="#14919B" />
+                  </View>
+                  <Text className="text-[15px] font-bold text-brand-dark text-center">
+                    No Saved Designs
+                  </Text>
+                  <Text className="mt-1 text-[12px] text-brand-gray text-center max-w-[240px] mb-4">
+                    You haven't saved any designs yet. Generate bespoke outfits in the AI Design Studio!
+                  </Text>
                   <TouchableOpacity
-                    key={design.id || index}
                     activeOpacity={0.8}
                     onPress={() => {
                       setActiveModal(null);
                       router.push("/design-studio" as never);
                     }}
-                    className="w-[48%] rounded-md border border-brand-border bg-white p-3 shadow-xs active:bg-gray-50 items-center"
+                    className="rounded-xl bg-primary px-5 py-2.5 shadow-sm"
                   >
-                    <TabPlaceholder
-                      image={design.imageUrl || design.image}
-                      variant="garment"
-                      size="md"
-                      tone="coral"
-                    />
-                    <Text
-                      className="mt-2.5 text-center text-[13px] font-bold text-brand-dark leading-[16px]"
-                      numberOfLines={1}
-                    >
-                      {design.name || "Custom Outfit"}
+                    <Text className="text-[12.5px] font-bold text-white">
+                      Open Design Studio
                     </Text>
-                    <Text className="mt-0.5 text-center text-[11px] font-medium text-brand-gray">
-                      {design.garmentType || design.category || "AI Generated"}
-                    </Text>
-                    <View className="mt-2.5 w-full rounded-md bg-primary/10 py-1.5 items-center">
-                      <Text className="text-[11px] font-bold text-primary">
-                        Customize in Studio
-                      </Text>
-                    </View>
                   </TouchableOpacity>
-                ))}
-              </View>
+                </View>
+              ) : (
+                <View className="flex-row flex-wrap justify-between gap-y-3">
+                  {designs.map((design, index) => (
+                    <TouchableOpacity
+                      key={design.id || index}
+                      activeOpacity={0.8}
+                      onPress={() => {
+                        setActiveModal(null);
+                        router.push("/design-studio" as never);
+                      }}
+                      className="w-[48%] rounded-md border border-brand-border bg-white p-3 shadow-xs active:bg-gray-50 items-center"
+                    >
+                      <TabPlaceholder
+                        image={design.imageUrl || design.image}
+                        variant="garment"
+                        size="md"
+                        tone="coral"
+                      />
+                      <Text
+                        className="mt-2.5 text-center text-[13px] font-bold text-brand-dark leading-[16px]"
+                        numberOfLines={1}
+                      >
+                        {design.name || "Custom Outfit"}
+                      </Text>
+                      <Text className="mt-0.5 text-center text-[11px] font-medium text-brand-gray">
+                        {design.garmentType || design.category || "AI Generated"}
+                      </Text>
+                      <View className="mt-2.5 w-full rounded-md bg-primary/10 py-1.5 items-center">
+                        <Text className="text-[11px] font-bold text-primary">
+                          Customize in Studio
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
