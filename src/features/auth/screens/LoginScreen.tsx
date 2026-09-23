@@ -28,13 +28,14 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const login = useAuthStore((state) => state.login);
   const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle);
 
   const handleGoogleLogin = async () => {
-    setIsSubmitting(true);
+    setIsGoogleLoading(true);
     setErrorMessage(null);
     try {
       const result = await loginWithGoogle();
@@ -55,7 +56,7 @@ export default function LoginScreen() {
     } catch (err: any) {
       setErrorMessage(err?.message || "Google sign in failed. Please try again.");
     } finally {
-      setIsSubmitting(false);
+      setIsGoogleLoading(false);
     }
   };
 
@@ -207,6 +208,7 @@ export default function LoginScreen() {
               title="Login"
               onPress={handleLogin}
               loading={isSubmitting}
+              disabled={isSubmitting || isGoogleLoading}
             />
 
             {/* Divider */}
@@ -222,6 +224,8 @@ export default function LoginScreen() {
             <SocialLoginButton
               title="Continue with Google"
               onPress={handleGoogleLogin}
+              loading={isGoogleLoading}
+              disabled={isSubmitting || isGoogleLoading}
             />
 
 
