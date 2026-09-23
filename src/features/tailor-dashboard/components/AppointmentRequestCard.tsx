@@ -12,6 +12,7 @@ type AppointmentRequestCardProps = {
   service: string;
   date: string;
   time: string;
+  status?: string;
   newRequest?: boolean;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
   onAccept?: () => void;
@@ -25,12 +26,35 @@ export function AppointmentRequestCard({
   service,
   date,
   time,
+  status,
   newRequest,
   tone = "coral",
   onAccept,
   onReject,
   isProcessing,
 }: AppointmentRequestCardProps) {
+  const normStatus = (status || (newRequest ? "requests" : "upcoming")).toLowerCase();
+  const isCompleted = normStatus === "completed";
+  const isCancelled = normStatus === "cancelled" || normStatus === "canceled" || normStatus === "declined";
+  const isUpcoming = normStatus === "upcoming" || normStatus === "confirmed";
+  const isPending = !isCompleted && !isCancelled && !isUpcoming;
+
+  const statusLabel = isCompleted
+    ? "Completed"
+    : isCancelled
+    ? "Cancelled"
+    : isUpcoming
+    ? "Upcoming"
+    : "New Request";
+
+  const statusTone: "gold" | "teal" | "blue" | "green" | "red" | "gray" = isCompleted
+    ? "green"
+    : isCancelled
+    ? "red"
+    : isUpcoming
+    ? "blue"
+    : "gold";
+
   return (
     <View className="mb-3.5 rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
       <View className="flex-row">
@@ -39,8 +63,8 @@ export function AppointmentRequestCard({
           <View className="flex-row items-start justify-between">
             <Text className="text-[14px] font-bold text-brand-dark">{name}</Text>
             <StatusPill
-              label={newRequest ? "New Request" : "Upcoming"}
-              tone={newRequest ? "gold" : "blue"}
+              label={statusLabel}
+              tone={statusTone}
             />
           </View>
           <Text className="mt-1 text-[13px] font-semibold text-brand-dark">{service}</Text>

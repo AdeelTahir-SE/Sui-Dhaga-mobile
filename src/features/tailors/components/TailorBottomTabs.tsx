@@ -39,16 +39,14 @@ export function TailorBottomTabs() {
               }`}
             >
               <Ionicons
-                name={selected ? tab.activeIcon : tab.icon}
-                size={21}
-                color={selected ? "#14919B" : "#6F767E"}
+                name={tab.activeIcon}
+                size={22}
+                color={selected ? "#14919B" : "#94A3B8"}
               />
             </View>
             <Text
               className={`mt-0.5 text-[10px] tracking-tight ${
-                selected
-                  ? "font-bold text-primary"
-                  : "font-medium text-brand-gray"
+                selected ? "font-bold text-primary" : "font-bold text-[#94A3B8]"
               }`}
             >
               {tab.label}

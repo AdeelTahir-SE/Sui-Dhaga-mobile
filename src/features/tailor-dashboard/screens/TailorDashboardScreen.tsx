@@ -1,20 +1,21 @@
-import React, { useMemo } from "react";
-import { Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { useMemo } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
+import { useAuthStore } from "../../../stores/auth.store";
+import { useAppointments } from "../../booking-orders/hooks/useAppointments";
+import { useOrders } from "../../booking-orders/hooks/useOrders";
 import { MetricCard } from "../components/MetricCard";
 import { SectionTitle } from "../components/SectionTitle";
 import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
-import { useAuthStore } from "../../../stores/auth.store";
 import { useTailorProfile } from "../hooks/useTailorProfile";
-import { useOrders } from "../../booking-orders/hooks/useOrders";
-import { useAppointments } from "../../booking-orders/hooks/useAppointments";
 
 const dashboardHeroImage = require("@/assets/illustrations/tailor-dashboard/dashboard-hero.png");
+const buttonGreenishTexture = require("@/assets/texture/button-greenish-texture.png");
 
 function ActivityRow({
   title,
@@ -32,7 +33,9 @@ function ActivityRow({
       </View>
       <View className="ml-3 flex-1">
         <Text className="text-[13px] font-bold text-brand-dark">{title}</Text>
-        <Text className="mt-0.5 text-[11px] font-medium text-brand-gray">{subtitle}</Text>
+        <Text className="mt-0.5 text-[11px] font-medium text-brand-gray">
+          {subtitle}
+        </Text>
       </View>
       <Text className="text-[11px] font-semibold text-brand-gray">{time}</Text>
     </View>
@@ -53,32 +56,33 @@ export default function TailorDashboardScreen() {
     user?.name?.trim() ||
     emailPrefix;
 
-  const { newOrdersCount, pendingAppointmentsCount, totalEarnings } = useMemo(() => {
-    const validOrders = Array.isArray(orders) ? orders : [];
-    const validAppts = Array.isArray(appointments) ? appointments : [];
+  const { newOrdersCount, pendingAppointmentsCount, totalEarnings } =
+    useMemo(() => {
+      const validOrders = Array.isArray(orders) ? orders : [];
+      const validAppts = Array.isArray(appointments) ? appointments : [];
 
-    const newOrders = validOrders.filter(
-      (o) => (o.status || "").toLowerCase() === "pending"
-    ).length;
+      const newOrders = validOrders.filter(
+        (o) => (o.status || "").toLowerCase() === "pending",
+      ).length;
 
-    const pendingAppts = validAppts.filter(
-      (a) => (a.status || "").toLowerCase() !== "completed"
-    ).length;
+      const pendingAppts = validAppts.filter(
+        (a) => (a.status || "").toLowerCase() !== "completed",
+      ).length;
 
-    const earned = validOrders.reduce((sum, o) => {
-      const s = (o.status || "").toLowerCase();
-      if (s === "completed" || s === "delivered") {
-        return sum + (Number(o.price) || 0);
-      }
-      return sum;
-    }, 0);
+      const earned = validOrders.reduce((sum, o) => {
+        const s = (o.status || "").toLowerCase();
+        if (s === "completed" || s === "delivered") {
+          return sum + (Number(o.price) || 0);
+        }
+        return sum;
+      }, 0);
 
-    return {
-      newOrdersCount: newOrders,
-      pendingAppointmentsCount: pendingAppts,
-      totalEarnings: earned,
-    };
-  }, [orders, appointments]);
+      return {
+        newOrdersCount: newOrders,
+        pendingAppointmentsCount: pendingAppts,
+        totalEarnings: earned,
+      };
+    }, [orders, appointments]);
 
   return (
     <TailorDashboardShell
@@ -86,24 +90,54 @@ export default function TailorDashboardScreen() {
     >
       <TailorDashboardHeader title="Dashboard" />
       <View className="px-5 pb-8">
-        {/* Hero Banner with increased height & no border */}
-        <View className="relative overflow-hidden rounded-md bg-primary-50 min-h-[175px] justify-center p-6 shadow-sm">
-          <Text className="text-[13px] font-bold text-brand-gray tracking-wide">Good Morning,</Text>
-          <Text className="mt-1 text-[23px] font-black text-primary tracking-tight">
+        {/* Hero Banner with greenish texture background */}
+        <View className="relative overflow-hidden rounded-md bg-[#00949D] min-h-[175px] justify-center p-6 shadow-sm">
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <Image
+              source={buttonGreenishTexture}
+              contentFit="cover"
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
+          <Text
+            className="text-[13px] font-bold text-white/80 tracking-wide"
+            style={{
+              textShadowColor: "rgba(0,0,0,0.2)",
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 2,
+            }}
+          >
+            Good Morning,
+          </Text>
+          <Text
+            className="mt-1 text-[23px] font-black text-white tracking-tight"
+            style={{
+              textShadowColor: "rgba(0,0,0,0.25)",
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 3,
+            }}
+          >
             {displayBusinessName}
           </Text>
-          <Text className="mt-2 w-[55%] text-[13px] font-semibold text-brand-dark leading-[19px]">
+          <Text
+            className="mt-2 w-[55%] text-[13px] font-semibold text-white/90 leading-[19px]"
+            style={{
+              textShadowColor: "rgba(0,0,0,0.2)",
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 2,
+            }}
+          >
             Here's what's happening with your boutique today.
           </Text>
           <Image
             source={dashboardHeroImage}
-            contentFit="contain"
+            contentFit="cover"
             style={{
               position: "absolute",
-              bottom: 6,
-              right: 12,
-              height: 140,
-              width: 140,
+              bottom: 0,
+              right: 0,
+              height: 150,
+              width: 210,
             }}
           />
         </View>
@@ -124,7 +158,9 @@ export default function TailorDashboardScreen() {
             action="View all"
             icon="calendar-outline"
             tone="gold"
-            onPress={() => router.push("/tailor-dashboard/appointments" as never)}
+            onPress={() =>
+              router.push("/tailor-dashboard/appointments" as never)
+            }
           />
           <MetricCard
             title="Messages"
@@ -160,13 +196,18 @@ export default function TailorDashboardScreen() {
         ) : (
           <View className="items-center justify-center rounded-md border border-brand-border bg-white py-8 px-5 shadow-xs">
             <View className="mb-3.5 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Ionicons name="notifications-outline" size={30} color="#14919B" />
+              <Ionicons
+                name="notifications-outline"
+                size={30}
+                color="#14919B"
+              />
             </View>
             <Text className="text-[16px] font-bold text-brand-dark text-center tracking-tight">
               No Recent Activity
             </Text>
             <Text className="mt-1.5 text-[12px] font-medium text-brand-gray text-center leading-[19px] max-w-[270px]">
-              When customers place new orders, request fittings, or send messages, they'll appear here.
+              When customers place new orders, request fittings, or send
+              messages, they'll appear here.
             </Text>
           </View>
         )}

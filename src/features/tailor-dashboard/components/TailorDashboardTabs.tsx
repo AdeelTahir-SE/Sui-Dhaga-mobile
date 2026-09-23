@@ -25,7 +25,7 @@ type TabItem = {
 const tabs: TabItem[] = [
   { label: "Dashboard", icon: "home-outline", activeIcon: "home", href: "/tailor-dashboard" },
   { label: "Orders", icon: "bag-handle-outline", activeIcon: "bag-handle", href: "/tailor-dashboard/orders" },
-  { label: "Messages", icon: "chatbubble-ellipses-outline", activeIcon: "chatbubble-ellipses", href: "/tailor-dashboard/messages" },
+  { label: "Messages", icon: "chatbubble-outline", activeIcon: "chatbubble", href: "/tailor-dashboard/messages" },
   { label: "Appointments", icon: "calendar-outline", activeIcon: "calendar", href: "/tailor-dashboard/appointments" },
   { label: "Profile", icon: "person-circle-outline", activeIcon: "person-circle", href: "/tailor-dashboard/profile" },
 ];
@@ -50,16 +50,15 @@ export function TailorDashboardTabs({ active }: TailorDashboardTabsProps) {
               }`}
             >
               <Ionicons
-                name={selected ? tab.activeIcon : tab.icon}
-                size={21}
-                color={selected ? "#14919B" : "#6F767E"}
+                // always use the filled icon — matches customer tabs design
+                name={tab.activeIcon}
+                size={22}
+                color={selected ? "#14919B" : "#94A3B8"}
               />
             </View>
             <Text
               className={`mt-0.5 text-[10px] tracking-tight ${
-                selected
-                  ? "font-bold text-primary"
-                  : "font-medium text-brand-gray"
+                selected ? "font-bold text-primary" : "font-bold text-[#94A3B8]"
               }`}
             >
               {tab.label}
