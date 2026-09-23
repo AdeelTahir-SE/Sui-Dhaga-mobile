@@ -63,6 +63,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
@@ -70,7 +71,7 @@ export default function RegisterScreen() {
   const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle);
 
   const handleGoogleLogin = async () => {
-    setIsSubmitting(true);
+    setIsGoogleLoading(true);
     setErrorMessage(null);
     try {
       const result = await loginWithGoogle();
@@ -91,7 +92,7 @@ export default function RegisterScreen() {
     } catch (err: any) {
       setErrorMessage(err?.message || "Google registration failed. Please try again.");
     } finally {
-      setIsSubmitting(false);
+      setIsGoogleLoading(false);
     }
   };
 
@@ -487,13 +488,12 @@ export default function RegisterScreen() {
             ) : null}
 
             {/* Create Account Button */}
-            {isSubmitting ? (
-              <View className="h-[52px] items-center justify-center rounded-xl bg-primary">
-                <ActivityIndicator color="#FFFFFF" />
-              </View>
-            ) : (
-              <AuthButton title="Create Account" onPress={handleRegister} />
-            )}
+            <AuthButton
+              title="Create Account"
+              onPress={handleRegister}
+              loading={isSubmitting}
+              disabled={isSubmitting || isGoogleLoading}
+            />
 
             {/* Divider */}
             <View className="flex-row items-center my-6">
@@ -508,6 +508,8 @@ export default function RegisterScreen() {
             <SocialLoginButton
               title="Sign up with Google"
               onPress={handleGoogleLogin}
+              loading={isGoogleLoading}
+              disabled={isSubmitting || isGoogleLoading}
             />
 
 

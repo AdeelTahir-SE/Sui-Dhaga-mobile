@@ -13,11 +13,11 @@ import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 import { TailorDashPlaceholder } from "../components/TailorDashPlaceholder";
+import { TailorEarningsChart } from "../components/TailorEarningsChart";
 import { useOrders } from "../../booking-orders/hooks/useOrders";
 
 const earningsImages = {
   money: require("@/assets/illustrations/tailor-dashboard/earnings/money-bag.png"),
-  chart: require("@/assets/illustrations/tailor-dashboard/earnings/monthly-chart.png"),
   transaction: require("@/assets/illustrations/tailor-dashboard/earnings/transaction.png"),
 };
 
@@ -118,21 +118,17 @@ export default function TailorEarningsScreen() {
   return (
     <TailorDashboardShell
       bottomTabs={<TailorDashboardTabs active="Earnings" />}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={refresh}
+          tintColor="#14919B"
+          colors={["#14919B"]}
+        />
+      }
     >
       <TailorDashboardHeader title="Earnings" rightText="Overview" />
-      <ScrollView
-        className="flex-1 px-5"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
-            tintColor="#14919B"
-            colors={["#14919B"]}
-          />
-        }
-      >
+      <View className="flex-1 px-5 pb-8">
         <Text className="text-[12px] font-bold uppercase tracking-wider text-brand-gray">Total Earnings</Text>
         <View className="mt-2 flex-row items-center justify-between">
           <View>
@@ -165,12 +161,7 @@ export default function TailorEarningsScreen() {
         </View>
 
         <SectionTitle title="Earnings Overview" />
-        <TailorDashPlaceholder
-          image={earningsImages.chart}
-          variant="chart"
-          size="chart"
-          tone="mint"
-        />
+        <TailorEarningsChart orders={orders} totalEarned={totalEarned} />
 
         <SectionTitle title="Recent Transactions" />
         {isLoading && !isRefreshing ? (
@@ -178,14 +169,14 @@ export default function TailorEarningsScreen() {
             <ActivityIndicator size="large" color="#14919B" />
           </View>
         ) : transactions.length === 0 ? (
-          <View className="flex-1 items-center justify-center py-12 px-4" style={{ minHeight: 280 }}>
-            <View className="w-20 h-20 rounded-full bg-primary/10 items-center justify-center mb-4">
-              <Ionicons name="cash-outline" size={38} color="#14919B" />
+          <View className="items-center justify-center py-10 px-4 my-2 rounded-2xl border border-dashed border-brand-border bg-gray-50/50">
+            <View className="w-16 h-16 rounded-full bg-primary/10 items-center justify-center mb-3">
+              <Ionicons name="cash-outline" size={34} color="#14919B" />
             </View>
-            <Text className="text-[18px] font-bold text-brand-dark text-center tracking-tight">
+            <Text className="text-[17px] font-bold text-brand-dark text-center tracking-tight">
               No Transactions Yet
             </Text>
-            <Text className="mt-2 text-[13px] font-medium text-brand-gray text-center leading-[20px] max-w-[280px]">
+            <Text className="mt-1.5 text-[13px] font-medium text-brand-gray text-center leading-[19px] max-w-[280px]">
               When you accept and complete customer orders, your transactions and payouts will be recorded here.
             </Text>
           </View>
@@ -203,7 +194,7 @@ export default function TailorEarningsScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
+      </View>
     </TailorDashboardShell>
   );
 }

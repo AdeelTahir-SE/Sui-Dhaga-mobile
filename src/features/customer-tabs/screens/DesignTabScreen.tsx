@@ -145,8 +145,8 @@ export default function DesignTabScreen() {
             ))}
           </View>
         ) : (
-          <View className="rounded-md border border-dashed border-brand-border p-4 items-center justify-center bg-brand-surface/20">
-            <Text className="text-[13px] font-medium text-brand-gray">
+          <View className="rounded-md border border-dashed border-brand-border py-8 px-4 items-center justify-center bg-brand-surface/20">
+            <Text className="text-[13px] font-medium text-brand-gray text-center">
               No saved designs yet. Tap above to create one!
             </Text>
           </View>
@@ -172,8 +172,8 @@ export default function DesignTabScreen() {
             ))}
           </View>
         ) : (
-          <View className="rounded-md border border-dashed border-brand-border p-4 items-center justify-center bg-brand-surface/20">
-            <Text className="text-[13px] font-medium text-brand-gray">
+          <View className="rounded-md border border-dashed border-brand-border py-8 px-4 items-center justify-center bg-brand-surface/20">
+            <Text className="text-[13px] font-medium text-brand-gray text-center">
               Templates will appear here
             </Text>
           </View>

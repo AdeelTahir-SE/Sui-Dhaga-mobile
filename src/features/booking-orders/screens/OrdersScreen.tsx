@@ -74,7 +74,7 @@ export default function OrdersScreen() {
         leftIcon="menu"
         hideRightIcon={true}
       />
-      <View className="px-5 pb-8">
+      <View className={`px-5 pb-8 ${currentList.length === 0 ? "flex-1" : ""}`}>
         <SegmentedTabs
           activeIndex={selectedTab}
           onSelectTab={setSelectedTab}
@@ -86,16 +86,15 @@ export default function OrdersScreen() {
         />
 
         {isLoading ? (
-          <View className="py-12 items-center justify-center">
+          <View className="py-12 items-center justify-center flex-1">
             <ActivityIndicator size="small" color="#14919B" />
           </View>
         ) : (
-          <View className="mt-4 ">
+          <View className={`mt-4 ${currentList.length === 0 ? "flex-1 justify-center" : ""}`}>
             <SectionLabel title={currentLabel} />
             {currentList.length === 0 ? (
               <View
-                className="py-14 items-center justify-center px-6 rounded-2xl border border-brand-border bg-brand-surface/30 my-4"
-                style={{ minHeight: 320 }}
+                className="py-12 items-center justify-center px-6 rounded-2xl border border-brand-border bg-brand-surface/30 my-2 flex-1"
               >
                 <View className="w-16 h-16 rounded-full bg-primary/10 items-center justify-center mb-3">
                   <Ionicons

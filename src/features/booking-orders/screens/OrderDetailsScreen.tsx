@@ -40,7 +40,7 @@ export default function OrderDetailsScreen() {
           leftIcon="arrow-back"
           onPressLeft={() => router.back()}
         />
-        <View className="flex-1 items-center justify-center py-20 px-6">
+        <View className="flex-1 items-center justify-center py-8 px-6">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
             <Ionicons name="receipt-outline" size={32} color="#14919B" />
           </View>

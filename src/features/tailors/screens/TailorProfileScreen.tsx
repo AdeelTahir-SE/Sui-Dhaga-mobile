@@ -13,6 +13,7 @@ import {
 } from "react-native";
 
 import { CustomerTabsPreview } from "@/features/customer-tabs/components/CustomerTabsPreview";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/auth.store";
 import { RatingLine } from "../components/RatingLine";
 import { TailorHeader } from "../components/TailorHeader";
@@ -45,11 +46,13 @@ export default function TailorProfileScreen() {
   const [isMapModalVisible, setIsMapModalVisible] = useState(false);
   const [mapZoomLevel, setMapZoomLevel] = useState(1);
 
+  const insets = useSafeAreaInsets();
+
   if (isLoading) {
     return (
       <View
-        className="flex-1 items-center justify-center py-20 bg-white"
-        style={{ minHeight: 520 }}
+        className="flex-1 items-center justify-center py-10 bg-white"
+        style={{ paddingTop: insets.top }}
       >
         <ActivityIndicator size="large" color="#14919B" />
         <Text className="mt-4 text-[14px] font-medium text-brand-gray">
@@ -61,9 +64,9 @@ export default function TailorProfileScreen() {
 
   if (!tailor && !isLoading) {
     return (
-      <View className="flex-1 bg-white">
+      <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
         <TailorHeader title="Tailor Profile" showBack rightIcon={null} />
-        <View className="flex-1 items-center justify-center py-20 px-6">
+        <View className="flex-1 items-center justify-center py-8 px-6">
           <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
             <Ionicons name="storefront-outline" size={32} color="#14919B" />
           </View>

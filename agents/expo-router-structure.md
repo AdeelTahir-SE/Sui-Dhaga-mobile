@@ -152,12 +152,6 @@ sui-dhaga-mobile/
 │   │   │   ├── create.tsx                      # SHARED_AUTH
 │   │   │   └── [postId].tsx                    # SHARED_AUTH
 │   │   │
-│   │   ├── checkout/
-│   │   │   ├── _layout.tsx                     # STACK
-│   │   │   ├── index.tsx                       # CUSTOMER
-│   │   │   ├── success.tsx                     # CUSTOMER
-│   │   │   └── failed.tsx                      # CUSTOMER
-│   │   │
 │   │   └── (tailor-tabs)/
 │   │       ├── _layout.tsx                     # TAILOR BOTTOM TABS
 │   │       ├── dashboard.tsx                   # TAILOR
@@ -205,7 +199,6 @@ sui-dhaga-mobile/
 │   │   ├── design-studio/
 │   │   ├── measurements/
 │   │   ├── community/
-│   │   ├── checkout/
 │   │   ├── profile/
 │   │   └── tailor-dashboard/
 │   │
@@ -518,24 +511,6 @@ Routes:
 /community
 /community/create
 /community/[postId]
-```
-
----
-
-# Checkout Routes
-
-Folder:
-
-```txt
-app/checkout/
-```
-
-Routes:
-
-```txt
-/checkout
-/checkout/success
-/checkout/failed
 ```
 
 ---

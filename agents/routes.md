@@ -93,16 +93,6 @@ The Expo Router structure must follow these routes.
 
 ---
 
-# Checkout Routes
-
-| Route               | Page Sections                                             |
-| ------------------- | --------------------------------------------------------- |
-| `/checkout`         | Order Summary, Payment Methods, Price Details, Pay Button |
-| `/checkout/success` | Success Message, Order Summary, Track Order Button        |
-| `/checkout/failed`  | Failure Message, Retry Payment, Contact Support           |
-
----
-
 # Tailor App Routes
 
 | Route                            | Page Sections                                                     |

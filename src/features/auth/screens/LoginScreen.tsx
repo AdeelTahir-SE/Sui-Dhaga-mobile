@@ -125,12 +125,14 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Back Button */}
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="ml-4 mt-2 w-10 h-10 items-center justify-center"
-          >
-            <Ionicons name="arrow-back" size={24} color="#1A1D1F" />
-          </TouchableOpacity>
+          {router.canGoBack() ? (
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="ml-4 mt-2 w-10 h-10 items-center justify-center"
+            >
+              <Ionicons name="arrow-back" size={24} color="#1A1D1F" />
+            </TouchableOpacity>
+          ) : null}
 
           <View className="px-6 flex-1">
             {/* Logo */}

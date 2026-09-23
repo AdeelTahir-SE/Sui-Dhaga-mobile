@@ -905,7 +905,11 @@ export default function HomeScreen() {
             <ScrollView
               style={{ flex: 1 }}
               showsVerticalScrollIndicator={true}
-              contentContainerStyle={{ paddingBottom: 24 }}
+              contentContainerStyle={{
+                paddingBottom: 24,
+                flexGrow: 1,
+                justifyContent: designs.length === 0 ? "center" : undefined,
+              }}
             >
               {designsLoading ? (
                 <View className="py-16 items-center justify-center">

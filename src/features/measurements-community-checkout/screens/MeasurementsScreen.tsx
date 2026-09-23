@@ -113,13 +113,13 @@ export default function MeasurementsScreen() {
         </View>
       </View>
 
-      <View className="px-5 pt-3 pb-8">
+      <View className={`px-5 pt-3 pb-8 ${measurements.length === 0 ? "flex-1 justify-center" : ""}`}>
         {isLoading ? (
-          <View className="py-14 items-center justify-center">
+          <View className="py-14 items-center justify-center flex-1">
             <ActivityIndicator size="large" color="#00949D" />
           </View>
         ) : measurements.length === 0 ? (
-          <View className="py-10 items-center justify-center">
+          <View className="py-6 items-center justify-center flex-1">
             <View className="w-20 h-20 rounded-full bg-[#00949D]/10 items-center justify-center mb-4">
               <Ionicons name="body-outline" size={38} color="#00949D" />
             </View>

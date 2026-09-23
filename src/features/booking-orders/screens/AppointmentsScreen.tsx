@@ -152,8 +152,16 @@ export default function AppointmentsScreen() {
   const activeFilterOption = filterOptions.find((f) => f.value === activeFilter);
 
   return (
-    // Note: bottomTabs omitted to remove bottom tabs as requested
-    <BookingOrdersScreenShell>
+    <BookingOrdersScreenShell
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={refresh}
+          tintColor="#14919B"
+          colors={["#14919B"]}
+        />
+      }
+    >
       {/* Header matching Orders page font style, back button on left, no bell icon at top right */}
       <View className="px-5 pb-3 pt-3 flex-row items-center justify-between">
         <View className="flex-row items-center flex-1">
@@ -176,19 +184,7 @@ export default function AppointmentsScreen() {
         </View>
       </View>
 
-      <ScrollView
-        className="flex-1 px-5 pb-6"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
-            tintColor="#14919B"
-            colors={["#14919B"]}
-          />
-        }
-      >
+      <View className={`flex-1 px-5 pb-6 ${filteredAppointments.length === 0 ? "justify-center" : ""}`}>
         {/* Search Bar & Dedicated Filter Button (Identical to Orders page) */}
         <View className="flex-row items-center gap-2.5 mb-4 mt-1">
           <View
@@ -295,14 +291,14 @@ export default function AppointmentsScreen() {
 
         {/* Loading Indicator */}
         {isLoading && !isRefreshing ? (
-          <View className="py-16 items-center justify-center">
+          <View className="py-16 items-center justify-center flex-1">
             <ActivityIndicator size="large" color="#14919B" />
             <Text className="mt-3 text-[13px] font-medium text-brand-gray">
               Loading appointments...
             </Text>
           </View>
         ) : (
-          <View className="mt-1">
+          <View className={`mt-1 ${filteredAppointments.length === 0 ? "flex-1 justify-center" : ""}`}>
             {/* Appointments Count & Header Row */}
             <View className="flex-row items-center justify-between mb-3">
               <Text className="text-[13px] font-bold text-brand-dark uppercase tracking-wider">
@@ -345,7 +341,7 @@ export default function AppointmentsScreen() {
               })
             ) : (
               <View
-                className="items-center justify-center rounded-2xl bg-gray-50/60 py-12 px-4 shadow-xs my-2"
+                className="items-center justify-center rounded-2xl bg-gray-50/60 py-10 px-4 shadow-xs my-2 flex-1"
                 style={{ borderWidth: 1, borderColor: "#E2E8F0", borderStyle: "dashed" }}
               >
                 <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-3">
@@ -387,7 +383,7 @@ export default function AppointmentsScreen() {
             )}
           </View>
         )}
-      </ScrollView>
+      </View>
 
       {/* Modal: Appointment Filter */}
       <Modal

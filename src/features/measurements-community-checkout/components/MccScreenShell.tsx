@@ -11,6 +11,7 @@ type MccScreenShellProps = {
   bottomTabs?: React.ReactNode;
   floatingAction?: React.ReactNode;
   refreshControl?: React.ReactElement<RefreshControlProps>;
+  contentContainerStyle?: any;
 };
 
 export function MccScreenShell({
@@ -19,6 +20,7 @@ export function MccScreenShell({
   bottomTabs,
   floatingAction,
   refreshControl,
+  contentContainerStyle,
 }: MccScreenShellProps) {
   const insets = useSafeAreaInsets();
 
@@ -27,10 +29,14 @@ export function MccScreenShell({
       {header}
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{
-          paddingBottom:
-            insets.bottom + (bottomTabs ? FIXED_BOTTOM_TABS_HEIGHT + 22 : 36),
-        }}
+        contentContainerStyle={[
+          {
+            flexGrow: 1,
+            paddingBottom:
+              insets.bottom + (bottomTabs ? FIXED_BOTTOM_TABS_HEIGHT + 22 : 36),
+          },
+          contentContainerStyle,
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
       >

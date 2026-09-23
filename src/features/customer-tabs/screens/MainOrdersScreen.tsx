@@ -457,7 +457,7 @@ export default function MainOrdersScreen() {
             </TouchableOpacity>
           </View>
         ) : filteredOrders.length === 0 ? (
-          <View className="flex-1 items-center justify-center py-12 px-4" style={{ minHeight: 420 }}>
+          <View className="flex-1 items-center justify-center py-8 px-4">
             <View className="w-20 h-20 rounded-full bg-primary/10 items-center justify-center mb-4">
               <Ionicons
                 name={searchQuery.trim() || activeFilter !== null ? "search-outline" : "bag-handle-outline"}

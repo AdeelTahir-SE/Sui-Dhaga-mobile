@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +23,7 @@ import {
   designPreviewImages,
   royalDesignImages,
 } from "../constants/designStudioAssets";
+import { AiChatDrawer, ChatSession } from "../components/AiChatDrawer";
 
 const whiteTexture = require("@/assets/texture/white-texture.png");
 const aiAssistantIcon = require("@/assets/illustrations/customer-tabs/home/ai-assistant-icon.png");
@@ -119,6 +121,106 @@ function getFormattedTime(): string {
   return `${hours}:${minutes} ${ampm}`;
 }
 
+const SEED_SESSIONS: ChatSession[] = [
+  {
+    id: "seed-session-1",
+    title: "Royal Velvet Bridal Lehenga",
+    mode: "designer",
+    createdAt: "Yesterday, 4:15 PM",
+    lastMessageSnippet: "16-panel circular cut with handcrafted zardozi...",
+    messages: [
+      {
+        id: "msg-1-1",
+        sender: "user",
+        text: "Design a royal blue bridal lehenga with intricate gold zardozi embroidery and velvet finish",
+        timestamp: "Yesterday, 4:14 PM",
+      },
+      {
+        id: "msg-1-2",
+        sender: "assistant",
+        text: "Here is a bespoke bridal silhouette crafted for you. The deep royal palette is paired with hand-embroidered zardozi and dabka motifs across a 16-panel circular flare. The micro-velvet choli features a classic sweetheart neckline and French piping along the edges.",
+        timestamp: "Yesterday, 4:15 PM",
+        designCard: {
+          title: "Royal Velvet Bridal Lehenga",
+          subtitle: "16-panel circular cut with handcrafted zardozi",
+          image: royalDesignImages[0],
+          tags: ["Micro Velvet", "Zardozi & Dabka", "Full Can-Can", "Dual Dupatta"],
+          priceEstimate: "PKR 48,000 - 62,000",
+          itemName: "Royal Velvet Bridal Lehenga",
+        },
+        suggestions: [
+          "Show in pastel blush pink",
+          "Can I do a lighter net dupatta?",
+          "Recommend matching jewelry",
+          "Order custom stitching with tailor",
+        ],
+      },
+    ],
+  },
+  {
+    id: "seed-session-2",
+    title: "Fabric Drape & Lining Guide",
+    mode: "assistant",
+    createdAt: "2 days ago",
+    lastMessageSnippet: "For Flared Silhouettes: Pure Organza, Chiffon, or Raw Silk...",
+    messages: [
+      {
+        id: "msg-2-1",
+        sender: "user",
+        text: "Which fabric drape and lining work best for a flared Pakistani wedding silhouette?",
+        timestamp: "2 days ago",
+      },
+      {
+        id: "msg-2-2",
+        sender: "assistant",
+        text: "Here is our expert tailoring guide for ethnic drapes and fabrics:\n\n• For Flared Silhouettes (Anarkali/Lehenga): Pure Organza, Chiffon, or Raw Silk offer optimal drape. Pair with butter crepe or soft cotton silk lining to prevent clinging.\n• Flare Structure: Add a 2-inch horsehair canvas hem or soft can-can net inside the lower third for effortless runway volume without stiffness.\n• Summer Daywear: 100% fine cotton lawn or modal mulmul ensures breathability while holding tailored darts neatly.",
+        timestamp: "2 days ago",
+        suggestions: [
+          "How many meters of fabric do I need?",
+          "Best lining for raw silk",
+          "Which fabrics don't wrinkle easily?",
+          "Switch to Designer tab to create this outfit",
+        ],
+      },
+    ],
+  },
+  {
+    id: "seed-session-3",
+    title: "Bespoke Lawn Kurta Set",
+    mode: "designer",
+    createdAt: "3 days ago",
+    lastMessageSnippet: "Pure lawn with Schiffli cutwork lace & straight pants...",
+    messages: [
+      {
+        id: "msg-3-1",
+        sender: "user",
+        text: "Suggest a breathable pastel lawn kurta set with delicate Schiffli lace borders and straight trousers",
+        timestamp: "3 days ago",
+      },
+      {
+        id: "msg-3-2",
+        sender: "assistant",
+        text: "A breathable summer ensemble featuring pure Pakistani lawn with intricate Schiffli lace accents on the daman and sleeve cuffs. Paired with straight-cut cotton cigarette trousers and an airy printed chiffon dupatta.",
+        timestamp: "3 days ago",
+        designCard: {
+          title: "Bespoke Lawn Kurta Set",
+          subtitle: "Pure lawn with cutwork lace & straight pants",
+          image: designPreviewImages[2],
+          tags: ["Pure Lawn", "Schiffli Cutwork", "Straight Cut", "Daily Luxury"],
+          priceEstimate: "PKR 7,500 - 11,000",
+          itemName: "Bespoke Lawn Kurta Set",
+        },
+        suggestions: [
+          "Add pockets to the kurta",
+          "Suggest contrasting dupatta",
+          "Change color to ivory",
+          "Calculate tailor stitching fee",
+        ],
+      },
+    ],
+  },
+];
+
 export default function AiChatScreen() {
   const insets = useSafeAreaInsets();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
@@ -126,6 +228,11 @@ export default function AiChatScreen() {
 
   const initialTab: ChatTab = mode === "designer" ? "designer" : "assistant";
   const [activeTab, setActiveTab] = useState<ChatTab>(initialTab);
+
+  // Chat Sessions & Hamburger Drawer state
+  const [sessions, setSessions] = useState<ChatSession[]>(SEED_SESSIONS);
+  const [currentSessionId, setCurrentSessionId] = useState<string>("session-active");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Maintain separate conversation histories for Assistant vs Designer
   const [assistantMessages, setAssistantMessages] = useState<ChatMessage[]>([]);
@@ -208,15 +315,134 @@ export default function AiChatScreen() {
     }
   };
 
-  const handleNewChat = () => {
-    if (activeTab === "assistant") {
-      setAssistantMessages([]);
-    } else {
+  const syncSessionWithMessages = (
+    sessionId: string,
+    msgs: ChatMessage[],
+    tabMode: ChatTab,
+    firstPrompt?: string
+  ) => {
+    setSessions((prev) => {
+      const idx = prev.findIndex((s) => s.id === sessionId);
+      const lastMsg = msgs[msgs.length - 1];
+      const snippet = lastMsg
+        ? lastMsg.text.length > 55
+          ? lastMsg.text.slice(0, 52) + "..."
+          : lastMsg.text
+        : "No messages yet";
+
+      if (idx >= 0) {
+        const copy = [...prev];
+        const current = copy[idx];
+        let title = current.title;
+        if (
+          (title.startsWith("New ") || title === "Untitled Chat") &&
+          firstPrompt
+        ) {
+          title =
+            firstPrompt.length > 30
+              ? firstPrompt.slice(0, 28) + "..."
+              : firstPrompt;
+        }
+        copy[idx] = {
+          ...current,
+          title,
+          mode: tabMode,
+          lastMessageSnippet: snippet,
+          messages: msgs,
+        };
+        return copy;
+      } else {
+        const title = firstPrompt
+          ? firstPrompt.length > 30
+            ? firstPrompt.slice(0, 28) + "..."
+            : firstPrompt
+          : tabMode === "assistant"
+          ? "Tailor Consultation"
+          : "Custom Outfit Design";
+        const newSession: ChatSession = {
+          id: sessionId,
+          title,
+          mode: tabMode,
+          createdAt: "Just now",
+          lastMessageSnippet: snippet,
+          messages: msgs,
+        };
+        return [newSession, ...prev];
+      }
+    });
+  };
+
+  const handleStartNewChat = () => {
+    const newSessionId = `session-${Date.now()}`;
+    setCurrentSessionId(newSessionId);
+    setAssistantMessages([]);
+    setDesignerMessages([]);
+    setInputText("");
+    setSelectedImage(null);
+    setIsGenerating(false);
+    setIsDrawerOpen(false);
+  };
+
+  const handleNewChat = handleStartNewChat;
+
+  const handleSelectSession = (session: ChatSession) => {
+    setCurrentSessionId(session.id);
+    setActiveTab(session.mode);
+    if (session.mode === "assistant") {
+      setAssistantMessages(session.messages);
       setDesignerMessages([]);
+    } else {
+      setDesignerMessages(session.messages);
+      setAssistantMessages([]);
     }
     setInputText("");
     setSelectedImage(null);
     setIsGenerating(false);
+    setIsDrawerOpen(false);
+    scrollToBottom();
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    Alert.alert(
+      "Delete Chat",
+      "Are you sure you want to delete this conversation from your history?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+            if (sessionId === currentSessionId) {
+              handleStartNewChat();
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleClearAll = () => {
+    Alert.alert(
+      "Clear All History",
+      "Are you sure you want to delete all previous chat conversations?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear All",
+          style: "destructive",
+          onPress: () => {
+            setSessions([]);
+            handleStartNewChat();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDrawerBack = () => {
+    setIsDrawerOpen(false);
+    router.back();
   };
 
   const handlePlaceOrder = (itemName: string) => {
@@ -457,11 +683,15 @@ export default function AiChatScreen() {
       attachedImageUri: selectedImage ?? undefined,
     };
 
+    let updatedUserMsgs: ChatMessage[] = [];
     if (activeTab === "assistant") {
-      setAssistantMessages((prev) => [...prev, userMessage]);
+      updatedUserMsgs = [...assistantMessages, userMessage];
+      setAssistantMessages(updatedUserMsgs);
     } else {
-      setDesignerMessages((prev) => [...prev, userMessage]);
+      updatedUserMsgs = [...designerMessages, userMessage];
+      setDesignerMessages(updatedUserMsgs);
     }
+    syncSessionWithMessages(currentSessionId, updatedUserMsgs, activeTab, messageContent);
 
     setInputText("");
     setSelectedImage(null);
@@ -478,7 +708,11 @@ export default function AiChatScreen() {
           timestamp: getFormattedTime(),
           suggestions: aiResult.suggestions,
         };
-        setAssistantMessages((prev) => [...prev, assistantMessage]);
+        setAssistantMessages((prev) => {
+          const next = [...prev, assistantMessage];
+          syncSessionWithMessages(currentSessionId, next, "assistant");
+          return next;
+        });
       } else {
         const aiResult = generateDesignerResponse(messageContent);
         const designerMessage: ChatMessage = {
@@ -489,7 +723,11 @@ export default function AiChatScreen() {
           designCard: aiResult.designCard,
           suggestions: aiResult.suggestions,
         };
-        setDesignerMessages((prev) => [...prev, designerMessage]);
+        setDesignerMessages((prev) => {
+          const next = [...prev, designerMessage];
+          syncSessionWithMessages(currentSessionId, next, "designer");
+          return next;
+        });
       }
 
       setIsGenerating(false);
@@ -576,34 +814,24 @@ export default function AiChatScreen() {
             </View>
           </View>
 
-          {/* New Chat Button */}
+          {/* Hamburger Menu Button */}
           <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel="New Chat"
-            onPress={handleNewChat}
+            accessibilityLabel="Open menu"
+            onPress={() => setIsDrawerOpen(true)}
             activeOpacity={0.7}
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              height: 36,
-              paddingHorizontal: 12,
-              borderRadius: 18,
-              backgroundColor: "#E6F7F7",
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              backgroundColor: "#FFFFFF",
               borderWidth: 1,
-              borderColor: "#B2EBF2",
+              borderColor: "#E5E7EB",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            <Ionicons name="create-outline" size={16} color="#0E7490" />
-            <Text
-              style={{
-                marginLeft: 5,
-                fontSize: 12,
-                fontWeight: "700",
-                color: "#0E7490",
-              }}
-            >
-              New Chat
-            </Text>
+            <Ionicons name="menu" size={22} color="#1A1D1F" />
           </TouchableOpacity>
         </View>
 
@@ -1472,6 +1700,19 @@ export default function AiChatScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Hamburger Menu Drawer */}
+      <AiChatDrawer
+        visible={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        onBack={handleDrawerBack}
+        onNewChat={handleStartNewChat}
+        sessions={sessions}
+        currentSessionId={currentSessionId}
+        onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
+        onClearAll={handleClearAll}
+      />
     </View>
   );
 }
