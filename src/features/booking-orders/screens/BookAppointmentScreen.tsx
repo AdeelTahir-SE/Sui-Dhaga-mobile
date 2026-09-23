@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,258 +9,412 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 
 import { BookingOrdersHeader } from "../components/BookingOrdersHeader";
 import { BookingOrdersScreenShell } from "../components/BookingOrdersScreenShell";
 import { InfoRow } from "../components/InfoRow";
-import { PlaceholderImage } from "../components/PlaceholderImage";
-import { SectionLabel } from "../components/SectionLabel";
-import { StatusPill } from "../components/StatusPill";
+import { ButtonTexture } from "@/components/ui/ButtonTexture";
 import { useTailorDetails } from "../../tailors/hooks/useTailors";
 import { useAppointments } from "../hooks/useAppointments";
 
-interface ServiceOption {
-  id: string;
-  name: string;
-  price: number;
-  duration: string;
-  description: string;
-}
+const rekhaImage = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
 
-const DEFAULT_SERVICES: ServiceOption[] = [
+const TIME_SLOT_GROUPS = [
   {
-    id: "srv-1",
-    name: "Custom Anarkali Suit",
-    price: 12500,
-    duration: "60 mins",
-    description: "Full stitched outfit consultation with custom measurements",
+    period: "Morning",
+    icon: "sunny-outline" as const,
+    slots: ["09:00 AM", "10:00 AM", "11:00 AM"],
   },
   {
-    id: "srv-2",
-    name: "Bridal Lehenga Stitching",
-    price: 18000,
-    duration: "90 mins",
-    description: "Heavy zardozi / embroidery fitting & bespoke tailoring",
+    period: "Afternoon",
+    icon: "partly-sunny-outline" as const,
+    slots: ["12:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"],
   },
   {
-    id: "srv-3",
-    name: "Designer Sherwani Set",
-    price: 15500,
-    duration: "60 mins",
-    description: "Royal groom / festive sherwani tailored to your fit",
-  },
-  {
-    id: "srv-4",
-    name: "Blouse Stitching & Styling",
-    price: 2500,
-    duration: "45 mins",
-    description: "Designer neck cuts, padding, piping and latkan finishes",
-  },
-  {
-    id: "srv-5",
-    name: "Saree Fall & Pico Hem",
-    price: 1200,
-    duration: "30 mins",
-    description: "Delicate edging and matching fall attachment",
-  },
-  {
-    id: "srv-6",
-    name: "Kurta Pajama Set",
-    price: 4500,
-    duration: "45 mins",
-    description: "Classic ethnic kurta with tailored churidar / pajama",
+    period: "Evening",
+    icon: "moon-outline" as const,
+    slots: ["05:00 PM", "06:00 PM", "07:00 PM"],
   },
 ];
 
-const TIME_SLOTS = [
-  "09:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "12:00 PM",
-  "02:00 PM",
-  "03:00 PM",
-  "04:00 PM",
-  "05:00 PM",
-  "06:00 PM",
-  "07:00 PM",
-];
+const ALL_SLOTS = TIME_SLOT_GROUPS.flatMap((g) => g.slots);
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
-function StepTitle({ number, title }: { number: number; title: string }) {
-  return (
-    <View className="mb-3 mt-5 flex-row items-center">
-      <View className="mr-2 h-5 w-5 items-center justify-center rounded-full bg-primary">
-        <Text className="text-[10px] font-bold text-white">{number}</Text>
-      </View>
-      <Text className="text-[13px] font-semibold text-brand-dark">{title}</Text>
-    </View>
-  );
+const QUICK_TAGS = [
+  "✨ Have own fabric",
+  "📏 Take full measurement",
+  "⚡ Express stitching needed",
+  "👗 Reference design photos ready",
+  "💍 Bridal / Festive wear",
+  "🧵 Alteration & Restyling",
+];
+
+const STEPS = [
+  { step: 1, title: "Schedule", icon: "calendar-outline" },
+  { step: 2, title: "Notes", icon: "document-text-outline" },
+  { step: 3, title: "Review", icon: "shield-checkmark-outline" },
+] as const;
+
+/**
+ * Normalizes time strings (e.g. '02:00 PM', '14:00', '2:00PM') into '14:00'
+ */
+function normalizeTimeTo24h(timeStr: string): string {
+  if (!timeStr) return "";
+  const cleaned = timeStr.trim().toUpperCase();
+
+  const match12 = cleaned.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+  if (match12) {
+    let hours = parseInt(match12[1], 10);
+    const minutes = match12[2];
+    const ampm = match12[3];
+    if (ampm === "PM" && hours < 12) hours += 12;
+    if (ampm === "AM" && hours === 12) hours = 0;
+    return `${String(hours).padStart(2, "0")}:${minutes}`;
+  }
+
+  const match24 = cleaned.match(/^(\d{1,2}):(\d{2})/);
+  if (match24) {
+    const hours = parseInt(match24[1], 10);
+    const minutes = match24[2];
+    return `${String(hours).padStart(2, "0")}:${minutes}`;
+  }
+
+  return cleaned;
+}
+
+/**
+ * Normalizes date into YYYY-MM-DD format
+ */
+function normalizeDateStr(dateStr: string): string {
+  if (!dateStr) return "";
+  if (dateStr.includes("T")) {
+    return dateStr.split("T")[0];
+  }
+  const parsed = new Date(dateStr);
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, "0");
+    const d = String(parsed.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  return dateStr.trim();
 }
 
 export default function BookAppointmentScreen() {
-  const { tailorId, service: initialService, date: initialDate, time: initialTime } = useLocalSearchParams<{
+  const { tailorId, date: initialDate, time: initialTime } = useLocalSearchParams<{
     tailorId?: string;
-    service?: string;
     date?: string;
     time?: string;
   }>();
 
-  const { tailor, isLoading: isTailorLoading } = useTailorDetails(tailorId || "1");
-  const { createAppointment } = useAppointments();
+  const { tailor } = useTailorDetails(tailorId || "1");
+  const { appointments, createAppointment } = useAppointments();
 
-  const [isSaved, setIsSaved] = useState(false);
-  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  // Multi-step wizard state (1: Schedule, 2: Notes, 3: Review & Confirm)
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
-  // Available services
-  const availableServices = useMemo<ServiceOption[]>(() => {
-    if (tailor?.services && Array.isArray(tailor.services) && tailor.services.length > 0) {
-      return tailor.services.map((s: any, idx: number) => ({
-        id: s.id || `srv-${idx}`,
-        name: s.name || s.title || "Custom Tailoring",
-        price: typeof s.price === "number" ? s.price : parseInt(s.price, 10) || 3500,
-        duration: s.duration || "60 mins",
-        description: s.description || "Custom tailoring session",
-      }));
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [calendarView, setCalendarView] = useState<"week" | "month">("week");
+
+  // Track appointments booked in the current active session
+  const [sessionBookedSlots, setSessionBookedSlots] = useState<{
+    tailorId: string;
+    date: string;
+    time: string;
+  }[]>([]);
+
+  // Dynamic calendar dates
+  const now = useMemo(() => new Date(), []);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    if (initialDate) {
+      const parsed = new Date(initialDate);
+      if (!isNaN(parsed.getTime())) return parsed;
     }
-    return DEFAULT_SERVICES;
-  }, [tailor?.services]);
-
-  const [selectedService, setSelectedService] = useState<ServiceOption>(() => {
-    if (initialService) {
-      const match = availableServices.find(
-        (s) => s.name.toLowerCase() === initialService.toLowerCase()
-      );
-      if (match) return match;
-    }
-    return availableServices[0] || DEFAULT_SERVICES[0];
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d;
   });
 
-  // Dynamic calendar date selection
-  const now = new Date();
-  const [currentYear, setCurrentYear] = useState(now.getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(now.getMonth());
-  const [selectedDay, setSelectedDay] = useState<number>(() => {
-    return now.getDate() + 1 <= 28 ? now.getDate() + 1 : now.getDate();
-  });
+  // Displayed month in calendar header
+  const [viewYear, setViewYear] = useState(selectedDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(selectedDate.getMonth());
 
   const [selectedTime, setSelectedTime] = useState(initialTime || "12:00 PM");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Calculate days in month and start day offset
+  // Week View: calculate 7 days surrounding the selectedDate's week (Sunday to Saturday)
+  const weekDays = useMemo(() => {
+    const curr = new Date(selectedDate);
+    const dayOfWeek = curr.getDay(); // 0 is Sunday
+    const sunday = new Date(curr);
+    sunday.setDate(curr.getDate() - dayOfWeek);
+
+    const days: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(sunday);
+      d.setDate(sunday.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }, [selectedDate]);
+
+  // Month View calculations
   const daysInMonth = useMemo(() => {
-    return new Date(currentYear, currentMonth + 1, 0).getDate();
-  }, [currentYear, currentMonth]);
+    return new Date(viewYear, viewMonth + 1, 0).getDate();
+  }, [viewYear, viewMonth]);
 
   const startDayOfWeek = useMemo(() => {
-    return new Date(currentYear, currentMonth, 1).getDay(); // 0 = Sun, 1 = Mon ...
-  }, [currentYear, currentMonth]);
+    return new Date(viewYear, viewMonth, 1).getDay(); // 0 = Sun
+  }, [viewYear, viewMonth]);
 
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
+  const handlePrev = () => {
+    if (calendarView === "week") {
+      const prevWeek = new Date(selectedDate);
+      prevWeek.setDate(prevWeek.getDate() - 7);
+      setSelectedDate(prevWeek);
+      setViewYear(prevWeek.getFullYear());
+      setViewMonth(prevWeek.getMonth());
     } else {
-      setCurrentMonth((m) => m - 1);
+      if (viewMonth === 0) {
+        setViewMonth(11);
+        setViewYear((y) => y - 1);
+      } else {
+        setViewMonth((m) => m - 1);
+      }
     }
   };
 
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
+  const handleNext = () => {
+    if (calendarView === "week") {
+      const nextWeek = new Date(selectedDate);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      setSelectedDate(nextWeek);
+      setViewYear(nextWeek.getFullYear());
+      setViewMonth(nextWeek.getMonth());
     } else {
-      setCurrentMonth((m) => m + 1);
+      if (viewMonth === 11) {
+        setViewMonth(0);
+        setViewYear((y) => y + 1);
+      } else {
+        setViewMonth((m) => m + 1);
+      }
     }
+  };
+
+  const isSameDay = (d1: Date, d2: Date) => {
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  };
+
+  const isPastDay = (d: Date) => {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    return target < today;
   };
 
   const isoDateStr = useMemo(() => {
-    return `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
-  }, [currentYear, currentMonth, selectedDay]);
+    const y = selectedDate.getFullYear();
+    const m = String(selectedDate.getMonth() + 1).padStart(2, "0");
+    const d = String(selectedDate.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }, [selectedDate]);
 
   const formattedDateStr = useMemo(() => {
-    const monthShort = MONTH_NAMES[currentMonth].slice(0, 3);
-    return `${selectedDay} ${monthShort} ${currentYear}`;
-  }, [selectedDay, currentMonth, currentYear]);
+    const monthShort = MONTH_NAMES[selectedDate.getMonth()].slice(0, 3);
+    return `${selectedDate.getDate()} ${monthShort} ${selectedDate.getFullYear()}`;
+  }, [selectedDate]);
 
+  // Tailor attributes with faithful design fallbacks
   const tailorName =
+    tailor?.shopName ||
     (tailor as any)?.fullName ||
     tailor?.name ||
-    tailor?.shopName ||
     (tailor as any)?.businessName ||
-    "Tailor";
+    "Rekha Tailors";
 
   const tailorCity =
     tailor?.location?.city ||
     (tailor as any)?.city ||
     (tailor as any)?.address ||
-    "Jaipur";
+    "C-Scheme, Jaipur";
 
-  const tailorRating = tailor?.rating ? String(tailor.rating) : "5.0";
+  const tailorRating = tailor?.rating ? Number(tailor.rating).toFixed(1) : "4.8";
   const reviewsCount =
-    tailor?.reviewsCount || (tailor as any)?.reviews || (tailor as any)?.totalReviews || 0;
+    tailor?.reviewsCount ?? (tailor as any)?.reviews ?? (tailor as any)?.totalReviews ?? 128;
+
+  const rawAvatarUri =
+    tailor?.avatarUrl ||
+    tailor?.avatar ||
+    tailor?.imageUrl ||
+    tailor?.image ||
+    (tailor as any)?.profile?.avatar_url ||
+    null;
+
+  const avatarSource = rawAvatarUri ? { uri: rawAvatarUri } : rekhaImage;
+  const targetTailorId = String(tailorId || tailor?.id || "rekha-tailors").toLowerCase();
+
+  /**
+   * Checks whether a specific time slot is already booked on a given date for this tailor
+   */
+  const isSlotBooked = useCallback(
+    (timeSlot: string, dateStr: string): boolean => {
+      const slot24 = normalizeTimeTo24h(timeSlot);
+
+      // 1. Check in newly booked appointments from this session
+      const isBookedInSession = sessionBookedSlots.some((item) => {
+        const itemTailor = item.tailorId.toLowerCase();
+        return (
+          (itemTailor === targetTailorId ||
+            itemTailor === "rekha-tailors" ||
+            targetTailorId === "rekha-tailors") &&
+          item.date === dateStr &&
+          normalizeTimeTo24h(item.time) === slot24
+        );
+      });
+      if (isBookedInSession) return true;
+
+      // 2. Check in loaded appointments from API/database
+      if (appointments && appointments.length > 0) {
+        const found = appointments.find((appt) => {
+          const status = (appt.status || "").toLowerCase();
+          // Cancelled and rejected slots are reopened
+          if (status === "cancelled" || status === "rejected") return false;
+
+          const apptTailor = String(appt.tailorId || appt.tailor_id || "").toLowerCase();
+          const matchesTailor =
+            !apptTailor ||
+            apptTailor === targetTailorId ||
+            apptTailor === "1" ||
+            apptTailor === "rekha-tailors" ||
+            targetTailorId === "1" ||
+            targetTailorId === "rekha-tailors";
+
+          const apptDate = normalizeDateStr(appt.appointmentDate || appt.date || appt.appointment_date || "");
+          const apptTime = normalizeTimeTo24h(appt.appointmentTime || appt.time || appt.appointment_time || "");
+
+          return matchesTailor && apptDate === dateStr && apptTime === slot24;
+        });
+
+        if (found) return true;
+      }
+
+      // 3. Demo realistic booked slots for upcoming dates (e.g. 11:00 AM & 04:00 PM on tomorrow)
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowIso = normalizeDateStr(tomorrow.toISOString());
+
+      if (dateStr === tomorrowIso) {
+        if (slot24 === "11:00" || slot24 === "16:00") {
+          return true;
+        }
+      }
+
+      return false;
+    },
+    [appointments, sessionBookedSlots, targetTailorId, now]
+  );
+
+  // Counts of available & booked slots for currently selected date
+  const { availableCount, bookedCount } = useMemo(() => {
+    let booked = 0;
+    let available = 0;
+    ALL_SLOTS.forEach((slot) => {
+      if (isSlotBooked(slot, isoDateStr)) {
+        booked++;
+      } else {
+        available++;
+      }
+    });
+    return { availableCount: available, bookedCount: booked };
+  }, [isoDateStr, isSlotBooked]);
+
+  // If currently selected slot is booked on the active date, switch to the first open slot
+  useEffect(() => {
+    if (isSlotBooked(selectedTime, isoDateStr)) {
+      const firstAvailable = ALL_SLOTS.find((s) => !isSlotBooked(s, isoDateStr));
+      if (firstAvailable) {
+        setSelectedTime(firstAvailable);
+      }
+    }
+  }, [isoDateStr, isSlotBooked, selectedTime]);
+
+  const handleToggleTag = (tagText: string) => {
+    const tagClean = tagText.replace(/^[^\w\s]+\s*/, "").trim();
+    if (notes.includes(tagClean)) {
+      const updated = notes
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s !== tagClean)
+        .join(", ");
+      setNotes(updated);
+    } else {
+      if (notes.trim().length === 0) {
+        setNotes(tagClean);
+      } else {
+        setNotes((prev) => `${prev.trim()}, ${tagClean}`);
+      }
+    }
+  };
+
+  const handleHeaderBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep((s) => (s - 1) as 1 | 2 | 3);
+    } else {
+      router.back();
+    }
+  };
 
   const handleConfirmBooking = async () => {
-    const targetTailorId = tailorId || tailor?.id;
-    if (!targetTailorId) {
-      Alert.alert("Error", "Please select a valid tailor to book an appointment.");
+    // Double-check slot availability before confirming
+    if (isSlotBooked(selectedTime, isoDateStr)) {
+      Alert.alert(
+        "Slot Unavailable",
+        `Sorry, the ${selectedTime} slot on ${formattedDateStr} is already booked. Please choose an open slot.`
+      );
+      setCurrentStep(1);
       return;
     }
 
-    // Convert time string like '02:00 PM' to '14:00'
-    let time24 = selectedTime;
-    const match = selectedTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
-    if (match) {
-      let hours = parseInt(match[1], 10);
-      const minutes = match[2];
-      const ampm = (match[3] || "").toUpperCase();
-      if (ampm === "PM" && hours < 12) hours += 12;
-      if (ampm === "AM" && hours === 12) hours = 0;
-      time24 = `${String(hours).padStart(2, "0")}:${minutes}`;
-    }
+    // Convert time string to 24h format for API
+    const time24 = normalizeTimeTo24h(selectedTime);
 
     setIsSubmitting(true);
     try {
       await createAppointment({
         tailorId: targetTailorId,
         tailor_id: targetTailorId,
-        serviceId: selectedService.id && !selectedService.id.startsWith("srv-") ? selectedService.id : undefined,
-        service_id: selectedService.id && !selectedService.id.startsWith("srv-") ? selectedService.id : undefined,
         appointment_date: isoDateStr,
         appointment_time: time24,
         appointmentDate: isoDateStr,
         appointmentTime: time24,
         date: isoDateStr,
         time: time24,
-        serviceType: selectedService.name,
-        service_type: selectedService.name,
+        serviceType: "Tailor Consultation & Fitting",
+        service_type: "Tailor Consultation & Fitting",
         notes: notes.trim() || undefined,
         location: tailorCity,
-        price: selectedService.price,
-        duration: selectedService.duration,
+        price: 0,
+        duration: "45 mins",
       });
 
-      Alert.alert(
-        "Booking Confirmed! 🎉",
-        `Your appointment with ${tailorName} for ${selectedService.name} on ${formattedDateStr} at ${selectedTime} is confirmed.`,
-        [
-          {
-            text: "View Appointments",
-            onPress: () => router.push("/appointments" as any),
-          },
-          {
-            text: "Done",
-            onPress: () => router.push("/home" as any),
-            style: "cancel",
-          },
-        ]
-      );
+      // Record slot as booked immediately in session state so it can never be booked again
+      setSessionBookedSlots((prev) => [
+        ...prev,
+        { tailorId: targetTailorId, date: isoDateStr, time: selectedTime },
+      ]);
+
+      setIsSuccessModalOpen(true);
     } catch (err: any) {
       Alert.alert(
         "Booking Failed",
@@ -271,278 +425,642 @@ export default function BookAppointmentScreen() {
     }
   };
 
+  const isCurrentSlotBooked = isSlotBooked(selectedTime, isoDateStr);
+
   return (
     <BookingOrdersScreenShell>
+      {/* Top Navigation Header with prominent title */}
       <BookingOrdersHeader
         title="Book Appointment"
-        rightIcon={isSaved ? "heart" : "heart-outline"}
-        rightLabel={isSaved ? "Saved" : "Save tailor"}
-        onPressRight={() => {
-          setIsSaved(!isSaved);
-          Alert.alert(
-            isSaved ? "Removed" : "Saved",
-            isSaved ? "Tailor removed from saved list" : "Tailor saved to favorites"
-          );
-        }}
+        alignLeftTitle
+        titleClassName="text-[22px] font-bold text-brand-dark tracking-tight"
+        hideRightIcon
+        onPressLeft={handleHeaderBack}
       />
+
       <View className="px-5 pb-8">
-        {/* Tailor summary banner */}
-        <View className="flex-row items-center rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
-          <PlaceholderImage size="md" tone="coral" />
-          <View className="ml-4 flex-1">
-            <Text className="text-[16px] font-bold text-brand-dark">
+        {/* Compact Tailor Header Banner */}
+        <View className="mb-4 flex-row items-center rounded-2xl border border-brand-border bg-white p-3.5 shadow-2xs">
+          <View className="overflow-hidden rounded-xl bg-primary-50">
+            <Image
+              source={avatarSource}
+              style={{ width: 56, height: 56 }}
+              contentFit="cover"
+            />
+          </View>
+
+          <View className="ml-3 flex-1 justify-center">
+            <Text className="text-[16px] font-bold text-brand-dark" numberOfLines={1}>
               {tailorName}
             </Text>
-            <View className="mt-1 flex-row items-center">
+
+            <View className="mt-0.5 flex-row items-center">
               <Ionicons name="star" size={13} color="#F4B400" />
-              <Text className="ml-1 text-[12px] font-medium text-brand-dark">
-                {tailorRating} ({reviewsCount})
+              <Text className="ml-1 text-[12px] font-semibold text-brand-dark">
+                {tailorRating}{" "}
+                <Text className="font-normal text-brand-gray">({reviewsCount})</Text>
+              </Text>
+              <Text className="mx-1.5 text-brand-gray">•</Text>
+              <Text className="text-[12px] text-brand-gray" numberOfLines={1}>
+                {tailorCity}
               </Text>
             </View>
-            <Text className="mt-1 text-[12px] text-brand-gray">
-              {tailorCity}
-            </Text>
-            <View className="mt-2 self-start">
-              <StatusPill label="Verified" tone="green" />
+
+            <View className="mt-1 self-start">
+              <View className="flex-row items-center rounded-full bg-[#EAF8EE] px-2 py-0.5 border border-[#C6F0DB]">
+                <Ionicons name="checkmark-circle" size={11} color="#0D9488" />
+                <Text className="ml-1 text-[9px] font-semibold text-[#0D9488]">Verified Tailor</Text>
+              </View>
             </View>
           </View>
         </View>
 
-        {/* Step 1: Select Service */}
-        <StepTitle number={1} title="Select Service" />
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setIsServiceModalOpen(true)}
-          className="h-[50px] flex-row items-center justify-between rounded-md border border-brand-border bg-white px-4 shadow-xs"
-        >
-          <View className="flex-1 pr-2">
-            <Text className="text-[13px] font-bold text-brand-dark" numberOfLines={1}>
-              {selectedService.name}
-            </Text>
-          </View>
-          <View className="flex-row items-center">
-            <Text className="mr-2 text-[13px] font-bold text-primary">
-              ₹{selectedService.price.toLocaleString("en-IN")}
-            </Text>
-            <Ionicons name="chevron-down" size={16} color="#1A1D1F" />
-          </View>
-        </TouchableOpacity>
-
-        {/* Step 2: Select Date */}
-        <StepTitle number={2} title="Select Date" />
-        <View className="rounded-md border border-brand-border bg-white p-4 shadow-xs">
-          {/* Month Header Navigation */}
-          <View className="mb-4 flex-row items-center justify-between">
-            <TouchableOpacity
-              onPress={handlePrevMonth}
-              className="h-8 w-8 items-center justify-center rounded-md bg-brand-surface active:bg-gray-200"
-            >
-              <Ionicons name="chevron-back" size={18} color="#1A1D1F" />
-            </TouchableOpacity>
-            <Text className="text-[14px] font-bold text-brand-dark">
-              {MONTH_NAMES[currentMonth]} {currentYear}
-            </Text>
-            <TouchableOpacity
-              onPress={handleNextMonth}
-              className="h-8 w-8 items-center justify-center rounded-md bg-brand-surface active:bg-gray-200"
-            >
-              <Ionicons name="chevron-forward" size={18} color="#1A1D1F" />
-            </TouchableOpacity>
-          </View>
-
-          {/* Weekday Labels */}
-          <View className="mb-3 flex-row justify-between">
-            {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day) => (
-              <Text key={day} className="w-9 text-center text-[10px] font-bold text-brand-gray">
-                {day}
-              </Text>
-            ))}
-          </View>
-
-          {/* Date Grid */}
-          <View className="flex-row flex-wrap">
-            {/* Empty slots for start day offset */}
-            {Array.from({ length: startDayOfWeek }).map((_, i) => (
-              <View key={`empty-${i}`} className="h-9 w-[14.28%] items-center justify-center" />
-            ))}
-
-            {/* Month Day Buttons */}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1;
-              const isSelected = day === selectedDay;
-              const dateObj = new Date(currentYear, currentMonth, day);
-              const isPast =
-                dateObj < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        {/* 3-Step Progress Stepper */}
+        <View className="mb-5 rounded-2xl border border-brand-border/70 bg-white p-3.5 shadow-2xs">
+          <View className="flex-row items-center justify-between">
+            {STEPS.map((item, idx) => {
+              const isActive = currentStep === item.step;
+              const isCompleted = currentStep > item.step;
 
               return (
-                <View key={day} className="h-9 w-[14.28%] items-center justify-center p-0.5">
+                <React.Fragment key={item.step}>
+                  {idx > 0 && (
+                    <View
+                      className={`h-[2px] flex-1 mx-2.5 ${
+                        currentStep >= item.step ? "bg-primary" : "bg-gray-200"
+                      }`}
+                    />
+                  )}
                   <TouchableOpacity
-                    disabled={isPast}
-                    onPress={() => setSelectedDay(day)}
-                    className={`h-8 w-8 items-center justify-center rounded-md ${
-                      isSelected
-                        ? "bg-primary shadow-xs"
-                        : isPast
-                        ? "opacity-30"
-                        : "bg-brand-surface active:bg-gray-200"
-                    }`}
+                    activeOpacity={0.8}
+                    disabled={!isCompleted}
+                    onPress={() => setCurrentStep(item.step as 1 | 2 | 3)}
+                    className="items-center"
                   >
-                    <Text
-                      className={`text-[12px] font-bold ${
-                        isSelected
-                          ? "text-white"
-                          : isPast
-                          ? "text-gray-400"
-                          : "text-brand-dark"
+                    <View
+                      className={`h-7 w-7 items-center justify-center rounded-full ${
+                        isActive
+                          ? "bg-primary shadow-xs"
+                          : isCompleted
+                          ? "bg-primary/15 border border-primary"
+                          : "bg-gray-100 border border-gray-200"
                       }`}
                     >
-                      {day}
+                      {isCompleted ? (
+                        <Ionicons name="checkmark" size={15} color="#14919B" />
+                      ) : (
+                        <Text
+                          className={`text-[12px] font-bold ${
+                            isActive ? "text-white" : "text-brand-gray"
+                          }`}
+                        >
+                          {item.step}
+                        </Text>
+                      )}
+                    </View>
+                    <Text
+                      className={`mt-1 text-[11px] ${
+                        isActive
+                          ? "font-bold text-primary"
+                          : isCompleted
+                          ? "font-semibold text-brand-dark"
+                          : "font-medium text-brand-gray"
+                      }`}
+                    >
+                      {item.title}
                     </Text>
                   </TouchableOpacity>
-                </View>
+                </React.Fragment>
               );
             })}
           </View>
         </View>
 
-        {/* Step 3: Select Time */}
-        <StepTitle number={3} title="Select Time" />
-        <View className="flex-row flex-wrap gap-2">
-          {TIME_SLOTS.map((time) => {
-            const isSelected = time === selectedTime;
-
-            return (
-              <TouchableOpacity
-                key={time}
-                activeOpacity={0.7}
-                onPress={() => setSelectedTime(time)}
-                className={`rounded-md border px-3.5 py-2.5 shadow-xs ${
-                  isSelected
-                    ? "border-primary bg-primary"
-                    : "border-brand-border bg-white"
-                }`}
-              >
-                <Text
-                  className={`text-[12px] font-bold ${
-                    isSelected ? "text-white" : "text-brand-dark"
-                  }`}
-                >
-                  {time}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Step 4: Add Notes */}
-        <StepTitle number={4} title="Add Notes (Optional)" />
-        <View className="rounded-md border border-brand-border bg-white px-4 py-3 shadow-xs">
-          <TextInput
-            multiline
-            placeholder="Share your preferences, design ideas, fabric details, or measurements..."
-            placeholderTextColor="#9CA3AF"
-            value={notes}
-            onChangeText={setNotes}
-            maxLength={200}
-            className="min-h-[64px] text-[12px] font-medium leading-5 text-brand-dark"
-            textAlignVertical="top"
-          />
-          <Text className="mt-1 self-end text-[10px] text-brand-gray">{notes.length}/200</Text>
-        </View>
-
-        {/* Appointment Summary */}
-        <SectionLabel title="Appointment Summary" />
-        <View className="rounded-md border border-brand-border bg-brand-surface p-4">
-          <InfoRow label="Tailor" value={tailorName} />
-          <InfoRow label="Service" value={selectedService.name} />
-          <InfoRow label="Date" value={formattedDateStr} />
-          <InfoRow label="Time" value={selectedTime} />
-          <InfoRow label="Duration" value={selectedService.duration} />
-          <InfoRow
-            label="Estimated Price"
-            value={`₹${selectedService.price.toLocaleString("en-IN")}`}
-          />
-        </View>
-
-        {/* Submit Booking Button */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleConfirmBooking}
-          disabled={isSubmitting}
-          className="mt-6 h-[50px] items-center justify-center rounded-md bg-primary shadow-xs active:bg-primary-dark"
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text className="text-[15px] font-bold text-white tracking-wide">
-              Confirm Booking
-            </Text>
-          )}
-        </TouchableOpacity>
-        <Text className="mt-2.5 text-center text-[11px] font-medium text-brand-gray">
-          You won't be charged now • Free cancellation up to 24h prior
-        </Text>
-      </View>
-
-      {/* Service Selection Modal */}
-      <Modal
-        visible={isServiceModalOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setIsServiceModalOpen(false)}
-      >
-        <View className="flex-1 justify-end bg-black/50">
-          <View className="max-h-[80%] rounded-t-2xl bg-white p-5 pb-8 shadow-xl">
-            <View className="mb-4 flex-row items-center justify-between border-b border-brand-border pb-3">
-              <Text className="text-[16px] font-bold text-brand-dark">
-                Choose a Service
+        {/* ==================================================================== */}
+        {/* STEP 1: SCHEDULE (DATE & TIME)                                       */}
+        {/* ==================================================================== */}
+        {currentStep === 1 && (
+          <View>
+            {/* Step Header */}
+            <View className="mb-3">
+              <Text className="text-[17px] font-bold text-brand-dark">
+                Choose Date & Time
               </Text>
-              <TouchableOpacity
-                onPress={() => setIsServiceModalOpen(false)}
-                className="p-1"
-              >
-                <Ionicons name="close" size={22} color="#1A1D1F" />
-              </TouchableOpacity>
+              <Text className="text-[12px] text-brand-gray">
+                Pick an available slot for your tailoring appointment
+              </Text>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {availableServices.map((service) => {
-                const isSelected = selectedService.id === service.id;
-                return (
+            {/* Calendar Card */}
+            <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs">
+              {/* Month Navigation */}
+              <View className="mb-3.5 flex-row items-center justify-between">
+                <TouchableOpacity
+                  onPress={handlePrev}
+                  className="h-8 w-8 items-center justify-center rounded-lg bg-brand-surface active:bg-gray-200"
+                >
+                  <Ionicons name="chevron-back" size={18} color="#1A1D1F" />
+                </TouchableOpacity>
+
+                <View className="items-center">
+                  <Text className="text-[15px] font-bold text-brand-dark">
+                    {MONTH_NAMES[calendarView === "week" ? selectedDate.getMonth() : viewMonth]}{" "}
+                    {calendarView === "week" ? selectedDate.getFullYear() : viewYear}
+                  </Text>
+                </View>
+
+                <View className="flex-row items-center gap-1.5">
                   <TouchableOpacity
-                    key={service.id}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setSelectedService(service);
-                      setIsServiceModalOpen(false);
-                    }}
-                    className={`mb-3 rounded-md border p-3.5 shadow-xs ${
-                      isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-brand-border bg-white"
-                    }`}
+                    onPress={() => setCalendarView((v) => (v === "week" ? "month" : "week"))}
+                    className="rounded-lg bg-brand-surface px-2.5 py-1 border border-brand-border/60 active:bg-gray-200"
                   >
-                    <View className="flex-row items-center justify-between">
-                      <Text className="text-[14px] font-bold text-brand-dark">
-                        {service.name}
-                      </Text>
-                      <Text className="text-[14px] font-bold text-primary">
-                        ₹{service.price.toLocaleString("en-IN")}
-                      </Text>
-                    </View>
-                    <Text className="mt-1 text-[11px] leading-4 text-brand-gray">
-                      {service.description}
+                    <Text className="text-[11px] font-bold text-brand-gray">
+                      {calendarView === "week" ? "Month" : "Week"}
                     </Text>
-                    <View className="mt-2 flex-row items-center">
-                      <Ionicons name="time-outline" size={13} color="#6F767E" />
-                      <Text className="ml-1 text-[11px] font-medium text-brand-gray">
-                        Est. {service.duration}
-                      </Text>
-                    </View>
                   </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+
+                  <TouchableOpacity
+                    onPress={handleNext}
+                    className="h-8 w-8 items-center justify-center rounded-lg bg-brand-surface active:bg-gray-200"
+                  >
+                    <Ionicons name="chevron-forward" size={18} color="#1A1D1F" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Weekday Labels */}
+              <View className="mb-2 flex-row justify-between">
+                {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day) => (
+                  <Text
+                    key={day}
+                    className="w-[14.28%] text-center text-[11px] font-bold text-brand-gray uppercase"
+                  >
+                    {day}
+                  </Text>
+                ))}
+              </View>
+
+              {/* Date Row / Grid */}
+              {calendarView === "week" ? (
+                /* 7-day row */
+                <View className="flex-row justify-between py-1">
+                  {weekDays.map((d) => {
+                    const isSelected = isSameDay(d, selectedDate);
+                    const isPast = isPastDay(d);
+                    const isToday = isSameDay(d, now);
+
+                    return (
+                      <View key={d.toISOString()} className="h-11 w-[14.28%] items-center justify-center">
+                        <TouchableOpacity
+                          disabled={isPast}
+                          onPress={() => {
+                            setSelectedDate(d);
+                            setViewYear(d.getFullYear());
+                            setViewMonth(d.getMonth());
+                          }}
+                          className={`h-10 w-10 items-center justify-center rounded-xl ${
+                            isSelected
+                              ? "bg-primary shadow-xs"
+                              : isPast
+                              ? "opacity-35"
+                              : "bg-brand-surface active:bg-gray-200"
+                          }`}
+                        >
+                          <Text
+                            className={`text-[13px] font-bold ${
+                              isSelected
+                                ? "text-white"
+                                : isPast
+                                ? "text-gray-400"
+                                : "text-brand-dark"
+                            }`}
+                          >
+                            {d.getDate()}
+                          </Text>
+                          {isToday && !isSelected && (
+                            <View className="absolute bottom-1.5 h-1 w-1 rounded-full bg-primary" />
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : (
+                /* Month View */
+                <View className="flex-row flex-wrap py-1">
+                  {Array.from({ length: startDayOfWeek }).map((_, i) => (
+                    <View key={`empty-${i}`} className="h-11 w-[14.28%] items-center justify-center" />
+                  ))}
+
+                  {Array.from({ length: daysInMonth }).map((_, i) => {
+                    const day = i + 1;
+                    const d = new Date(viewYear, viewMonth, day);
+                    const isSelected = isSameDay(d, selectedDate);
+                    const isPast = isPastDay(d);
+                    const isToday = isSameDay(d, now);
+
+                    return (
+                      <View key={day} className="h-11 w-[14.28%] items-center justify-center">
+                        <TouchableOpacity
+                          disabled={isPast}
+                          onPress={() => {
+                            setSelectedDate(d);
+                          }}
+                          className={`h-10 w-10 items-center justify-center rounded-xl ${
+                            isSelected
+                              ? "bg-primary shadow-xs"
+                              : isPast
+                              ? "opacity-35"
+                              : "bg-brand-surface active:bg-gray-200"
+                          }`}
+                        >
+                          <Text
+                            className={`text-[12px] font-bold ${
+                              isSelected
+                                ? "text-white"
+                                : isPast
+                                ? "text-gray-400"
+                                : "text-brand-dark"
+                            }`}
+                          >
+                            {day}
+                          </Text>
+                          {isToday && !isSelected && (
+                            <View className="absolute bottom-1.5 h-1 w-1 rounded-full bg-primary" />
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+
+            {/* Time Slot Selection with Real-time Booked Slot Protection */}
+            <View className="mt-5 rounded-2xl border border-brand-border bg-white p-4 shadow-xs">
+              <View className="mb-3.5 flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <Ionicons name="time-outline" size={17} color="#14919B" />
+                  <Text className="ml-2 text-[15px] font-bold text-brand-dark">Time Slots</Text>
+                </View>
+
+                {/* Availability status indicators */}
+                <View className="flex-row items-center" style={{ gap: 6 }}>
+                  <View className="flex-row items-center rounded-full bg-emerald-50 px-2 py-0.5 border border-emerald-200">
+                    <View className="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1" />
+                    <Text className="text-[10px] font-bold text-emerald-700">{availableCount} Open</Text>
+                  </View>
+                  {bookedCount > 0 && (
+                    <View className="flex-row items-center rounded-full bg-gray-100 px-2 py-0.5 border border-gray-200">
+                      <View className="h-1.5 w-1.5 rounded-full bg-gray-400 mr-1" />
+                      <Text className="text-[10px] font-semibold text-gray-500">{bookedCount} Booked</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {TIME_SLOT_GROUPS.map((group, gIdx) => (
+                <View key={group.period} className={gIdx > 0 ? "mt-3.5" : ""}>
+                  <View className="mb-1.5 flex-row items-center">
+                    <Ionicons name={group.icon} size={13} color="#6F767E" />
+                    <Text className="ml-1 text-[11px] font-bold uppercase tracking-wider text-brand-gray">
+                      {group.period}
+                    </Text>
+                  </View>
+
+                  <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+                    {group.slots.map((time) => {
+                      const isBooked = isSlotBooked(time, isoDateStr);
+                      const isSelected = !isBooked && time === selectedTime;
+
+                      return (
+                        <TouchableOpacity
+                          key={time}
+                          disabled={isBooked}
+                          activeOpacity={0.75}
+                          onPress={() => setSelectedTime(time)}
+                          className={`h-[46px] min-w-[96px] flex-1 items-center justify-center rounded-xl border ${
+                            isBooked
+                              ? "border-gray-200 bg-gray-100/90 opacity-60"
+                              : isSelected
+                              ? "border-primary bg-primary shadow-xs"
+                              : "border-brand-border bg-brand-surface active:bg-gray-100"
+                          }`}
+                        >
+                          <View className="items-center justify-center">
+                            <Text
+                              className={`text-[12px] font-bold ${
+                                isBooked
+                                  ? "text-gray-400 line-through"
+                                  : isSelected
+                                  ? "text-white"
+                                  : "text-brand-dark"
+                              }`}
+                            >
+                              {time}
+                            </Text>
+
+                            {isBooked ? (
+                              <View className="flex-row items-center mt-0.5">
+                                <Ionicons name="lock-closed" size={9} color="#9CA3AF" />
+                                <Text className="ml-0.5 text-[8px] font-bold text-gray-500 uppercase tracking-tight">
+                                  Booked
+                                </Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Next Step CTA with uncrushed layout */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              disabled={isCurrentSlotBooked}
+              onPress={() => {
+                if (isCurrentSlotBooked) {
+                  Alert.alert("Slot Booked", "Please select an available time slot before continuing.");
+                  return;
+                }
+                setCurrentStep(2);
+              }}
+              className={`relative mt-6 h-[54px] w-full items-center justify-center overflow-hidden rounded-xl shadow-md ${
+                isCurrentSlotBooked ? "opacity-50" : ""
+              }`}
+              style={{ borderRadius: 14 }}
+            >
+              <ButtonTexture variant="greenish" borderRadius={14} />
+              <View className="flex-row items-center z-10">
+                <Text className="text-[16px] font-bold text-white tracking-wide mr-2">
+                  {isCurrentSlotBooked ? "Slot Booked — Choose Another" : "Continue to Notes"}
+                </Text>
+                {!isCurrentSlotBooked && (
+                  <Ionicons name="arrow-forward" size={17} color="#FFFFFF" />
+                )}
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ==================================================================== */}
+        {/* STEP 2: ADDITIONAL NOTES ONLY                                        */}
+        {/* ==================================================================== */}
+        {currentStep === 2 && (
+          <View>
+            {/* Step Header */}
+            <View className="mb-4">
+              <Text className="text-[18px] font-bold text-brand-dark">
+                Additional Notes
+              </Text>
+              <Text className="mt-0.5 text-[13px] text-brand-gray">
+                Share your requirements, fabric details or styling requests with the tailor
+              </Text>
+            </View>
+
+            {/* Notes Textarea Card */}
+            <View className="mb-4 rounded-2xl border border-brand-border bg-white px-4 py-3.5 shadow-xs">
+              <TextInput
+                multiline
+                placeholder="Describe your design ideas, neckline/sleeves preferences, fabric type, measurements, or urgent delivery requirements..."
+                placeholderTextColor="#9CA3AF"
+                value={notes}
+                onChangeText={setNotes}
+                maxLength={200}
+                className="min-h-[120px] text-[13px] font-medium leading-6 text-brand-dark"
+                textAlignVertical="top"
+              />
+              <View className="mt-3 flex-row items-center justify-between border-t border-brand-border/40 pt-2.5">
+                <Text className="text-[11px] text-brand-gray">Helpful context for the tailor</Text>
+                <Text className="text-[11px] font-medium text-brand-gray">{notes.length}/200</Text>
+              </View>
+            </View>
+
+            {/* Quick Suggestion Chips */}
+            <View className="mb-6">
+              <Text className="mb-2 text-[12px] font-semibold text-brand-gray">
+                Tap to quickly add tags
+              </Text>
+              <View className="flex-row flex-wrap gap-2">
+                {QUICK_TAGS.map((tag) => {
+                  const tagClean = tag.replace(/^[^\w\s]+\s*/, "").trim();
+                  const isActive = notes.includes(tagClean);
+
+                  return (
+                    <TouchableOpacity
+                      key={tag}
+                      onPress={() => handleToggleTag(tag)}
+                      className={`rounded-full border px-3 py-1.5 ${
+                        isActive
+                          ? "border-primary bg-primary/10"
+                          : "border-brand-border bg-white active:bg-gray-100"
+                      }`}
+                    >
+                      <Text
+                        className={`text-[12px] font-semibold ${
+                          isActive ? "text-primary" : "text-brand-gray"
+                        }`}
+                      >
+                        {tag}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Step Navigation Buttons - Uncrushable layout with explicit spacing */}
+            <View className="flex-row items-center" style={{ gap: 12 }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setCurrentStep(1)}
+                className="h-[52px] min-w-[96px] px-4 items-center justify-center rounded-xl border border-brand-border bg-white active:bg-gray-100 shadow-2xs"
+              >
+                <View className="flex-row items-center">
+                  <Ionicons name="arrow-back" size={16} color="#1A1D1F" style={{ marginRight: 4 }} />
+                  <Text className="text-[14px] font-bold text-brand-dark">Back</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => setCurrentStep(3)}
+                className="relative h-[52px] flex-1 items-center justify-center overflow-hidden rounded-xl shadow-md"
+                style={{ borderRadius: 14 }}
+              >
+                <ButtonTexture variant="greenish" borderRadius={14} />
+                <View className="flex-row items-center z-10 px-4">
+                  <Text className="text-[15px] font-bold text-white tracking-wide mr-1.5">
+                    Review Details
+                  </Text>
+                  <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* ==================================================================== */}
+        {/* STEP 3: REVIEW & CONFIRM                                             */}
+        {/* ==================================================================== */}
+        {currentStep === 3 && (
+          <View>
+            {/* Step Header */}
+            <View className="mb-3">
+              <Text className="text-[18px] font-bold text-brand-dark">
+                Review & Confirm
+              </Text>
+              <Text className="text-[12px] text-brand-gray">
+                Verify your appointment details before finalizing
+              </Text>
+            </View>
+
+            {/* Summary Card */}
+            <View className="mb-4 rounded-2xl border border-brand-border bg-brand-surface p-4 shadow-2xs">
+              <InfoRow label="Tailor" value={tailorName} />
+              <InfoRow label="Appointment Type" value="Tailor Consultation & Fitting" />
+              <InfoRow label="Date" value={formattedDateStr} />
+              <InfoRow label="Time Slot" value={selectedTime} />
+              <InfoRow label="Location" value={tailorCity} />
+              <InfoRow label="Estimated Duration" value="~45 mins" />
+              <InfoRow
+                label="Consultation Fee"
+                value="FREE"
+                highlight
+              />
+            </View>
+
+            {/* Notes Preview if any */}
+            <View className="mb-4 rounded-2xl border border-brand-border bg-white p-4 shadow-2xs">
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="document-text-outline" size={14} color="#6F767E" />
+                <Text className="ml-1 text-[11px] font-bold uppercase tracking-wider text-brand-gray">
+                  Your Notes & Requests
+                </Text>
+              </View>
+              <Text className="text-[13px] text-brand-dark leading-5 font-medium">
+                {notes.trim().length > 0
+                  ? notes.trim()
+                  : "None specified (you can discuss requirements directly with the tailor)"}
+              </Text>
+            </View>
+
+            {/* Trust Assurance Card */}
+            <View className="mb-6 rounded-2xl border border-[#C6F0DB] bg-[#F0FAF5] p-3.5">
+              <View className="flex-row items-center mb-1">
+                <Ionicons name="shield-checkmark" size={16} color="#0D9488" />
+                <Text className="ml-1.5 text-[13px] font-bold text-[#0D9488]">
+                  Sui Dhaga Appointment Guarantee
+                </Text>
+              </View>
+              <Text className="text-[11px] text-brand-dark/80 leading-4">
+                • Zero booking fees • Pay tailor directly for tailoring • Free rescheduling up to 24h prior.
+              </Text>
+            </View>
+
+            {/* Step Navigation Buttons - Uncrushable layout with explicit spacing */}
+            <View className="flex-row items-center" style={{ gap: 12 }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setCurrentStep(2)}
+                className="h-[54px] min-w-[96px] px-4 items-center justify-center rounded-xl border border-brand-border bg-white active:bg-gray-100 shadow-2xs"
+              >
+                <View className="flex-row items-center">
+                  <Ionicons name="create-outline" size={16} color="#1A1D1F" style={{ marginRight: 4 }} />
+                  <Text className="text-[14px] font-bold text-brand-dark">Edit</Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Confirm Booking CTA with signature texture */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleConfirmBooking}
+                disabled={isSubmitting || isCurrentSlotBooked}
+                className={`relative h-[54px] flex-1 items-center justify-center overflow-hidden rounded-xl shadow-md ${
+                  isCurrentSlotBooked ? "opacity-50" : ""
+                }`}
+                style={{ borderRadius: 14 }}
+              >
+                <ButtonTexture variant="greenish" borderRadius={14} />
+                {isSubmitting ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <View className="flex-row items-center z-10 px-4">
+                    <Ionicons name="checkmark-circle-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text className="text-[16px] font-bold text-white tracking-wide">
+                      Confirm Booking
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+
+      {/* Booking Success Celebration Modal */}
+      <Modal
+        visible={isSuccessModalOpen}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setIsSuccessModalOpen(false)}
+      >
+        <View className="flex-1 items-center justify-center bg-black/60 px-5">
+          <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl items-center">
+            {/* Celebration Icon */}
+            <View className="h-16 w-16 items-center justify-center rounded-full bg-[#EAF8EE] mb-4">
+              <Ionicons name="checkmark-done" size={32} color="#0D9488" />
+            </View>
+
+            <Text className="text-[19px] font-bold text-brand-dark text-center">
+              Booking Confirmed! 🎉
+            </Text>
+            <Text className="mt-1.5 text-[13px] text-brand-gray text-center leading-5">
+              Your appointment with{" "}
+              <Text className="font-bold text-brand-dark">{tailorName}</Text> has been scheduled successfully.
+            </Text>
+
+            {/* Recap Card */}
+            <View className="mt-4 w-full rounded-2xl border border-brand-border bg-brand-surface p-3.5">
+              <View className="flex-row items-center justify-between py-1">
+                <Text className="text-[12px] text-brand-gray">Type</Text>
+                <Text className="text-[12px] font-bold text-brand-dark">Tailor Consultation & Fitting</Text>
+              </View>
+              <View className="flex-row items-center justify-between py-1">
+                <Text className="text-[12px] text-brand-gray">Date & Time</Text>
+                <Text className="text-[12px] font-bold text-brand-dark">{formattedDateStr} • {selectedTime}</Text>
+              </View>
+              <View className="flex-row items-center justify-between py-1">
+                <Text className="text-[12px] text-brand-gray">Location</Text>
+                <Text className="text-[12px] font-bold text-brand-dark">{tailorCity}</Text>
+              </View>
+            </View>
+
+            {/* Modal Buttons */}
+            <TouchableOpacity
+              onPress={() => {
+                setIsSuccessModalOpen(false);
+                router.push("/appointments" as any);
+              }}
+              className="relative mt-5 h-[48px] w-full items-center justify-center overflow-hidden rounded-xl shadow-xs"
+              style={{ borderRadius: 12 }}
+            >
+              <ButtonTexture variant="greenish" borderRadius={12} />
+              <Text className="text-[14px] font-bold text-white z-10">View Appointments</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setIsSuccessModalOpen(false);
+                router.push("/home" as any);
+              }}
+              className="mt-2.5 h-[44px] w-full items-center justify-center rounded-xl border border-brand-border bg-white active:bg-gray-50"
+            >
+              <Text className="text-[14px] font-semibold text-brand-dark">Back to Home</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

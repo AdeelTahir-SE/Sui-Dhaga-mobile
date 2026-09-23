@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 interface DayTiming {
   day: string;
@@ -173,46 +174,68 @@ export default function TailorAvailabilityScreen() {
         <View
           style={{
             position: "absolute",
-            top: 14,
+            top: 16,
             left: 20,
             right: 20,
             zIndex: 999,
+            backgroundColor: "#1A1D1F",
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderRadius: 14,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 8,
+            elevation: 6,
           }}
-          className="flex-row items-center justify-center rounded-xl bg-brand-dark/95 py-3 px-4 shadow-md"
         >
           <Ionicons name="checkmark-circle" size={18} color="#14919B" />
-          <Text className="ml-2 text-[13px] font-semibold text-white">
+          <Text style={{ marginLeft: 8, fontSize: 13, fontWeight: "600", color: "#FFFFFF" }}>
             {toastMessage}
           </Text>
         </View>
       )}
 
-      <View className="px-5 pb-10">
+      {/* Main Container with guaranteed spacing */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 60 }}>
         {/* ========================================================================= */}
         {/* 1. QUICK TIMING PRESETS                                                   */}
         {/* ========================================================================= */}
-        <View className="mb-6 mt-2">
-          <Text className="mb-2.5 text-[12px] font-bold uppercase tracking-wider text-slate-400">
+        <View style={{ marginBottom: 24, marginTop: 4 }}>
+          <Text style={{ marginBottom: 12, fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8, color: "#94A3B8" }}>
             Quick Timing Presets
           </Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 10 }}
+            contentContainerStyle={{ paddingRight: 10 }}
           >
             <TouchableOpacity
               onPress={() => applyPreset("standard")}
               activeOpacity={0.75}
-              className="flex-row items-center rounded-2xl bg-white px-4 py-3 border border-slate-100 shadow-xs"
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#FFFFFF",
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+                marginRight: 12,
+              }}
             >
-              <View className="h-8 w-8 items-center justify-center rounded-xl bg-[#E0F7F7] mr-2.5">
-                <Ionicons name="briefcase-outline" size={16} color="#14919B" />
+              <View style={{ width: 34, height: 34, alignItems: "center", justifyContent: "center", borderRadius: 10, backgroundColor: "#E0F7F7", marginRight: 12 }}>
+                <Ionicons name="briefcase-outline" size={17} color="#14919B" />
               </View>
               <View>
-                <Text className="text-[13px] font-bold text-brand-dark">
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>
                   Standard Hours
                 </Text>
-                <Text className="text-[11px] font-medium text-brand-gray mt-0.5">
+                <Text style={{ fontSize: 11, fontWeight: "500", color: "#64748B", marginTop: 2 }}>
                   Mon-Sat 9-8 • Sun Closed
                 </Text>
               </View>
@@ -221,16 +244,26 @@ export default function TailorAvailabilityScreen() {
             <TouchableOpacity
               onPress={() => applyPreset("bazaar")}
               activeOpacity={0.75}
-              className="flex-row items-center rounded-2xl bg-white px-4 py-3 border border-slate-100 shadow-xs"
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#FFFFFF",
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+                marginRight: 12,
+              }}
             >
-              <View className="h-8 w-8 items-center justify-center rounded-xl bg-[#FFF6DA] mr-2.5">
-                <Ionicons name="storefront-outline" size={16} color="#C08300" />
+              <View style={{ width: 34, height: 34, alignItems: "center", justifyContent: "center", borderRadius: 10, backgroundColor: "#FFF6DA", marginRight: 12 }}>
+                <Ionicons name="storefront-outline" size={17} color="#C08300" />
               </View>
               <View>
-                <Text className="text-[13px] font-bold text-brand-dark">
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>
                   Bazaar / Market
                 </Text>
-                <Text className="text-[11px] font-medium text-brand-gray mt-0.5">
+                <Text style={{ fontSize: 11, fontWeight: "500", color: "#64748B", marginTop: 2 }}>
                   11 AM – 10 PM • Sun Closed
                 </Text>
               </View>
@@ -239,16 +272,26 @@ export default function TailorAvailabilityScreen() {
             <TouchableOpacity
               onPress={() => applyPreset("fullweek")}
               activeOpacity={0.75}
-              className="flex-row items-center rounded-2xl bg-white px-4 py-3 border border-slate-100 shadow-xs"
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#FFFFFF",
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#E2E8F0",
+                marginRight: 12,
+              }}
             >
-              <View className="h-8 w-8 items-center justify-center rounded-xl bg-[#E0F7F7] mr-2.5">
-                <Ionicons name="calendar-outline" size={16} color="#14919B" />
+              <View style={{ width: 34, height: 34, alignItems: "center", justifyContent: "center", borderRadius: 10, backgroundColor: "#E0F7F7", marginRight: 12 }}>
+                <Ionicons name="calendar-outline" size={17} color="#14919B" />
               </View>
               <View>
-                <Text className="text-[13px] font-bold text-brand-dark">
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>
                   7 Days Open
                 </Text>
-                <Text className="text-[11px] font-medium text-brand-gray mt-0.5">
+                <Text style={{ fontSize: 11, fontWeight: "500", color: "#64748B", marginTop: 2 }}>
                   Mon-Sun 10 AM – 9 PM
                 </Text>
               </View>
@@ -259,21 +302,26 @@ export default function TailorAvailabilityScreen() {
         {/* ========================================================================= */}
         {/* 2. SECTION HEADER WITH BULK SHORTCUT                                     */}
         {/* ========================================================================= */}
-        <View className="mb-4 flex-row items-center justify-between">
-          <View className="flex-1 mr-2">
-            <Text className="text-[16px] font-bold text-brand-dark tracking-tight">
+        <View style={{ marginBottom: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ flex: 1, marginRight: 10 }}>
+            <Text style={{ fontSize: 16, fontWeight: "700", color: "#1A1D1F", letterSpacing: -0.3 }}>
               Weekly Operating Schedule
             </Text>
-            <Text className="text-[11px] font-medium text-brand-gray mt-0.5">
+            <Text style={{ fontSize: 12, fontWeight: "500", color: "#64748B", marginTop: 2 }}>
               Set opening and closing timings for each day
             </Text>
           </View>
           <TouchableOpacity
             onPress={handleCopyMondayToWeekdays}
             activeOpacity={0.75}
-            className="rounded-full bg-[#E0F7F7] px-3.5 py-1.5 active:bg-[#CCFBF1]"
+            style={{
+              borderRadius: 20,
+              backgroundColor: "#E0F7F7",
+              paddingHorizontal: 14,
+              paddingVertical: 7,
+            }}
           >
-            <Text className="text-[11px] font-bold text-[#0D7377]">
+            <Text style={{ fontSize: 11, fontWeight: "700", color: "#0D7377" }}>
               Copy Mon to Fri
             </Text>
           </TouchableOpacity>
@@ -282,41 +330,57 @@ export default function TailorAvailabilityScreen() {
         {/* ========================================================================= */}
         {/* 3. SEPARATE DAYS LIST (MON, TUE, WED, THU, FRI, SAT, SUN)                 */}
         {/* ========================================================================= */}
-        <View className="gap-3.5 mb-6">
+        <View style={{ marginBottom: 20 }}>
           {dayTimings.map((item) => (
             <View
               key={item.day}
-              className={`rounded-2xl p-4.5 border ${
-                item.isOpen
-                  ? "bg-white border-slate-100 shadow-xs"
-                  : "bg-slate-50/80 border-slate-100"
-              }`}
+              style={{
+                backgroundColor: item.isOpen ? "#FFFFFF" : "#F8FAFC",
+                borderRadius: 18,
+                padding: 18,
+                marginBottom: 16,
+                borderWidth: 1,
+                borderColor: item.isOpen ? "#E2E8F0" : "#EDF2F7",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.04,
+                shadowRadius: 3,
+                elevation: 1,
+              }}
             >
               {/* Top Row: Day Tag, Day Name, Open/Close Switch */}
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center flex-1">
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
                   <View
-                    className={`h-10 w-10 items-center justify-center rounded-xl mr-3.5 ${
-                      item.isOpen ? "bg-[#E0F7F7]" : "bg-slate-100"
-                    }`}
+                    style={{
+                      width: 42,
+                      height: 42,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 12,
+                      backgroundColor: item.isOpen ? "#E0F7F7" : "#EDF2F7",
+                      marginRight: 14,
+                    }}
                   >
                     <Text
-                      className={`text-[12px] font-bold ${
-                        item.isOpen ? "text-[#0D7377]" : "text-slate-400"
-                      }`}
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "700",
+                        color: item.isOpen ? "#0D7377" : "#94A3B8",
+                      }}
                     >
                       {item.dayShort}
                     </Text>
                   </View>
 
-                  <View className="flex-1">
-                    <View className="flex-row items-center">
-                      <Text className="text-[15px] font-bold text-brand-dark">
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <Text style={{ fontSize: 15, fontWeight: "700", color: "#1A1D1F" }}>
                         {item.day}
                       </Text>
                       {item.day === "Friday" && item.isOpen && (
-                        <View className="ml-2.5 rounded-md bg-[#FFF6DA] px-2 py-0.5">
-                          <Text className="text-[10px] font-bold text-[#C08300]">
+                        <View style={{ marginLeft: 8, borderRadius: 6, backgroundColor: "#FFF6DA", paddingHorizontal: 8, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 10, fontWeight: "700", color: "#C08300" }}>
                             Jummah Break
                           </Text>
                         </View>
@@ -324,9 +388,12 @@ export default function TailorAvailabilityScreen() {
                     </View>
 
                     <Text
-                      className={`text-[13px] font-semibold mt-1 ${
-                        item.isOpen ? "text-[#14919B]" : "text-slate-400"
-                      }`}
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "600",
+                        marginTop: 4,
+                        color: item.isOpen ? "#14919B" : "#94A3B8",
+                      }}
                     >
                       {item.isOpen
                         ? `${item.openTime} – ${item.closeTime}`
@@ -336,11 +403,14 @@ export default function TailorAvailabilityScreen() {
                 </View>
 
                 {/* Right Switch & Status */}
-                <View className="flex-row items-center gap-2.5">
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Text
-                    className={`text-[11px] font-bold ${
-                      item.isOpen ? "text-[#0D7377]" : "text-slate-400"
-                    }`}
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "700",
+                      marginRight: 8,
+                      color: item.isOpen ? "#0D7377" : "#94A3B8",
+                    }}
                   >
                     {item.isOpen ? "Open" : "Closed"}
                   </Text>
@@ -355,19 +425,29 @@ export default function TailorAvailabilityScreen() {
 
               {/* Bottom Row when Open: Break Details & Edit Button */}
               {item.isOpen && (
-                <View className="mt-3.5 pt-3.5 border-t border-slate-100 flex-row items-center justify-between">
+                <View
+                  style={{
+                    marginTop: 14,
+                    paddingTop: 14,
+                    borderTopWidth: 1,
+                    borderTopColor: "#F1F5F9",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
                   {item.hasBreak ? (
-                    <View className="flex-row items-center flex-1 mr-2">
+                    <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
                       <Ionicons name="cafe-outline" size={15} color="#C08300" />
-                      <Text className="ml-1.5 text-[11px] font-medium text-slate-600">
+                      <Text style={{ marginLeft: 6, fontSize: 11, fontWeight: "500", color: "#64748B" }}>
                         Break:{" "}
-                        <Text className="font-bold text-[#C08300]">
+                        <Text style={{ fontWeight: "700", color: "#C08300" }}>
                           {item.breakStart} – {item.breakEnd}
                         </Text>
                       </Text>
                     </View>
                   ) : (
-                    <Text className="text-[11px] font-medium text-slate-400">
+                    <Text style={{ fontSize: 11, fontWeight: "500", color: "#94A3B8" }}>
                       No mid-day break set
                     </Text>
                   )}
@@ -375,10 +455,17 @@ export default function TailorAvailabilityScreen() {
                   <TouchableOpacity
                     onPress={() => setEditingDay(item)}
                     activeOpacity={0.7}
-                    className="flex-row items-center rounded-xl bg-[#E0F7F7] px-3.5 py-2 active:bg-[#CCFBF1]"
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      borderRadius: 10,
+                      backgroundColor: "#E0F7F7",
+                      paddingHorizontal: 12,
+                      paddingVertical: 7,
+                    }}
                   >
                     <Ionicons name="time-outline" size={14} color="#14919B" />
-                    <Text className="ml-1.5 text-[11px] font-bold text-[#0D7377]">
+                    <Text style={{ marginLeft: 6, fontSize: 11, fontWeight: "700", color: "#0D7377" }}>
                       Edit Hours
                     </Text>
                   </TouchableOpacity>
@@ -392,9 +479,23 @@ export default function TailorAvailabilityScreen() {
         <TouchableOpacity
           onPress={() => showToast("Shop timings updated and published")}
           activeOpacity={0.85}
-          className="h-[52px] items-center justify-center rounded-2xl bg-primary shadow-sm active:bg-primary-dark"
+          style={{
+            height: 52,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: 16,
+            overflow: "hidden",
+            marginTop: 4,
+            marginBottom: 20,
+            shadowColor: "#14919B",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.25,
+            shadowRadius: 8,
+            elevation: 3,
+          }}
         >
-          <Text className="text-[15px] font-bold text-white tracking-wide">
+          <ButtonTexture variant="greenish" borderRadius={16} />
+          <Text style={{ fontSize: 15, fontWeight: "700", color: "#FFFFFF", letterSpacing: 0.3 }}>
             Save Shop Timings
           </Text>
         </TouchableOpacity>
@@ -410,38 +511,68 @@ export default function TailorAvailabilityScreen() {
         onRequestClose={() => setEditingDay(null)}
       >
         <View
-          className="flex-1 justify-end"
-          style={{ backgroundColor: "rgba(15, 23, 42, 0.45)" }}
+          style={{
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(15, 23, 42, 0.45)",
+          }}
         >
-          <View className="rounded-t-[32px] bg-white px-6 pb-8 pt-4 max-h-[85%] border-t border-slate-100">
-            <View className="h-1.5 w-12 rounded-full bg-slate-200 self-center mb-3 mt-1" />
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
+              paddingHorizontal: 24,
+              paddingTop: 16,
+              paddingBottom: 36,
+              maxHeight: "85%",
+            }}
+          >
+            {/* Handle Bar */}
+            <View
+              style={{
+                width: 44,
+                height: 5,
+                borderRadius: 3,
+                backgroundColor: "#E2E8F0",
+                alignSelf: "center",
+                marginBottom: 14,
+              }}
+            />
 
             {/* Modal Header */}
-            <View className="flex-row items-center justify-between pb-3.5">
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 14 }}>
               <View>
-                <Text className="text-[18px] font-bold text-brand-dark">
+                <Text style={{ fontSize: 18, fontWeight: "700", color: "#1A1D1F" }}>
                   Edit Hours: {editingDay?.day}
                 </Text>
-                <Text className="text-[12px] font-medium text-brand-gray mt-0.5">
+                <Text style={{ fontSize: 12, fontWeight: "500", color: "#64748B", marginTop: 2 }}>
                   Set shop opening, closing, and break timings
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setEditingDay(null)}
-                className="h-8 w-8 items-center justify-center rounded-full bg-slate-100"
+                style={{
+                  width: 34,
+                  height: 34,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 17,
+                  backgroundColor: "#F1F5F9",
+                }}
               >
                 <Ionicons name="close" size={18} color="#64748B" />
               </TouchableOpacity>
             </View>
 
-            <View className="h-[1px] bg-slate-100 mb-4" />
+            <View style={{ height: 1, backgroundColor: "#F1F5F9", marginBottom: 16 }} />
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Opening Time Selection */}
-              <Text className="text-[12px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+              <Text style={{ fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, color: "#94A3B8", marginBottom: 10 }}>
                 Opening Time (Shop Opens)
               </Text>
-              <View className="flex-row flex-wrap gap-2 mb-4">
+              <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 18 }}>
                 {PRESET_OPEN_TIMES.map((time) => {
                   const isSelected = editingDay?.openTime === time;
                   return (
@@ -450,16 +581,23 @@ export default function TailorAvailabilityScreen() {
                       onPress={() =>
                         setEditingDay((prev) => (prev ? { ...prev, openTime: time } : null))
                       }
-                      className={`py-2 px-3.5 rounded-xl border ${
-                        isSelected
-                          ? "border-primary bg-primary"
-                          : "border-slate-100 bg-slate-50"
-                      }`}
+                      style={{
+                        paddingVertical: 9,
+                        paddingHorizontal: 14,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: isSelected ? "#14919B" : "#E2E8F0",
+                        backgroundColor: isSelected ? "#14919B" : "#F8FAFC",
+                        marginRight: 8,
+                        marginBottom: 10,
+                      }}
                     >
                       <Text
-                        className={`text-[12px] font-bold ${
-                          isSelected ? "text-white" : "text-brand-dark"
-                        }`}
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "700",
+                          color: isSelected ? "#FFFFFF" : "#1A1D1F",
+                        }}
                       >
                         {time}
                       </Text>
@@ -469,10 +607,10 @@ export default function TailorAvailabilityScreen() {
               </View>
 
               {/* Closing Time Selection */}
-              <Text className="text-[12px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+              <Text style={{ fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6, color: "#94A3B8", marginBottom: 10 }}>
                 Closing Time (Shop Closes)
               </Text>
-              <View className="flex-row flex-wrap gap-2 mb-4">
+              <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 18 }}>
                 {PRESET_CLOSE_TIMES.map((time) => {
                   const isSelected = editingDay?.closeTime === time;
                   return (
@@ -481,16 +619,23 @@ export default function TailorAvailabilityScreen() {
                       onPress={() =>
                         setEditingDay((prev) => (prev ? { ...prev, closeTime: time } : null))
                       }
-                      className={`py-2 px-3.5 rounded-xl border ${
-                        isSelected
-                          ? "border-primary bg-primary"
-                          : "border-slate-100 bg-slate-50"
-                      }`}
+                      style={{
+                        paddingVertical: 9,
+                        paddingHorizontal: 14,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: isSelected ? "#14919B" : "#E2E8F0",
+                        backgroundColor: isSelected ? "#14919B" : "#F8FAFC",
+                        marginRight: 8,
+                        marginBottom: 10,
+                      }}
                     >
                       <Text
-                        className={`text-[12px] font-bold ${
-                          isSelected ? "text-white" : "text-brand-dark"
-                        }`}
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "700",
+                          color: isSelected ? "#FFFFFF" : "#1A1D1F",
+                        }}
                       >
                         {time}
                       </Text>
@@ -500,12 +645,12 @@ export default function TailorAvailabilityScreen() {
               </View>
 
               {/* Mid-day Break / Lunch Toggle */}
-              <View className="mb-2 flex-row items-center justify-between pt-3 border-t border-slate-100">
+              <View style={{ marginBottom: 10, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F1F5F9" }}>
                 <View>
-                  <Text className="text-[13px] font-bold text-brand-dark">
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: "#1A1D1F" }}>
                     Lunch / Prayer Break
                   </Text>
-                  <Text className="text-[11px] font-medium text-brand-gray mt-0.5">
+                  <Text style={{ fontSize: 11, fontWeight: "500", color: "#64748B", marginTop: 2 }}>
                     Block out time for rest or Jummah
                   </Text>
                 </View>
@@ -521,7 +666,7 @@ export default function TailorAvailabilityScreen() {
 
               {/* Break Presets */}
               {editingDay?.hasBreak && (
-                <View className="mb-4 gap-2.5">
+                <View style={{ marginBottom: 18 }}>
                   {PRESET_BREAK_TIMES.map((bt) => {
                     const isSelected =
                       editingDay.breakStart === bt.start && editingDay.breakEnd === bt.end;
@@ -535,21 +680,29 @@ export default function TailorAvailabilityScreen() {
                               : null
                           )
                         }
-                        className={`p-3 rounded-xl border flex-row items-center justify-between ${
-                          isSelected
-                            ? "border-primary bg-[#E0F7F7]"
-                            : "border-slate-100 bg-white"
-                        }`}
+                        style={{
+                          padding: 12,
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: isSelected ? "#14919B" : "#E2E8F0",
+                          backgroundColor: isSelected ? "#E0F7F7" : "#FFFFFF",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: 8,
+                        }}
                       >
                         <Text
-                          className={`text-[12px] font-semibold ${
-                            isSelected ? "text-[#0D7377]" : "text-slate-700"
-                          }`}
+                          style={{
+                            fontSize: 12,
+                            fontWeight: "600",
+                            color: isSelected ? "#0D7377" : "#334155",
+                          }}
                         >
                           {bt.label}
                         </Text>
                         {isSelected && (
-                          <Ionicons name="checkmark-circle" size={17} color="#14919B" />
+                          <Ionicons name="checkmark-circle" size={18} color="#14919B" />
                         )}
                       </TouchableOpacity>
                     );
@@ -558,11 +711,23 @@ export default function TailorAvailabilityScreen() {
               )}
 
               {/* Preview Bar */}
-              <View className="rounded-2xl bg-[#F0FAFA] p-3.5 mb-5 border border-[#E0F7F7] flex-row items-center justify-between">
-                <Text className="text-[12px] font-medium text-[#0D7377]">
+              <View
+                style={{
+                  borderRadius: 16,
+                  backgroundColor: "#F0FAFA",
+                  padding: 14,
+                  marginBottom: 20,
+                  borderWidth: 1,
+                  borderColor: "#CCFBF1",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Text style={{ fontSize: 12, fontWeight: "600", color: "#0D7377" }}>
                   Hours Preview:
                 </Text>
-                <Text className="text-[13px] font-bold text-brand-dark">
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>
                   {editingDay?.openTime} – {editingDay?.closeTime}
                   {editingDay?.hasBreak
                     ? ` (Break: ${editingDay.breakStart} - ${editingDay.breakEnd})`
@@ -574,9 +739,16 @@ export default function TailorAvailabilityScreen() {
             <TouchableOpacity
               onPress={handleSaveModal}
               activeOpacity={0.85}
-              className="h-[50px] items-center justify-center rounded-2xl bg-primary shadow-xs active:bg-primary-dark"
+              style={{
+                height: 50,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 16,
+                overflow: "hidden",
+              }}
             >
-              <Text className="text-[14px] font-bold text-white">
+              <ButtonTexture variant="greenish" borderRadius={16} />
+              <Text style={{ fontSize: 14, fontWeight: "700", color: "#FFFFFF" }}>
                 Apply Hours to {editingDay?.day}
               </Text>
             </TouchableOpacity>
