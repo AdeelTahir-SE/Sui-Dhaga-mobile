@@ -47,7 +47,6 @@ export function PostCard({
 }: PostCardProps) {
   const [internalLiked, setInternalLiked] = useState(false);
   const [internalLikeCount, setInternalLikeCount] = useState(initialLikes);
-  const [bookmarked, setBookmarked] = useState(false);
 
   const isLiked = controlledIsLiked !== undefined ? controlledIsLiked : internalLiked;
   const currentLikes = likesCount !== undefined ? likesCount : internalLikeCount;
@@ -59,10 +58,6 @@ export function PostCard({
       setInternalLiked(!internalLiked);
       setInternalLikeCount((prev) => (internalLiked ? Math.max(0, prev - 1) : prev + 1));
     }
-  };
-
-  const toggleBookmark = () => {
-    setBookmarked(!bookmarked);
   };
 
   const imageSource =
@@ -204,14 +199,6 @@ export function PostCard({
             </Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity onPress={toggleBookmark} activeOpacity={0.7} className="p-1">
-          <Ionicons
-            name={bookmarked ? "bookmark" : "bookmark-outline"}
-            size={20}
-            color={bookmarked ? "#14919B" : "#1A1D1F"}
-          />
-        </TouchableOpacity>
       </View>
     </View>
   );

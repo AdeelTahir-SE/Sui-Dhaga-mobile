@@ -23,6 +23,7 @@ import { CommunityPost, CreateCommunityPostPayload } from "../../../types/api";
 import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
 import { isVideoMedia } from "../components/CommunityMediaCarousel";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 const CATEGORIES = [
   "All",
@@ -285,8 +286,7 @@ export default function CommunityProfileScreen() {
           title="Community Profile"
           showBack
           titleClassName="text-[18px] font-bold text-brand-dark"
-          rightIcon="add-circle"
-          onRightPress={() => router.push("/community/create" as any)}
+          hideRight
         />
       }
       refreshControl={
@@ -332,28 +332,28 @@ export default function CommunityProfileScreen() {
               <View className="flex-1 justify-center">
                 <View className="flex-row items-center">
                   <Text
-                    className="text-[17px] font-black text-brand-dark tracking-tight"
+                    className="text-[18px] font-bold text-brand-dark tracking-tight"
                     numberOfLines={1}
                   >
                     {displayName}
                   </Text>
                   {user?.role === "tailor" && (
                     <View
-                      className="ml-2 rounded-full bg-[#E0F7F7] px-2 py-0.5"
+                      className="ml-2 rounded-full bg-[#E0F7F7] px-2.5 py-0.5"
                       style={{ borderWidth: 1, borderColor: "#B2EBF2" }}
                     >
-                      <Text className="text-[10px] font-bold text-[#0D7377]">
+                      <Text className="text-[10.5px] font-bold text-[#0D7377]">
                         Tailor
                       </Text>
                     </View>
                   )}
                 </View>
 
-                <Text className="mt-0.5 text-[12px] font-medium text-brand-gray" numberOfLines={1}>
+                <Text className="mt-0.5 text-[12.5px] font-medium text-slate-500" numberOfLines={1}>
                   {user?.email || "Sui Dhaga Creator"}
                 </Text>
 
-                <Text className="mt-1 text-[11px] text-slate-500" numberOfLines={1}>
+                <Text className="mt-1 text-[11.5px] font-medium text-slate-500" numberOfLines={1}>
                   {user?.city ? `📍 ${user.city}` : "Bespoke Fashion Enthusiast"}
                 </Text>
               </View>
@@ -365,10 +365,10 @@ export default function CommunityProfileScreen() {
               style={{ borderTopWidth: 1, borderTopColor: "#F1F5F9" }}
             >
               <View className="items-center flex-1">
-                <Text className="text-[17px] font-black text-brand-dark">
+                <Text className="text-[18px] font-bold text-brand-dark">
                   {totalPosts}
                 </Text>
-                <Text className="text-[11px] font-semibold text-brand-gray">
+                <Text className="text-[11.5px] font-semibold text-slate-500">
                   Designs
                 </Text>
               </View>
@@ -376,10 +376,10 @@ export default function CommunityProfileScreen() {
               <View className="h-6 w-[1px] bg-slate-200" />
 
               <View className="items-center flex-1">
-                <Text className="text-[17px] font-black text-[#E11D48]">
+                <Text className="text-[18px] font-bold text-[#E11D48]">
                   {totalLikes}
                 </Text>
-                <Text className="text-[11px] font-semibold text-brand-gray">
+                <Text className="text-[11.5px] font-semibold text-slate-500">
                   Likes
                 </Text>
               </View>
@@ -387,25 +387,36 @@ export default function CommunityProfileScreen() {
               <View className="h-6 w-[1px] bg-slate-200" />
 
               <View className="items-center flex-1">
-                <Text className="text-[17px] font-black text-[#0D7377]">
+                <Text className="text-[18px] font-bold text-[#0D7377]">
                   {totalComments}
                 </Text>
-                <Text className="text-[11px] font-semibold text-brand-gray">
+                <Text className="text-[11.5px] font-semibold text-slate-500">
                   Comments
                 </Text>
               </View>
             </View>
 
-            {/* Quick Action Button */}
+            {/* Quick Action Button with greenish texture and roundness-md */}
             <TouchableOpacity
               onPress={() => router.push("/community/create" as any)}
-              activeOpacity={0.85}
-              className="mt-4 flex-row items-center justify-center py-2.5 rounded-xl bg-[#14919B] shadow-xs active:bg-[#0D7377]"
+              activeOpacity={0.88}
+              className="mt-4 relative overflow-hidden flex-row items-center justify-center py-3.5 px-5 rounded-md shadow-sm"
+              style={{ borderRadius: 8 }}
             >
-              <Ionicons name="add" size={18} color="#FFFFFF" />
-              <Text className="ml-1.5 text-[13px] font-bold text-white">
-                Share New Design
-              </Text>
+              <ButtonTexture variant="greenish" borderRadius={8} />
+              <View className="z-10 flex-row items-center justify-center gap-1.5">
+                <Ionicons name="add" size={19} color="#FFFFFF" />
+                <Text
+                  className="text-[13.5px] font-bold text-white tracking-wide"
+                  style={{
+                    textShadowColor: "rgba(0,0,0,0.22)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}
+                >
+                  Share New Design
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -539,7 +550,7 @@ export default function CommunityProfileScreen() {
                   ? "No Matching Designs"
                   : "No Community Posts Yet"}
               </Text>
-              <Text className="mt-1.5 text-center text-[12.5px] font-medium text-brand-gray max-w-[270px] leading-5">
+              <Text className="mt-1.5 text-center text-[12.5px] font-normal text-slate-500 max-w-[270px] leading-5">
                 {searchQuery || selectedCategory !== "All"
                   ? "Try resetting your search query or choosing another category."
                   : "Share your custom-stitched dresses, fittings, or tailoring craft with the community!"}
@@ -554,19 +565,31 @@ export default function CommunityProfileScreen() {
                   className="mt-4 rounded-xl px-4 py-2 bg-slate-100"
                   style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
                 >
-                  <Text className="text-[12.5px] font-bold text-brand-dark">
+                  <Text className="text-[12.5px] font-semibold text-brand-dark">
                     Clear Filters
                   </Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
-                  activeOpacity={0.85}
+                  activeOpacity={0.88}
                   onPress={() => router.push("/community/create" as any)}
-                  className="mt-5 rounded-xl bg-[#14919B] px-5 py-2.5 shadow-sm active:bg-[#0D7377]"
+                  className="mt-5 relative overflow-hidden flex-row items-center justify-center py-3 px-5 rounded-md shadow-sm"
+                  style={{ borderRadius: 8 }}
                 >
-                  <Text className="text-[13px] font-bold text-white">
-                    Create Your First Post
-                  </Text>
+                  <ButtonTexture variant="greenish" borderRadius={8} />
+                  <View className="z-10 flex-row items-center justify-center gap-1.5">
+                    <Ionicons name="add" size={17} color="#FFFFFF" />
+                    <Text
+                      className="text-[13px] font-bold text-white tracking-wide"
+                      style={{
+                        textShadowColor: "rgba(0,0,0,0.22)",
+                        textShadowOffset: { width: 0, height: 1 },
+                        textShadowRadius: 2,
+                      }}
+                    >
+                      Create Your First Post
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               )}
             </View>
@@ -640,7 +663,7 @@ export default function CommunityProfileScreen() {
                     <View className="p-4">
                       {/* Title */}
                       <Text
-                        className="text-[16px] font-bold text-brand-dark"
+                        className="text-[15.5px] font-bold text-brand-dark tracking-tight"
                         numberOfLines={1}
                       >
                         {post.title || post.category || "Custom Design Outfit"}
@@ -649,7 +672,7 @@ export default function CommunityProfileScreen() {
                       {/* Caption */}
                       {(post.content || post.caption) ? (
                         <Text
-                          className="mt-1 text-[13px] text-slate-600 leading-5"
+                          className="mt-1 text-[13px] font-normal text-slate-600 leading-5"
                           numberOfLines={2}
                         >
                           {post.content || post.caption}
@@ -681,13 +704,13 @@ export default function CommunityProfileScreen() {
                         <View className="flex-row items-center gap-3">
                           <View className="flex-row items-center">
                             <Ionicons name="heart" size={16} color="#E11D48" />
-                            <Text className="ml-1 text-[12px] font-bold text-slate-700">
+                            <Text className="ml-1 text-[12px] font-semibold text-slate-700">
                               {likes}
                             </Text>
                           </View>
                           <View className="flex-row items-center">
                             <Ionicons name="chatbubble" size={15} color="#64748B" />
-                            <Text className="ml-1 text-[12px] font-bold text-slate-700">
+                            <Text className="ml-1 text-[12px] font-semibold text-slate-700">
                               {comments}
                             </Text>
                           </View>
@@ -703,7 +726,7 @@ export default function CommunityProfileScreen() {
                             accessibilityLabel="Edit post"
                           >
                             <Ionicons name="create-outline" size={15} color="#0D7377" />
-                            <Text className="ml-1 text-[12px] font-bold text-[#0D7377]">
+                            <Text className="ml-1 text-[12px] font-semibold text-[#0D7377]">
                               Edit
                             </Text>
                           </TouchableOpacity>

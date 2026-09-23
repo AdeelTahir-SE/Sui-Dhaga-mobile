@@ -1,6 +1,8 @@
+import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 
 type MccHeaderProps = {
   title: string;
@@ -8,6 +10,7 @@ type MccHeaderProps = {
   showBack?: boolean;
   rightText?: string;
   rightIcon?: keyof typeof Ionicons.glyphMap | null;
+  rightAvatarUrl?: string | null;
   hideRight?: boolean;
   onBackPress?: () => void;
   onRightPress?: () => void;
@@ -20,11 +23,13 @@ export function MccHeader({
   showBack,
   rightText,
   rightIcon,
+  rightAvatarUrl,
   hideRight = false,
   onBackPress,
   onRightPress,
   titleClassName,
 }: MccHeaderProps) {
+  const [imageError, setImageError] = useState(false);
   const handleBack =
     onBackPress ||
     (() => {
@@ -64,7 +69,7 @@ export function MccHeader({
         ) : null}
       </View>
 
-      {!hideRight && (rightText || rightIcon) ? (
+      {!hideRight && (rightText || rightIcon || (rightAvatarUrl && !imageError)) ? (
         <TouchableOpacity
           onPress={onRightPress}
           activeOpacity={0.7}
@@ -74,8 +79,17 @@ export function MccHeader({
             <Text className="text-[12px] font-semibold text-primary">
               {rightText}
             </Text>
+          ) : rightAvatarUrl && !imageError ? (
+            <View className="h-8 w-8 overflow-hidden rounded-full border border-primary/25 bg-primary-50 items-center justify-center shadow-xs">
+              <Image
+                source={{ uri: rightAvatarUrl }}
+                contentFit="cover"
+                style={{ width: "100%", height: "100%" }}
+                onError={() => setImageError(true)}
+              />
+            </View>
           ) : rightIcon ? (
-            <Ionicons name={rightIcon} size={20} color="#1A1D1F" />
+            <Ionicons name={rightIcon} size={22} color="#1A1D1F" />
           ) : null}
         </TouchableOpacity>
       ) : (

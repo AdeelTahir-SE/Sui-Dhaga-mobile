@@ -16,6 +16,7 @@ import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
 import { PostCard } from "../components/PostCard";
 import { useCommunity } from "../hooks/useCommunity";
+import { useAuthStore } from "../../../stores/auth.store";
 
 const CATEGORIES = [
   "For You",
@@ -32,6 +33,16 @@ const CATEGORIES = [
 
 export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
+  const user = useAuthStore((state) => state.user);
+  const userAvatarUrl =
+    user?.avatar_url ||
+    user?.avatarUrl ||
+    user?.avatar ||
+    (user as any)?.profile?.avatar_url ||
+    (user as any)?.profile?.avatarUrl ||
+    (user as any)?.user_metadata?.avatar_url ||
+    null;
+
   const {
     posts,
     category,
@@ -53,6 +64,7 @@ export default function CommunityScreen() {
           showBack
           titleClassName="text-[22px] font-bold text-brand-dark"
           rightIcon="person-circle-outline"
+          rightAvatarUrl={userAvatarUrl}
           onRightPress={() => router.push("/community/profile" as any)}
         />
       }

@@ -42,13 +42,10 @@ export function ReelItemView({
   onToggleLike,
   onOpenComments,
   onShare,
-  onBookmark,
 }: ReelItemViewProps) {
   const insets = useSafeAreaInsets();
   const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
-  const [isSaved, setIsSaved] = useState(Boolean(post.isSaved));
-  const [savesCount, setSavesCount] = useState(post.savesCount ?? post.saves_count ?? 0);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
 
   // Filter valid media
@@ -118,15 +115,6 @@ export function ReelItemView({
     } else {
       setUserPaused(true);
       player.pause();
-    }
-  };
-
-  const handleBookmarkPress = () => {
-    const nextSaved = !isSaved;
-    setIsSaved(nextSaved);
-    setSavesCount((prev) => (nextSaved ? prev + 1 : Math.max(0, prev - 1)));
-    if (onBookmark) {
-      onBookmark();
     }
   };
 
@@ -351,22 +339,6 @@ export function ReelItemView({
             <Ionicons name="chatbubble-ellipses" size={23} color="#FFFFFF" />
           </View>
           <Text style={styles.actionText}>{commentsCount}</Text>
-        </TouchableOpacity>
-
-        {/* Save / Bookmark Button */}
-        <TouchableOpacity
-          onPress={handleBookmarkPress}
-          activeOpacity={0.7}
-          className="items-center"
-        >
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-black/35 shadow-md">
-            <Ionicons
-              name={isSaved ? "bookmark" : "bookmark-outline"}
-              size={22}
-              color={isSaved ? "#F59E0B" : "#FFFFFF"}
-            />
-          </View>
-          <Text style={styles.actionText}>{savesCount > 0 ? savesCount : "Save"}</Text>
         </TouchableOpacity>
 
         {/* Share Button */}
