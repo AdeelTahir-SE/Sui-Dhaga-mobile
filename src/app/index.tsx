@@ -59,8 +59,6 @@ const routeGroups: RouteGroup[] = [
       { label: "Text to Design", href: "/design-studio/text-to-design" },
       { label: "Image to Design", href: "/design-studio/image-to-design" },
       { label: "AI Chat", href: "/design-studio/chat" },
-      { label: "Editor", href: "/design-studio/editor/sample-design" },
-      { label: "Export", href: "/design-studio/export/sample-design" },
     ],
   },
   {
@@ -73,8 +71,6 @@ const routeGroups: RouteGroup[] = [
       { label: "Create Post", href: "/community/create" },
       { label: "Post Details", href: "/community/post-123" },
       { label: "Checkout", href: "/checkout" },
-      { label: "Checkout Success", href: "/checkout/success" },
-      { label: "Checkout Failed", href: "/checkout/failed" },
     ],
   },
   {
@@ -83,7 +79,6 @@ const routeGroups: RouteGroup[] = [
       { label: "Dashboard", href: "/tailor-dashboard" },
       { label: "Tailor Orders", href: "/tailor-dashboard/orders" },
       { label: "Tailor Appointments", href: "/tailor-dashboard/appointments" },
-      { label: "Services", href: "/tailor-dashboard/services" },
       { label: "Availability", href: "/tailor-dashboard/availability" },
       { label: "Earnings", href: "/tailor-dashboard/earnings" },
     ],

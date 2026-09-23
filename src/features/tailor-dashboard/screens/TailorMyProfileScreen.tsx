@@ -459,12 +459,6 @@ export default function TailorMyProfileScreen() {
                 onPress={() => router.push("/tailor-dashboard/complete-profile" as any)}
               />
               <ProfileMenuRow
-                title="Services & Pricing"
-                subtitle="Manage custom outfits and catalog rates"
-                icon="pricetags-outline"
-                onPress={() => router.push("/tailor-dashboard/services" as any)}
-              />
-              <ProfileMenuRow
                 title="Working Hours & Slots"
                 subtitle="Set daily availability and appointment limits"
                 icon="time-outline"

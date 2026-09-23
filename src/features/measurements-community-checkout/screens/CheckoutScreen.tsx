@@ -25,9 +25,21 @@ export default function CheckoutScreen() {
         notes: `Paid via ${selectedMethod}`,
       }).catch(() => {});
 
-      router.push("/checkout/success" as never);
+      Alert.alert(
+        "Order Confirmed! 🎉",
+        "Your payment has been received and your bespoke tailoring order is placed.",
+        [
+          {
+            text: "View Orders",
+            onPress: () => router.push("/orders" as never),
+          },
+        ]
+      );
     } catch {
-      router.push("/checkout/failed" as never);
+      Alert.alert(
+        "Payment Failed",
+        "Unable to complete payment. Please check your payment details and try again."
+      );
     } finally {
       setIsProcessing(false);
     }
