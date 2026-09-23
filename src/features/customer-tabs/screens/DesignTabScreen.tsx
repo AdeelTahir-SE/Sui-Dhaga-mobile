@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -9,7 +9,10 @@ import {
   View,
 } from "react-native";
 
+import { useAuthStore } from "@/stores/auth.store";
 import { useDesigns } from "../../design-studio/hooks/useDesigns";
+import { TailorDashboardHeader } from "../../tailor-dashboard/components/TailorDashboardHeader";
+import { TailorDashboardTabs } from "../../tailor-dashboard/components/TailorDashboardTabs";
 import { CustomerHeader } from "../components/CustomerHeader";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
@@ -63,14 +66,44 @@ function DesignOption({
 
 export default function DesignTabScreen() {
   const { designs, templates, isLoading } = useDesigns();
+  const user = useAuthStore((state) => state.user);
+  const params = useLocalSearchParams<{ from?: string; role?: string }>();
+  const isTailor =
+    user?.role === "tailor" ||
+    params.from === "tailor" ||
+    params.role === "tailor";
 
   return (
-    <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Design" />}>
-      <CustomerHeader
-        title="AI Design Studio"
-        subtitle="Create something extraordinary ✨"
-        hideRightIcon={true}
-      />
+    <CustomerTabShell
+      bottomTabs={
+        isTailor ? (
+          <TailorDashboardTabs active="Design" />
+        ) : (
+          <CustomerTabsPreview active="Design" />
+        )
+      }
+    >
+      {isTailor ? (
+        <TailorDashboardHeader
+          title="AI Design Studio"
+          subtitle="Create something extraordinary ✨"
+          showBack={true}
+          onBackPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace("/tailor-dashboard" as never);
+            }
+          }}
+          hideRightIcon={true}
+        />
+      ) : (
+        <CustomerHeader
+          title="AI Design Studio"
+          subtitle="Create something extraordinary ✨"
+          hideRightIcon={true}
+        />
+      )}
       <View className="px-5 pb-8">
         <TouchableOpacity
           onPress={() =>

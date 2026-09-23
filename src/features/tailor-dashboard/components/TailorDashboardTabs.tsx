@@ -4,7 +4,21 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 type TailorDashboardTabsProps = {
-  active:
+  active?:
+    | "Dashboard"
+    | "Orders"
+    | "Messages"
+    | "Appointments"
+    | "Services"
+    | "Availability"
+    | "Earnings"
+    | "Profile"
+    | "Design"
+    | string;
+};
+
+type TabItem = {
+  label:
     | "Dashboard"
     | "Orders"
     | "Messages"
@@ -13,10 +27,6 @@ type TailorDashboardTabsProps = {
     | "Availability"
     | "Earnings"
     | "Profile";
-};
-
-type TabItem = {
-  label: TailorDashboardTabsProps["active"];
   icon: keyof typeof Ionicons.glyphMap;
   activeIcon: keyof typeof Ionicons.glyphMap;
   href: string;

@@ -88,10 +88,10 @@ export default function TailorDashboardScreen() {
     {
       id: "tqa-messages",
       title: "Messages",
-      description: "Direct chat & outfit consultations with customers",
+      description: "Client inquiries & direct consultations with customers",
       icon: "chatbubbles-outline" as const,
       image: messagesIcon,
-      route: "/messages",
+      route: "/tailor-dashboard/messages",
       color: "#0284C7",
       bgColor: "#F0F9FF",
       borderColor: "#BAE6FD",
@@ -135,7 +135,7 @@ export default function TailorDashboardScreen() {
       description: "Explore bespoke templates & AI garment inspirations",
       icon: "color-wand-outline" as const,
       image: aiStudioIcon,
-      route: "/design",
+      route: "/design?from=tailor",
       color: "#7C3AED",
       bgColor: "#F5F3FF",
       borderColor: "#EDE9FE",
@@ -259,7 +259,7 @@ export default function TailorDashboardScreen() {
             value="0"
             image={messagesMetricIcon}
             tone="coral"
-            onPress={() => router.push("/messages" as never)}
+            onPress={() => router.push("/tailor-dashboard/messages" as never)}
           />
           <MetricCard
             title="Earnings"

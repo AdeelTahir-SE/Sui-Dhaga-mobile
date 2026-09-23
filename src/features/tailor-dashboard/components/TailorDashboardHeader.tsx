@@ -6,6 +6,7 @@ type TailorDashboardHeaderProps = {
   title: string;
   subtitle?: string;
   showBack?: boolean;
+  onBackPress?: () => void;
   rightText?: string;
   rightIcon?: keyof typeof Ionicons.glyphMap | null;
   onRightPress?: () => void;
@@ -16,6 +17,7 @@ export function TailorDashboardHeader({
   title,
   subtitle,
   showBack,
+  onBackPress,
   rightText,
   rightIcon = "notifications-outline",
   onRightPress,
@@ -29,7 +31,15 @@ export function TailorDashboardHeader({
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel="Go back"
-              onPress={() => router.back()}
+              onPress={() => {
+                if (onBackPress) {
+                  onBackPress();
+                } else if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/tailor-dashboard" as never);
+                }
+              }}
               className="mr-3 h-10 w-10 items-center justify-center -ml-2 rounded-md active:bg-brand-surface"
             >
               <Ionicons
