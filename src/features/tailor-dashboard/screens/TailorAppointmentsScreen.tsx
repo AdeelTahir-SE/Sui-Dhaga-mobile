@@ -211,7 +211,7 @@ export default function TailorAppointmentsScreen() {
     >
       <TailorDashboardHeader
         title="Appointments"
-        rightIcon="clipboard-outline"
+        hideRightIcon={true}
       />
 
       <View className="flex-1 px-5 pb-6">

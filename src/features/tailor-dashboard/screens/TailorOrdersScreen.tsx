@@ -196,7 +196,7 @@ export default function TailorOrdersScreen() {
         />
       }
     >
-      <TailorDashboardHeader title="Orders" rightIcon="cube-outline" />
+      <TailorDashboardHeader title="Orders" hideRightIcon={true} />
 
       <View className="flex-1 px-5 pb-6">
         {/* Search Bar & Dedicated Filter Button (Customer Pages Style) */}

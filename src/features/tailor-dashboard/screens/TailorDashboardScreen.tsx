@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useMemo } from "react";
@@ -8,39 +7,13 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { useAppointments } from "../../booking-orders/hooks/useAppointments";
 import { useOrders } from "../../booking-orders/hooks/useOrders";
 import { MetricCard } from "../components/MetricCard";
-import { SectionTitle } from "../components/SectionTitle";
 import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 import { useTailorProfile } from "../hooks/useTailorProfile";
 
 const dashboardHeroImage = require("@/assets/illustrations/tailor-dashboard/dashboard-hero.png");
-const buttonGreenishTexture = require("@/assets/texture/button-greenish-texture.png");
-
-function ActivityRow({
-  title,
-  subtitle,
-  time,
-}: {
-  title: string;
-  subtitle: string;
-  time: string;
-}) {
-  return (
-    <View className="flex-row items-center border-b border-brand-border py-3.5">
-      <View className="h-9 w-9 items-center justify-center rounded-md bg-primary-50">
-        <Text className="text-primary font-bold">•</Text>
-      </View>
-      <View className="ml-3 flex-1">
-        <Text className="text-[13px] font-bold text-brand-dark">{title}</Text>
-        <Text className="mt-0.5 text-[11px] font-medium text-brand-gray">
-          {subtitle}
-        </Text>
-      </View>
-      <Text className="text-[11px] font-semibold text-brand-gray">{time}</Text>
-    </View>
-  );
-}
+const buttonGreenishTexture = require("@/assets/texture/button-greenish-texture.original.png");
 
 export default function TailorDashboardScreen() {
   const user = useAuthStore((state) => state.user);
@@ -99,45 +72,58 @@ export default function TailorDashboardScreen() {
               style={StyleSheet.absoluteFill}
             />
           </View>
-          <Text
-            className="text-[13px] font-bold text-white/80 tracking-wide"
-            style={{
-              textShadowColor: "rgba(0,0,0,0.2)",
-              textShadowOffset: { width: 0, height: 1 },
-              textShadowRadius: 2,
-            }}
-          >
-            Good Morning,
-          </Text>
-          <Text
-            className="mt-1 text-[23px] font-black text-white tracking-tight"
-            style={{
-              textShadowColor: "rgba(0,0,0,0.25)",
-              textShadowOffset: { width: 0, height: 1 },
-              textShadowRadius: 3,
-            }}
-          >
-            {displayBusinessName}
-          </Text>
-          <Text
-            className="mt-2 w-[55%] text-[13px] font-semibold text-white/90 leading-[19px]"
-            style={{
-              textShadowColor: "rgba(0,0,0,0.2)",
-              textShadowOffset: { width: 0, height: 1 },
-              textShadowRadius: 2,
-            }}
-          >
-            Here's what's happening with your boutique today.
-          </Text>
+          <View className="z-10 max-w-[58%] pr-2">
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              className="text-[12.5px] font-bold tracking-wide"
+              style={{
+                color: "#DDF7F6",
+                textShadowColor: "rgba(0, 0, 0, 0.3)",
+                textShadowOffset: { width: 0, height: 1 },
+                textShadowRadius: 2,
+              }}
+            >
+              Good Morning,
+            </Text>
+            <Text
+              numberOfLines={2}
+              ellipsizeMode="tail"
+              className="mt-1 text-[22px] font-black tracking-tight"
+              style={{
+                color: "#FFFFFF",
+                lineHeight: 27,
+                textShadowColor: "rgba(0, 0, 0, 0.4)",
+                textShadowOffset: { width: 0, height: 1.5 },
+                textShadowRadius: 3,
+              }}
+            >
+              {displayBusinessName}
+            </Text>
+            <Text
+              numberOfLines={2}
+              ellipsizeMode="tail"
+              className="mt-1.5 text-[12.5px] font-semibold leading-[18px]"
+              style={{
+                color: "#F0FDFA",
+                textShadowColor: "rgba(0, 0, 0, 0.25)",
+                textShadowOffset: { width: 0, height: 1 },
+                textShadowRadius: 2,
+              }}
+            >
+              Here's what's happening with your boutique today.
+            </Text>
+          </View>
           <Image
             source={dashboardHeroImage}
             contentFit="cover"
+            contentPosition="bottom right"
             style={{
               position: "absolute",
               bottom: 0,
               right: 0,
-              height: 150,
-              width: 210,
+              height: "100%",
+              width: "48%",
             }}
           />
         </View>
@@ -179,38 +165,6 @@ export default function TailorDashboardScreen() {
             onPress={() => router.push("/tailor-dashboard/earnings" as never)}
           />
         </View>
-
-        {/* Recent Activity */}
-        <SectionTitle title="Recent Activity" />
-        {orders?.length > 0 ? (
-          <View className="rounded-md border border-brand-border bg-white px-3.5 shadow-xs">
-            {orders.slice(0, 3).map((o, idx) => (
-              <ActivityRow
-                key={o.id || idx}
-                title={`Order #${o.orderNumber || o.id}`}
-                subtitle={`${o.itemName || "Custom Garment"} • ${o.customerName || "Customer"}`}
-                time={o.status || "Active"}
-              />
-            ))}
-          </View>
-        ) : (
-          <View className="items-center justify-center rounded-md border border-brand-border bg-white py-8 px-5 shadow-xs">
-            <View className="mb-3.5 h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Ionicons
-                name="notifications-outline"
-                size={30}
-                color="#14919B"
-              />
-            </View>
-            <Text className="text-[16px] font-bold text-brand-dark text-center tracking-tight">
-              No Recent Activity
-            </Text>
-            <Text className="mt-1.5 text-[12px] font-medium text-brand-gray text-center leading-[19px] max-w-[270px]">
-              When customers place new orders, request fittings, or send
-              messages, they'll appear here.
-            </Text>
-          </View>
-        )}
       </View>
     </TailorDashboardShell>
   );

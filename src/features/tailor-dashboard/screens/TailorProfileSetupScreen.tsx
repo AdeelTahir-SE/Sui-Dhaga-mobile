@@ -22,7 +22,9 @@ import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 import { TailorLocationPickerModal, SelectedLocation } from "../components/TailorLocationPickerModal";
 import { TailorLeafletMap } from "../../tailors/components/TailorLeafletMap";
 import { tailorsApi } from "../../../api/tailors.api";
+import { extractAvatarUrl, usersApi } from "../../../api/users.api";
 import { storage } from "../../../api/client";
+import { User } from "../../../types/api";
 
 const DEFAULT_SPECIALTIES = [
   "Bridal Wear",
@@ -58,6 +60,8 @@ export default function TailorProfileSetupScreen() {
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
   const [customSpecialty, setCustomSpecialty] = useState("");
   const [shopImage, setShopImage] = useState<string | null>(null);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [pendingBannerAsset, setPendingBannerAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -149,6 +153,18 @@ export default function TailorProfileSetupScreen() {
           p.shopBanner ||
           null
       );
+      const userAvatar =
+        user?.avatar_url ||
+        user?.avatarUrl ||
+        user?.avatar ||
+        p.avatarUrl ||
+        p.avatar ||
+        p.profile?.avatar_url ||
+        p.profile?.avatarUrl ||
+        p.user?.avatarUrl ||
+        p.user?.avatar ||
+        null;
+      setAvatarUri(userAvatar);
     } else if (user) {
       if (!ownerName) {
         setOwnerName(user.fullName || user.name || (user.email ? user.email.split("@")[0] : ""));
@@ -156,6 +172,12 @@ export default function TailorProfileSetupScreen() {
       if (!phone && user.phone) {
         setPhone(user.phone);
       }
+      const userAvatar =
+        user?.avatar_url ||
+        user?.avatarUrl ||
+        user?.avatar ||
+        null;
+      setAvatarUri(userAvatar);
     }
   }, [profile, user]);
 
@@ -170,6 +192,75 @@ export default function TailorProfileSetupScreen() {
     if (trimmed && !selectedSpecialties.includes(trimmed)) {
       setSelectedSpecialties((prev) => [...prev, trimmed]);
       setCustomSpecialty("");
+    }
+  };
+
+  const pickAvatar = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          "Permission Required",
+          "Permission to access your photos is required to change your profile picture."
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setIsUploadingAvatar(true);
+
+        try {
+          const res = await usersApi.uploadAvatar(asset);
+          const newAvatarUrl = extractAvatarUrl(res.data) || asset.uri;
+
+          if (user) {
+            const updatedUser: User = {
+              ...user,
+              avatar: newAvatarUrl,
+              avatarUrl: newAvatarUrl,
+            };
+            setUser(updatedUser);
+            await storage.setUser(updatedUser).catch(() => {});
+          }
+
+          setAvatarUri(newAvatarUrl);
+          Alert.alert("Success", "Profile avatar updated successfully!");
+        } catch (uploadErr: any) {
+          // Local fallback preview
+          const localUri = asset.uri;
+          if (user) {
+            const updatedUser: User = {
+              ...user,
+              avatar: localUri,
+              avatarUrl: localUri,
+            };
+            setUser(updatedUser);
+            await storage.setUser(updatedUser).catch(() => {});
+          }
+          setAvatarUri(localUri);
+          Alert.alert(
+            "Avatar Saved",
+            uploadErr?.message
+              ? `Profile avatar updated locally. (${uploadErr.message})`
+              : "Profile avatar updated locally."
+          );
+        } finally {
+          setIsUploadingAvatar(false);
+        }
+      }
+    } catch (err: any) {
+      setIsUploadingAvatar(false);
+      Alert.alert("Error", err?.message || "Failed to update profile picture");
     }
   };
 
@@ -411,48 +502,124 @@ export default function TailorProfileSetupScreen() {
             </View>
           )}
 
-          {/* Shop Image / Photo Banner */}
-          <View className="mb-5 items-center">
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={pickShopImage}
-              disabled={isUploadingImage}
-              className="relative h-28 w-full items-center justify-center overflow-hidden rounded-md border border-dashed border-primary/40 bg-primary-50"
-            >
-              {shopImage ? (
-                <Image
-                  source={{ uri: shopImage }}
-                  className="h-full w-full"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="items-center justify-center p-4">
-                  <Ionicons name="image-outline" size={30} color="#14919B" />
-                  <Text className="mt-1 text-[12px] font-semibold text-primary">
-                    Upload Shop Banner Photo
-                  </Text>
-                  <Text className="text-[10px] text-brand-gray">
-                    Tap to select a wide shop banner from gallery
-                  </Text>
-                </View>
-              )}
+          {/* Photos & Branding Section */}
+          <View className="mb-6 rounded-2xl border border-brand-border bg-white p-4 shadow-xs">
+            <Text className="mb-3 text-[15px] font-black tracking-tight text-brand-dark">
+              Profile & Workshop Photos
+            </Text>
 
-              {isUploadingImage ? (
-                <View className="absolute inset-0 items-center justify-center bg-black/40">
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                  <Text className="mt-1 text-[11px] font-bold text-white">
-                    Uploading...
+            {/* Profile Avatar Row */}
+            <View className="flex-row items-center justify-between pb-4 border-b border-brand-border/60">
+              <View className="flex-row items-center flex-1 mr-3">
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={pickAvatar}
+                  disabled={isUploadingAvatar}
+                  className="relative"
+                >
+                  <View className="h-16 w-16 rounded-2xl border border-brand-border bg-primary-50 overflow-hidden items-center justify-center">
+                    {avatarUri ? (
+                      <Image
+                        source={{ uri: avatarUri }}
+                        style={{ width: "100%", height: "100%" }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View className="items-center justify-center w-full h-full bg-primary-50">
+                        <Text className="text-[20px] font-black text-primary">
+                          {(businessName || ownerName || "T").charAt(0).toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  {isUploadingAvatar ? (
+                    <View className="absolute inset-0 items-center justify-center rounded-2xl bg-black/40">
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    </View>
+                  ) : (
+                    <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-primary border-2 border-white shadow-xs">
+                      <Ionicons name="camera" size={11} color="#FFFFFF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <View className="ml-3.5 flex-1">
+                  <Text className="text-[14px] font-bold text-brand-dark">
+                    Profile Avatar
+                  </Text>
+                  <Text className="text-[11px] font-medium text-brand-gray mt-0.5">
+                    Your personal face / tailor photo
                   </Text>
                 </View>
-              ) : shopImage ? (
-                <View className="absolute bottom-2 right-2 flex-row items-center rounded-md bg-black/60 px-2.5 py-1">
-                  <Ionicons name="camera" size={14} color="#FFFFFF" />
-                  <Text className="ml-1 text-[11px] font-semibold text-white">
-                    Change
+              </View>
+
+              <TouchableOpacity
+                onPress={pickAvatar}
+                disabled={isUploadingAvatar}
+                className="rounded-xl bg-primary-50 px-3 py-1.5 border border-primary/20"
+              >
+                <Text className="text-[12px] font-bold text-primary">
+                  {avatarUri ? "Change" : "Upload"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Shop Banner Box */}
+            <View className="pt-4">
+              <View className="flex-row items-center justify-between mb-2">
+                <View>
+                  <Text className="text-[14px] font-bold text-brand-dark">
+                    Workshop Cover Banner
+                  </Text>
+                  <Text className="text-[11px] font-medium text-brand-gray">
+                    Wide photo displayed on your storefront
                   </Text>
                 </View>
-              ) : null}
-            </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={pickShopImage}
+                  disabled={isUploadingImage}
+                  className="rounded-xl bg-primary-50 px-3 py-1.5 border border-primary/20"
+                >
+                  <Text className="text-[12px] font-bold text-primary">
+                    {shopImage ? "Change" : "Upload"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={pickShopImage}
+                disabled={isUploadingImage}
+                className="relative h-28 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-primary/40 bg-primary-50/50 mt-1"
+              >
+                {shopImage ? (
+                  <Image
+                    source={{ uri: shopImage }}
+                    className="h-full w-full"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View className="items-center justify-center p-3">
+                    <Ionicons name="image-outline" size={26} color="#14919B" />
+                    <Text className="mt-1 text-[12px] font-bold text-primary">
+                      Tap to select banner photo (16:9)
+                    </Text>
+                    <Text className="text-[10px] text-brand-gray">
+                      Workshop exterior, showroom or stitching bench
+                    </Text>
+                  </View>
+                )}
+
+                {isUploadingImage ? (
+                  <View className="absolute inset-0 items-center justify-center bg-black/40">
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text className="mt-1 text-[11px] font-bold text-white">
+                      Uploading...
+                    </Text>
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Business & Personal Info Section */}

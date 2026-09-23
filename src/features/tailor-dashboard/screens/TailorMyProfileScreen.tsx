@@ -16,9 +16,8 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { useTailorProfile } from "../hooks/useTailorProfile";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
-import { TailorLeafletMap } from "../../tailors/components/TailorLeafletMap";
+import { ProfileMenuRow } from "../../customer-tabs/components/ProfileMenuRow";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
-import { tailorsApi } from "../../../api/tailors.api";
 import { storage } from "../../../api/client";
 import { User } from "../../../types/api";
 
@@ -28,7 +27,6 @@ export default function TailorMyProfileScreen() {
   const logout = useAuthStore((state) => state.logout);
   const { profile, isLoading, refresh } = useTailorProfile();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -75,11 +73,24 @@ export default function TailorMyProfileScreen() {
           }
 
           await refresh?.();
-          Alert.alert("Success", "Tailor profile avatar updated successfully!");
+          Alert.alert("Success", "Profile avatar updated successfully!");
         } catch (uploadErr: any) {
+          const localUri = asset.uri;
+          if (user) {
+            const updatedUser: User = {
+              ...user,
+              avatar: localUri,
+              avatarUrl: localUri,
+            };
+            setUser(updatedUser);
+            await storage.setUser(updatedUser).catch(() => {});
+          }
+          await refresh?.();
           Alert.alert(
-            "Upload Failed",
-            uploadErr?.message || "Failed to upload avatar image. Please try again."
+            "Avatar Saved",
+            uploadErr?.message
+              ? `Profile avatar updated locally. (${uploadErr.message})`
+              : "Profile avatar updated locally."
           );
         } finally {
           setIsUploadingAvatar(false);
@@ -91,63 +102,14 @@ export default function TailorMyProfileScreen() {
     }
   };
 
-  const pickBanner = async () => {
-    try {
-      const targetTailorId = profile?.id;
-      if (!targetTailorId) {
-        Alert.alert("Error", "Tailor profile ID not found. Please save your profile first.");
-        return;
-      }
-
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (permissionResult.granted === false) {
-        Alert.alert(
-          "Permission Required",
-          "Permission to access your photos is required to change your shop banner."
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        setIsUploadingBanner(true);
-
-        try {
-          await tailorsApi.uploadBanner(targetTailorId, asset);
-          await refresh?.();
-          Alert.alert("Success", "Shop banner updated successfully!");
-        } catch (uploadErr: any) {
-          Alert.alert(
-            "Upload Failed",
-            uploadErr?.message || "Failed to upload shop banner. Please try again."
-          );
-        } finally {
-          setIsUploadingBanner(false);
-        }
-      }
-    } catch (err: any) {
-      setIsUploadingBanner(false);
-      Alert.alert("Error", err?.message || "Failed to update shop banner");
-    }
-  };
-
   const handleLogout = () => {
     Alert.alert(
-      "Logout",
-      "Are you sure you want to log out from your tailor account?",
+      "Log Out",
+      "Are you sure you want to sign out of your tailor account?",
       [
         { text: "Cancel", style: "cancel" },
         {
-          text: "Logout",
+          text: "Log Out",
           style: "destructive",
           onPress: async () => {
             await logout();
@@ -190,7 +152,7 @@ export default function TailorMyProfileScreen() {
     p.user?.name ||
     user?.fullName ||
     user?.name ||
-    (user?.email ? user.email.split("@")[0] : "Name Not Set");
+    (user?.email ? user.email.split("@")[0] : "");
 
   const phone =
     p.phone ||
@@ -214,20 +176,6 @@ export default function TailorMyProfileScreen() {
     city && address
       ? `${city} • ${address}`
       : city || address || "Location not set";
-
-  const latitude =
-    p.latitude !== undefined && p.latitude !== null && !isNaN(Number(p.latitude))
-      ? Number(p.latitude)
-      : p.location?.latitude !== undefined && !isNaN(Number(p.location.latitude))
-      ? Number(p.location.latitude)
-      : 31.5204;
-
-  const longitude =
-    p.longitude !== undefined && p.longitude !== null && !isNaN(Number(p.longitude))
-      ? Number(p.longitude)
-      : p.location?.longitude !== undefined && !isNaN(Number(p.location.longitude))
-      ? Number(p.location.longitude)
-      : 74.3587;
 
   const startingPrice =
     p.startingPrice !== undefined && p.startingPrice !== null && p.startingPrice !== "" && Number(p.startingPrice) > 0
@@ -303,360 +251,314 @@ export default function TailorMyProfileScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
-        className="px-5 pt-4"
       >
-        {/* Header */}
-        <View className="mb-4 flex-row items-center justify-between">
-          <Text className="text-[20px] font-black tracking-tight text-brand-dark">
+        {/* Top Header Bar */}
+        <View className="px-5 pt-3 pb-2">
+          <Text className="text-[24px] font-black tracking-tight text-brand-dark">
             Tailor Profile
           </Text>
-          <TouchableOpacity
-            accessibilityRole="button"
-            onPress={() => router.push("/tailor-dashboard/complete-profile" as any)}
-            className="flex-row items-center rounded-md bg-primary-50 px-3 py-1.5 border border-primary/20"
-          >
-            <Ionicons name="pencil-sharp" size={14} color="#14919B" />
-            <Text className="ml-1.5 text-[12px] font-bold text-primary">
-              Edit
-            </Text>
-          </TouchableOpacity>
+          <Text className="text-[12px] font-medium text-brand-gray">
+            Your workshop & business settings
+          </Text>
         </View>
 
-        {/* Shop Banner Preview & Upload */}
-        <View className="mb-4 overflow-hidden rounded-md border border-brand-border bg-white shadow-xs">
-          <View className="relative h-32 w-full bg-brand-surface">
+        <View className="px-5 pt-3">
+          {/* Main Profile Card */}
+          <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
+            {/* Optional Workshop Banner Cover */}
             {bannerUri ? (
-              <Image
-                source={{ uri: bannerUri }}
-                className="h-32 w-full"
-                resizeMode="cover"
-              />
-            ) : (
-              <View className="h-32 w-full items-center justify-center bg-gradient-to-r from-primary-50 to-brand-surface border-b border-brand-border">
-                <Ionicons name="image-outline" size={32} color="#14919B" />
-                <Text className="mt-1 text-[12px] font-medium text-brand-gray">
-                  No Shop Banner Uploaded
-                </Text>
-              </View>
-            )}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={pickBanner}
-              disabled={isUploadingBanner}
-              className="absolute bottom-2 right-2 flex-row items-center rounded-md bg-black/70 px-2.5 py-1.5 backdrop-blur-sm"
-            >
-              {isUploadingBanner ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <>
-                  <Ionicons name="camera" size={13} color="#FFFFFF" />
-                  <Text className="ml-1.5 text-[11px] font-bold text-white">
-                    {bannerUri ? "Change Banner" : "Upload Banner"}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Profile Card Banner */}
-        <View className="mb-4 overflow-hidden rounded-md border border-brand-border bg-white p-4 shadow-xs">
-          <View className="flex-row items-center">
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={pickAvatar}
-              disabled={isUploadingAvatar}
-              className="relative"
-            >
-              {tailorAvatarUri ? (
+              <View className="relative h-28 w-full bg-brand-surface">
                 <Image
-                  source={{ uri: tailorAvatarUri }}
-                  className="rounded-md bg-brand-surface"
-                  style={{ width: 72, height: 72 }}
+                  source={{ uri: bannerUri }}
+                  style={{ width: "100%", height: "100%" }}
                   resizeMode="cover"
                 />
-              ) : (
-                <View
-                  className="items-center justify-center rounded-md bg-primary/10 border border-primary/20"
-                  style={{ width: 72, height: 72 }}
-                >
-                  <Text className="text-[24px] font-black text-primary">
-                    {initials}
-                  </Text>
-                </View>
-              )}
-              {isUploadingAvatar ? (
-                <View className="absolute inset-0 items-center justify-center rounded-md bg-black/40">
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                </View>
-              ) : (
-                <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-md bg-primary border-2 border-white shadow-sm">
-                  <Ionicons name="camera-outline" size={12} color="#FFFFFF" />
-                </View>
-              )}
-            </TouchableOpacity>
+                <View className="absolute inset-0 bg-black/10" />
+              </View>
+            ) : null}
 
-            <View className="ml-3.5 flex-1">
+            <View className="p-4">
               <View className="flex-row items-center">
-                <Text
-                  className="flex-1 text-[17px] font-black tracking-tight text-brand-dark"
-                  numberOfLines={1}
+                {/* Avatar with Camera Overlay */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={pickAvatar}
+                  disabled={isUploadingAvatar}
+                  className="relative"
+                  accessibilityLabel="Change profile picture"
+                  accessibilityRole="button"
                 >
-                  {shopName}
-                </Text>
-                <View className="ml-1.5 rounded-md bg-emerald-50 px-2 py-0.5 border border-emerald-200">
-                  <Text className="text-[10px] font-bold text-emerald-700">
-                    Tailor
-                  </Text>
+                  <View className="h-16 w-16 rounded-2xl border border-brand-border bg-primary-50 overflow-hidden items-center justify-center">
+                    {tailorAvatarUri ? (
+                      <Image
+                        source={{ uri: tailorAvatarUri }}
+                        style={{ width: "100%", height: "100%" }}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View className="items-center justify-center w-full h-full bg-primary-50">
+                        <Text className="text-[22px] font-black text-primary">
+                          {initials}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {isUploadingAvatar ? (
+                    <View className="absolute inset-0 items-center justify-center rounded-2xl bg-black/40">
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    </View>
+                  ) : (
+                    <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-primary border-2 border-white shadow-xs">
+                      <Ionicons name="camera" size={11} color="#FFFFFF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {/* Name, Role & Contact */}
+                <View className="ml-3.5 flex-1 justify-center">
+                  <View className="flex-row items-center">
+                    <Text
+                      className="text-[18px] font-black text-brand-dark tracking-tight flex-1"
+                      numberOfLines={1}
+                    >
+                      {shopName}
+                    </Text>
+                    <View className="ml-2 rounded-full bg-emerald-50 px-2.5 py-0.5 border border-emerald-200">
+                      <Text className="text-[10px] font-bold text-emerald-700">
+                        Tailor
+                      </Text>
+                    </View>
+                  </View>
+
+                  {ownerName && ownerName !== shopName ? (
+                    <Text className="mt-0.5 text-[13px] font-semibold text-brand-dark" numberOfLines={1}>
+                      {ownerName}
+                    </Text>
+                  ) : null}
+
+                  {user?.email ? (
+                    <View className="mt-1 flex-row items-center">
+                      <Ionicons name="mail-outline" size={12} color="#6F767E" />
+                      <Text
+                        className="ml-1.5 text-[12px] font-medium text-brand-gray flex-1"
+                        numberOfLines={1}
+                      >
+                        {user.email}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {phone && phone !== "Not set" ? (
+                    <View className="mt-0.5 flex-row items-center">
+                      <Ionicons name="call-outline" size={12} color="#6F767E" />
+                      <Text
+                        className="ml-1.5 text-[12px] font-medium text-brand-gray flex-1"
+                        numberOfLines={1}
+                      >
+                        {phone}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {locationText && locationText !== "Location not set" ? (
+                    <View className="mt-0.5 flex-row items-center">
+                      <Ionicons name="location-outline" size={12} color="#6F767E" />
+                      <Text
+                        className="ml-1.5 text-[12px] font-medium text-brand-gray flex-1"
+                        numberOfLines={1}
+                      >
+                        {locationText}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
               </View>
 
-              <Text className="mt-0.5 text-[13px] font-bold text-brand-dark" numberOfLines={1}>
-                {ownerName}
-              </Text>
-
-              <View className="mt-1 flex-row items-center">
-                <Ionicons name="location-outline" size={13} color="#6F767E" />
-                <Text className="ml-1 text-[12px] font-medium text-brand-gray" numberOfLines={1}>
-                  {locationText}
-                </Text>
-              </View>
-
-              <View className="mt-1 flex-row items-center">
-                <Ionicons name="call-outline" size={13} color="#6F767E" />
-                <Text className="ml-1 text-[12px] font-medium text-brand-gray" numberOfLines={1}>
-                  {phone}
-                </Text>
+              {/* Quick Metrics Bar */}
+              <View className="mt-4 flex-row divide-x divide-brand-border border-t border-brand-border pt-3">
+                <View className="flex-1 items-center">
+                  <Text className="text-[14px] font-black text-brand-dark">
+                    ⭐ {rating}
+                  </Text>
+                  <Text className="text-[11px] font-medium text-brand-gray">
+                    {reviewsCount}
+                  </Text>
+                </View>
+                <View className="flex-1 items-center">
+                  <Text className="text-[14px] font-black text-brand-dark">
+                    {experience}
+                  </Text>
+                  <Text className="text-[11px] font-medium text-brand-gray">
+                    Experience
+                  </Text>
+                </View>
+                <View className="flex-1 items-center">
+                  <Text className="text-[14px] font-black text-primary">
+                    {startingPrice}
+                  </Text>
+                  <Text className="text-[11px] font-medium text-brand-gray">
+                    Starts From
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
 
-          {/* Quick Metrics Bar */}
-          <View className="mt-4 flex-row divide-x divide-brand-border border-t border-brand-border pt-3">
-            <View className="flex-1 items-center">
-              <Text className="text-[14px] font-black text-brand-dark">
-                ⭐ {rating}
+          {/* Workshop Overview: Specialties & Bio */}
+          {(specialties.length > 0 || bio) && (
+            <View className="mt-5">
+              <Text className="mb-2.5 px-1 text-[14px] font-bold text-primary">
+                Workshop Overview
               </Text>
-              <Text className="text-[11px] font-medium text-brand-gray">
-                {reviewsCount}
-              </Text>
-            </View>
-            <View className="flex-1 items-center">
-              <Text className="text-[14px] font-black text-brand-dark">
-                {experience}
-              </Text>
-              <Text className="text-[11px] font-medium text-brand-gray">
-                Experience
-              </Text>
-            </View>
-            <View className="flex-1 items-center">
-              <Text className="text-[14px] font-black text-primary">
-                {startingPrice}
-              </Text>
-              <Text className="text-[11px] font-medium text-brand-gray">
-                Starts From
-              </Text>
-            </View>
-          </View>
-        </View>
+              <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs">
+                {specialties.length > 0 && (
+                  <View className={bio ? "mb-3" : ""}>
+                    <Text className="mb-2 text-[11px] font-bold uppercase tracking-wider text-brand-gray">
+                      Specialties
+                    </Text>
+                    <View className="flex-row flex-wrap gap-1.5">
+                      {specialties.map((spec) => (
+                        <View
+                          key={spec}
+                          className="rounded-lg border border-primary/20 bg-primary-50 px-2.5 py-1"
+                        >
+                          <Text className="text-[12px] font-semibold text-primary">
+                            {spec}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
 
-        {/* Action Button: Edit Full Profile */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => router.push("/tailor-dashboard/complete-profile" as any)}
-          className="mb-5 h-11 flex-row items-center justify-center rounded-md border border-primary bg-primary-50 shadow-xs"
-        >
-          <Ionicons name="create-outline" size={17} color="#14919B" />
-          <Text className="ml-2 text-[13px] font-bold text-primary">
-            Update Profile & Pricing
-          </Text>
-        </TouchableOpacity>
-
-        {/* Specialties */}
-        <View className="mb-4">
-          <Text className="mb-2 text-[15px] font-black tracking-tight text-brand-dark">
-            Tailoring Specialties
-          </Text>
-          {specialties.length > 0 ? (
-            <View className="flex-row flex-wrap gap-2">
-              {specialties.map((spec) => (
-                <View
-                  key={spec}
-                  className="rounded-md border border-brand-border bg-white px-3 py-1.5 shadow-xs"
-                >
-                  <Text className="text-[12px] font-semibold text-brand-dark">
-                    {spec}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View className="rounded-md border border-dashed border-brand-border bg-brand-surface/30 p-3.5">
-              <Text className="text-[12px] font-medium text-brand-gray">
-                No specialties added yet. Tap "Edit" above to add what outfits you specialize in.
-              </Text>
+                {bio ? (
+                  <View>
+                    <Text className="mb-1 text-[11px] font-bold uppercase tracking-wider text-brand-gray">
+                      About Craftsmanship
+                    </Text>
+                    <Text className="text-[13px] leading-5 font-medium text-brand-dark">
+                      {bio}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
             </View>
           )}
-        </View>
 
-        {/* About Bio */}
-        <View className="mb-5">
-          <Text className="mb-1.5 text-[15px] font-black tracking-tight text-brand-dark">
-            About Workshop
-          </Text>
-          <View className="rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
-            {bio ? (
-              <Text className="text-[13px] leading-5 font-medium text-brand-dark">
-                {bio}
-              </Text>
-            ) : (
-              <Text className="text-[12px] italic text-brand-gray">
-                No bio added yet. Tap "Edit" above to add details about your craftsmanship.
-              </Text>
-            )}
-          </View>
-        </View>
-
-        {/* Shop Location on Map */}
-        <View className="mb-5">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-[15px] font-black tracking-tight text-brand-dark">
-              Shop Location on Map
+          {/* Group 1: Business Management */}
+          <View className="mt-5">
+            <Text className="mb-2.5 px-1 text-[14px] font-bold text-primary">
+              Business Management
             </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/tailor-dashboard/complete-profile" as any)}
-              className="flex-row items-center rounded-md bg-primary-50 px-2.5 py-1 border border-primary/20"
-            >
-              <Ionicons name="pencil" size={12} color="#14919B" />
-              <Text className="ml-1 text-[11px] font-bold text-primary">
-                Update on Map
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View className="overflow-hidden rounded-md border border-brand-border bg-white shadow-xs">
-            <TailorLeafletMap
-              latitude={latitude}
-              longitude={longitude}
-              shopName={shopName}
-              locationText={locationText}
-              height={140}
-              interactive={false}
-            />
-            <View className="bg-brand-surface/70 p-3 flex-row items-center justify-between">
-              <View className="flex-1 mr-2">
-                <Text className="text-[12px] font-bold text-brand-dark" numberOfLines={1}>
-                  📍 {locationText}
-                </Text>
-                <Text className="text-[11px] font-mono text-primary font-semibold mt-0.5">
-                  GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
-                </Text>
-              </View>
-              <TouchableOpacity
+            <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
+              <ProfileMenuRow
+                title="Edit Business Profile"
+                subtitle="Shop details, banner, specialties & location pin"
+                icon="storefront-outline"
                 onPress={() => router.push("/tailor-dashboard/complete-profile" as any)}
-                className="rounded-md bg-primary px-3 py-1.5 shadow-xs"
-              >
-                <Text className="text-[11px] font-bold text-white">Change Pin</Text>
-              </TouchableOpacity>
+              />
+              <ProfileMenuRow
+                title="Services & Pricing"
+                subtitle="Manage custom outfits and catalog rates"
+                icon="pricetags-outline"
+                onPress={() => router.push("/tailor-dashboard/services" as any)}
+              />
+              <ProfileMenuRow
+                title="Working Hours & Slots"
+                subtitle="Set daily availability and appointment limits"
+                icon="time-outline"
+                onPress={() => router.push("/tailor-dashboard/availability" as any)}
+              />
+              <ProfileMenuRow
+                title="Earnings & Payouts"
+                subtitle="View revenue, pending payments, and transactions"
+                icon="wallet-outline"
+                onPress={() => router.push("/tailor-dashboard/earnings" as any)}
+              />
+              <ProfileMenuRow
+                title="Preview Tailor Directory"
+                subtitle="See how customers discover your profile"
+                icon="eye-outline"
+                isLast
+                onPress={() => router.push("/tailors" as any)}
+              />
             </View>
           </View>
-        </View>
 
-        {/* Quick Management Links */}
-        <Text className="mb-2 text-[15px] font-black tracking-tight text-brand-dark">
-          Business Management
-        </Text>
-        <View className="mb-5 overflow-hidden rounded-md border border-brand-border bg-white shadow-xs">
-          <TouchableOpacity
-            onPress={() => router.push("/tailor-dashboard/services" as any)}
-            className="flex-row items-center justify-between border-b border-brand-border p-3.5"
-          >
-            <View className="flex-row items-center">
-              <View className="h-8 w-8 items-center justify-center rounded-md bg-primary-50">
-                <Ionicons name="pricetags-outline" size={16} color="#14919B" />
-              </View>
-              <View className="ml-3">
-                <Text className="text-[13px] font-bold text-brand-dark">
-                  Services & Pricing
-                </Text>
-                <Text className="text-[11px] font-medium text-brand-gray">
-                  Manage custom outfits and catalog rates
-                </Text>
-              </View>
+          {/* Group 2: Orders & Customer Engagements */}
+          <View className="mt-5">
+            <Text className="mb-2.5 px-1 text-[14px] font-bold text-primary">
+              Orders & Engagements
+            </Text>
+            <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
+              <ProfileMenuRow
+                title="Orders & Requests"
+                subtitle="Active stitching orders and job progress"
+                icon="bag-handle-outline"
+                onPress={() => router.push("/tailor-dashboard/orders" as any)}
+              />
+              <ProfileMenuRow
+                title="Appointments"
+                subtitle="Tailor consultations & fitting schedules"
+                icon="calendar-outline"
+                onPress={() => router.push("/tailor-dashboard/appointments" as any)}
+              />
+              <ProfileMenuRow
+                title="Client Messages"
+                subtitle="Direct chat with customers & inquiries"
+                icon="chatbubbles-outline"
+                isLast
+                onPress={() => router.push("/tailor-dashboard/messages" as any)}
+              />
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          </View>
+
+          {/* Group 3: Account & Support */}
+          <View className="mt-5">
+            <Text className="mb-2.5 px-1 text-[14px] font-bold text-primary">
+              Account & Support
+            </Text>
+            <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
+              <ProfileMenuRow
+                title="Tailor Partner Support"
+                subtitle="partners@suidhaga.app • Partner Helpline"
+                icon="help-circle-outline"
+                isLast
+                onPress={() => {
+                  Alert.alert(
+                    "Sui Dhaga Partner Support",
+                    "Need help with your workshop profile, orders, payouts or customer bookings?\n\nEmail: partners@suidhaga.app\nToll-Free: +91 1800-SUI-DHAGA\nMon-Sat: 9:00 AM - 8:00 PM"
+                  );
+                }}
+              />
+            </View>
+          </View>
+
+          {/* Logout Action */}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleLogout}
+            className="mt-6 flex-row items-center rounded-2xl border border-red-200 bg-white p-3.5 shadow-2xs"
+          >
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-red-600">
+              <Ionicons name="log-out" size={18} color="#FFFFFF" />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="text-[15px] font-bold text-red-600">
+                Log Out
+              </Text>
+              <Text className="mt-0.5 text-[12px] font-medium text-red-400">
+                Sign out of this tailor account
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#DC2626" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => router.push("/tailor-dashboard/availability" as any)}
-            className="flex-row items-center justify-between border-b border-brand-border p-3.5"
-          >
-            <View className="flex-row items-center">
-              <View className="h-8 w-8 items-center justify-center rounded-md bg-primary-50">
-                <Ionicons name="time-outline" size={16} color="#14919B" />
-              </View>
-              <View className="ml-3">
-                <Text className="text-[13px] font-bold text-brand-dark">
-                  Working Hours & Slots
-                </Text>
-                <Text className="text-[11px] font-medium text-brand-gray">
-                  Set daily availability and appointment limits
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push("/tailor-dashboard/earnings" as any)}
-            className="flex-row items-center justify-between border-b border-brand-border p-3.5"
-          >
-            <View className="flex-row items-center">
-              <View className="h-8 w-8 items-center justify-center rounded-md bg-primary-50">
-                <Ionicons name="wallet-outline" size={16} color="#14919B" />
-              </View>
-              <View className="ml-3">
-                <Text className="text-[13px] font-bold text-brand-dark">
-                  Earnings & Payouts
-                </Text>
-                <Text className="text-[11px] font-medium text-brand-gray">
-                  View revenue, pending payments, and transactions
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push("/tailors" as any)}
-            className="flex-row items-center justify-between p-3.5"
-          >
-            <View className="flex-row items-center">
-              <View className="h-8 w-8 items-center justify-center rounded-md bg-primary-50">
-                <Ionicons name="eye-outline" size={16} color="#14919B" />
-              </View>
-              <View className="ml-3">
-                <Text className="text-[13px] font-bold text-brand-dark">
-                  Preview Tailor Directory
-                </Text>
-                <Text className="text-[11px] font-medium text-brand-gray">
-                  See how you appear on the customer tailor search
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Logout Button */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleLogout}
-          className="h-12 items-center justify-center rounded-md border border-[#F5D1D1] bg-[#FFF3F3]"
-        >
-          <Text className="text-[14px] font-bold text-[#D73232] tracking-wide">
-            Logout
+          <Text className="mt-5 text-center text-[11px] font-medium text-brand-gray/60">
+            Sui Dhaga Partner • v1.0.0
           </Text>
-        </TouchableOpacity>
+        </View>
       </ScrollView>
     </TailorDashboardShell>
   );
