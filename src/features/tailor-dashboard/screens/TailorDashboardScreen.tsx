@@ -32,10 +32,19 @@ const appointmentsMetricIcon = require("@/assets/illustrations/tailor-dashboard/
 const messagesMetricIcon = require("@/assets/illustrations/tailor-dashboard/dashboard/messages.png");
 const earningsMetricIcon = require("@/assets/illustrations/tailor-dashboard/dashboard/earnings.png");
 
+const appointmentsIcon = require("@/assets/illustrations/customer-tabs/home/appointments-icon.png");
+const AvailabilityIcon = require("@/assets/illustrations/tailor-dashboard/availability.png");
+const ProfileIcon = require("@/assets/illustrations/tailor-dashboard/profile.png");
+const ordersIcon = require("@/assets/illustrations/customer-tabs/home/orders-icon.png");
+const messagesIcon = require("@/assets/illustrations/customer-tabs/home/messages-icon.png");
+const communityIcon = require("@/assets/illustrations/customer-tabs/home/community-icon.png");
+const aiStudioIcon = require("@/assets/illustrations/customer-tabs/home/ai-studio-icon.png");
+
 export default function TailorDashboardScreen() {
   const insets = useSafeAreaInsets();
   const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-  const [isQuickActionsModalVisible, setIsQuickActionsModalVisible] = useState(false);
+  const [isQuickActionsModalVisible, setIsQuickActionsModalVisible] =
+    useState(false);
 
   const user = useAuthStore((state) => state.user);
   const { profile } = useTailorProfile();
@@ -48,6 +57,7 @@ export default function TailorDashboardScreen() {
       title: "Community",
       description: "Connect & share designs with fashion enthusiasts",
       icon: "people-outline" as const,
+      image: communityIcon,
       route: "/community",
       color: "#4F46E5",
       bgColor: "#EEF2FF",
@@ -57,7 +67,7 @@ export default function TailorDashboardScreen() {
       id: "tqa-availability",
       title: "Availability",
       description: "Update working hours, days & fitting slots",
-      icon: "time-outline" as const,
+      icon: AvailabilityIcon,
       route: "/tailor-dashboard/availability",
       color: "#2563EB",
       bgColor: "#EFF6FF",
@@ -67,7 +77,7 @@ export default function TailorDashboardScreen() {
       id: "tqa-profile",
       title: "Profile",
       description: "Edit shop address, bio, experience & photos",
-      icon: "storefront-outline" as const,
+      icon: ProfileIcon,
       route: "/tailor-dashboard/profile",
       color: "#7C3AED",
       bgColor: "#F5F3FF",
@@ -78,6 +88,7 @@ export default function TailorDashboardScreen() {
       title: "Messages",
       description: "Direct chat & outfit consultations with customers",
       icon: "chatbubbles-outline" as const,
+      image: messagesIcon,
       route: "/messages",
       color: "#0284C7",
       bgColor: "#F0F9FF",
@@ -88,6 +99,7 @@ export default function TailorDashboardScreen() {
       title: "Orders",
       description: "Review active, pending & delivered garment orders",
       icon: "bag-handle-outline" as const,
+      image: ordersIcon,
       route: "/tailor-dashboard/orders",
       color: "#0D9488",
       bgColor: "#F0FDFA",
@@ -98,16 +110,18 @@ export default function TailorDashboardScreen() {
       title: "Appointments",
       description: "View upcoming fittings, measurements & trial sessions",
       icon: "calendar-outline" as const,
+      image: appointmentsIcon,
       route: "/tailor-dashboard/appointments",
-      color: "#E11D48",
-      bgColor: "#FFF1F2",
-      borderColor: "#FFE4E6",
+      color: "#2563EB",
+      bgColor: "#EFF6FF",
+      borderColor: "#DBEAFE",
     },
     {
       id: "tqa-earnings",
       title: "Earnings",
       description: "Track revenues, completed order payouts & statements",
       icon: "cash-outline" as const,
+      image: earningsMetricIcon,
       route: "/tailor-dashboard/earnings",
       color: "#059669",
       bgColor: "#ECFDF5",
@@ -117,11 +131,12 @@ export default function TailorDashboardScreen() {
       id: "tqa-studio",
       title: "Design Studio",
       description: "Explore bespoke templates & AI garment inspirations",
-      icon: "sparkles-outline" as const,
+      icon: "color-wand-outline" as const,
+      image: aiStudioIcon,
       route: "/design",
-      color: "#EA580C",
-      bgColor: "#FFF7ED",
-      borderColor: "#FFEDD5",
+      color: "#7C3AED",
+      bgColor: "#F5F3FF",
+      borderColor: "#EDE9FE",
     },
   ];
 
@@ -220,11 +235,10 @@ export default function TailorDashboardScreen() {
         </View>
 
         {/* Metrics Grid */}
-        <View className="mt-5 flex-row flex-wrap justify-between gap-y-3.5">
+        <View className="mt-5 flex-row flex-wrap justify-between gap-y-3">
           <MetricCard
             title="New Orders"
             value={String(newOrdersCount)}
-            action="View all"
             image={ordersMetricIcon}
             tone="teal"
             onPress={() => router.push("/tailor-dashboard/orders" as never)}
@@ -232,7 +246,6 @@ export default function TailorDashboardScreen() {
           <MetricCard
             title="Appointments"
             value={String(pendingAppointmentsCount)}
-            action="View all"
             image={appointmentsMetricIcon}
             tone="coral"
             onPress={() =>
@@ -242,7 +255,6 @@ export default function TailorDashboardScreen() {
           <MetricCard
             title="Messages"
             value="0"
-            action="View all"
             image={messagesMetricIcon}
             tone="coral"
             onPress={() => router.push("/messages" as never)}
@@ -250,7 +262,6 @@ export default function TailorDashboardScreen() {
           <MetricCard
             title="Earnings"
             value={`Rs. ${totalEarnings.toLocaleString()}`}
-            action="View details"
             image={earningsMetricIcon}
             tone="green"
             onPress={() => router.push("/tailor-dashboard/earnings" as never)}
@@ -270,6 +281,7 @@ export default function TailorDashboardScreen() {
                 key={action.id}
                 title={action.title}
                 icon={action.icon}
+                image={action.image}
                 color={action.color}
                 bgColor={action.bgColor}
                 borderColor={action.borderColor}
@@ -283,6 +295,7 @@ export default function TailorDashboardScreen() {
                 key={action.id}
                 title={action.title}
                 icon={action.icon}
+                image={action.image}
                 color={action.color}
                 bgColor={action.bgColor}
                 borderColor={action.borderColor}
@@ -308,7 +321,9 @@ export default function TailorDashboardScreen() {
             justifyContent: "flex-end",
           }}
         >
-          <TouchableWithoutFeedback onPress={() => setIsQuickActionsModalVisible(false)}>
+          <TouchableWithoutFeedback
+            onPress={() => setIsQuickActionsModalVisible(false)}
+          >
             <View
               style={{
                 position: "absolute",
@@ -411,20 +426,28 @@ export default function TailorDashboardScreen() {
                     }}
                     className="flex-row items-center rounded-xl border border-brand-border bg-white p-3.5 shadow-xs active:bg-gray-50"
                   >
-                    <View
-                      style={{
-                        backgroundColor: action.bgColor,
-                        borderColor: action.borderColor,
-                        borderWidth: 1,
-                      }}
-                      className="h-11 w-11 items-center justify-center rounded-xl"
-                    >
-                      <Ionicons
-                        name={action.icon}
-                        size={22}
-                        color={action.color}
+                    {action.image ? (
+                      <Image
+                        source={action.image}
+                        contentFit="contain"
+                        style={{ width: 44, height: 44 }}
                       />
-                    </View>
+                    ) : (
+                      <View
+                        style={{
+                          backgroundColor: action.bgColor,
+                          borderColor: action.borderColor,
+                          borderWidth: 1,
+                        }}
+                        className="h-11 w-11 items-center justify-center rounded-xl"
+                      >
+                        <Ionicons
+                          name={action.icon}
+                          size={22}
+                          color={action.color}
+                        />
+                      </View>
+                    )}
                     <View className="ml-3.5 flex-1">
                       <Text className="text-[14px] font-bold text-brand-dark">
                         {action.title}
