@@ -3,7 +3,7 @@ import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 type DashActionButtonProps = {
   title: string;
-  variant?: "primary" | "outline" | "danger" | "black";
+  variant?: "primary" | "outline" | "danger" | "black" | "white";
   onPress?: () => void;
   disabled?: boolean;
   loading?: boolean;
@@ -23,16 +23,20 @@ export function DashActionButton({
       ? "bg-primary border-primary shadow-xs active:bg-primary-dark"
       : variant === "black"
         ? "bg-[#1A1D1F] border-[#1A1D1F] shadow-xs active:bg-black"
-        : variant === "danger"
-          ? "bg-white border-brand-border active:bg-red-50"
-          : "bg-white border-brand-border active:bg-gray-50";
+        : variant === "white"
+          ? "bg-white border-[#CBD5E1] shadow-xs active:bg-gray-100"
+          : variant === "danger"
+            ? "bg-white border-brand-border active:bg-red-50"
+            : "bg-white border-brand-border active:bg-gray-50";
 
   const textClass =
     variant === "primary" || variant === "black"
       ? "text-white"
-      : variant === "danger"
-        ? "text-[#F05A57]"
-        : "text-primary";
+      : variant === "white"
+        ? "text-[#1A1D1F]"
+        : variant === "danger"
+          ? "text-[#F05A57]"
+          : "text-primary";
 
   const isDisabled = disabled || loading;
 
@@ -42,16 +46,22 @@ export function DashActionButton({
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}
-      className={`relative h-[42px] flex-1 items-center justify-center rounded-md border overflow-hidden ${buttonClass} ${isDisabled ? "opacity-60" : ""}`}
+      className={`relative h-[42px] flex-1 items-center justify-center rounded-xl border overflow-hidden ${buttonClass} ${isDisabled ? "opacity-60" : ""}`}
     >
       {showTexture && variant === "primary" && (
-        <ButtonTexture variant="greenish" borderRadius={6} />
+        <ButtonTexture variant="greenish" borderRadius={10} />
       )}
       <View className="z-10 flex-row items-center justify-center px-2">
         {loading ? (
           <ActivityIndicator
             size="small"
-            color={variant === "primary" || variant === "black" ? "#FFFFFF" : "#14919B"}
+            color={
+              variant === "primary" || variant === "black"
+                ? "#FFFFFF"
+                : variant === "white"
+                  ? "#1A1D1F"
+                  : "#14919B"
+            }
             style={{ marginRight: 6 }}
           />
         ) : null}

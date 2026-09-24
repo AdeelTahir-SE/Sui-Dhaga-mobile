@@ -11,6 +11,7 @@ type TailorDashboardHeaderProps = {
   rightIcon?: keyof typeof Ionicons.glyphMap | null;
   onRightPress?: () => void;
   hideRightIcon?: boolean;
+  showDivider?: boolean;
 };
 
 export function TailorDashboardHeader({
@@ -22,6 +23,7 @@ export function TailorDashboardHeader({
   rightIcon = "notifications-outline",
   onRightPress,
   hideRightIcon = false,
+  showDivider = false,
 }: TailorDashboardHeaderProps) {
   return (
     <View className="px-5 pb-3 pt-2">
@@ -54,7 +56,7 @@ export function TailorDashboardHeader({
               {title}
             </Text>
             {subtitle ? (
-              <Text className="mt-0.5 text-[13px] font-medium text-brand-gray">
+              <Text className="mt-0.5 text-[12px] font-medium text-brand-gray">
                 {subtitle}
               </Text>
             ) : null}
@@ -75,6 +77,18 @@ export function TailorDashboardHeader({
           </TouchableOpacity>
         ) : null}
       </View>
+
+      {showDivider ? (
+        <View
+          style={{
+            height: 1,
+            backgroundColor: "#E2E8F0",
+            width: "100%",
+            marginTop: 12,
+            marginBottom: 2,
+          }}
+        />
+      ) : null}
     </View>
   );
 }

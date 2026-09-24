@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -22,12 +22,15 @@ import { useOrderDetails } from "../hooks/useOrders";
 import { conversationsApi } from "@/api/conversations.api";
 import { useAuthStore } from "@/stores/auth.store";
 import { ButtonTexture } from "@/components/ui/ButtonTexture";
+import { tailorsApi } from "@/api/tailors.api";
+import type { TailorItem } from "@/types/api";
 
 export default function OrderDetailsScreen() {
   const { orderId, from } = useLocalSearchParams<{ orderId?: string; from?: string }>();
   const { order, isLoading, updateOrderStatus } = useOrderDetails(orderId || "");
   const currentUser = useAuthStore((state) => state.user);
   const [isActionLoading, setIsActionLoading] = useState<"accept" | "reject" | "complete" | null>(null);
+  const [tailorInfo, setTailorInfo] = useState<TailorItem | null>(null);
 
   if (isLoading) {
     return (
@@ -102,8 +105,58 @@ export default function OrderDetailsScreen() {
     Object.keys(measurements).length > 0 &&
     (measurements.chest || measurements.waist || measurements.hips || measurements.shoulder);
 
+  useEffect(() => {
+    const tailorId = order?.tailorId || order?.tailor_id;
+    if (!tailorId) return;
+
+    let isMounted = true;
+    tailorsApi
+      .getTailorById(tailorId)
+      .then((res) => {
+        if (isMounted && res.data) {
+          setTailorInfo(res.data);
+        }
+      })
+      .catch(() => {
+        tailorsApi
+          .getTailors({ limit: 50 })
+          .then((allRes) => {
+            if (isMounted && allRes.data) {
+              const found = allRes.data.find(
+                (t) => t.id === tailorId || t.userId === tailorId
+              );
+              if (found) setTailorInfo(found);
+            }
+          })
+          .catch(() => {});
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [order?.tailorId, order?.tailor_id]);
+
+  const displayTailorName =
+    tailorInfo?.name || tailorInfo?.shopName || order?.tailorName || "Master Tailor";
+  const displayShopName =
+    tailorInfo?.shopName ||
+    tailorInfo?.businessName ||
+    (displayTailorName.includes("Tailor") ? displayTailorName : `${displayTailorName}'s Studio`);
+  const displayTailorAvatar =
+    tailorInfo?.avatar || tailorInfo?.avatarUrl || tailorInfo?.imageUrl || tailorInfo?.image || null;
+  const displayRating =
+    tailorInfo?.rating ? Number(tailorInfo.rating).toFixed(1) : "4.9";
+  const displayReviews =
+    tailorInfo?.reviewsCount ?? tailorInfo?.reviews ?? 28;
+  const displaySpecialty =
+    tailorInfo?.specialty || (tailorInfo?.specialties && tailorInfo.specialties[0]) || "Custom Tailoring";
+  const displayLocation =
+    tailorInfo?.city || tailorInfo?.address || "Available for fittings";
+  const displayTailorId =
+    tailorInfo?.id || order?.tailorId || order?.tailor_id || "";
+
   const handleMessage = () => {
-    const targetUserId = order?.tailorId || "";
+    const targetUserId = order?.tailorId || order?.tailor_id || "";
     router.push({
       pathname: "/messages/[conversationId]",
       params: {
@@ -111,7 +164,7 @@ export default function OrderDetailsScreen() {
         tailorId: targetUserId,
         clientId: currentUser?.id,
         recipientId: targetUserId,
-        name: tailorName,
+        name: displayTailorName,
       },
     } as any);
   };
@@ -186,16 +239,21 @@ export default function OrderDetailsScreen() {
         title="Order Details"
         leftIcon="arrow-back"
         onPressLeft={() => router.back()}
+        hideRightIcon={true}
+        titleClassName="text-[20px] font-black text-brand-dark tracking-tight"
       />
       <View className="px-5 pb-8">
         <View className="mb-4 flex-row items-start justify-between">
-          <View>
-            <Text className="text-[17px] font-bold text-brand-dark">
-              Order {orderNumber}
+          <View className="flex-1 mr-3">
+            <Text className="text-[23px] font-black text-brand-dark tracking-tight">
+              Order #{orderNumber}
             </Text>
-            <Text className="mt-1 text-[11px] text-brand-gray">
-              {order?.createdAt || order?.created_at || "Placed Recently"}
-            </Text>
+            <View className="mt-1 flex-row items-center">
+              <Ionicons name="calendar-outline" size={13} color="#64748B" style={{ marginRight: 4 }} />
+              <Text className="text-[12px] font-medium text-brand-gray">
+                {order?.createdAt || order?.created_at || "Placed Recently"}
+              </Text>
+            </View>
           </View>
           <StatusPill
             label={status}
@@ -354,24 +412,83 @@ export default function OrderDetailsScreen() {
 
           <View className="flex-1">
             <SectionLabel title="Tailor Information" />
-            <View className="rounded-xl border border-brand-border p-3 bg-white">
-              <PlaceholderImage size="sm" tone="coral" />
-              <Text className="mt-3 text-[13px] font-semibold text-brand-dark">
-                {tailorName}
-              </Text>
-              <View className="mt-1 flex-row items-center">
-                <Ionicons name="shield-checkmark" size={12} color="#14919B" />
-                <Text className="ml-1 text-[11px] text-brand-dark">
-                  Verified Tailor
-                </Text>
+            <View className="rounded-xl border border-brand-border p-3.5 bg-white shadow-2xs">
+              <View className="flex-row items-center">
+                {displayTailorAvatar ? (
+                  <Image
+                    source={{ uri: displayTailorAvatar }}
+                    style={{ width: 44, height: 44, borderRadius: 22 }}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View className="w-11 h-11 rounded-full bg-primary/10 border border-primary/20 items-center justify-center">
+                    <Ionicons name="cut-outline" size={20} color="#14919B" />
+                  </View>
+                )}
+                <View className="ml-2.5 flex-1">
+                  <Text className="text-[13px] font-bold text-brand-dark" numberOfLines={1}>
+                    {displayTailorName}
+                  </Text>
+                  <Text className="text-[11px] font-medium text-brand-gray" numberOfLines={1}>
+                    {displayShopName}
+                  </Text>
+                </View>
               </View>
-              <View className="mt-3 flex-row justify-between">
-                <TouchableOpacity onPress={handleMessage}>
-                  <Text className="text-[11px] font-medium text-primary">Message</Text>
+
+              <View className="mt-2.5 flex-row items-center justify-between border-t border-slate-100 pt-2">
+                <View className="flex-row items-center">
+                  <Ionicons name="star" size={13} color="#F59E0B" />
+                  <Text className="ml-1 text-[11px] font-bold text-brand-dark">
+                    {displayRating}
+                  </Text>
+                  <Text className="ml-0.5 text-[10px] text-brand-gray">
+                    ({displayReviews})
+                  </Text>
+                </View>
+                <View className="flex-row items-center bg-[#E0F7F7] px-1.5 py-0.5 rounded">
+                  <Ionicons name="shield-checkmark" size={11} color="#0D7377" />
+                  <Text className="ml-1 text-[10px] font-bold text-[#0D7377]">
+                    Verified
+                  </Text>
+                </View>
+              </View>
+
+              {displaySpecialty ? (
+                <View className="mt-2 flex-row items-center">
+                  <Ionicons name="sparkles-outline" size={11} color="#64748B" />
+                  <Text className="ml-1 text-[11px] font-medium text-brand-gray" numberOfLines={1}>
+                    {displaySpecialty}
+                  </Text>
+                </View>
+              ) : null}
+
+              {displayLocation ? (
+                <View className="mt-1 flex-row items-center">
+                  <Ionicons name="location-outline" size={11} color="#64748B" />
+                  <Text className="ml-1 text-[11px] font-medium text-brand-gray" numberOfLines={1}>
+                    {displayLocation}
+                  </Text>
+                </View>
+              ) : null}
+
+              <View className="mt-3 flex-row gap-2">
+                <TouchableOpacity
+                  onPress={handleMessage}
+                  className="flex-1 h-8 rounded-lg bg-[#E0F7F7] items-center justify-center flex-row"
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="chatbubble-ellipses-outline" size={12} color="#0D7377" style={{ marginRight: 3 }} />
+                  <Text className="text-[11px] font-bold text-[#0D7377]">Message</Text>
                 </TouchableOpacity>
-                {order?.tailorId ? (
-                  <TouchableOpacity onPress={() => router.push(`/tailors/${order.tailorId}` as any)}>
-                    <Text className="text-[11px] font-medium text-primary">Profile</Text>
+
+                {displayTailorId ? (
+                  <TouchableOpacity
+                    onPress={() => router.push(`/tailors/${displayTailorId}` as any)}
+                    className="flex-1 h-8 rounded-lg border border-brand-border bg-white items-center justify-center flex-row"
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="person-outline" size={12} color="#334155" style={{ marginRight: 3 }} />
+                    <Text className="text-[11px] font-bold text-brand-dark">Profile</Text>
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -428,7 +545,9 @@ export default function OrderDetailsScreen() {
                 style={{
                   height: 46,
                   flex: 1,
-                  backgroundColor: "#1A1D1F",
+                  backgroundColor: "#FFFFFF",
+                  borderWidth: 1,
+                  borderColor: "#CBD5E1",
                   borderRadius: 12,
                   alignItems: "center",
                   justifyContent: "center",
@@ -436,9 +555,9 @@ export default function OrderDetailsScreen() {
                 }}
               >
                 {isActionLoading === "reject" ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator size="small" color="#1A1D1F" />
                 ) : (
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#FFFFFF" }}>
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A1D1F" }}>
                     Reject Order
                   </Text>
                 )}

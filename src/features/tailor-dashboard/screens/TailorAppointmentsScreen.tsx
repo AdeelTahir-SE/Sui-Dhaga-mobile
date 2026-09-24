@@ -211,6 +211,8 @@ export default function TailorAppointmentsScreen() {
     >
       <TailorDashboardHeader
         title="Appointments"
+        subtitle="Manage client consultations & fitting schedules"
+        showDivider={true}
         hideRightIcon={true}
       />
 

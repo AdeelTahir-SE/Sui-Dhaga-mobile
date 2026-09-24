@@ -243,7 +243,11 @@ export default function TailorOrdersScreen() {
         />
       }
     >
-      <TailorDashboardHeader title="Orders" hideRightIcon={true} />
+      <TailorDashboardHeader
+        title="Orders"
+        subtitle="Track and manage client requests & stitching orders"
+        hideRightIcon={true}
+      />
 
       <View className="flex-1 px-5 pb-6">
         {/* Search Bar & Dedicated Filter Button (Customer Pages Style) */}

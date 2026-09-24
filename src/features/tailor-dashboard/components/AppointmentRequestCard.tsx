@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import type { ImageSource } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -28,7 +28,7 @@ export function AppointmentRequestCard({
   time,
   status,
   newRequest,
-  tone = "coral",
+  tone = "teal",
   onAccept,
   onReject,
   isProcessing,
@@ -56,31 +56,37 @@ export function AppointmentRequestCard({
     : "gold";
 
   return (
-    <View className="mb-3.5 rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
-      <View className="flex-row">
-        <TailorDashPlaceholder image={image} variant="person" size="sm" tone={tone} />
-        <View className="ml-3.5 flex-1">
-          <View className="flex-row items-start justify-between">
-            <Text className="text-[14px] font-bold text-brand-dark">{name}</Text>
-            <StatusPill
-              label={statusLabel}
-              tone={statusTone}
-            />
+    <View style={styles.card}>
+      <View style={styles.contentRow}>
+        <TailorDashPlaceholder image={image} variant="person" size="md" tone={tone} />
+        <View style={styles.infoCol}>
+          <View style={styles.headerRow}>
+            <Text style={styles.customerName} numberOfLines={1}>{name}</Text>
+            <StatusPill label={statusLabel} tone={statusTone} />
           </View>
-          <Text className="mt-1 text-[13px] font-semibold text-brand-dark">{service}</Text>
-          <View className="mt-2.5 flex-row items-center">
-            <Ionicons name="calendar-outline" size={14} color="#6F767E" />
-            <Text className="ml-1 mr-4 text-[12px] font-medium text-brand-gray">{date}</Text>
-            <Ionicons name="time-outline" size={14} color="#6F767E" />
-            <Text className="ml-1 text-[12px] font-medium text-brand-gray">{time}</Text>
+
+          <Text style={styles.serviceText} numberOfLines={1}>
+            {service}
+          </Text>
+
+          <View style={styles.scheduleRow}>
+            <View style={styles.scheduleBadge}>
+              <Ionicons name="calendar-outline" size={13} color="#078B87" style={{ marginRight: 4 }} />
+              <Text style={styles.scheduleText}>{date}</Text>
+            </View>
+            <View style={styles.scheduleBadge}>
+              <Ionicons name="time-outline" size={13} color="#078B87" style={{ marginRight: 4 }} />
+              <Text style={styles.scheduleText}>{time}</Text>
+            </View>
           </View>
         </View>
       </View>
+
       {newRequest ? (
-        <View className="mt-3 flex-row gap-3">
+        <View style={styles.actionsRow}>
           <DashActionButton
             title="Reject"
-            variant="outline"
+            variant="white"
             onPress={onReject}
             disabled={isProcessing}
           />
@@ -95,3 +101,74 @@ export function AppointmentRequestCard({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    marginBottom: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
+    padding: 14,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  contentRow: {
+    flexDirection: "row",
+  },
+  infoCol: {
+    marginLeft: 14,
+    flex: 1,
+    justifyContent: "center",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  customerName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+    flex: 1,
+    marginRight: 8,
+  },
+  serviceText: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#475569",
+  },
+  scheduleRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  scheduleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDFA",
+    borderWidth: 1,
+    borderColor: "#CCFBF1",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  scheduleText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#0F766E",
+  },
+  actionsRow: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+    flexDirection: "row",
+    gap: 10,
+  },
+});
