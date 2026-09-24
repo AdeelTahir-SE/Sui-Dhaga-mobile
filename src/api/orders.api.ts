@@ -44,6 +44,36 @@ export const ordersApi = {
     });
   },
 
+  async getOrderParties(id: string) {
+    return apiClient<{
+      orderId: string;
+      customer: {
+        id?: string;
+        fullName?: string;
+        phone?: string;
+        address?: string;
+        city?: string;
+        avatarUrl?: string;
+      } | null;
+      tailor: {
+        id?: string;
+        userId?: string;
+        name?: string;
+        shopName?: string;
+        phone?: string;
+        city?: string;
+        address?: string;
+        avatarUrl?: string;
+        rating?: number;
+        reviewCount?: number;
+        specialties?: string[];
+        verified?: boolean;
+      } | null;
+    }>(`/orders/${id}/parties`, {
+      method: 'GET',
+    });
+  },
+
   async createOrder(payload: CreateOrderPayload) {
     return apiClient<OrderItem>('/orders', {
       method: 'POST',

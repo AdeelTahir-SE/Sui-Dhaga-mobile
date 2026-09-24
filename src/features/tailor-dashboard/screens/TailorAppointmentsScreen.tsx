@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 import { AppointmentRequestCard } from "../components/AppointmentRequestCard";
 import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
@@ -212,7 +213,6 @@ export default function TailorAppointmentsScreen() {
       <TailorDashboardHeader
         title="Appointments"
         subtitle="Manage client consultations & fitting schedules"
-        showDivider={true}
         hideRightIcon={true}
       />
 
@@ -570,6 +570,12 @@ export default function TailorAppointmentsScreen() {
               newRequest={apt.newRequest}
               tone={apt.tone}
               isProcessing={processingId === apt.id}
+              onPress={() =>
+                router.push({
+                  pathname: "/appointments/[appointmentId]",
+                  params: { appointmentId: apt.id, from: "tailor" },
+                } as any)
+              }
               onAccept={() => handleAccept(apt.id, apt.name)}
               onReject={() => handleReject(apt.id, apt.name)}
             />

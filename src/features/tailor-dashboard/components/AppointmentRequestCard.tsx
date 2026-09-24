@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { ImageSource } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -15,6 +15,7 @@ type AppointmentRequestCardProps = {
   status?: string;
   newRequest?: boolean;
   tone?: "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
+  onPress?: () => void;
   onAccept?: () => void;
   onReject?: () => void;
   isProcessing?: boolean;
@@ -29,6 +30,7 @@ export function AppointmentRequestCard({
   status,
   newRequest,
   tone = "teal",
+  onPress,
   onAccept,
   onReject,
   isProcessing,
@@ -55,8 +57,11 @@ export function AppointmentRequestCard({
     ? "blue"
     : "gold";
 
+  const CardContainer = onPress ? TouchableOpacity : View;
+  const containerProps = onPress ? { activeOpacity: 0.88, onPress } : {};
+
   return (
-    <View style={styles.card}>
+    <CardContainer style={styles.card} {...containerProps}>
       <View style={styles.contentRow}>
         <TailorDashPlaceholder image={image} variant="person" size="md" tone={tone} />
         <View style={styles.infoCol}>
@@ -98,7 +103,7 @@ export function AppointmentRequestCard({
           />
         </View>
       ) : null}
-    </View>
+    </CardContainer>
   );
 }
 

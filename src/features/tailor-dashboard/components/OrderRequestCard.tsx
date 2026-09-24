@@ -57,6 +57,13 @@ export function OrderRequestCard({
     ? "blue"
     : "gold";
 
+  const displayId =
+    id && id.length > 12
+      ? id.startsWith("SD-")
+        ? id.slice(0, 10)
+        : id.slice(0, 8).toUpperCase()
+      : id;
+
   return (
     <TouchableOpacity
       activeOpacity={0.88}
@@ -64,13 +71,17 @@ export function OrderRequestCard({
       style={styles.card}
     >
       <View style={styles.contentRow}>
-        <TailorDashPlaceholder image={image} variant="garment" size="md" tone={tone} />
+        <TailorDashPlaceholder image={image} variant="garment" size="sm" tone={tone} />
         <View style={styles.infoCol}>
           <View style={styles.headerRow}>
             <View style={styles.idBadge}>
-              <Text style={styles.idText}>#{id}</Text>
+              <Text style={styles.idText} numberOfLines={1} ellipsizeMode="tail">
+                #{displayId}
+              </Text>
             </View>
-            <StatusPill label={statusLabel} tone={statusTone} />
+            <View style={styles.statusWrap}>
+              <StatusPill label={isPending ? "New" : statusLabel} tone={statusTone} />
+            </View>
           </View>
 
           <Text style={styles.itemTitle} numberOfLines={1}>
@@ -136,6 +147,7 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
     backgroundColor: "#FFFFFF",
     padding: 14,
+    overflow: "hidden",
     shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -144,22 +156,30 @@ const styles = StyleSheet.create({
   },
   contentRow: {
     flexDirection: "row",
+    alignItems: "center",
   },
   infoCol: {
-    marginLeft: 14,
+    marginLeft: 12,
     flex: 1,
+    minWidth: 0,
     justifyContent: "center",
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 6,
   },
   idBadge: {
     backgroundColor: "#F1F5F9",
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
+    maxWidth: "58%",
+    flexShrink: 1,
+  },
+  statusWrap: {
+    flexShrink: 0,
   },
   idText: {
     fontSize: 12,

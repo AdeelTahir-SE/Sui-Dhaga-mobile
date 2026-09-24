@@ -84,7 +84,10 @@ export function BookingOrdersHeader({
       >
         <Ionicons name={leftIcon} size={22} color="#1A1D1F" />
       </TouchableOpacity>
-      <Text className="text-[15px] font-semibold text-brand-dark">
+      <Text
+        className={titleClassName || "text-[17px] font-semibold text-brand-dark"}
+        numberOfLines={1}
+      >
         {title}
       </Text>
       {!hideRightIcon && rightIcon ? (

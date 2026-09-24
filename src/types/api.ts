@@ -88,6 +88,19 @@ export interface TailorItem {
   isProfileComplete?: boolean;
   services?: TailorServiceItem[];
   gallery?: ({ id?: string; imageUrl: string; caption?: string } | string)[];
+  verification_status?: string;
+  review_count?: number;
+  banner_url?: string;
+  profile?: {
+    id?: string;
+    fullName?: string;
+    full_name?: string;
+    phone?: string;
+    avatarUrl?: string;
+    avatar_url?: string;
+    address?: string;
+    name?: string;
+  };
 }
 
 export interface OrderItem {
@@ -102,6 +115,70 @@ export interface OrderItem {
   item_name?: string;
   tailorName?: string;
   customerName?: string;
+  customer_name?: string;
+  customerPhone?: string;
+  customer_phone?: string;
+  customerAvatar?: string;
+  customer_avatar?: string;
+  customerAddress?: string;
+  customer_address?: string;
+  customerCity?: string;
+  customer_city?: string;
+  customer?: {
+    id?: string;
+    fullName?: string;
+    full_name?: string;
+    name?: string;
+    phone?: string;
+    avatarUrl?: string;
+    avatar_url?: string;
+    address?: string;
+    city?: string;
+  };
+  tailorAvatar?: string;
+  tailor_avatar?: string;
+  tailorPhone?: string;
+  tailor_phone?: string;
+  tailorCity?: string;
+  tailor_city?: string;
+  tailorSpecialty?: string;
+  tailor_specialty?: string;
+  tailorSpecialties?: string[];
+  tailorRating?: number;
+  tailor_rating?: number;
+  tailorReviewCount?: number;
+  tailor_review_count?: number;
+  tailorShopName?: string;
+  tailor_shop_name?: string;
+  tailorVerified?: boolean;
+  tailor_verified?: boolean;
+  tailor?: {
+    id?: string;
+    userId?: string;
+    user_id?: string;
+    shopName?: string;
+    shop_name?: string;
+    name?: string;
+    city?: string;
+    address?: string;
+    rating?: number;
+    reviewCount?: number;
+    review_count?: number;
+    bannerUrl?: string;
+    banner_url?: string;
+    specialties?: string[];
+    verified?: boolean;
+    phone?: string;
+    profile?: {
+      id?: string;
+      fullName?: string;
+      full_name?: string;
+      phone?: string;
+      avatarUrl?: string;
+      avatar_url?: string;
+      address?: string;
+    };
+  };
   deliveryDate?: string;
   delivery_date?: string;
   dueDate?: string;
