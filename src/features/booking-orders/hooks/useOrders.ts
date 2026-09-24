@@ -74,10 +74,22 @@ export function useOrders(statusFilter?: string) {
   };
 
   const updateOrderStatus = async (orderId: string, status: OrderItem['status'] | string) => {
+    const s = String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
+    const displayStatus: OrderItem['status'] =
+      s === 'in_progress' || s === 'in progress' || s === 'accepted'
+        ? 'In Progress'
+        : s === 'completed' || s === 'done'
+        ? 'Completed'
+        : s === 'cancelled' || s === 'canceled' || s === 'declined' || s === 'rejected'
+        ? 'Cancelled'
+        : s === 'confirmed'
+        ? 'Confirmed'
+        : 'Pending';
+
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id === orderId || o.orderNumber === orderId) {
-          return { ...o, status: status as OrderItem['status'] };
+          return { ...o, status: displayStatus };
         }
         return o;
       })
@@ -87,6 +99,8 @@ export function useOrders(statusFilter?: string) {
       await ordersApi.updateOrderStatus(orderId, status);
     } catch (err: any) {
       console.warn('Failed to update order status via API:', err.message);
+    } finally {
+      await fetchOrders();
     }
   };
 
@@ -156,9 +170,25 @@ export function useOrderDetails(orderId: string) {
 
   const updateOrderStatus = async (status: OrderItem['status'] | string) => {
     if (!orderId) return;
-    setOrder((prev) => (prev ? { ...prev, status: status as OrderItem['status'] } : null));
+    const s = String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
+    const displayStatus: OrderItem['status'] =
+      s === 'in_progress' || s === 'in progress' || s === 'accepted'
+        ? 'In Progress'
+        : s === 'completed' || s === 'done'
+        ? 'Completed'
+        : s === 'cancelled' || s === 'canceled' || s === 'declined' || s === 'rejected'
+        ? 'Cancelled'
+        : s === 'confirmed'
+        ? 'Confirmed'
+        : 'Pending';
+
+    setOrder((prev) => (prev ? { ...prev, status: displayStatus } : null));
     try {
       await ordersApi.updateOrderStatus(orderId, status);
+      const res = await ordersApi.getOrderById(orderId);
+      if (res.data) {
+        setOrder(res.data);
+      }
     } catch (err: any) {
       console.warn('Failed to update order status:', err.message);
     }

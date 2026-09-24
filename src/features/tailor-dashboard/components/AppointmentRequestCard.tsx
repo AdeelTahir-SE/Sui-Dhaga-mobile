@@ -18,7 +18,9 @@ type AppointmentRequestCardProps = {
   onPress?: () => void;
   onAccept?: () => void;
   onReject?: () => void;
+  onComplete?: () => void;
   isProcessing?: boolean;
+  actionLoading?: "accept" | "reject" | "complete" | null;
 };
 
 export function AppointmentRequestCard({
@@ -33,11 +35,13 @@ export function AppointmentRequestCard({
   onPress,
   onAccept,
   onReject,
+  onComplete,
   isProcessing,
+  actionLoading,
 }: AppointmentRequestCardProps) {
   const normStatus = (status || (newRequest ? "requests" : "upcoming")).toLowerCase();
   const isCompleted = normStatus === "completed";
-  const isCancelled = normStatus === "cancelled" || normStatus === "canceled" || normStatus === "declined";
+  const isCancelled = normStatus === "cancelled" || normStatus === "canceled" || normStatus === "declined" || normStatus === "rejected";
   const isUpcoming = normStatus === "upcoming" || normStatus === "confirmed";
   const isPending = !isCompleted && !isCancelled && !isUpcoming;
 
@@ -87,22 +91,39 @@ export function AppointmentRequestCard({
         </View>
       </View>
 
-      {newRequest ? (
+      {isPending ? (
         <View style={styles.actionsRow}>
           <DashActionButton
             title="Reject"
             variant="white"
             onPress={onReject}
             disabled={isProcessing}
+            loading={actionLoading === "reject"}
           />
           <DashActionButton
             title="Accept"
             variant="primary"
             onPress={onAccept}
             disabled={isProcessing}
+            loading={actionLoading === "accept"}
           />
         </View>
-      ) : null}
+      ) : isUpcoming ? (
+        <View style={styles.actionsRow}>
+          <DashActionButton title="View Details" variant="outline" onPress={onPress} />
+          <DashActionButton
+            title="Mark Done"
+            variant="primary"
+            onPress={onComplete}
+            disabled={isProcessing}
+            loading={actionLoading === "complete"}
+          />
+        </View>
+      ) : (
+        <View style={styles.actionsRow}>
+          <DashActionButton title="View Details" variant="outline" onPress={onPress} />
+        </View>
+      )}
     </CardContainer>
   );
 }

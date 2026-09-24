@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 
 import { OrderRequestCard } from "../components/OrderRequestCard";
 import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
@@ -26,7 +26,13 @@ export default function TailorOrdersScreen() {
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [actionType, setActionType] = useState<"accept" | "reject" | null>(null);
+  const [actionType, setActionType] = useState<"accept" | "reject" | "complete" | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const handleOpenOrder = (orderId: string) => {
     if (!orderId) return;
@@ -40,10 +46,24 @@ export default function TailorOrdersScreen() {
     setProcessingId(orderId);
     setActionType("accept");
     try {
-      await updateOrderStatus(orderId, "In Progress");
+      await updateOrderStatus(orderId, "in_progress");
       Alert.alert("Order Accepted", `"${itemName}" is now in progress.`);
     } catch {
       Alert.alert("Error", "Could not accept order. Please try again.");
+    } finally {
+      setProcessingId(null);
+      setActionType(null);
+    }
+  };
+
+  const handleComplete = async (orderId: string, itemName: string) => {
+    setProcessingId(orderId);
+    setActionType("complete");
+    try {
+      await updateOrderStatus(orderId, "completed");
+      Alert.alert("Order Completed", `"${itemName}" has been marked as completed.`);
+    } catch {
+      Alert.alert("Error", "Could not complete order. Please try again.");
     } finally {
       setProcessingId(null);
       setActionType(null);
@@ -63,7 +83,7 @@ export default function TailorOrdersScreen() {
             setProcessingId(orderId);
             setActionType("reject");
             try {
-              await updateOrderStatus(orderId, "Cancelled");
+              await updateOrderStatus(orderId, "cancelled");
               Alert.alert("Order Declined", `The order request for "${itemName}" was declined.`);
             } catch {
               Alert.alert("Error", "Could not decline order. Please try again.");
@@ -611,6 +631,7 @@ export default function TailorOrdersScreen() {
                 tone={tones[index % tones.length]}
                 onPress={() => handleOpenOrder(orderRefId)}
                 onAccept={() => handleAccept(orderRefId, order.itemName || "Custom Garment")}
+                onComplete={() => handleComplete(orderRefId, order.itemName || "Custom Garment")}
                 onReject={() => handleReject(orderRefId, order.itemName || "Custom Garment")}
                 isProcessing={isCardProcessing}
                 actionLoading={isCardProcessing ? actionType : null}

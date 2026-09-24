@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { useAuthStore } from "@/stores/auth.store";
 import { useTailors } from "../../tailors/hooks/useTailors";
 import { CustomerHeader } from "../components/CustomerHeader";
 import { CustomerTabShell } from "../components/CustomerTabShell";
@@ -19,6 +20,13 @@ import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MainTailorCard } from "../components/MainTailorCard";
 
 export default function MainTailorsScreen() {
+  const user = useAuthStore((state) => state.user);
+  const params = useLocalSearchParams<{ from?: string; role?: string }>();
+  const isTailor =
+    user?.role === "tailor" ||
+    params.from === "tailor" ||
+    params.role === "tailor";
+
   const { tailors, isLoading, isRefreshing, refresh } = useTailors();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -160,7 +168,9 @@ export default function MainTailorsScreen() {
 
   return (
     <CustomerTabShell
-      bottomTabs={<CustomerTabsPreview active="Tailors" />}
+      bottomTabs={
+        isTailor ? undefined : <CustomerTabsPreview active="Tailors" />
+      }
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
@@ -174,6 +184,14 @@ export default function MainTailorsScreen() {
         title="Find Tailors"
         subtitle="Explore bespoke master tailors"
         hideRightIcon={true}
+        showBack={isTailor}
+        onBackPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace("/tailor-dashboard" as any);
+          }
+        }}
       />
       <View className="flex-1 px-5 pb-6">
         {/* Search Bar & Dedicated Distance Filter Button */}

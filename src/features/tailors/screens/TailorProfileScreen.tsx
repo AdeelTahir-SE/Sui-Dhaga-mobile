@@ -264,7 +264,11 @@ export default function TailorProfileScreen() {
 
   return (
     <TailorScreenShell
-      bottomTabs={<CustomerTabsPreview active="Tailors" />}
+      bottomTabs={
+        currentUser?.role === "tailor" ? undefined : (
+          <CustomerTabsPreview active="Tailors" />
+        )
+      }
       fixedBottomAction={
         <View className="flex-row gap-3">
           <TouchableOpacity
@@ -284,7 +288,10 @@ export default function TailorProfileScreen() {
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push(`/booking/${tailorId || "1"}` as never)}
+            onPress={() => {
+              const targetId = tailor?.id || tailor?.userId || tailorId || "1";
+              router.push(`/booking/${targetId}` as never);
+            }}
             className="h-[52px] flex-1 flex-row items-center justify-center rounded-xl bg-primary shadow-xs active:bg-primary-600"
           >
             <Ionicons name="calendar-outline" size={19} color="#FFFFFF" />

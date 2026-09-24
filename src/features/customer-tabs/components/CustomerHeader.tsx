@@ -1,6 +1,7 @@
 import { Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 type CustomerHeaderProps = {
   title: string;
@@ -10,6 +11,8 @@ type CustomerHeaderProps = {
   onRightPress?: () => void;
   centered?: boolean;
   hideRightIcon?: boolean;
+  showBack?: boolean;
+  onBackPress?: () => void;
 };
 
 export function CustomerHeader({
@@ -20,19 +23,44 @@ export function CustomerHeader({
   onRightPress,
   centered,
   hideRightIcon = false,
+  showBack = false,
+  onBackPress,
 }: CustomerHeaderProps) {
+  const handleBack = () => {
+    if (onBackPress) {
+      onBackPress();
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/tailor-dashboard" as any);
+    }
+  };
+
   return (
-    <View className={`px-5 pb-3 pt-2 ${centered ? "items-center" : ""}`}>
+    <View className={`px-5 pb-3 pt-2 ${centered && !showBack ? "items-center" : ""}`}>
       <View className="w-full flex-row items-center justify-between">
-        <View className={centered ? "flex-1 items-center" : "flex-1"}>
-          <Text className="text-[20px] font-black text-brand-dark tracking-tight">
-            {title}
-          </Text>
-          {subtitle ? (
-            <Text className="mt-0.5 text-[13px] font-medium text-brand-gray">
-              {subtitle}
+        <View className="flex-1 flex-row items-center">
+          {showBack && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              onPress={handleBack}
+              className="mr-3 h-10 w-10 items-center justify-center -ml-2 rounded-md active:bg-brand-surface"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="arrow-back" size={22} color="#1A1D1F" />
+            </TouchableOpacity>
+          )}
+          <View className={centered && !showBack ? "flex-1 items-center" : "flex-1"}>
+            <Text className="text-[20px] font-black text-brand-dark tracking-tight">
+              {title}
             </Text>
-          ) : null}
+            {subtitle ? (
+              <Text className="mt-0.5 text-[13px] font-medium text-brand-gray">
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
         </View>
         {!hideRightIcon && rightIcon ? (
           <TouchableOpacity

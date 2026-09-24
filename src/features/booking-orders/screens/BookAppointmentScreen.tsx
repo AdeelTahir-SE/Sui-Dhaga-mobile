@@ -19,6 +19,7 @@ import { InfoRow } from "../components/InfoRow";
 import { ButtonTexture } from "@/components/ui/ButtonTexture";
 import { useTailorDetails } from "../../tailors/hooks/useTailors";
 import { useAppointments } from "../hooks/useAppointments";
+import { useAuthStore } from "@/stores/auth.store";
 
 const TIME_SLOT_GROUPS = [
   {
@@ -114,6 +115,7 @@ export default function BookAppointmentScreen() {
 
   const { tailor, isLoading } = useTailorDetails(tailorId || "");
   const { appointments, createAppointment } = useAppointments();
+  const currentUser = useAuthStore((state) => state.user);
 
   // Multi-step wizard state (1: Schedule, 2: Notes, 3: Review & Confirm)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -260,7 +262,8 @@ export default function BookAppointmentScreen() {
     null;
 
   const avatarSource = rawAvatarUri ? { uri: rawAvatarUri } : null;
-  const targetTailorId = String(tailorId || tailor?.id || "").toLowerCase();
+  const resolvedTailorId = tailor?.id || tailorId || (tailor as any)?.userId || "";
+  const targetTailorId = String(resolvedTailorId).toLowerCase();
 
   /**
    * Checks whether a specific time slot is already booked on a given date for this tailor
@@ -355,6 +358,30 @@ export default function BookAppointmentScreen() {
   };
 
   const handleConfirmBooking = async () => {
+    if (!currentUser) {
+      Alert.alert(
+        "Sign In Required",
+        "Please log in to your account to confirm your appointment booking.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Log In",
+            onPress: () => router.push("/auth/login" as any),
+          },
+        ]
+      );
+      return;
+    }
+
+    const finalTailorId = tailor?.id || resolvedTailorId || tailorId;
+    if (!finalTailorId) {
+      Alert.alert(
+        "Tailor Not Found",
+        "Could not resolve tailor information. Please go back and select a tailor."
+      );
+      return;
+    }
+
     // Double-check slot availability before confirming
     if (isSlotBooked(selectedTime, isoDateStr)) {
       Alert.alert(
@@ -371,8 +398,8 @@ export default function BookAppointmentScreen() {
     setIsSubmitting(true);
     try {
       await createAppointment({
-        tailorId: targetTailorId,
-        tailor_id: targetTailorId,
+        tailorId: finalTailorId,
+        tailor_id: finalTailorId,
         appointment_date: isoDateStr,
         appointment_time: time24,
         appointmentDate: isoDateStr,

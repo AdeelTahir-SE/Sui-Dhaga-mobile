@@ -138,9 +138,16 @@ export const appointmentsApi = {
    * Update appointment status (pending, confirmed, completed, cancelled)
    */
   async updateAppointmentStatus(id: string, status: string) {
+    const s = String(status || '').trim().toLowerCase();
+    const mapped =
+      s === 'upcoming' || s === 'accepted'
+        ? 'confirmed'
+        : s === 'declined' || s === 'rejected'
+        ? 'cancelled'
+        : s;
     return apiClient<AppointmentItem>(`/appointments/${id}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status: status.toLowerCase() }),
+      body: JSON.stringify({ status: mapped }),
     });
   },
 

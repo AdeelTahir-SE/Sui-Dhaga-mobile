@@ -112,10 +112,12 @@ export default function OrderDetailsScreen() {
         .getTailorById(tailorId)
         .then((res) => {
           if (isMounted && res.data) {
+            const tData = res.data;
             setTailorInfo((prev) => ({
               ...(prev || {}),
-              ...res.data,
-            }));
+              ...tData,
+              id: tData.id || prev?.id || "",
+            } as TailorItem));
           }
         })
         .catch(() => {
@@ -130,7 +132,8 @@ export default function OrderDetailsScreen() {
                   setTailorInfo((prev) => ({
                     ...(prev || {}),
                     ...found,
-                  }));
+                    id: found.id || prev?.id || "",
+                  } as TailorItem));
                 }
               }
             })
@@ -406,7 +409,7 @@ export default function OrderDetailsScreen() {
   const handleAcceptOrder = async () => {
     setIsActionLoading("accept");
     try {
-      await updateOrderStatus("In Progress");
+      await updateOrderStatus("in_progress");
       Alert.alert("Order Accepted", `"${itemName}" is now in progress.`);
     } catch {
       Alert.alert("Error", "Could not accept order. Please try again.");
@@ -427,7 +430,7 @@ export default function OrderDetailsScreen() {
           onPress: async () => {
             setIsActionLoading("reject");
             try {
-              await updateOrderStatus("Cancelled");
+              await updateOrderStatus("cancelled");
               Alert.alert("Order Declined", `The order request for "${itemName}" was declined.`);
             } catch {
               Alert.alert("Error", "Could not decline order. Please try again.");
@@ -443,7 +446,7 @@ export default function OrderDetailsScreen() {
   const handleCompleteOrder = async () => {
     setIsActionLoading("complete");
     try {
-      await updateOrderStatus("Completed");
+      await updateOrderStatus("completed");
       Alert.alert("Order Completed", `"${itemName}" has been marked as completed.`);
     } catch {
       Alert.alert("Error", "Could not update order status. Please try again.");
@@ -465,22 +468,17 @@ export default function OrderDetailsScreen() {
         {/* Prominent Order Heading Block */}
         <View className="mb-4">
           <View className="flex-row items-center justify-between mb-1.5">
-            <View className="flex-row items-center flex-1 mr-2">
-              <View className="bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20 mr-2">
-                <Text className="text-[11px] font-black text-primary">ORDER</Text>
-              </View>
-              <Text className="text-[25px] font-black text-brand-dark tracking-tight flex-shrink" numberOfLines={1}>
-                #{orderNumber}
-              </Text>
-            </View>
+            <Text className="text-[25px] font-black text-brand-dark tracking-tight flex-1 mr-2" numberOfLines={1}>
+              #{orderNumber}
+            </Text>
             <StatusPill
               label={status}
               tone={status === "Completed" ? "green" : status === "Cancelled" ? "red" : "gold"}
             />
           </View>
-          <View className="flex-row items-center">
-            <Ionicons name="calendar-outline" size={13} color="#64748B" style={{ marginRight: 4 }} />
-            <Text className="text-[12px] font-medium text-brand-gray">
+          <View className="flex-row items-center mt-1">
+            <Ionicons name="calendar-outline" size={15} color="#64748B" style={{ marginRight: 6 }} />
+            <Text className="text-[14px] font-semibold text-brand-gray">
               Placed on {order?.createdAt || order?.created_at || "Recently"}
             </Text>
           </View>

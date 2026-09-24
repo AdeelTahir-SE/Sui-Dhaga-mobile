@@ -43,12 +43,115 @@ const roles: { id: Role; title: string; description: string; image: any }[] = [
   },
 ];
 
-const countryOptions = [
-  { code: "+92", flag: "🇵🇰", label: "Pakistan" },
-  { code: "+91", flag: "🇮🇳", label: "India" },
-  { code: "+971", flag: "🇦🇪", label: "UAE" },
-  { code: "+1", flag: "🇺🇸", label: "USA/CA" },
-  { code: "+44", flag: "🇬🇧", label: "UK" },
+interface CountryConfig {
+  code: string;
+  flag: string;
+  label: string;
+  placeholder: string;
+  maxLength: number;
+  hint: string;
+  validate: (digits: string) => { isValid: boolean; error?: string };
+}
+
+const countryOptions: CountryConfig[] = [
+  {
+    code: "+92",
+    flag: "🇵🇰",
+    label: "Pakistan",
+    placeholder: "3001234567",
+    maxLength: 11,
+    hint: "Digits only · 10 or 11 digits (e.g. 3001234567 or 03001234567)",
+    validate: (digits: string) => {
+      if (digits.startsWith("0")) {
+        if (!/^03\d{9}$/.test(digits)) {
+          return {
+            isValid: false,
+            error: "Pakistani number starting with 0 must be 11 digits starting with 03 (e.g., 03001234567).",
+          };
+        }
+      } else {
+        if (!/^3\d{9}$/.test(digits)) {
+          return {
+            isValid: false,
+            error: "Pakistani mobile number must be 10 digits starting with 3 (e.g., 3001234567).",
+          };
+        }
+      }
+      return { isValid: true };
+    },
+  },
+  {
+    code: "+91",
+    flag: "🇮🇳",
+    label: "India",
+    placeholder: "9876543210",
+    maxLength: 11,
+    hint: "Digits only · 10 digits starting with 6-9",
+    validate: (digits: string) => {
+      const clean = digits.replace(/^0+/, "");
+      if (!/^[6-9]\d{9}$/.test(clean)) {
+        return {
+          isValid: false,
+          error: "Please enter a valid 10-digit Indian mobile number starting with 6-9.",
+        };
+      }
+      return { isValid: true };
+    },
+  },
+  {
+    code: "+971",
+    flag: "🇦🇪",
+    label: "UAE",
+    placeholder: "501234567",
+    maxLength: 10,
+    hint: "Digits only · 9 digits starting with 5",
+    validate: (digits: string) => {
+      const clean = digits.replace(/^0+/, "");
+      if (!/^5\d{8}$/.test(clean)) {
+        return {
+          isValid: false,
+          error: "Please enter a valid 9-digit UAE mobile number starting with 5 (e.g., 501234567).",
+        };
+      }
+      return { isValid: true };
+    },
+  },
+  {
+    code: "+1",
+    flag: "🇺🇸",
+    label: "USA/CA",
+    placeholder: "4155552671",
+    maxLength: 10,
+    hint: "Digits only · 10-digit phone number",
+    validate: (digits: string) => {
+      const clean = digits.replace(/^0+/, "");
+      if (!/^[2-9]\d{9}$/.test(clean)) {
+        return {
+          isValid: false,
+          error: "Please enter a valid 10-digit US/Canada phone number.",
+        };
+      }
+      return { isValid: true };
+    },
+  },
+  {
+    code: "+44",
+    flag: "🇬🇧",
+    label: "UK",
+    placeholder: "7911123456",
+    maxLength: 11,
+    hint: "Digits only · 10-11 digits starting with 7",
+    validate: (digits: string) => {
+      const clean = digits.replace(/^0+/, "");
+      if (!/^7\d{9}$/.test(clean)) {
+        return {
+          isValid: false,
+          error: "Please enter a valid UK mobile number starting with 7 (e.g., 7911123456).",
+        };
+      }
+      return { isValid: true };
+    },
+  },
 ];
 
 export default function RegisterScreen() {
@@ -132,8 +235,16 @@ export default function RegisterScreen() {
     }
 
     const rawPhoneDigits = phone.trim().replace(/\D/g, "");
-    if (rawPhoneDigits.length > 0 && rawPhoneDigits.length < 7) {
-      setErrorMessage("Please enter a valid phone number (at least 7 digits).");
+    if (!rawPhoneDigits) {
+      setErrorMessage("Please enter your phone number.");
+      return;
+    }
+
+    const phoneValidation = currentCountry.validate(rawPhoneDigits);
+    if (!phoneValidation.isValid) {
+      setErrorMessage(
+        phoneValidation.error || "Please enter a valid phone number.",
+      );
       return;
     }
 
@@ -556,9 +667,14 @@ export default function RegisterScreen() {
 
                 {/* Phone Number */}
                 <View className="mb-5">
-                  <Text className="text-[13px] font-medium text-brand-dark mb-1.5">
-                    Phone Number
-                  </Text>
+                  <View className="flex-row items-center justify-between mb-1.5">
+                    <Text className="text-[13px] font-medium text-brand-dark">
+                      Phone Number *
+                    </Text>
+                    <Text className="text-[11px] text-brand-gray">
+                      {phone.length}/{currentCountry.maxLength} digits
+                    </Text>
+                  </View>
                   <View className="flex-row items-center border border-brand-border rounded-xl h-[52px] bg-white overflow-hidden">
                     {/* Country Code Selector */}
                     <TouchableOpacity
@@ -579,19 +695,34 @@ export default function RegisterScreen() {
                         style={{ marginLeft: 3 }}
                       />
                     </TouchableOpacity>
-                    {/* Phone Input */}
+                    {/* Phone Input with strict digit restriction & max length */}
                     <TextInput
                       className="flex-1 text-[15px] text-brand-dark px-3 h-full"
-                      placeholder="3001234567"
+                      placeholder={currentCountry.placeholder}
                       placeholderTextColor="#9CA3AF"
                       value={phone}
                       onChangeText={(text) => {
-                        setPhone(text);
+                        const digitsOnly = text.replace(/[^0-9]/g, "");
+                        const limited = digitsOnly.slice(0, currentCountry.maxLength);
+                        setPhone(limited);
                         if (errorMessage) setErrorMessage(null);
                       }}
                       keyboardType="phone-pad"
+                      maxLength={currentCountry.maxLength}
                     />
+                    {phone.length > 0 && (
+                      <TouchableOpacity
+                        onPress={() => setPhone("")}
+                        className="pr-3 pl-1"
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Ionicons name="close-circle" size={17} color="#9CA3AF" />
+                      </TouchableOpacity>
+                    )}
                   </View>
+                  <Text className="text-[11px] text-brand-gray mt-1 ml-1">
+                    {currentCountry.hint}
+                  </Text>
 
                   {/* Country Code Picker Dropdown */}
                   {showCountryPicker && (
@@ -602,6 +733,9 @@ export default function RegisterScreen() {
                           onPress={() => {
                             setSelectedCountryIndex(idx);
                             setShowCountryPicker(false);
+                            if (phone.length > countryOptions[idx].maxLength) {
+                              setPhone(phone.slice(0, countryOptions[idx].maxLength));
+                            }
                           }}
                           className={`flex-row items-center justify-between px-3 py-2 rounded-lg ${
                             selectedCountryIndex === idx ? "bg-primary-light" : ""

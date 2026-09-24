@@ -17,8 +17,9 @@ type OrderRequestCardProps = {
   onPress?: () => void;
   onAccept?: () => void;
   onReject?: () => void;
+  onComplete?: () => void;
   isProcessing?: boolean;
-  actionLoading?: "accept" | "reject" | null;
+  actionLoading?: "accept" | "reject" | "complete" | null;
 };
 
 export function OrderRequestCard({
@@ -32,6 +33,7 @@ export function OrderRequestCard({
   onPress,
   onAccept,
   onReject,
+  onComplete,
   isProcessing,
   actionLoading,
 }: OrderRequestCardProps) {
@@ -125,9 +127,9 @@ export function OrderRequestCard({
           <DashActionButton
             title="Mark Done"
             variant="primary"
-            onPress={onAccept}
+            onPress={onComplete || onAccept}
             disabled={isProcessing}
-            loading={actionLoading === "accept"}
+            loading={actionLoading === "complete"}
           />
         </View>
       ) : (

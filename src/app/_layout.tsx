@@ -9,6 +9,7 @@ import "../global.css";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "../stores/auth.store";
+import { AuthRequiredModal } from "../features/auth/components/AuthRequiredModal";
 
 // Ensure auth session from deep linking is completed on app resume
 WebBrowser.maybeCompleteAuthSession();
@@ -41,6 +42,7 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: "#FFFFFF" },
           }}
         />
+        <AuthRequiredModal />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

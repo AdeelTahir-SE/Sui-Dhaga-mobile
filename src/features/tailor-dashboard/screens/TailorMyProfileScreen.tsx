@@ -475,7 +475,12 @@ export default function TailorMyProfileScreen() {
                 subtitle="See how customers discover your profile"
                 icon="eye-outline"
                 isLast
-                onPress={() => router.push("/tailors" as any)}
+                onPress={() =>
+                  router.push({
+                    pathname: "/tailors",
+                    params: { from: "tailor" },
+                  } as any)
+                }
               />
             </View>
           </View>

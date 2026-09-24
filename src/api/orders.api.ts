@@ -82,9 +82,23 @@ export const ordersApi = {
   },
 
   async updateOrderStatus(id: string, status: string) {
+    const s = String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
+    let backendStatus = s;
+    if (s === 'in_progress' || s === 'in progress' || s === 'accepted') {
+      backendStatus = 'in_progress';
+    } else if (s === 'declined' || s === 'rejected' || s === 'cancelled' || s === 'canceled') {
+      backendStatus = 'cancelled';
+    } else if (s === 'confirmed' || s === 'upcoming') {
+      backendStatus = 'confirmed';
+    } else if (s === 'completed' || s === 'done') {
+      backendStatus = 'completed';
+    } else if (s === 'pending' || s === 'requests' || s === 'new') {
+      backendStatus = 'pending';
+    }
+
     return apiClient<OrderItem>(`/orders/${id}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: backendStatus }),
     });
   },
 

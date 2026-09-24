@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   RefreshControl,
   ScrollView,
@@ -10,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 
 import { AppointmentRequestCard } from "../components/AppointmentRequestCard";
 import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
@@ -32,6 +33,13 @@ export default function TailorAppointmentsScreen() {
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [actionType, setActionType] = useState<"accept" | "reject" | "complete" | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const filterOptions = [
     {
@@ -73,24 +81,57 @@ export default function TailorAppointmentsScreen() {
 
   const handleAccept = async (id: string, name: string) => {
     setProcessingId(id);
+    setActionType("accept");
     try {
-      await updateStatus(id, "Upcoming");
+      await updateStatus(id, "confirmed");
+      Alert.alert("Appointment Accepted", `Appointment with "${name}" is now confirmed.`);
     } catch {
-      // Handled
+      Alert.alert("Error", "Could not confirm appointment. Please try again.");
     } finally {
       setProcessingId(null);
+      setActionType(null);
     }
   };
 
-  const handleReject = async (id: string, name: string) => {
+  const handleComplete = async (id: string, name: string) => {
     setProcessingId(id);
+    setActionType("complete");
     try {
-      await cancelAppointment(id, "Declined by tailor");
+      await updateStatus(id, "completed");
+      Alert.alert("Appointment Completed", `Appointment with "${name}" has been marked as completed.`);
     } catch {
-      // Handled
+      Alert.alert("Error", "Could not complete appointment. Please try again.");
     } finally {
       setProcessingId(null);
+      setActionType(null);
     }
+  };
+
+  const handleReject = (id: string, name: string) => {
+    Alert.alert(
+      "Decline Appointment",
+      `Are you sure you want to decline this appointment with "${name}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Decline",
+          style: "destructive",
+          onPress: async () => {
+            setProcessingId(id);
+            setActionType("reject");
+            try {
+              await cancelAppointment(id, "Declined by tailor");
+              Alert.alert("Appointment Declined", `The appointment request from "${name}" was declined.`);
+            } catch {
+              Alert.alert("Error", "Could not decline appointment. Please try again.");
+            } finally {
+              setProcessingId(null);
+              setActionType(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const allAppointments = useMemo(() => {
@@ -570,6 +611,7 @@ export default function TailorAppointmentsScreen() {
               newRequest={apt.newRequest}
               tone={apt.tone}
               isProcessing={processingId === apt.id}
+              actionLoading={processingId === apt.id ? actionType : null}
               onPress={() =>
                 router.push({
                   pathname: "/appointments/[appointmentId]",
@@ -578,6 +620,7 @@ export default function TailorAppointmentsScreen() {
               }
               onAccept={() => handleAccept(apt.id, apt.name)}
               onReject={() => handleReject(apt.id, apt.name)}
+              onComplete={() => handleComplete(apt.id, apt.name)}
             />
           ))
         )}

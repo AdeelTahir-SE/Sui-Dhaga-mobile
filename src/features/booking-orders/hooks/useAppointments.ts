@@ -190,13 +190,30 @@ export function useAppointments(statusFilter?: string) {
   };
 
   const cancelAppointment = async (id: string, reason?: string) => {
-    await appointmentsApi.cancelAppointment(id, reason);
-    await fetchAppointments();
+    setAppointments((prev) =>
+      prev.map((apt) =>
+        apt.id === id ? { ...apt, status: 'Cancelled' } : apt
+      )
+    );
+    try {
+      await appointmentsApi.cancelAppointment(id, reason);
+    } finally {
+      await fetchAppointments();
+    }
   };
 
   const updateStatus = async (id: string, newStatus: string) => {
-    await appointmentsApi.updateAppointmentStatus(id, newStatus);
-    await fetchAppointments();
+    const formatted = newStatus.charAt(0).toUpperCase() + newStatus.slice(1).toLowerCase();
+    setAppointments((prev) =>
+      prev.map((apt) =>
+        apt.id === id ? { ...apt, status: formatted } : apt
+      )
+    );
+    try {
+      await appointmentsApi.updateAppointmentStatus(id, newStatus);
+    } finally {
+      await fetchAppointments();
+    }
   };
 
   const rescheduleAppointment = async (
@@ -256,14 +273,23 @@ export function useAppointmentDetails(appointmentId?: string) {
 
   const cancelAppointment = async (reason?: string) => {
     if (!appointmentId) return;
-    await appointmentsApi.cancelAppointment(appointmentId, reason);
-    await fetchAppointment();
+    setAppointment((prev) => (prev ? { ...prev, status: 'Cancelled' } : null));
+    try {
+      await appointmentsApi.cancelAppointment(appointmentId, reason);
+    } finally {
+      await fetchAppointment();
+    }
   };
 
   const updateStatus = async (newStatus: string) => {
     if (!appointmentId) return;
-    await appointmentsApi.updateAppointmentStatus(appointmentId, newStatus);
-    await fetchAppointment();
+    const formatted = newStatus.charAt(0).toUpperCase() + newStatus.slice(1).toLowerCase();
+    setAppointment((prev) => (prev ? { ...prev, status: formatted } : null));
+    try {
+      await appointmentsApi.updateAppointmentStatus(appointmentId, newStatus);
+    } finally {
+      await fetchAppointment();
+    }
   };
 
   const rescheduleAppointment = async (payload: {
