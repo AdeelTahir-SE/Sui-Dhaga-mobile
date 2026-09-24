@@ -16,6 +16,8 @@ type OrderRequestCardProps = {
   onPress?: () => void;
   onAccept?: () => void;
   onReject?: () => void;
+  isProcessing?: boolean;
+  actionLoading?: "accept" | "reject" | null;
 };
 
 export function OrderRequestCard({
@@ -29,6 +31,8 @@ export function OrderRequestCard({
   onPress,
   onAccept,
   onReject,
+  isProcessing,
+  actionLoading,
 }: OrderRequestCardProps) {
   const normStatus = (status || "new").toLowerCase();
   const isPending = normStatus === "pending" || normStatus === "new";
@@ -78,13 +82,31 @@ export function OrderRequestCard({
       </View>
       {isPending ? (
         <View className="mt-3 flex-row gap-3">
-          <DashActionButton title="Reject" variant="outline" onPress={onReject} />
-          <DashActionButton title="Accept" onPress={onAccept} />
+          <DashActionButton
+            title="Reject"
+            variant="black"
+            onPress={onReject}
+            disabled={isProcessing}
+            loading={actionLoading === "reject"}
+          />
+          <DashActionButton
+            title="Accept"
+            variant="primary"
+            onPress={onAccept}
+            disabled={isProcessing}
+            loading={actionLoading === "accept"}
+          />
         </View>
       ) : isInProgress ? (
         <View className="mt-3 flex-row gap-3">
           <DashActionButton title="View Details" variant="outline" onPress={onPress} />
-          <DashActionButton title="Mark Done" onPress={onAccept} />
+          <DashActionButton
+            title="Mark Done"
+            variant="primary"
+            onPress={onAccept}
+            disabled={isProcessing}
+            loading={actionLoading === "accept"}
+          />
         </View>
       ) : (
         <View className="mt-3 flex-row gap-3">

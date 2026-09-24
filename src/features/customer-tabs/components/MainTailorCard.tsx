@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 type MainTailorCardProps = {
   id?: string;
@@ -228,8 +229,9 @@ export function MainTailorCard({
           onPress={handleCardPress}
           style={styles.viewProfileCta}
         >
+          <ButtonTexture variant="greenish" borderRadius={10} />
           <Text style={styles.viewProfileCtaText}>View Profile</Text>
-          <Ionicons name="arrow-forward" size={14} color="#FFFFFF" style={{ marginLeft: 3 }} />
+          <Ionicons name="arrow-forward" size={14} color="#FFFFFF" style={{ marginLeft: 3, zIndex: 1 }} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -456,6 +458,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+    position: "relative",
     shadowColor: "#078B87",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.22,
@@ -466,6 +470,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#FFFFFF",
+    zIndex: 1,
   },
 });
 

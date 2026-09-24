@@ -73,6 +73,23 @@ export function useOrders(statusFilter?: string) {
     return res;
   };
 
+  const updateOrderStatus = async (orderId: string, status: OrderItem['status'] | string) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === orderId || o.orderNumber === orderId) {
+          return { ...o, status: status as OrderItem['status'] };
+        }
+        return o;
+      })
+    );
+
+    try {
+      await ordersApi.updateOrderStatus(orderId, status);
+    } catch (err: any) {
+      console.warn('Failed to update order status via API:', err.message);
+    }
+  };
+
   return {
     orders,
     isLoading,
@@ -80,6 +97,7 @@ export function useOrders(statusFilter?: string) {
     error,
     refresh,
     createOrder,
+    updateOrderStatus,
   };
 }
 
@@ -95,20 +113,40 @@ export function useOrderDetails(orderId: string) {
     setIsLoading(true);
     setError(null);
 
+    const fallbackSearch = async () => {
+      try {
+        const listRes = await ordersApi.getMyOrders().catch(() => ordersApi.getOrders());
+        const found = (listRes.data || []).find(
+          (o) => o.id === orderId || o.orderNumber === orderId
+        );
+        if (isMounted && found) {
+          setOrder(found);
+          setError(null);
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // ignore
+      }
+      if (isMounted) {
+        setError('Order not found');
+        setIsLoading(false);
+      }
+    };
+
     ordersApi.getOrderById(orderId)
       .then((res) => {
         if (isMounted) {
-          setOrder(res.data || null);
+          if (res.data) {
+            setOrder(res.data);
+            setIsLoading(false);
+          } else {
+            fallbackSearch();
+          }
         }
       })
-      .catch((err) => {
-        if (isMounted) {
-          setError(err.message);
-          setOrder(null);
-        }
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
+      .catch(() => {
+        fallbackSearch();
       });
 
     return () => {
@@ -116,5 +154,15 @@ export function useOrderDetails(orderId: string) {
     };
   }, [orderId]);
 
-  return { order, isLoading, error };
+  const updateOrderStatus = async (status: OrderItem['status'] | string) => {
+    if (!orderId) return;
+    setOrder((prev) => (prev ? { ...prev, status: status as OrderItem['status'] } : null));
+    try {
+      await ordersApi.updateOrderStatus(orderId, status);
+    } catch (err: any) {
+      console.warn('Failed to update order status:', err.message);
+    }
+  };
+
+  return { order, isLoading, error, updateOrderStatus };
 }

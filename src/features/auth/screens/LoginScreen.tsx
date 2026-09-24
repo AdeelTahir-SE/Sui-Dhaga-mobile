@@ -124,26 +124,16 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Back Button */}
-          {router.canGoBack() ? (
-            <TouchableOpacity
-              onPress={() => router.back()}
-              className="ml-4 mt-2 w-10 h-10 items-center justify-center"
-            >
-              <Ionicons name="arrow-back" size={24} color="#1A1D1F" />
-            </TouchableOpacity>
-          ) : null}
-
           <View className="px-6 flex-1">
-            {/* Logo */}
-            <View className="flex-row items-center mt-5 mb-1">
+            {/* Logo Header */}
+            <View className="flex-row items-center justify-center mt-5 mb-2">
               <Image
                 source={logoImg}
-                className="w-10 h-10 mr-2.5"
+                className="w-9 h-9 mr-2.5"
                 resizeMode="contain"
               />
               <Text
-                className="text-[26px] text-brand-dark font-semibold"
+                className="text-[24px] text-brand-dark font-bold"
                 style={{
                   fontFamily:
                     Platform.OS === "ios" ? "Georgia" : "serif",

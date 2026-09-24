@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   RefreshControl,
   ScrollView,
@@ -10,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 import { OrderRequestCard } from "../components/OrderRequestCard";
 import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
@@ -18,11 +20,62 @@ import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 import { useOrders } from "../../booking-orders/hooks/useOrders";
 
 export default function TailorOrdersScreen() {
-  const { orders, isLoading, isRefreshing, refresh } = useOrders();
+  const { orders, isLoading, isRefreshing, refresh, updateOrderStatus } = useOrders();
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [actionType, setActionType] = useState<"accept" | "reject" | null>(null);
+
+  const handleOpenOrder = (orderId: string) => {
+    if (!orderId) return;
+    router.push({
+      pathname: "/orders/[orderId]",
+      params: { orderId, from: "tailor" },
+    } as any);
+  };
+
+  const handleAccept = async (orderId: string, itemName: string) => {
+    setProcessingId(orderId);
+    setActionType("accept");
+    try {
+      await updateOrderStatus(orderId, "In Progress");
+      Alert.alert("Order Accepted", `"${itemName}" is now in progress.`);
+    } catch {
+      Alert.alert("Error", "Could not accept order. Please try again.");
+    } finally {
+      setProcessingId(null);
+      setActionType(null);
+    }
+  };
+
+  const handleReject = (orderId: string, itemName: string) => {
+    Alert.alert(
+      "Reject Order Request",
+      `Are you sure you want to decline this request for "${itemName}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reject",
+          style: "destructive",
+          onPress: async () => {
+            setProcessingId(orderId);
+            setActionType("reject");
+            try {
+              await updateOrderStatus(orderId, "Cancelled");
+              Alert.alert("Order Declined", `The order request for "${itemName}" was declined.`);
+            } catch {
+              Alert.alert("Error", "Could not decline order. Please try again.");
+            } finally {
+              setProcessingId(null);
+              setActionType(null);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const filterOptions = [
     {
@@ -539,6 +592,8 @@ export default function TailorOrdersScreen() {
               (order.designImages && order.designImages.length > 0 ? order.designImages[0] : null) ||
               (order.design_images && order.design_images.length > 0 ? order.design_images[0] : null);
             const img = firstDesign ? { uri: firstDesign } : undefined;
+            const orderRefId = order.id || order.orderNumber || "";
+            const isCardProcessing = processingId === orderRefId;
 
             return (
               <OrderRequestCard
@@ -550,6 +605,11 @@ export default function TailorOrdersScreen() {
                 customer={order.customerName || "Customer"}
                 status={order.status}
                 tone={tones[index % tones.length]}
+                onPress={() => handleOpenOrder(orderRefId)}
+                onAccept={() => handleAccept(orderRefId, order.itemName || "Custom Garment")}
+                onReject={() => handleReject(orderRefId, order.itemName || "Custom Garment")}
+                isProcessing={isCardProcessing}
+                actionLoading={isCardProcessing ? actionType : null}
               />
             );
           })

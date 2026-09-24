@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { RatingLine } from "./RatingLine";
 import { TailorBadge } from "./TailorBadge";
 import { TailorPlaceholder } from "./TailorPlaceholder";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 type TailorListCardProps = {
   id?: string;
@@ -61,9 +62,20 @@ export function TailorListCard({
       </View>
       <TouchableOpacity
         onPress={handleViewProfile}
-        className="mt-3 self-end rounded-md border border-primary px-5 py-2"
+        activeOpacity={0.82}
+        style={{
+          marginTop: 12,
+          alignSelf: "flex-end",
+          borderRadius: 6,
+          overflow: "hidden",
+          position: "relative",
+          paddingHorizontal: 20,
+          paddingVertical: 8,
+          backgroundColor: "#078B87",
+        }}
       >
-        <Text className="text-[12px] font-semibold text-primary">
+        <ButtonTexture variant="greenish" borderRadius={6} />
+        <Text style={{ fontSize: 12, fontWeight: "600", color: "#FFFFFF", zIndex: 1 }}>
           View Profile
         </Text>
       </TouchableOpacity>

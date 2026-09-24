@@ -175,9 +175,12 @@ export default function ForgotPasswordScreen() {
 
             {/* Back to Login */}
             <AuthButton
-              title="← Back to Login"
+              title="Back to Login"
               onPress={() => router.push("/auth/login" as any)}
               variant="outlined"
+              icon="arrow-back"
+              textColor="#1A1D1F"
+              iconColor="#1A1D1F"
             />
           </View>
 

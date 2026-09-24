@@ -21,6 +21,8 @@ type AuthButtonProps = {
   style?: ViewStyle;
   className?: string;
   borderRadius?: number;
+  textColor?: string;
+  iconColor?: string;
 };
 
 export function AuthButton({
@@ -35,6 +37,8 @@ export function AuthButton({
   style,
   className = "",
   borderRadius,
+  textColor,
+  iconColor,
 }: AuthButtonProps) {
   const isPrimary = variant === "primary";
   const isDanger = variant === "danger";
@@ -54,8 +58,10 @@ export function AuthButton({
     : "bg-white border-[1.5px] border-brand-border";
 
   const heightStyle = isDanger ? "h-[44px]" : "h-[54px]";
-  const textColor = isOutlined ? "text-[#00949D]" : "text-white";
-  const iconColor = isOutlined ? "#00949D" : "#FFFFFF";
+  const defaultTextColor = isOutlined ? "#00949D" : "#FFFFFF";
+  const resolvedTextColor = textColor ?? defaultTextColor;
+  const defaultIconColor = isOutlined ? "#00949D" : "#FFFFFF";
+  const resolvedIconColor = iconColor ?? defaultIconColor;
 
   return (
     <TouchableOpacity
@@ -79,7 +85,7 @@ export function AuthButton({
 
       {loading ? (
         <ActivityIndicator
-          color={isOutlined ? "#00949D" : "#FFFFFF"}
+          color={resolvedIconColor}
           size="small"
         />
       ) : (
@@ -88,14 +94,15 @@ export function AuthButton({
             <Ionicons
               name={icon}
               size={18}
-              color={iconColor}
+              color={resolvedIconColor}
               style={{ marginRight: 8 }}
             />
           )}
           <Text
-            className={`text-base font-bold tracking-wide ${textColor}`}
+            className="text-base font-bold tracking-wide"
             style={{
-              textShadowColor: !isOutlined ? "rgba(0,0,0,0.22)" : "transparent",
+              color: resolvedTextColor,
+              textShadowColor: !isOutlined ? "rgba(0,0,0,0.3)" : "transparent",
               textShadowOffset: { width: 0, height: 1 },
               textShadowRadius: 2,
             }}

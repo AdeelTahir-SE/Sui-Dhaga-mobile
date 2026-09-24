@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 type OrderCardProps = {
   id: string;
@@ -295,6 +296,7 @@ export function OrderCard({
             isCancelled ? styles.actionCtaCancelled : null,
           ]}
         >
+          {!isCancelled && <ButtonTexture variant="greenish" borderRadius={10} />}
           <Text
             style={[
               styles.actionCtaText,
@@ -307,7 +309,7 @@ export function OrderCard({
             name={isCancelled ? "chevron-forward" : "arrow-forward"}
             size={14}
             color={isCancelled ? "#64748B" : "#FFFFFF"}
-            style={{ marginLeft: 3 }}
+            style={{ marginLeft: 3, zIndex: 1 }}
           />
         </TouchableOpacity>
       </View>
@@ -523,6 +525,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+    position: "relative",
     shadowColor: "#078B87",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.22,
@@ -540,6 +544,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#FFFFFF",
+    zIndex: 1,
   },
   actionCtaTextCancelled: {
     color: "#64748B",

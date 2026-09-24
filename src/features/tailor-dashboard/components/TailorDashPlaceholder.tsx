@@ -1,6 +1,6 @@
-import { StyleSheet, Text, View } from "react-native";
-import { Image, type ImageSource } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { Image, type ImageSource } from "expo-image";
+import { StyleSheet, Text, View } from "react-native";
 
 type Tone = "teal" | "coral" | "gold" | "blue" | "mint" | "cream";
 
@@ -66,7 +66,7 @@ export function TailorDashPlaceholder({
 
   return (
     <View
-      className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-md ${toneClasses[tone]}`}
+      className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-md`}
     >
       <Image
         source={image ?? generatedAssets[variant]}

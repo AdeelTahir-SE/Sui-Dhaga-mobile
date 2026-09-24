@@ -1,5 +1,12 @@
-import React from "react";
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
@@ -14,11 +21,13 @@ import { TimelineItem } from "../components/TimelineItem";
 import { useOrderDetails } from "../hooks/useOrders";
 import { conversationsApi } from "@/api/conversations.api";
 import { useAuthStore } from "@/stores/auth.store";
+import { ButtonTexture } from "@/components/ui/ButtonTexture";
 
 export default function OrderDetailsScreen() {
-  const { orderId } = useLocalSearchParams<{ orderId?: string }>();
-  const { order, isLoading } = useOrderDetails(orderId || "");
+  const { orderId, from } = useLocalSearchParams<{ orderId?: string; from?: string }>();
+  const { order, isLoading, updateOrderStatus } = useOrderDetails(orderId || "");
   const currentUser = useAuthStore((state) => state.user);
+  const [isActionLoading, setIsActionLoading] = useState<"accept" | "reject" | "complete" | null>(null);
 
   if (isLoading) {
     return (
@@ -107,9 +116,77 @@ export default function OrderDetailsScreen() {
     } as any);
   };
 
+  const isTailor =
+    from === "tailor" ||
+    currentUser?.role === "tailor" ||
+    Boolean(order?.tailorId && currentUser?.id && order.tailorId === currentUser.id);
+
+  const normStatus = (status || "pending").toLowerCase();
+  const isPending =
+    normStatus === "pending" || normStatus === "new" || normStatus === "requested";
+  const isInProgress =
+    normStatus === "in progress" ||
+    normStatus === "in_progress" ||
+    normStatus === "confirmed" ||
+    normStatus === "accepted" ||
+    normStatus === "processing";
+
+  const handleAcceptOrder = async () => {
+    setIsActionLoading("accept");
+    try {
+      await updateOrderStatus("In Progress");
+      Alert.alert("Order Accepted", `"${itemName}" is now in progress.`);
+    } catch {
+      Alert.alert("Error", "Could not accept order. Please try again.");
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  const handleRejectOrder = () => {
+    Alert.alert(
+      "Reject Order Request",
+      `Are you sure you want to decline the order request for "${itemName}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reject",
+          style: "destructive",
+          onPress: async () => {
+            setIsActionLoading("reject");
+            try {
+              await updateOrderStatus("Cancelled");
+              Alert.alert("Order Declined", `The order request for "${itemName}" was declined.`);
+            } catch {
+              Alert.alert("Error", "Could not decline order. Please try again.");
+            } finally {
+              setIsActionLoading(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCompleteOrder = async () => {
+    setIsActionLoading("complete");
+    try {
+      await updateOrderStatus("Completed");
+      Alert.alert("Order Completed", `"${itemName}" has been marked as completed.`);
+    } catch {
+      Alert.alert("Error", "Could not update order status. Please try again.");
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
   return (
     <BookingOrdersScreenShell>
-      <BookingOrdersHeader title="Order Details" />
+      <BookingOrdersHeader
+        title="Order Details"
+        leftIcon="arrow-back"
+        onPressLeft={() => router.back()}
+      />
       <View className="px-5 pb-8">
         <View className="mb-4 flex-row items-start justify-between">
           <View>
@@ -331,6 +408,103 @@ export default function OrderDetailsScreen() {
                 </Text>
               ) : null}
             </View>
+          </View>
+        )}
+
+        {/* Tailor Action Section */}
+        {isTailor && isPending && (
+          <View className="mt-5 rounded-2xl bg-white border border-brand-border p-4 shadow-sm">
+            <Text className="text-[14px] font-bold text-brand-dark mb-1">
+              Order Request Action
+            </Text>
+            <Text className="text-[12px] text-brand-gray mb-3.5">
+              Review garment specifications, measurements, and customer notes before accepting or declining this order.
+            </Text>
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={handleRejectOrder}
+                disabled={Boolean(isActionLoading)}
+                activeOpacity={0.8}
+                style={{
+                  height: 46,
+                  flex: 1,
+                  backgroundColor: "#1A1D1F",
+                  borderRadius: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: isActionLoading ? 0.6 : 1,
+                }}
+              >
+                {isActionLoading === "reject" ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#FFFFFF" }}>
+                    Reject Order
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleAcceptOrder}
+                disabled={Boolean(isActionLoading)}
+                activeOpacity={0.8}
+                style={{
+                  height: 46,
+                  flex: 1,
+                  backgroundColor: "#078B87",
+                  borderRadius: 12,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  position: "relative",
+                  opacity: isActionLoading ? 0.6 : 1,
+                }}
+              >
+                <ButtonTexture variant="greenish" borderRadius={12} />
+                {isActionLoading === "accept" ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" style={{ zIndex: 1 }} />
+                ) : (
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: "#FFFFFF", zIndex: 1 }}>
+                    Accept Order
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {isTailor && isInProgress && (
+          <View className="mt-5 rounded-2xl bg-white border border-brand-border p-4 shadow-sm">
+            <Text className="text-[14px] font-bold text-brand-dark mb-1">
+              Order in Progress
+            </Text>
+            <Text className="text-[12px] text-brand-gray mb-3.5">
+              Once tailoring and finishing are complete, mark this order as finished for the client.
+            </Text>
+            <TouchableOpacity
+              onPress={handleCompleteOrder}
+              disabled={Boolean(isActionLoading)}
+              activeOpacity={0.8}
+              style={{
+                height: 46,
+                backgroundColor: "#078B87",
+                borderRadius: 12,
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+                position: "relative",
+                opacity: isActionLoading ? 0.6 : 1,
+              }}
+            >
+              <ButtonTexture variant="greenish" borderRadius={12} />
+              {isActionLoading === "complete" ? (
+                <ActivityIndicator size="small" color="#FFFFFF" style={{ zIndex: 1 }} />
+              ) : (
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#FFFFFF", zIndex: 1 }}>
+                  Mark as Completed
+                </Text>
+              )}
+            </TouchableOpacity>
           </View>
         )}
 
