@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
   Dimensions,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const sundropBanner = require("@/assets/customer-tab-banner/sundrop.png");
+const sundropBanner = require("../../../../assets/customer-tab-banner/sundrop.png");
 
 const CATEGORIES = [
   "All Tailors",
@@ -77,15 +77,18 @@ export default function SundropScreen() {
             style={[
               styles.bannerCard,
               {
+                width: screenWidth - 32,
                 height: bannerHeight,
               },
             ]}
           >
             <Image
               source={sundropBanner}
-              contentFit="cover"
-              style={styles.bannerImage}
-              transition={200}
+              resizeMode="cover"
+              style={{
+                width: screenWidth - 32,
+                height: bannerHeight,
+              }}
             />
           </View>
         </View>

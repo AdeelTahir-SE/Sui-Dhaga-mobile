@@ -6,13 +6,11 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
-  Image as RNImage,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View,
+  View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -30,7 +28,6 @@ import { QuickAction } from "../components/QuickAction";
 import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
 import { TrendingCommunitySection } from "../components/TrendingCommunitySection";
-
 
 const appointmentsIcon = require("@/assets/illustrations/customer-tabs/home/appointments-icon.png");
 const bookTailorIcon = require("@/assets/illustrations/customer-tabs/home/book-tailor-icon.png");
@@ -190,14 +187,15 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={() => router.push("/messages" as never)}
               activeOpacity={0.7}
-              className="relative h-11 w-11 items-center justify-center rounded-xl border border-brand-border/50 bg-white shadow-xs"
+              className="relative p-2"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons
                 name="notifications-outline"
-                size={22}
-                color="#14919B"
+                size={24}
+                color="#000000"
               />
-              <View className="absolute top-2.5 right-2.5 h-2.5 w-2.5 rounded-full bg-red-500" />
+              <View className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" />
             </TouchableOpacity>
           </View>
         </View>

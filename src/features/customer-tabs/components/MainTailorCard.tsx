@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { router } from "expo-router";
-import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 type MainTailorCardProps = {
@@ -77,7 +77,9 @@ export function MainTailorCard({
       if (reviewMatch) {
         const inner = reviewMatch[1].trim();
         // If it already contains "review", keep as is, otherwise add "reviews"
-        countStr = inner.toLowerCase().includes("review") ? `(${inner})` : `(${inner} reviews)`;
+        countStr = inner.toLowerCase().includes("review")
+          ? `(${inner})`
+          : `(${inner} reviews)`;
       }
     }
 
@@ -90,7 +92,10 @@ export function MainTailorCard({
       return specialties.map((s) => s.trim()).filter(Boolean);
     }
     if (specialty) {
-      return specialty.split(",").map((s) => s.trim()).filter(Boolean);
+      return specialty
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
     }
     return ["Custom Stitching"];
   }, [specialties, specialty]);
@@ -120,7 +125,9 @@ export function MainTailorCard({
       {/* TOP ROW: AVATAR + DETAILS */}
       <View style={styles.topRow}>
         {/* AVATAR CONTAINER */}
-        <View style={[styles.avatarContainer, { backgroundColor: activeTone.bg }]}>
+        <View
+          style={[styles.avatarContainer, { backgroundColor: activeTone.bg }]}
+        >
           {hasValidImage ? (
             <Image
               source={image}
@@ -131,7 +138,12 @@ export function MainTailorCard({
             />
           ) : (
             <View style={styles.initialsWrap}>
-              <Ionicons name="cut-outline" size={16} color={activeTone.text} style={{ opacity: 0.35, marginBottom: 2 }} />
+              <Ionicons
+                name="cut-outline"
+                size={16}
+                color={activeTone.text}
+                style={{ opacity: 0.35, marginBottom: 2 }}
+              />
               <Text style={[styles.initialText, { color: activeTone.text }]}>
                 {initialLetter}
               </Text>
@@ -172,7 +184,7 @@ export function MainTailorCard({
           </View>
 
           {/* Badges Strip (Top Rated, Experience) */}
-          {(topRated || (experienceYears && experienceYears > 0)) ? (
+          {topRated || (experienceYears && experienceYears > 0) ? (
             <View style={styles.badgesRow}>
               {topRated ? (
                 <View style={styles.topRatedTag}>
@@ -183,7 +195,9 @@ export function MainTailorCard({
 
               {experienceYears && experienceYears > 0 ? (
                 <View style={styles.expTag}>
-                  <Text style={styles.expTagText}>{experienceYears}+ yrs exp</Text>
+                  <Text style={styles.expTagText}>
+                    {experienceYears}+ yrs exp
+                  </Text>
                 </View>
               ) : null}
             </View>
@@ -201,7 +215,9 @@ export function MainTailorCard({
           ))}
           {tagsList.length > 3 ? (
             <View style={styles.morePill}>
-              <Text style={styles.morePillText}>+{tagsList.length - 3} more</Text>
+              <Text style={styles.morePillText}>
+                +{tagsList.length - 3} more
+              </Text>
             </View>
           ) : null}
         </View>
@@ -221,7 +237,12 @@ export function MainTailorCard({
         >
           <ButtonTexture variant="greenish" borderRadius={10} />
           <Text style={styles.viewProfileCtaText}>View Profile</Text>
-          <Ionicons name="arrow-forward" size={14} color="#FFFFFF" style={{ marginLeft: 3, zIndex: 1 }} />
+          <Ionicons
+            name="arrow-forward"
+            size={14}
+            color="#FFFFFF"
+            style={{ marginLeft: 3, zIndex: 1 }}
+          />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -291,7 +312,7 @@ const styles = StyleSheet.create({
   ratingPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FEF3C7",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 7,
     paddingVertical: 2.5,
     borderRadius: 6,
@@ -435,4 +456,3 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 });
-
