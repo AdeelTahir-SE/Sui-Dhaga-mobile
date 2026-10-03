@@ -18,6 +18,11 @@ type MainTailorCardProps = {
   verified?: boolean;
   isVerified?: boolean;
   experienceYears?: number;
+  completedOrders?: number;
+  city?: string;
+  address?: string;
+  distanceKm?: number;
+  reviewsCount?: number | string;
   onPress?: () => void;
   price?: string | number;
 };
@@ -44,6 +49,10 @@ export function MainTailorCard({
   verified = true,
   isVerified = true,
   experienceYears,
+  city,
+  address,
+  distanceKm,
+  reviewsCount,
   onPress,
   price = "Rs. 1,500",
 }: MainTailorCardProps) {
@@ -61,10 +70,17 @@ export function MainTailorCard({
     }
   };
 
-  // Parse rating & review count
-  const { displayRating, reviewsCountText } = useMemo(() => {
+  // Parse rating & review count into structured format
+  const { displayRating, reviewsCountOnly } = useMemo(() => {
     let rStr = "New";
-    let countStr = "";
+    let countOnly = "";
+
+    if (reviewsCount !== undefined && reviewsCount !== null) {
+      const parsed = Number(reviewsCount);
+      if (!isNaN(parsed) && parsed > 0) {
+        countOnly = `${parsed}`;
+      }
+    }
 
     if (typeof rating === "number") {
       rStr = rating > 0 ? rating.toFixed(1) : "New";
@@ -73,18 +89,67 @@ export function MainTailorCard({
       if (match) {
         rStr = match[1];
       }
-      const reviewMatch = rating.match(/\(([^)]+)\)/);
-      if (reviewMatch) {
-        const inner = reviewMatch[1].trim();
-        // If it already contains "review", keep as is, otherwise add "reviews"
-        countStr = inner.toLowerCase().includes("review")
-          ? `(${inner})`
-          : `(${inner} reviews)`;
+      if (!countOnly) {
+        const reviewMatch = rating.match(/\(([^)]+)\)/);
+        if (reviewMatch) {
+          const inner = reviewMatch[1].trim();
+          const digits = inner.match(/([0-9]+)/);
+          countOnly = digits ? digits[1] : inner;
+        }
       }
     }
 
-    return { displayRating: rStr, reviewsCountText: countStr };
-  }, [rating]);
+    return { displayRating: rStr, reviewsCountOnly: countOnly };
+  }, [rating, reviewsCount]);
+
+  // Clean location & distance handling
+  const { locationText, distanceBadgeText } = useMemo(() => {
+    const loc = (address || city || "").trim();
+    const distStr = (distance || "").trim();
+
+    const isNumericDistance =
+      /[0-9.]+\s*(km|m)/i.test(distStr) ||
+      distStr.toLowerCase().includes("away") ||
+      distStr.toLowerCase().includes("nearby");
+
+    if (distanceKm !== undefined && !isNaN(distanceKm)) {
+      return {
+        locationText: loc || "Local Atelier",
+        distanceBadgeText: `${distanceKm.toFixed(1)} km away`,
+      };
+    }
+
+    if (loc && isNumericDistance) {
+      return {
+        locationText: loc,
+        distanceBadgeText: distStr,
+      };
+    }
+
+    if (loc && !isNumericDistance) {
+      return {
+        locationText: loc,
+        distanceBadgeText:
+          distStr && distStr.toLowerCase() !== loc.toLowerCase()
+            ? distStr
+            : null,
+      };
+    }
+
+    if (!loc && isNumericDistance) {
+      return {
+        locationText: distStr.toLowerCase().includes("nearby")
+          ? "Nearby Area"
+          : "City Atelier",
+        distanceBadgeText: distStr,
+      };
+    }
+
+    return {
+      locationText: distStr || "Local Atelier",
+      distanceBadgeText: null,
+    };
+  }, [city, address, distance, distanceKm]);
 
   // Parse specialties list into individual tags
   const tagsList = useMemo(() => {
@@ -113,7 +178,6 @@ export function MainTailorCard({
 
   const activeTone = toneConfig[tone] || toneConfig.teal;
   const initialLetter = (name || "T").charAt(0).toUpperCase();
-
   const hasValidImage = image && !imageError;
 
   return (
@@ -122,80 +186,87 @@ export function MainTailorCard({
       onPress={handleCardPress}
       style={styles.card}
     >
-      {/* TOP ROW: AVATAR + DETAILS */}
+      {/* 1. TOP HEADER: AVATAR + ESSENTIAL IDENTITY */}
       <View style={styles.topRow}>
-        {/* AVATAR CONTAINER */}
-        <View
-          style={[styles.avatarContainer, { backgroundColor: activeTone.bg }]}
-        >
-          {hasValidImage ? (
-            <Image
-              source={image}
-              contentFit="cover"
-              style={styles.avatarImage}
-              onError={() => setImageError(true)}
-              transition={200}
-            />
-          ) : (
-            <View style={styles.initialsWrap}>
-              <Ionicons
-                name="cut-outline"
-                size={16}
-                color={activeTone.text}
-                style={{ opacity: 0.35, marginBottom: 2 }}
+        {/* AVATAR WITH VERIFIED BADGE */}
+        <View style={styles.avatarWrapper}>
+          <View
+            style={[styles.avatarContainer, { backgroundColor: activeTone.bg }]}
+          >
+            {hasValidImage ? (
+              <Image
+                source={image}
+                contentFit="cover"
+                style={styles.avatarImage}
+                onError={() => setImageError(true)}
+                transition={200}
               />
-              <Text style={[styles.initialText, { color: activeTone.text }]}>
-                {initialLetter}
-              </Text>
+            ) : (
+              <View style={styles.initialsWrap}>
+                <Ionicons
+                  name="cut-outline"
+                  size={18}
+                  color={activeTone.text}
+                  style={{ opacity: 0.35, marginBottom: 2 }}
+                />
+                <Text style={[styles.initialText, { color: activeTone.text }]}>
+                  {initialLetter}
+                </Text>
+              </View>
+            )}
+          </View>
+          {isTailorVerified && (
+            <View style={styles.verifiedBadgeContainer}>
+              <Ionicons name="checkmark-circle" size={17} color="#00949D" />
             </View>
           )}
         </View>
 
-        {/* MIDDLE INFO BLOCK */}
+        {/* INFO COLUMN */}
         <View style={styles.infoBlock}>
-          {/* Header: Shop Name */}
-          <Text style={styles.shopName} numberOfLines={1}>
-            {name}
-          </Text>
+          {/* Row 1: Shop Name & Rating Badge */}
+          <View style={styles.nameRatingRow}>
+            <Text style={styles.shopName} numberOfLines={1}>
+              {name}
+            </Text>
 
-          {/* Rating, Reviews & Location Row */}
-          <View style={styles.metaRow}>
-            {/* Rating Pill with Star */}
-            <View style={styles.ratingPill}>
-              <Ionicons name="star" size={12} color="#F59E0B" />
-              <Text style={styles.ratingPillText}>{displayRating}</Text>
-            </View>
-
-            {reviewsCountText ? (
-              <Text style={styles.reviewsCountText} numberOfLines={1}>
-                {reviewsCountText}
-              </Text>
-            ) : null}
-
-            <Text style={styles.dotDivider}>•</Text>
-
-            {/* Location with Pin */}
-            <View style={styles.locationWrap}>
-              <Ionicons name="location-sharp" size={12} color="#078B87" />
-              <Text style={styles.distanceText} numberOfLines={1}>
-                {distance}
-              </Text>
+            {/* Prominent Rating Pill */}
+            <View style={styles.ratingBadge}>
+              <Ionicons name="star" size={11} color="#F59E0B" />
+              <Text style={styles.ratingScore}>{displayRating}</Text>
+              {reviewsCountOnly ? (
+                <Text style={styles.ratingCount}>({reviewsCountOnly})</Text>
+              ) : null}
             </View>
           </View>
 
-          {/* Badges Strip (Top Rated, Experience) */}
+          {/* Row 2: Location & Distance */}
+          <View style={styles.locationRow}>
+            <Ionicons name="location-sharp" size={13} color="#00949D" />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {locationText}
+            </Text>
+            {distanceBadgeText && (
+              <View style={styles.distanceBadge}>
+                <Text style={styles.distanceBadgeText}>{distanceBadgeText}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Row 3: Badges Strip (Top Rated, Experience) */}
           {topRated || (experienceYears && experienceYears > 0) ? (
             <View style={styles.badgesRow}>
               {topRated ? (
-                <View style={styles.topRatedTag}>
-                  <Ionicons name="trophy" size={10} color="#B45309" />
-                  <Text style={styles.topRatedTagText}>Top Rated</Text>
+                <View style={styles.topRatedBadge}>
+                  <Ionicons name="trophy" size={10} color="#92400E" />
+                  <Text style={styles.topRatedBadgeText}>Top Rated</Text>
                 </View>
               ) : null}
 
               {experienceYears && experienceYears > 0 ? (
-                <View style={styles.expTag}>
-                  <Text style={styles.expTagText}>
+                <View style={styles.expBadge}>
+                  <Ionicons name="ribbon-outline" size={10} color="#475569" />
+                  <Text style={styles.expBadgeText}>
                     {experienceYears}+ yrs exp
                   </Text>
                 </View>
@@ -205,7 +276,7 @@ export function MainTailorCard({
         </View>
       </View>
 
-      {/* SPECIALTIES TAGS */}
+      {/* 2. SPECIALTIES TAGS */}
       {tagsList.length > 0 ? (
         <View style={styles.specialtiesWrap}>
           {tagsList.slice(0, 3).map((item, idx) => (
@@ -223,7 +294,7 @@ export function MainTailorCard({
         </View>
       ) : null}
 
-      {/* FOOTER STRIP: PRICING + VIEW PROFILE CTA */}
+      {/* 3. FOOTER ROW: PRICING + VIEW PROFILE CTA */}
       <View style={styles.footerRow}>
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>Starting from</Text>
@@ -239,9 +310,9 @@ export function MainTailorCard({
           <Text style={styles.viewProfileCtaText}>View Profile</Text>
           <Ionicons
             name="arrow-forward"
-            size={14}
+            size={13}
             color="#FFFFFF"
-            style={{ marginLeft: 3, zIndex: 1 }}
+            style={{ marginLeft: 4, zIndex: 1 }}
           />
         </TouchableOpacity>
       </View>
@@ -258,23 +329,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
     shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
   },
   topRow: {
     flexDirection: "row",
     alignItems: "flex-start",
   },
+  avatarWrapper: {
+    position: "relative",
+  },
   avatarContainer: {
-    width: 76,
-    height: 76,
+    width: 74,
+    height: 74,
     borderRadius: 16,
     overflow: "hidden",
-    position: "relative",
     borderWidth: 1,
-    borderColor: "#F1F5F9",
+    borderColor: "#E2E8F0",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -292,87 +365,117 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: -0.5,
   },
+  verifiedBadgeContainer: {
+    position: "absolute",
+    bottom: -3,
+    right: -3,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    padding: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
   infoBlock: {
     flex: 1,
     marginLeft: 13,
+    justifyContent: "space-between",
+  },
+  nameRatingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
   },
   shopName: {
+    flex: 1,
     fontSize: 16,
     fontWeight: "800",
     color: "#0F172A",
     letterSpacing: -0.2,
   },
-  metaRow: {
+  ratingBadge: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 6,
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  ratingPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
-    borderRadius: 6,
     gap: 3.5,
+    backgroundColor: "#FFFBEB",
+    borderWidth: 1,
+    borderColor: "#FEF3C7",
+    paddingHorizontal: 7.5,
+    paddingVertical: 3,
+    borderRadius: 8,
+    flexShrink: 0,
   },
-  ratingPillText: {
+  ratingScore: {
     fontSize: 12,
     fontWeight: "800",
+    color: "#92400E",
+    lineHeight: 14,
+  },
+  ratingCount: {
+    fontSize: 10.5,
+    fontWeight: "600",
     color: "#B45309",
     lineHeight: 14,
   },
-  reviewsCountText: {
-    fontSize: 11.5,
-    fontWeight: "500",
-    color: "#64748B",
-  },
-  dotDivider: {
-    fontSize: 11,
-    color: "#CBD5E1",
-    marginHorizontal: 1,
-  },
-  locationWrap: {
+  locationRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    gap: 4,
+    marginTop: 5,
+    flexWrap: "wrap",
+  },
+  locationText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#475569",
     flexShrink: 1,
   },
-  distanceText: {
-    fontSize: 11.5,
-    fontWeight: "600",
-    color: "#475569",
+  distanceBadge: {
+    backgroundColor: "#E0F7F7",
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    marginLeft: 2,
+  },
+  distanceBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#0D7377",
   },
   badgesRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 8,
+    marginTop: 6,
     flexWrap: "wrap",
   },
-  topRatedTag: {
+  topRatedBadge: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FEF3C7",
-    paddingHorizontal: 7,
-    paddingVertical: 2.5,
+    paddingHorizontal: 6.5,
+    paddingVertical: 2,
     borderRadius: 6,
-    gap: 3.5,
+    gap: 3,
   },
-  topRatedTagText: {
+  topRatedBadgeText: {
     fontSize: 10.5,
     fontWeight: "700",
     color: "#92400E",
   },
-  expTag: {
+  expBadge: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#F1F5F9",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
+    gap: 3,
   },
-  expTagText: {
+  expBadgeText: {
     fontSize: 10,
     fontWeight: "600",
     color: "#475569",
@@ -381,15 +484,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
-    marginTop: 10,
+    marginTop: 11,
     gap: 5,
   },
   specialtyPill: {
     backgroundColor: "#F8FAFC",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 8.5,
+    paddingVertical: 3.5,
     borderRadius: 7,
   },
   specialtyPillText: {
@@ -399,8 +502,10 @@ const styles = StyleSheet.create({
   },
   morePill: {
     backgroundColor: "#F1F5F9",
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 7.5,
+    paddingVertical: 3.5,
     borderRadius: 7,
   },
   morePillText: {
@@ -429,14 +534,14 @@ const styles = StyleSheet.create({
   },
   priceValue: {
     fontSize: 16,
-    fontWeight: "900",
+    fontWeight: "800",
     color: "#0F172A",
     marginTop: 1,
   },
   viewProfileCta: {
     height: 38,
     backgroundColor: "#078B87",
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
     borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
@@ -450,7 +555,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   viewProfileCtaText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: "700",
     color: "#FFFFFF",
     zIndex: 1,

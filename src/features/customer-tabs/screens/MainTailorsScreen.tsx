@@ -533,6 +533,20 @@ export default function MainTailorsScreen() {
                     tailor.distance ||
                     "Nearby"
               }
+              city={
+                tailor.city ||
+                (typeof tailor.location === "object"
+                  ? tailor.location?.city
+                  : undefined)
+              }
+              address={
+                tailor.address ||
+                (typeof tailor.location === "object"
+                  ? tailor.location?.address
+                  : undefined)
+              }
+              distanceKm={tailor.distanceKm}
+              reviewsCount={tailor.reviewsCount ?? tailor.reviews}
               specialty={
                 Array.isArray(tailor.specialties) &&
                 tailor.specialties.length > 0
@@ -557,6 +571,7 @@ export default function MainTailorsScreen() {
               topRated={tailor.topRated || tailor.isTopRated}
               verified={tailor.verified || tailor.isVerified}
               experienceYears={tailor.experienceYears}
+              completedOrders={tailor.completedOrders}
               tone={getTone(index)}
             />
           ))

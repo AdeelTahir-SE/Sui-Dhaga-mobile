@@ -47,20 +47,7 @@ export default function SundropScreen() {
 
         <View style={styles.navTitleContainer}>
           <Text style={styles.navTitle}>Sundrop Atelier</Text>
-          <View style={styles.collabBadge}>
-            <Ionicons name="sparkles" size={10} color="#F59E0B" />
-            <Text style={styles.collabBadgeText}>EXCLUSIVE COLLABORATION</Text>
-          </View>
         </View>
-
-        <TouchableOpacity
-          onPress={() => router.push("/tailors" as never)}
-          activeOpacity={0.7}
-          style={styles.actionButton}
-          accessibilityLabel="Browse All Tailors"
-        >
-          <Ionicons name="search-outline" size={18} color="#FDE68A" />
-        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -91,65 +78,6 @@ export default function SundropScreen() {
               }}
             />
           </View>
-        </View>
-
-        {/* Narrative / About Tagline */}
-        <View style={styles.storyCard}>
-          <View style={styles.storyHeader}>
-            <View style={styles.goldLine} />
-            <Text style={styles.storyTag}>SUNDROP × SUI DHAGA</Text>
-            <View style={styles.goldLine} />
-          </View>
-          <Text style={styles.storyHeading}>Traditional Craft. Modern You.</Text>
-          <Text style={styles.storyDescription}>
-            An exclusive collaboration celebrating heritage zardozi, artisanal
-            embroidery, and bespoke silhouettes crafted with master precision.
-          </Text>
-        </View>
-
-        {/* Category Filters */}
-        <View style={styles.filterSection}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterList}
-          >
-            {CATEGORIES.map((category) => {
-              const isActive = selectedCategory === category;
-              return (
-                <TouchableOpacity
-                  key={category}
-                  activeOpacity={0.8}
-                  onPress={() => setSelectedCategory(category)}
-                  style={[
-                    styles.filterChip,
-                    isActive
-                      ? styles.filterChipActive
-                      : styles.filterChipInactive,
-                  ]}
-                >
-                  {isActive && (
-                    <Ionicons
-                      name="sparkles"
-                      size={12}
-                      color="#1A0B2E"
-                      style={{ marginRight: 4 }}
-                    />
-                  )}
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      isActive
-                        ? styles.filterChipTextActive
-                        : styles.filterChipTextInactive,
-                    ]}
-                  >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
         </View>
 
         {/* Tailors Section Header */}
