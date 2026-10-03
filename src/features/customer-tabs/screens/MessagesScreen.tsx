@@ -16,6 +16,7 @@ import { CustomerHeader } from "../components/CustomerHeader";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MessageRow } from "../components/MessageRow";
+import { PersonMessagesListSkeleton } from "../components/PersonMessageSkeleton";
 import { useConversations } from "../hooks/useConversations";
 import { useAuthStore } from "../../../stores/auth.store";
 import { usePresence } from "../../../hooks/usePresence";
@@ -674,12 +675,7 @@ export default function MessagesScreen() {
 
         {/* Content States */}
         {isLoading && !isRefreshing ? (
-          <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 380 }}>
-            <ActivityIndicator size="large" color="#14919B" />
-            <Text className="mt-3 text-[13px] font-medium text-brand-gray">
-              Loading your conversations...
-            </Text>
-          </View>
+          <PersonMessagesListSkeleton count={6} />
         ) : error && conversations.length === 0 ? (
           <View className="flex-1 items-center justify-center py-16 px-4" style={{ minHeight: 380 }}>
             <View className="w-14 h-14 rounded-full bg-red-50 items-center justify-center mb-3">

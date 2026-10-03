@@ -14,6 +14,7 @@ import {
 import { communityApi } from "../../../api/community.api";
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 import { CommunityPost } from "../../../types/api";
+import { TrendingDesignsListSkeleton } from "../../../components/ui/Skeleton";
 import { SectionTitle } from "./SectionTitle";
 
 type TrendingCommunitySectionProps = {
@@ -135,12 +136,7 @@ export function TrendingCommunitySection({
       />
 
       {/* Loading state */}
-      {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#14919B" />
-          <Text style={styles.loadingText}>Loading trending designs...</Text>
-        </View>
-      )}
+      {isLoading && <TrendingDesignsListSkeleton count={3} />}
 
       {/* Connection error state */}
       {!isLoading && error && (

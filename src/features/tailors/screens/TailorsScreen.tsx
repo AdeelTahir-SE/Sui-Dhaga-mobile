@@ -6,6 +6,7 @@ import { TailorBottomTabs } from "../components/TailorBottomTabs";
 import { TailorHeader } from "../components/TailorHeader";
 import { TailorListCard } from "../components/TailorListCard";
 import { TailorScreenShell } from "../components/TailorScreenShell";
+import { TailorsListSkeleton } from "../../../components/ui/Skeleton";
 import { useTailors } from "../hooks/useTailors";
 
 export default function TailorsScreen() {
@@ -26,8 +27,8 @@ export default function TailorsScreen() {
         <SearchAndFilters />
 
         {isLoading ? (
-          <View className="py-12 items-center justify-center">
-            <ActivityIndicator size="small" color="#14919B" />
+          <View className="mt-5">
+            <TailorsListSkeleton count={3} />
           </View>
         ) : (
           <View className="mt-5">

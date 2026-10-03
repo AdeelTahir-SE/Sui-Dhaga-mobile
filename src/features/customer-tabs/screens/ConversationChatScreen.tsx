@@ -45,6 +45,7 @@ import {
 import { useMeasurements } from "../../measurements-community-checkout/hooks/useMeasurements";
 import { ChatInputBar } from "../components/ChatInputBar";
 import { VoiceMessagePlayer } from "../components/VoiceMessagePlayer";
+import { ChatConversationSkeleton } from "../../../components/ui/Skeleton";
 
 function formatMillis(ms: number): string {
   const totalSeconds = Math.floor((ms || 0) / 1000);
@@ -1653,25 +1654,7 @@ export default function ConversationChatScreen() {
             }}
           >
             {isLoading ? (
-              <View
-                style={{
-                  paddingVertical: 80,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <ActivityIndicator size="large" color="#14919B" />
-                <Text
-                  style={{
-                    marginTop: 12,
-                    fontSize: 13,
-                    fontWeight: "600",
-                    color: "#8E887E",
-                  }}
-                >
-                  Loading conversation...
-                </Text>
-              </View>
+              <ChatConversationSkeleton />
             ) : messages.length === 0 ? (
               <View
                 style={{

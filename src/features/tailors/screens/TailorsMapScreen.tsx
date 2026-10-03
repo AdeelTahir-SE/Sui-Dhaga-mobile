@@ -1,4 +1,13 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
+import { router } from "expo-router";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -10,18 +19,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
+import { FixedBottomTabs } from "@/components/layout/FixedBottomTabs";
+import { TailorItem } from "@/types/api";
 import { RatingLine } from "../components/RatingLine";
 import { TailorBadge } from "../components/TailorBadge";
 import { TailorBottomTabs } from "../components/TailorBottomTabs";
 import { TailorPlaceholder } from "../components/TailorPlaceholder";
-import { FixedBottomTabs } from "@/components/layout/FixedBottomTabs";
 import { useTailorsMap } from "../hooks/useTailors";
-import { TailorItem } from "@/types/api";
 
 const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   All: { lat: 31.5204, lng: 74.3587 },
@@ -29,16 +36,28 @@ const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
   Karachi: { lat: 24.8607, lng: 67.0011 },
   Islamabad: { lat: 33.6844, lng: 73.0479 },
   Rawalpindi: { lat: 33.5651, lng: 73.0169 },
-  Faisalabad: { lat: 31.4504, lng: 73.1350 },
+  Faisalabad: { lat: 31.4504, lng: 73.135 },
   Multan: { lat: 30.1575, lng: 71.5249 },
 };
 
-const CITY_CHIPS = ["All", "Lahore", "Karachi", "Islamabad", "Rawalpindi", "Faisalabad"];
+const CITY_CHIPS = [
+  "All",
+  "Lahore",
+  "Karachi",
+  "Islamabad",
+  "Rawalpindi",
+  "Faisalabad",
+];
 
 const DISTANCE_OPTIONS = [5, 10, 15] as const;
 type AllowedRadius = (typeof DISTANCE_OPTIONS)[number];
 
-function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function calculateDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -64,7 +83,10 @@ export default function TailorsMapScreen() {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
 
   // User Geolocation State
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [userCoords, setUserCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [gpsStatusMsg, setGpsStatusMsg] = useState<string | null>(null);
 
@@ -106,7 +128,12 @@ export default function TailorsMapScreen() {
           typeof t.latitude === "number" &&
           typeof t.longitude === "number"
         ) {
-          dist = calculateDistanceKm(originLat, originLng, t.latitude, t.longitude);
+          dist = calculateDistanceKm(
+            originLat,
+            originLng,
+            t.latitude,
+            t.longitude,
+          );
         }
         return {
           ...t,
@@ -148,7 +175,10 @@ export default function TailorsMapScreen() {
   // Update selectedTailorId when filteredTailors changes
   useEffect(() => {
     if (filteredTailors.length > 0) {
-      if (!selectedTailorId || !filteredTailors.some((t) => t.id === selectedTailorId)) {
+      if (
+        !selectedTailorId ||
+        !filteredTailors.some((t) => t.id === selectedTailorId)
+      ) {
         setSelectedTailorId(filteredTailors[0].id);
       }
     } else {
@@ -161,7 +191,9 @@ export default function TailorsMapScreen() {
     if (Platform.OS === "web") {
       if (typeof window !== "undefined") {
         try {
-          const iframe = document.querySelector("#tailors-map-frame") as HTMLIFrameElement;
+          const iframe = document.querySelector(
+            "#tailors-map-frame",
+          ) as HTMLIFrameElement;
           iframe?.contentWindow?.postMessage(command, "*");
         } catch {}
       }
@@ -171,30 +203,42 @@ export default function TailorsMapScreen() {
   }, []);
 
   // Handle messages from WebView or iframe
-  const processIncomingData = useCallback((data: any) => {
-    if (!data) return;
-    if (data.type === "TAILOR_PIN_CLICKED") {
-      if (data.tailorId) {
-        setSelectedTailorId(data.tailorId);
+  const processIncomingData = useCallback(
+    (data: any) => {
+      if (!data) return;
+      if (data.type === "TAILOR_PIN_CLICKED") {
+        if (data.tailorId) {
+          setSelectedTailorId(data.tailorId);
+        }
+      } else if (data.type === "USER_LOCATED") {
+        setUserCoords({ lat: data.latitude, lng: data.longitude });
+        setIsLocating(false);
+        setGpsStatusMsg(
+          `GPS Location Acquired (Filtered within ${maxRadius} km)`,
+        );
+        sendMapCommand(
+          `setUserMarker(${data.latitude}, ${data.longitude}, ${maxRadius})`,
+        );
+        setTimeout(() => setGpsStatusMsg(null), 3500);
+      } else if (data.type === "LOCATING_FAILED") {
+        setIsLocating(false);
+        setGpsStatusMsg(
+          data.message || "Could not detect GPS. Using area reference.",
+        );
+        setTimeout(() => setGpsStatusMsg(null), 3500);
       }
-    } else if (data.type === "USER_LOCATED") {
-      setUserCoords({ lat: data.latitude, lng: data.longitude });
-      setIsLocating(false);
-      setGpsStatusMsg(`GPS Location Acquired (Filtered within ${maxRadius} km)`);
-      sendMapCommand(`setUserMarker(${data.latitude}, ${data.longitude}, ${maxRadius})`);
-      setTimeout(() => setGpsStatusMsg(null), 3500);
-    } else if (data.type === "LOCATING_FAILED") {
-      setIsLocating(false);
-      setGpsStatusMsg(data.message || "Could not detect GPS. Using area reference.");
-      setTimeout(() => setGpsStatusMsg(null), 3500);
-    }
-  }, [maxRadius, sendMapCommand]);
+    },
+    [maxRadius, sendMapCommand],
+  );
 
   useEffect(() => {
     if (Platform.OS === "web" && typeof window !== "undefined") {
       const handleWindowMessage = (event: MessageEvent) => {
         try {
-          const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+          const data =
+            typeof event.data === "string"
+              ? JSON.parse(event.data)
+              : event.data;
           processIncomingData(data);
         } catch {
           // ignore
@@ -223,7 +267,9 @@ export default function TailorsMapScreen() {
         id: t.id,
         name: t.shopName || t.name || "Tailor Studio",
         rating: t.rating || 0,
-        specialty: Array.isArray(t.specialties) ? t.specialties.join(", ") : t.specialty || "",
+        specialty: Array.isArray(t.specialties)
+          ? t.specialties.join(", ")
+          : t.specialty || "",
         latitude: t.latitude,
         longitude: t.longitude,
         city: t.city || "",
@@ -238,15 +284,22 @@ export default function TailorsMapScreen() {
   // Sync user location marker & radius boundary circle on map whenever coordinates or maxRadius change
   useEffect(() => {
     if (effectiveCoords) {
-      sendMapCommand(`setUserMarker(${effectiveCoords.lat}, ${effectiveCoords.lng}, ${maxRadius})`);
+      sendMapCommand(
+        `setUserMarker(${effectiveCoords.lat}, ${effectiveCoords.lng}, ${maxRadius})`,
+      );
     }
   }, [effectiveCoords, maxRadius, sendMapCommand]);
 
   // Center on tailor when card changes
   const handleSelectTailor = (tailor: TailorItem) => {
     setSelectedTailorId(tailor.id);
-    if (typeof tailor.latitude === "number" && typeof tailor.longitude === "number") {
-      sendMapCommand(`flyToTailor(${tailor.latitude}, ${tailor.longitude}, "${tailor.id}")`);
+    if (
+      typeof tailor.latitude === "number" &&
+      typeof tailor.longitude === "number"
+    ) {
+      sendMapCommand(
+        `flyToTailor(${tailor.latitude}, ${tailor.longitude}, "${tailor.id}")`,
+      );
     }
   };
 
@@ -258,7 +311,8 @@ export default function TailorsMapScreen() {
 
   const handlePrevTailor = () => {
     if (filteredTailors.length <= 1) return;
-    const prevIdx = (selectedIndex - 1 + filteredTailors.length) % filteredTailors.length;
+    const prevIdx =
+      (selectedIndex - 1 + filteredTailors.length) % filteredTailors.length;
     handleSelectTailor(filteredTailors[prevIdx]);
   };
 
@@ -275,7 +329,9 @@ export default function TailorsMapScreen() {
             const lng = pos.coords.longitude;
             setUserCoords({ lat, lng });
             setIsLocating(false);
-            setGpsStatusMsg(`GPS Location Acquired (Filtered within ${maxRadius} km)`);
+            setGpsStatusMsg(
+              `GPS Location Acquired (Filtered within ${maxRadius} km)`,
+            );
             sendMapCommand(`setUserMarker(${lat}, ${lng}, ${maxRadius})`);
             setTimeout(() => setGpsStatusMsg(null), 3500);
           },
@@ -284,11 +340,33 @@ export default function TailorsMapScreen() {
             setGpsStatusMsg("Location access denied. Using area reference.");
             setTimeout(() => setGpsStatusMsg(null), 3500);
           },
-          { enableHighAccuracy: true, timeout: 10000 }
+          { enableHighAccuracy: true, timeout: 10000 },
         );
       }
     } else {
-      webViewRef.current?.injectJavaScript("locateDevice(); true;");
+      (async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === "granted") {
+            const pos = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            setUserCoords({ lat, lng });
+            setIsLocating(false);
+            setGpsStatusMsg(
+              `GPS Location Acquired (Filtered within ${maxRadius} km)`,
+            );
+            sendMapCommand(`setUserMarker(${lat}, ${lng}, ${maxRadius})`);
+            setTimeout(() => setGpsStatusMsg(null), 3500);
+            return;
+          }
+        } catch {
+          // Fallback to webview inject
+        }
+        webViewRef.current?.injectJavaScript("locateDevice(); true;");
+      })();
     }
   }, [maxRadius, sendMapCommand]);
 
@@ -302,7 +380,9 @@ export default function TailorsMapScreen() {
     setSelectedCity(city);
     const coords = CITY_COORDINATES[city] || CITY_COORDINATES["Lahore"];
     const zoom = city === "All" ? 7 : 13;
-    sendMapCommand(`map.flyTo([${coords.lat}, ${coords.lng}], ${zoom}, { duration: 1.2 });`);
+    sendMapCommand(
+      `map.flyTo([${coords.lat}, ${coords.lng}], ${zoom}, { duration: 1.2 });`,
+    );
   };
 
   // Search submission
@@ -325,9 +405,12 @@ export default function TailorsMapScreen() {
   };
 
   // Initial center coordinates
-  const initialCenter = selectedTailor && typeof selectedTailor.latitude === "number" && typeof selectedTailor.longitude === "number"
-    ? { lat: selectedTailor.latitude, lng: selectedTailor.longitude }
-    : CITY_COORDINATES["Lahore"];
+  const initialCenter =
+    selectedTailor &&
+    typeof selectedTailor.latitude === "number" &&
+    typeof selectedTailor.longitude === "number"
+      ? { lat: selectedTailor.latitude, lng: selectedTailor.longitude }
+      : CITY_COORDINATES["Lahore"];
 
   // HTML Content for the Leaflet Map
   const mapHtml = useMemo(() => {
@@ -335,7 +418,10 @@ export default function TailorsMapScreen() {
       id: t.id,
       name: (t.shopName || t.name || "Tailor Studio").replace(/"/g, '\\"'),
       rating: typeof t.rating === "number" ? t.rating : 0,
-      specialty: (Array.isArray(t.specialties) ? t.specialties.join(", ") : t.specialty || "").replace(/"/g, '\\"'),
+      specialty: (Array.isArray(t.specialties)
+        ? t.specialties.join(", ")
+        : t.specialty || ""
+      ).replace(/"/g, '\\"'),
       latitude: t.latitude,
       longitude: t.longitude,
       city: (t.city || "").replace(/"/g, '\\"'),
@@ -706,7 +792,12 @@ export default function TailorsMapScreen() {
 </body>
 </html>
     `;
-  }, [filteredTailors, initialCenter.lat, initialCenter.lng, selectedTailor?.id]);
+  }, [
+    filteredTailors,
+    initialCenter.lat,
+    initialCenter.lng,
+    selectedTailor?.id,
+  ]);
 
   // Selected tailor card attributes
   const tailorName =
@@ -722,7 +813,8 @@ export default function TailorsMapScreen() {
       ? `${selectedTailor.distanceKm.toFixed(1)} km away`
       : selectedTailor?.city || selectedTailor?.address || "Nearby";
   const specialtiesText =
-    Array.isArray(selectedTailor?.specialties) && selectedTailor.specialties.length > 0
+    Array.isArray(selectedTailor?.specialties) &&
+    selectedTailor.specialties.length > 0
       ? selectedTailor.specialties.slice(0, 3).join(", ")
       : selectedTailor?.bio || "Custom & Bespoke Tailoring";
   const tailorImage =
@@ -735,7 +827,9 @@ export default function TailorsMapScreen() {
       ? `Rs. ${Number(selectedTailor.startingPrice).toLocaleString()}`
       : "Price on request";
 
-  const isFavorite = selectedTailor?.id ? !!favorites[selectedTailor.id] : false;
+  const isFavorite = selectedTailor?.id
+    ? !!favorites[selectedTailor.id]
+    : false;
 
   return (
     <View style={styles.container}>
@@ -764,7 +858,12 @@ export default function TailorsMapScreen() {
       </View>
 
       {/* TOP FLOATING CONTROLS */}
-      <View style={[styles.topHeaderWrap, { paddingTop: insets.top > 0 ? insets.top + 8 : 16 }]}>
+      <View
+        style={[
+          styles.topHeaderWrap,
+          { paddingTop: insets.top > 0 ? insets.top + 8 : 16 },
+        ]}
+      >
         {/* Navigation & Search Row */}
         <View style={styles.searchRow}>
           <TouchableOpacity
@@ -788,7 +887,10 @@ export default function TailorsMapScreen() {
               returnKeyType="search"
             />
             {searchQuery ? (
-              <TouchableOpacity onPress={handleClearSearch} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity
+                onPress={handleClearSearch}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
                 <Ionicons name="close-circle" size={16} color="#9CA3AF" />
               </TouchableOpacity>
             ) : null}
@@ -797,13 +899,22 @@ export default function TailorsMapScreen() {
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => setIsFilterModalVisible(true)}
-            style={[styles.circleBtn, (minRating || verifiedOnly || maxRadius !== 10) ? styles.activeFilterBtn : null]}
+            style={[
+              styles.circleBtn,
+              minRating || verifiedOnly || maxRadius !== 10
+                ? styles.activeFilterBtn
+                : null,
+            ]}
             accessibilityLabel="Filter Tailors"
           >
             <Ionicons
               name="options-outline"
               size={19}
-              color={(minRating || verifiedOnly || maxRadius !== 10) ? "#078B87" : "#1A1D1F"}
+              color={
+                minRating || verifiedOnly || maxRadius !== 10
+                  ? "#078B87"
+                  : "#1A1D1F"
+              }
             />
           </TouchableOpacity>
         </View>
@@ -830,7 +941,12 @@ export default function TailorsMapScreen() {
                   color={isActive ? "#FFFFFF" : "#078B87"}
                   style={{ marginRight: 4 }}
                 />
-                <Text style={[styles.cityChipText, isActive && styles.cityChipTextActive]}>
+                <Text
+                  style={[
+                    styles.cityChipText,
+                    isActive && styles.cityChipTextActive,
+                  ]}
+                >
                   {cityName}
                 </Text>
               </TouchableOpacity>
@@ -848,7 +964,10 @@ export default function TailorsMapScreen() {
                 key={d}
                 activeOpacity={0.8}
                 onPress={() => setMaxRadius(d)}
-                style={[styles.radiusPill, isSelected && styles.radiusPillActive]}
+                style={[
+                  styles.radiusPill,
+                  isSelected && styles.radiusPillActive,
+                ]}
               >
                 <Ionicons
                   name="navigate"
@@ -856,7 +975,12 @@ export default function TailorsMapScreen() {
                   color={isSelected ? "#FFFFFF" : "#078B87"}
                   style={{ marginRight: 3 }}
                 />
-                <Text style={[styles.radiusPillText, isSelected && styles.radiusPillTextActive]}>
+                <Text
+                  style={[
+                    styles.radiusPillText,
+                    isSelected && styles.radiusPillTextActive,
+                  ]}
+                >
                   {d} km
                 </Text>
               </TouchableOpacity>
@@ -868,7 +992,10 @@ export default function TailorsMapScreen() {
               <Text style={styles.gpsActiveText}>GPS Active</Text>
             </View>
           ) : (
-            <TouchableOpacity onPress={handleTriggerGps} style={styles.gpsDetectBadge}>
+            <TouchableOpacity
+              onPress={handleTriggerGps}
+              style={styles.gpsDetectBadge}
+            >
               <Ionicons name="locate" size={11} color="#078B87" />
               <Text style={styles.gpsDetectText}>Detect GPS</Text>
             </TouchableOpacity>
@@ -923,11 +1050,18 @@ export default function TailorsMapScreen() {
       </View>
 
       {/* BOTTOM SELECTED TAILOR CARD */}
-      <View style={[styles.bottomContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom + 65 : 80 }]}>
+      <View
+        style={[
+          styles.bottomContainer,
+          { paddingBottom: insets.bottom > 0 ? insets.bottom + 65 : 80 },
+        ]}
+      >
         {isLoading ? (
           <View style={styles.cardLoading}>
             <ActivityIndicator size="small" color="#078B87" />
-            <Text style={styles.cardLoadingText}>Finding tailors on map...</Text>
+            <Text style={styles.cardLoadingText}>
+              Finding tailors on map...
+            </Text>
           </View>
         ) : selectedTailor ? (
           <View style={styles.tailorCard}>
@@ -984,7 +1118,12 @@ export default function TailorsMapScreen() {
                     {tailorName}
                   </Text>
                   {selectedTailor.isVerified || selectedTailor.verified ? (
-                    <Ionicons name="checkmark-circle" size={16} color="#078B87" style={{ marginLeft: 4 }} />
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={16}
+                      color="#078B87"
+                      style={{ marginLeft: 4 }}
+                    />
                   ) : null}
                 </View>
 
@@ -1009,23 +1148,34 @@ export default function TailorsMapScreen() {
             <View style={styles.cardActions}>
               <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={() => router.push(`/tailors/${selectedTailor.id}` as never)}
+                onPress={() =>
+                  router.push(`/tailors/${selectedTailor.id}` as never)
+                }
                 style={styles.viewProfileBtn}
               >
                 <Text style={styles.viewProfileBtnText}>View Full Profile</Text>
-                <Ionicons name="arrow-forward" size={15} color="#FFFFFF" style={{ marginLeft: 4 }} />
+                <Ionicons
+                  name="arrow-forward"
+                  size={15}
+                  color="#FFFFFF"
+                  style={{ marginLeft: 4 }}
+                />
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={styles.emptyCard}>
             <Ionicons name="location-outline" size={28} color="#9CA3AF" />
-            <Text style={styles.emptyCardTitle}>No tailors within {maxRadius} km</Text>
+            <Text style={styles.emptyCardTitle}>
+              No tailors within {maxRadius} km
+            </Text>
             <Text style={styles.emptyCardSubtitle}>
               {userCoords
                 ? `No registered tailors found within ${maxRadius} km of your GPS coordinates.`
                 : `No registered tailors found within ${maxRadius} km of ${selectedCity === "All" ? "your current area" : selectedCity}.`}
-              {maxRadius < 15 ? " Try expanding distance to 10 km or 15 km." : ""}
+              {maxRadius < 15
+                ? " Try expanding distance to 10 km or 15 km."
+                : ""}
             </Text>
             <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
               {maxRadius < 15 && (
@@ -1065,10 +1215,18 @@ export default function TailorsMapScreen() {
         onRequestClose={() => setIsFilterModalVisible(false)}
       >
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalSheet, { paddingBottom: insets.bottom > 0 ? insets.bottom + 12 : 24 }]}>
+          <View
+            style={[
+              styles.modalSheet,
+              { paddingBottom: insets.bottom > 0 ? insets.bottom + 12 : 24 },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter Tailors on Map</Text>
-              <TouchableOpacity onPress={() => setIsFilterModalVisible(false)} style={styles.circleBtn}>
+              <TouchableOpacity
+                onPress={() => setIsFilterModalVisible(false)}
+                style={styles.circleBtn}
+              >
                 <Ionicons name="close" size={20} color="#1A1D1F" />
               </TouchableOpacity>
             </View>
@@ -1082,9 +1240,17 @@ export default function TailorsMapScreen() {
                   <TouchableOpacity
                     key={r === null ? "all" : r.toString()}
                     onPress={() => setMinRating(r)}
-                    style={[styles.filterChip, isSelected && styles.filterChipActive]}
+                    style={[
+                      styles.filterChip,
+                      isSelected && styles.filterChipActive,
+                    ]}
                   >
-                    <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        isSelected && styles.filterChipTextActive,
+                      ]}
+                    >
                       {r === null ? "Any Rating" : `★ ${r.toFixed(1)}+`}
                     </Text>
                   </TouchableOpacity>
@@ -1101,17 +1267,30 @@ export default function TailorsMapScreen() {
             >
               <View>
                 <Text style={styles.toggleLabel}>Verified Tailors Only</Text>
-                <Text style={styles.toggleDesc}>Show only boutiques with verified studio credentials</Text>
+                <Text style={styles.toggleDesc}>
+                  Show only boutiques with verified studio credentials
+                </Text>
               </View>
-              <View style={[styles.switchTrack, verifiedOnly && styles.switchTrackActive]}>
-                <View style={[styles.switchThumb, verifiedOnly && styles.switchThumbActive]} />
+              <View
+                style={[
+                  styles.switchTrack,
+                  verifiedOnly && styles.switchTrackActive,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.switchThumb,
+                    verifiedOnly && styles.switchThumbActive,
+                  ]}
+                />
               </View>
             </TouchableOpacity>
 
             {/* Distance Radius (Strictly 5, 10, 15 km) */}
             <Text style={styles.filterSectionTitle}>Distance Radius</Text>
             <Text style={styles.filterSectionSubtitle}>
-              Checks and displays tailors within this distance from your location (lat & lng)
+              Checks and displays tailors within this distance from your
+              location (lat & lng)
             </Text>
             <View style={styles.filterOptionsRow}>
               {DISTANCE_OPTIONS.map((d) => {
@@ -1120,7 +1299,10 @@ export default function TailorsMapScreen() {
                   <TouchableOpacity
                     key={d.toString()}
                     onPress={() => setMaxRadius(d)}
-                    style={[styles.filterChip, isSelected && styles.filterChipActive]}
+                    style={[
+                      styles.filterChip,
+                      isSelected && styles.filterChipActive,
+                    ]}
                   >
                     <Ionicons
                       name="navigate-circle"
@@ -1128,7 +1310,12 @@ export default function TailorsMapScreen() {
                       color={isSelected ? "#078B87" : "#6B7280"}
                       style={{ marginRight: 4 }}
                     />
-                    <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        isSelected && styles.filterChipTextActive,
+                      ]}
+                    >
                       Within {d} km
                     </Text>
                   </TouchableOpacity>
@@ -1154,7 +1341,9 @@ export default function TailorsMapScreen() {
                 onPress={() => setIsFilterModalVisible(false)}
                 style={styles.modalApplyBtn}
               >
-                <Text style={styles.modalApplyBtnText}>Apply ({filteredTailors.length})</Text>
+                <Text style={styles.modalApplyBtnText}>
+                  Apply ({filteredTailors.length})
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1716,4 +1905,3 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 });
-

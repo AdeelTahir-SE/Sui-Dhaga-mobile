@@ -184,9 +184,11 @@ export function mapTailorFromBackend(raw: any): TailorItem {
       : undefined;
 
   const distanceStr =
-    distanceKm !== undefined
+    raw.distance ||
+    (distanceKm !== undefined
       ? `${distanceKm.toFixed(1)} km away`
-      : raw.distance || (city ? city : 'Nearby');
+      : (city ? city : 'Nearby'));
+
 
   return {
     ...raw,
@@ -276,6 +278,40 @@ export const tailorsApi = {
       list = rawData;
     } else if (Array.isArray(rawData?.tailors)) {
       list = rawData.tailors;
+    } else if (Array.isArray(rawData?.data)) {
+      list = rawData.data;
+    }
+
+    const mapped = list.map(mapTailorFromBackend);
+    return {
+      ...res,
+      data: mapped,
+    };
+  },
+
+  async getNearbyTailors(params: {
+    lat: number;
+    lng: number;
+    radius?: number;
+    city?: string;
+    search?: string;
+    minRating?: number;
+    page?: number;
+    limit?: number;
+  }) {
+    const res = await apiClient<any>('/tailors/nearby', {
+      method: 'GET',
+      params,
+    });
+
+    const rawData = res.data;
+    let list: any[] = [];
+    if (Array.isArray(rawData)) {
+      list = rawData;
+    } else if (Array.isArray(rawData?.tailors)) {
+      list = rawData.tailors;
+    } else if (Array.isArray(rawData?.records)) {
+      list = rawData.records;
     } else if (Array.isArray(rawData?.data)) {
       list = rawData.data;
     }

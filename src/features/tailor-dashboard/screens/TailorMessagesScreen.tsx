@@ -16,6 +16,7 @@ import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 import { MessageRow } from "../../customer-tabs/components/MessageRow";
+import { PersonMessagesListSkeleton } from "../../../components/ui/Skeleton";
 import { useConversations } from "../../customer-tabs/hooks/useConversations";
 import { useAuthStore } from "../../../stores/auth.store";
 import { getOtherParticipant } from "../../customer-tabs/screens/MessagesScreen";
@@ -499,12 +500,7 @@ export default function TailorMessagesScreen() {
 
         {/* Content States */}
         {isLoading && !isRefreshing ? (
-          <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 380 }}>
-            <ActivityIndicator size="large" color="#14919B" />
-            <Text className="mt-3 text-[13px] font-medium text-brand-gray">
-              Loading customer inquiries...
-            </Text>
-          </View>
+          <PersonMessagesListSkeleton count={6} />
         ) : error && conversations.length === 0 ? (
           <View className="flex-1 items-center justify-center py-16 px-4" style={{ minHeight: 380 }}>
             <View className="w-14 h-14 rounded-full bg-red-50 items-center justify-center mb-3">

@@ -16,6 +16,7 @@ import { CustomerHeader } from "../components/CustomerHeader";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MainOrderCard } from "../components/MainOrderCard";
+import { OrdersListSkeleton } from "../components/OrderCardSkeleton";
 import { useOrders } from "../../booking-orders/hooks/useOrders";
 
 
@@ -429,12 +430,7 @@ export default function MainOrdersScreen() {
 
         {/* Content Section */}
         {isLoading && !isRefreshing ? (
-          <View className="flex-1 items-center justify-center py-20" style={{ minHeight: 380 }}>
-            <ActivityIndicator size="large" color="#14919B" />
-            <Text className="mt-3 text-[13px] font-medium text-brand-gray">
-              Loading your orders...
-            </Text>
-          </View>
+          <OrdersListSkeleton count={3} />
         ) : error && orders.length === 0 ? (
           <View className="flex-1 items-center justify-center py-16 px-4" style={{ minHeight: 380 }}>
             <View className="w-14 h-14 rounded-full bg-red-50 items-center justify-center mb-3">

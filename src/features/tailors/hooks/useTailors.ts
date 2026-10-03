@@ -171,4 +171,62 @@ export function useTailorsMap(params?: { city?: string; search?: string; lat?: n
   return { tailors, isLoading, error, refetch: fetchMapTailors };
 }
 
+export function useNearbyTailors(params?: {
+  lat?: number;
+  lng?: number;
+  radius?: number;
+  city?: string;
+  search?: string;
+  minRating?: number;
+  page?: number;
+  limit?: number;
+}) {
+  const [tailors, setTailors] = useState<TailorItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const lat = params?.lat;
+  const lng = params?.lng;
+  const radius = params?.radius;
+  const city = params?.city;
+  const search = params?.search;
+  const minRating = params?.minRating;
+  const page = params?.page;
+  const limit = params?.limit;
+
+  const fetchNearby = useCallback(async () => {
+    if (lat === undefined || lng === undefined || isNaN(lat) || isNaN(lng)) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await tailorsApi.getNearbyTailors({
+        lat,
+        lng,
+        radius,
+        city,
+        search,
+        minRating,
+        page,
+        limit,
+      });
+      setTailors(res.data || []);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load nearby tailors');
+      setTailors([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [lat, lng, radius, city, search, minRating, page, limit]);
+
+  useEffect(() => {
+    fetchNearby();
+  }, [fetchNearby]);
+
+  return { tailors, isLoading, error, refetch: fetchNearby };
+}
+
+
 

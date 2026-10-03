@@ -28,6 +28,11 @@ import { QuickAction } from "../components/QuickAction";
 import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
 import { TrendingCommunitySection } from "../components/TrendingCommunitySection";
+import {
+  DesignsGridSkeleton,
+  PendingOrdersListSkeleton,
+  UpcomingAppointmentsListSkeleton,
+} from "../../../components/ui/Skeleton";
 
 const appointmentsIcon = require("@/assets/illustrations/customer-tabs/home/appointments-icon.png");
 const bookTailorIcon = require("@/assets/illustrations/customer-tabs/home/book-tailor-icon.png");
@@ -251,12 +256,7 @@ export default function HomeScreen() {
             onPressAction={() => router.push("/orders" as never)}
           />
           {ordersLoading && orders.length === 0 ? (
-            <View className="py-8 px-4 items-center justify-center rounded-xl bg-gray-50 border border-gray-100 my-1">
-              <ActivityIndicator size="small" color="#14919B" />
-              <Text className="mt-2 text-[12px] font-medium text-brand-gray">
-                Checking pending orders...
-              </Text>
-            </View>
+            <PendingOrdersListSkeleton count={3} />
           ) : pendingOrders.length === 0 ? (
             <View
               className="py-10 px-6 items-center justify-center rounded-2xl border border-brand-border bg-white my-1"
@@ -493,12 +493,7 @@ export default function HomeScreen() {
             onPressAction={() => router.push("/appointments" as never)}
           />
           {appointmentsLoading && appointments.length === 0 ? (
-            <View className="py-8 px-4 items-center justify-center rounded-xl bg-gray-50 border border-gray-100 my-1">
-              <ActivityIndicator size="small" color="#14919B" />
-              <Text className="mt-2 text-[12px] font-medium text-brand-gray">
-                Checking appointments...
-              </Text>
-            </View>
+            <UpcomingAppointmentsListSkeleton count={3} />
           ) : upcomingAppointments.length === 0 ? (
             <View
               className="py-10 px-6 items-center justify-center rounded-2xl border border-brand-border bg-white my-1"
@@ -957,12 +952,7 @@ export default function HomeScreen() {
               }}
             >
               {designsLoading ? (
-                <View className="py-16 items-center justify-center">
-                  <ActivityIndicator size="small" color="#14919B" />
-                  <Text className="mt-2 text-[12px] font-medium text-brand-gray">
-                    Loading your designs...
-                  </Text>
-                </View>
+                <DesignsGridSkeleton count={4} />
               ) : designs.length === 0 ? (
                 <View
                   className="py-10 px-6 items-center justify-center rounded-2xl border border-brand-border bg-white my-2"

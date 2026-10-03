@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTailors } from "../../tailors/hooks/useTailors";
-import { MainTailorCard } from "../components/MainTailorCard";
+import { SundropTailorCard } from "../components/SundropTailorCard";
 
 const sundropBanner = require("../../../../assets/customer-tab-banner/sundrop.png");
 
@@ -96,7 +96,7 @@ export default function SundropScreen() {
         ) : (
           <View style={styles.tailorsList}>
             {tailors.map((tailor, index) => (
-              <MainTailorCard
+              <SundropTailorCard
                 key={tailor.id || index}
                 id={tailor.id}
                 name={
