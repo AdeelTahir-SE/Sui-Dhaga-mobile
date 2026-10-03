@@ -16,22 +16,21 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useAuthStore } from "../../../stores/auth.store";
-import { useDesigns } from "../../design-studio/hooks/useDesigns";
-import { useOrders } from "../../booking-orders/hooks/useOrders";
-import { useAppointments } from "../../booking-orders/hooks/useAppointments";
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
+import { useAuthStore } from "../../../stores/auth.store";
+import { useAppointments } from "../../booking-orders/hooks/useAppointments";
+import { useOrders } from "../../booking-orders/hooks/useOrders";
+import { useDesigns } from "../../design-studio/hooks/useDesigns";
+import { CustomerHeroCarousel } from "../components/CustomerHeroCarousel";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
+import { MinimalAppointmentCard } from "../components/MinimalAppointmentCard";
+import { MinimalOrderCard } from "../components/MinimalOrderCard";
 import { QuickAction } from "../components/QuickAction";
 import { SectionTitle } from "../components/SectionTitle";
 import { TabPlaceholder } from "../components/TabPlaceholder";
 import { TrendingCommunitySection } from "../components/TrendingCommunitySection";
-import { MinimalOrderCard } from "../components/MinimalOrderCard";
-import { MinimalAppointmentCard } from "../components/MinimalAppointmentCard";
 
-const homeHero = require("@/assets/illustrations/customer-tabs/home-hero.png");
-const skinTexture = require("@/assets/texture/skin-texture.png");
 
 const appointmentsIcon = require("@/assets/illustrations/customer-tabs/home/appointments-icon.png");
 const bookTailorIcon = require("@/assets/illustrations/customer-tabs/home/book-tailor-icon.png");
@@ -64,7 +63,12 @@ export default function HomeScreen() {
     return appointments
       .filter((a) => {
         const s = (a.status || "").toLowerCase();
-        return s === "pending" || s === "confirmed" || s === "scheduled" || s === "upcoming";
+        return (
+          s === "pending" ||
+          s === "confirmed" ||
+          s === "scheduled" ||
+          s === "upcoming"
+        );
       })
       .slice(0, 8);
   }, [appointments]);
@@ -186,68 +190,20 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={() => router.push("/messages" as never)}
               activeOpacity={0.7}
-              className="relative h-11 w-11 items-center justify-center rounded-md border border-brand-border/80 bg-white shadow-xs"
+              className="relative h-11 w-11 items-center justify-center rounded-xl border border-brand-border/50 bg-white shadow-xs"
             >
               <Ionicons
                 name="notifications-outline"
                 size={22}
-                color="#1A1D1F"
+                color="#14919B"
               />
               <View className="absolute top-2.5 right-2.5 h-2.5 w-2.5 rounded-full bg-red-500" />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Prominent Hero Banner */}
-        <View className="relative overflow-hidden rounded-md bg-[#FFF7EA] border border-[#FFE8C7] p-5 shadow-sm min-h-[168px] justify-center">
-          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-            <RNImage
-              source={skinTexture}
-              resizeMode="repeat"
-              style={[
-                StyleSheet.absoluteFill,
-                {
-                  width: "100%",
-                  height: "100%",
-                },
-              ]}
-            />
-          </View>
-          <Text className="w-[56%] text-[23px] font-black leading-[29px] text-brand-dark">
-            Your Style, Your Story, Our Craft.
-          </Text>
-          <TouchableOpacity
-            onPress={() => router.push("/tailors" as never)}
-            activeOpacity={0.85}
-            className="relative overflow-hidden mt-3.5 self-start rounded-md bg-[#00949D] px-5 py-3 shadow-sm flex-row items-center gap-1.5"
-          >
-            <ButtonTexture variant="greenish" borderRadius={6} />
-            <View className="z-10 flex-row items-center gap-1.5">
-              <Text
-                className="text-[13px] font-bold text-white tracking-wide"
-                style={{
-                  textShadowColor: "rgba(0,0,0,0.22)",
-                  textShadowOffset: { width: 0, height: 1 },
-                  textShadowRadius: 2,
-                }}
-              >
-                Explore Tailors
-              </Text>
-              <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
-            </View>
-          </TouchableOpacity>
-          <Image
-            source={homeHero}
-            contentFit="cover"
-            style={{
-              position: "absolute",
-              bottom: 0,
-              right: -5,
-              height: "105%",
-              width: "56%",
-            }}
-          />
-        </View>
+        {/* Auto-scrolling Hero Banner */}
+        <CustomerHeroCarousel />
 
         {/* Quick Actions (2 Rows of 4) */}
         <SectionTitle
@@ -304,32 +260,67 @@ export default function HomeScreen() {
               </Text>
             </View>
           ) : pendingOrders.length === 0 ? (
-            <View className="py-8 px-4 items-center justify-center rounded-xl border border-dashed border-brand-border bg-gray-50/50 my-1">
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-50 mb-2">
-                <Ionicons name="bag-handle-outline" size={20} color="#14919B" />
+            <View
+              className="py-10 px-6 items-center justify-center rounded-2xl border border-brand-border bg-white my-1"
+              style={{
+                shadowColor: "#14919B",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
+            >
+              {/* Large prominent themed icon with solid primary style - borderless */}
+              <View className="h-[68px] w-[68px] items-center justify-center rounded-full bg-primary-light mb-4">
+                <View
+                  className="h-12 w-12 items-center justify-center rounded-full bg-primary"
+                  style={{
+                    shadowColor: "#14919B",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    elevation: 4,
+                  }}
+                >
+                  <Ionicons name="bag-handle" size={24} color="#FFFFFF" />
+                </View>
               </View>
-              <Text className="text-[13.5px] font-bold text-brand-dark text-center">
+
+              <Text className="text-[16px] font-extrabold text-brand-dark text-center tracking-tight">
                 No Pending Orders
               </Text>
-              <Text className="mt-1 text-[11px] text-brand-gray text-center max-w-[240px]">
-                You don't have any custom orders in progress right now.
+              <Text className="mt-1.5 text-[12.5px] font-medium text-brand-gray text-center max-w-[260px] leading-[18px]">
+                You don't have any custom stitching orders in progress. Find a
+                trusted tailor to get started!
               </Text>
+
               <TouchableOpacity
                 onPress={() => router.push("/tailors" as never)}
-                activeOpacity={0.8}
-                className="mt-3 rounded-lg bg-primary px-3.5 py-1.5 flex-row items-center gap-1"
+                activeOpacity={0.85}
+                className="relative mt-5 h-[44px] overflow-hidden rounded-xl bg-primary px-6 flex-row items-center justify-center gap-2 shadow-sm"
               >
-                <Ionicons name="cut-outline" size={13} color="#FFFFFF" />
-                <Text className="text-[11.5px] font-bold text-white">
-                  Find a Tailor
-                </Text>
+                <ButtonTexture
+                  variant="greenish"
+                  borderRadius={12}
+                  opacity={1}
+                />
+                <View className="z-10 flex-row items-center gap-2">
+                  <Ionicons name="cut-outline" size={16} color="#FFFFFF" />
+                  <Text className="text-[13px] font-bold text-white tracking-wide">
+                    Find a Tailor
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           ) : (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingRight: 20, gap: 12, paddingVertical: 8 }}
+              contentContainerStyle={{
+                paddingRight: 20,
+                gap: 12,
+                paddingVertical: 8,
+              }}
               className="-mx-5 px-5"
             >
               {pendingOrders.map((order, idx) => {
@@ -356,13 +347,25 @@ export default function HomeScreen() {
                   "In Progress";
 
                 const priceValue =
-                  order.price ?? order.totalAmount ?? o.total_amount ?? o.estimatedPrice ?? 0;
+                  order.price ??
+                  order.totalAmount ??
+                  o.total_amount ??
+                  o.estimatedPrice ??
+                  0;
 
                 const firstDesignImg =
-                  (order.designImages && order.designImages.length > 0 ? order.designImages[0] : null) ||
-                  (order.design_images && order.design_images.length > 0 ? order.design_images[0] : null) ||
-                  (o.designImages && o.designImages.length > 0 ? o.designImages[0] : null) ||
-                  (o.design_images && o.design_images.length > 0 ? o.design_images[0] : null) ||
+                  (order.designImages && order.designImages.length > 0
+                    ? order.designImages[0]
+                    : null) ||
+                  (order.design_images && order.design_images.length > 0
+                    ? order.design_images[0]
+                    : null) ||
+                  (o.designImages && o.designImages.length > 0
+                    ? o.designImages[0]
+                    : null) ||
+                  (o.design_images && o.design_images.length > 0
+                    ? o.design_images[0]
+                    : null) ||
                   order.imageUrl ||
                   order.image ||
                   o.imageUrl ||
@@ -388,7 +391,12 @@ export default function HomeScreen() {
                     price={priceValue}
                     status={order.status || "Pending"}
                     image={firstDesignImg}
-                    designImages={order.designImages || order.design_images || o.designImages || o.design_images}
+                    designImages={
+                      order.designImages ||
+                      order.design_images ||
+                      o.designImages ||
+                      o.design_images
+                    }
                     tone={tone}
                     onPress={() => router.push(`/orders/${order.id}` as any)}
                   />
@@ -494,32 +502,67 @@ export default function HomeScreen() {
               </Text>
             </View>
           ) : upcomingAppointments.length === 0 ? (
-            <View className="py-8 px-4 items-center justify-center rounded-xl border border-dashed border-brand-border bg-gray-50/50 my-1">
-              <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-50 mb-2">
-                <Ionicons name="calendar-outline" size={20} color="#14919B" />
+            <View
+              className="py-10 px-6 items-center justify-center rounded-2xl border border-brand-border bg-white my-1"
+              style={{
+                shadowColor: "#14919B",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 8,
+                elevation: 2,
+              }}
+            >
+              {/* Large prominent themed icon with solid primary style - borderless */}
+              <View className="h-[68px] w-[68px] items-center justify-center rounded-full bg-primary-light mb-4">
+                <View
+                  className="h-12 w-12 items-center justify-center rounded-full bg-primary"
+                  style={{
+                    shadowColor: "#14919B",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                    elevation: 4,
+                  }}
+                >
+                  <Ionicons name="calendar" size={24} color="#FFFFFF" />
+                </View>
               </View>
-              <Text className="text-[13.5px] font-bold text-brand-dark text-center">
+
+              <Text className="text-[16px] font-extrabold text-brand-dark text-center tracking-tight">
                 No Upcoming Appointments
               </Text>
-              <Text className="mt-1 text-[11px] text-brand-gray text-center max-w-[240px]">
-                Schedule a consultation, fitting, or measurement visit.
+              <Text className="mt-1.5 text-[12.5px] font-medium text-brand-gray text-center max-w-[260px] leading-[18px]">
+                Schedule a consultation, fitting, or measurement visit with your
+                favourite tailor.
               </Text>
+
               <TouchableOpacity
                 onPress={() => router.push("/appointments" as never)}
-                activeOpacity={0.8}
-                className="mt-3 rounded-lg bg-primary px-3.5 py-1.5 flex-row items-center gap-1"
+                activeOpacity={0.85}
+                className="relative mt-5 h-[44px] overflow-hidden rounded-xl bg-primary px-6 flex-row items-center justify-center gap-2 shadow-sm"
               >
-                <Ionicons name="calendar" size={13} color="#FFFFFF" />
-                <Text className="text-[11.5px] font-bold text-white">
-                  Schedule Now
-                </Text>
+                <ButtonTexture
+                  variant="greenish"
+                  borderRadius={12}
+                  opacity={1}
+                />
+                <View className="z-10 flex-row items-center gap-2">
+                  <Ionicons name="calendar" size={16} color="#FFFFFF" />
+                  <Text className="text-[13px] font-bold text-white tracking-wide">
+                    Schedule Now
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           ) : (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingRight: 20, gap: 12, paddingVertical: 8 }}
+              contentContainerStyle={{
+                paddingRight: 20,
+                gap: 12,
+                paddingVertical: 8,
+              }}
               className="-mx-5 px-5"
             >
               {upcomingAppointments.map((apt, idx) => {
@@ -528,8 +571,8 @@ export default function HomeScreen() {
                   statusLower === "confirmed"
                     ? "teal"
                     : statusLower === "pending"
-                    ? "gold"
-                    : "blue";
+                      ? "gold"
+                      : "blue";
 
                 const tailorAvatar =
                   apt.tailorAvatar ||
@@ -542,14 +585,18 @@ export default function HomeScreen() {
                   <MinimalAppointmentCard
                     key={apt.id}
                     id={apt.id}
-                    tailor={apt.tailorName || apt.tailor?.name || "Master Tailor"}
+                    tailor={
+                      apt.tailorName || apt.tailor?.name || "Master Tailor"
+                    }
                     avatar={tailorAvatar}
                     service={apt.serviceType || "Custom Fitting"}
                     date={apt.appointmentDate || apt.date || "Scheduled"}
                     time={apt.appointmentTime || apt.time || ""}
                     status={apt.status || "Upcoming"}
                     tone={tone}
-                    onPress={() => router.push(`/appointments/${apt.id}` as any)}
+                    onPress={() =>
+                      router.push(`/appointments/${apt.id}` as any)
+                    }
                   />
                 );
               })}
@@ -919,27 +966,63 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               ) : designs.length === 0 ? (
-                <View className="py-14 px-4 items-center justify-center rounded-2xl border border-dashed border-brand-border bg-gray-50/50 my-2">
-                  <View className="h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">
-                    <Ionicons name="color-wand-outline" size={24} color="#14919B" />
+                <View
+                  className="py-10 px-6 items-center justify-center rounded-2xl border border-brand-border bg-white my-2"
+                  style={{
+                    shadowColor: "#14919B",
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.06,
+                    shadowRadius: 8,
+                    elevation: 2,
+                  }}
+                >
+                  {/* Large prominent themed icon with solid primary style - borderless */}
+                  <View className="h-[68px] w-[68px] items-center justify-center rounded-full bg-primary-light mb-4">
+                    <View
+                      className="h-12 w-12 items-center justify-center rounded-full bg-primary"
+                      style={{
+                        shadowColor: "#14919B",
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 8,
+                        elevation: 4,
+                      }}
+                    >
+                      <Ionicons name="color-wand" size={24} color="#FFFFFF" />
+                    </View>
                   </View>
-                  <Text className="text-[15px] font-bold text-brand-dark text-center">
+
+                  <Text className="text-[16px] font-extrabold text-brand-dark text-center tracking-tight">
                     No Saved Designs
                   </Text>
-                  <Text className="mt-1 text-[12px] text-brand-gray text-center max-w-[240px] mb-4">
-                    You haven't saved any designs yet. Generate bespoke outfits in the AI Design Studio!
+                  <Text className="mt-1.5 text-[12.5px] font-medium text-brand-gray text-center max-w-[260px] leading-[18px]">
+                    You haven't saved any designs yet. Generate bespoke outfits
+                    in the AI Design Studio!
                   </Text>
+
                   <TouchableOpacity
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
                     onPress={() => {
                       setActiveModal(null);
                       router.push("/design-studio" as never);
                     }}
-                    className="rounded-xl bg-primary px-5 py-2.5 shadow-sm"
+                    className="relative mt-5 h-[44px] overflow-hidden rounded-xl bg-primary px-6 flex-row items-center justify-center gap-2 shadow-sm"
                   >
-                    <Text className="text-[12.5px] font-bold text-white">
-                      Open Design Studio
-                    </Text>
+                    <ButtonTexture
+                      variant="greenish"
+                      borderRadius={12}
+                      opacity={1}
+                    />
+                    <View className="z-10 flex-row items-center gap-2">
+                      <Ionicons
+                        name="color-wand-outline"
+                        size={16}
+                        color="#FFFFFF"
+                      />
+                      <Text className="text-[13px] font-bold text-white tracking-wide">
+                        Open Design Studio
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -967,7 +1050,9 @@ export default function HomeScreen() {
                         {design.name || "Custom Outfit"}
                       </Text>
                       <Text className="mt-0.5 text-center text-[11px] font-medium text-brand-gray">
-                        {design.garmentType || design.category || "AI Generated"}
+                        {design.garmentType ||
+                          design.category ||
+                          "AI Generated"}
                       </Text>
                       <View className="mt-2.5 w-full rounded-md bg-primary/10 py-1.5 items-center">
                         <Text className="text-[11px] font-bold text-primary">

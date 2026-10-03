@@ -12,9 +12,9 @@ import {
 } from "react-native";
 
 import { communityApi } from "../../../api/community.api";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 import { CommunityPost } from "../../../types/api";
 import { SectionTitle } from "./SectionTitle";
-import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 type TrendingCommunitySectionProps = {
   title?: string;
@@ -159,23 +159,31 @@ export function TrendingCommunitySection({
         </View>
       )}
 
-      {/* Empty state (No posts in database) */}
+      {/* Empty state (No trending designs in database) */}
       {!isLoading && !error && posts.length === 0 && (
         <View style={styles.emptyContainer}>
-          <Ionicons name="sparkles-outline" size={24} color="#14919B" />
-          <Text style={styles.emptyTitle}>No Posts Yet</Text>
+          {/* Large prominent themed icon with solid primary style */}
+          <View style={styles.emptyIconCircleOuter}>
+            <View style={styles.emptyIconCircleInner}>
+              <Ionicons name="sparkles" size={28} color="#FFFFFF" />
+            </View>
+          </View>
+
+          <Text style={styles.emptyTitle}>No Trending Designs Yet</Text>
           <Text style={styles.emptySubtitle}>
-            Be the first to share an outfit or design with the community!
+            Be the first to share an outfit or design with the Sui Dhaga
+            community!
           </Text>
+
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={() => router.push("/community/create" as any)}
             style={styles.createBtn}
           >
-            <ButtonTexture variant="greenish" borderRadius={8} />
+            <ButtonTexture variant="greenish" borderRadius={12} opacity={1} />
             <View style={styles.createBtnContent}>
-              <Ionicons name="add" size={15} color="#FFFFFF" />
-              <Text style={styles.createBtnText}>Create Post</Text>
+              <Ionicons name="add" size={17} color="#FFFFFF" />
+              <Text style={styles.createBtnText}>Share First Design</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -610,54 +618,98 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
   emptyContainer: {
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#EAEAEA",
-    borderStyle: "dashed",
-    backgroundColor: "#FAFAFA",
-    padding: 20,
+    borderColor: "#E6E8EC",
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 36,
+    paddingHorizontal: 24,
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
+    overflow: "hidden",
+    marginVertical: 4,
+    shadowColor: "#14919B",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  emptyAccentLine: {
+    position: "absolute",
+    top: 0,
+    left: 24,
+    right: 24,
+    height: 3,
+    borderBottomLeftRadius: 3,
+    borderBottomRightRadius: 3,
+    backgroundColor: "rgba(20, 145, 155, 0.3)",
+  },
+  emptyIconCircleOuter: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: "#E0F7F7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  emptyIconCircleInner: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#14919B",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#14919B",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   emptyTitle: {
-    marginTop: 6,
-    fontSize: 13.5,
+    fontSize: 16,
     fontWeight: "800",
     color: "#1A1D1F",
+    letterSpacing: -0.3,
+    textAlign: "center",
   },
   emptySubtitle: {
-    marginTop: 2,
-    fontSize: 11,
+    marginTop: 6,
+    fontSize: 12.5,
+    fontWeight: "500",
     color: "#6F767E",
     textAlign: "center",
-    maxWidth: 240,
-    lineHeight: 15,
+    maxWidth: 270,
+    lineHeight: 18,
   },
   createBtn: {
     position: "relative",
     overflow: "hidden",
-    marginTop: 12,
+    marginTop: 20,
+    height: 44,
+    paddingHorizontal: 22,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#00949D",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: "#14919B",
+    shadowColor: "#14919B",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
   createBtnContent: {
     zIndex: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
+    gap: 6,
   },
   createBtnText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
     color: "#FFFFFF",
     letterSpacing: 0.2,
-    textShadowColor: "rgba(0,0,0,0.22)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
 });

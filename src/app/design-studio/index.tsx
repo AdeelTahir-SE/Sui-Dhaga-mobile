@@ -1,3 +1,11 @@
-import DesignTabScreen from "@/features/customer-tabs/screens/DesignTabScreen";
+import React from "react";
+import { View } from "react-native";
+import { AiNotSupportedModal } from "@/components/ui/AiNotSupportedModal";
 
-export default DesignTabScreen;
+export default function DesignStudioIndex() {
+  return (
+    <View className="flex-1 bg-white">
+      <AiNotSupportedModal visible={true} />
+    </View>
+  );
+}

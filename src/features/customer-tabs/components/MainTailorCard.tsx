@@ -75,7 +75,9 @@ export function MainTailorCard({
       }
       const reviewMatch = rating.match(/\(([^)]+)\)/);
       if (reviewMatch) {
-        countStr = `(${reviewMatch[1]})`;
+        const inner = reviewMatch[1].trim();
+        // If it already contains "review", keep as is, otherwise add "reviews"
+        countStr = inner.toLowerCase().includes("review") ? `(${inner})` : `(${inner} reviews)`;
       }
     }
 
@@ -135,13 +137,6 @@ export function MainTailorCard({
               </Text>
             </View>
           )}
-
-          {/* Verified Mini Overlay on Avatar */}
-          {isTailorVerified ? (
-            <View style={styles.avatarVerifiedBadge}>
-              <Ionicons name="checkmark" size={10} color="#FFFFFF" />
-            </View>
-          ) : null}
         </View>
 
         {/* MIDDLE INFO BLOCK */}
@@ -153,9 +148,9 @@ export function MainTailorCard({
 
           {/* Rating, Reviews & Location Row */}
           <View style={styles.metaRow}>
-            {/* Rating Pill */}
+            {/* Rating Pill with Star */}
             <View style={styles.ratingPill}>
-              <Ionicons name="star" size={11} color="#D97706" />
+              <Ionicons name="star" size={12} color="#F59E0B" />
               <Text style={styles.ratingPillText}>{displayRating}</Text>
             </View>
 
@@ -176,28 +171,23 @@ export function MainTailorCard({
             </View>
           </View>
 
-          {/* Badges Strip (Verified, Top Rated, Experience) */}
-          <View style={styles.badgesRow}>
-            {isTailorVerified ? (
-              <View style={styles.verifiedTag}>
-                <Ionicons name="shield-checkmark" size={11} color="#078B87" />
-                <Text style={styles.verifiedTagText}>Verified</Text>
-              </View>
-            ) : null}
+          {/* Badges Strip (Top Rated, Experience) */}
+          {(topRated || (experienceYears && experienceYears > 0)) ? (
+            <View style={styles.badgesRow}>
+              {topRated ? (
+                <View style={styles.topRatedTag}>
+                  <Ionicons name="trophy" size={10} color="#B45309" />
+                  <Text style={styles.topRatedTagText}>Top Rated</Text>
+                </View>
+              ) : null}
 
-            {topRated ? (
-              <View style={styles.topRatedTag}>
-                <Ionicons name="trophy" size={10} color="#B45309" />
-                <Text style={styles.topRatedTagText}>Top Rated</Text>
-              </View>
-            ) : null}
-
-            {experienceYears && experienceYears > 0 ? (
-              <View style={styles.expTag}>
-                <Text style={styles.expTagText}>{experienceYears}+ yrs exp</Text>
-              </View>
-            ) : null}
-          </View>
+              {experienceYears && experienceYears > 0 ? (
+                <View style={styles.expTag}>
+                  <Text style={styles.expTagText}>{experienceYears}+ yrs exp</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -281,19 +271,6 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: -0.5,
   },
-  avatarVerifiedBadge: {
-    position: "absolute",
-    bottom: 4,
-    right: 4,
-    width: 17,
-    height: 17,
-    borderRadius: 8.5,
-    backgroundColor: "#078B87",
-    borderWidth: 1.5,
-    borderColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
   infoBlock: {
     flex: 1,
     marginLeft: 13,
@@ -307,28 +284,27 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 5,
+    marginTop: 6,
     flexWrap: "wrap",
-    gap: 4,
+    gap: 6,
   },
   ratingPill: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFBEB",
-    borderWidth: 1,
-    borderColor: "#FDE68A",
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
     borderRadius: 6,
-    gap: 3,
+    gap: 3.5,
   },
   ratingPillText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "800",
-    color: "#92400E",
+    color: "#B45309",
+    lineHeight: 14,
   },
   reviewsCountText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: "500",
     color: "#64748B",
   },
@@ -340,46 +316,32 @@ const styles = StyleSheet.create({
   locationWrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: 3,
     flexShrink: 1,
   },
   distanceText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: "600",
     color: "#475569",
   },
   badgesRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    marginTop: 7,
+    gap: 6,
+    marginTop: 8,
     flexWrap: "wrap",
-  },
-  verifiedTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#E0F7F7",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    gap: 3,
-  },
-  verifiedTagText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#078B87",
   },
   topRatedTag: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FEF3C7",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
     borderRadius: 6,
-    gap: 3,
+    gap: 3.5,
   },
   topRatedTagText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: "700",
     color: "#92400E",
   },

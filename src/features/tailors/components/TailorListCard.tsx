@@ -54,10 +54,11 @@ export function TailorListCard({
           </View>
           <RatingLine rating={rating} distance={distance} />
           <Text className="mt-2 text-[12px] text-brand-gray">{specialty}</Text>
-          <View className="mt-3 flex-row gap-2">
-            <TailorBadge label="Verified" />
-            {topRated ? <TailorBadge label="Top Rated" tone="gray" /> : null}
-          </View>
+          {topRated ? (
+            <View className="mt-2.5 flex-row">
+              <TailorBadge label="Top Rated" tone="gray" />
+            </View>
+          ) : null}
         </View>
       </View>
       <TouchableOpacity

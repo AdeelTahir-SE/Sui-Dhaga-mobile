@@ -1,3 +1,11 @@
-import ImageToDesignScreen from "@/features/design-studio/screens/ImageToDesignScreen";
+import React from "react";
+import { View } from "react-native";
+import { AiNotSupportedModal } from "@/components/ui/AiNotSupportedModal";
 
-export default ImageToDesignScreen;
+export default function ImageToDesignPage() {
+  return (
+    <View className="flex-1 bg-white">
+      <AiNotSupportedModal visible={true} />
+    </View>
+  );
+}
