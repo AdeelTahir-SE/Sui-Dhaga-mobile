@@ -10,6 +10,8 @@ import "../global.css";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "../stores/auth.store";
 import { AuthRequiredModal } from "../features/auth/components/AuthRequiredModal";
+import { useAppUpdate } from "../hooks/useAppUpdate";
+import { AppUpdateModal } from "../components/ui/AppUpdateModal";
 import {
   registerForPushNotificationsAsync,
   setupPushNotificationListeners,
@@ -21,6 +23,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function RootLayout() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const user = useAuthStore((state) => state.user);
+  const { updateInfo, isVisible, dismissModal, triggerUpdate } = useAppUpdate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -62,6 +65,12 @@ export default function RootLayout() {
           }}
         />
         <AuthRequiredModal />
+        <AppUpdateModal
+          visible={isVisible}
+          updateInfo={updateInfo}
+          onUpdate={triggerUpdate}
+          onDismiss={dismissModal}
+        />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

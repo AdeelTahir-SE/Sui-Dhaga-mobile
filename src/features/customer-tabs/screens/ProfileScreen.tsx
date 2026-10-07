@@ -16,10 +16,12 @@ import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import Constants from "expo-constants";
 import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { ProfileMenuRow } from "../components/ProfileMenuRow";
 import { useAuthStore } from "../../../stores/auth.store";
+import { useAppUpdateStore } from "../../../stores/app-update.store";
 import { storage } from "../../../api/client";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
 import { User } from "../../../types/api";
@@ -34,6 +36,9 @@ export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
+
+  const checkForUpdate = useAppUpdateStore((state) => state.checkForUpdate);
+  const isCheckingUpdate = useAppUpdateStore((state) => state.isChecking);
 
   const [isUploading, setIsUploading] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -475,6 +480,16 @@ export default function ProfileScreen() {
               onPress={openEditModal}
             />
             <ProfileMenuRow
+              title="Check for Updates"
+              subtitle={
+                isCheckingUpdate
+                  ? "Checking for new version..."
+                  : `Version v${Constants.expoConfig?.version || "1.0.0"} (Tap to check)`
+              }
+              icon="cloud-download-outline"
+              onPress={() => checkForUpdate(true)}
+            />
+            <ProfileMenuRow
               title="Help & Customer Care"
               subtitle="support@suidhaga.app • 1800-SUI-DHAGA"
               icon="help-circle-outline"
@@ -510,7 +525,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <Text className="mt-5 text-center text-[11px] font-medium text-brand-gray/60">
-          Sui Dhaga • v1.0.0
+          Sui Dhaga • v{Constants.expoConfig?.version || "1.0.0"}
         </Text>
       </View>
 
