@@ -2,7 +2,10 @@ import { useEffect } from "react";
 import { Platform, StatusBar as RNStatusBar } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  SafeAreaProvider,
+  initialWindowMetrics,
+} from "react-native-safe-area-context";
 import * as SystemUI from "expo-system-ui";
 import * as WebBrowser from "expo-web-browser";
 import "../global.css";
@@ -56,7 +59,10 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+      <SafeAreaProvider
+        initialMetrics={initialWindowMetrics}
+        style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+      >
         <StatusBar style="dark" />
         <Stack
           screenOptions={{

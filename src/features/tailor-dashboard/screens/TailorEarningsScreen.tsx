@@ -14,6 +14,7 @@ import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
 import { TailorDashPlaceholder } from "../components/TailorDashPlaceholder";
 import { TailorEarningsChart } from "../components/TailorEarningsChart";
+import { TailorEarningsSkeleton } from "@/components/ui/Skeleton";
 import { useOrders } from "../../booking-orders/hooks/useOrders";
 
 const earningsImages = {
@@ -128,8 +129,11 @@ export default function TailorEarningsScreen() {
       }
     >
       <TailorDashboardHeader title="Earnings" rightText="Overview" />
-      <View className="flex-1 px-5 pb-8">
-        <Text className="text-[12px] font-bold uppercase tracking-wider text-brand-gray">Total Earnings</Text>
+      {isLoading && !isRefreshing ? (
+        <TailorEarningsSkeleton />
+      ) : (
+        <View className="flex-1 px-5 pb-8">
+          <Text className="text-[12px] font-bold uppercase tracking-wider text-brand-gray">Total Earnings</Text>
         <View className="mt-2 flex-row items-center justify-between">
           <View>
             <Text className="text-[34px] font-black text-brand-dark tracking-tight">
@@ -163,7 +167,7 @@ export default function TailorEarningsScreen() {
         <SectionTitle title="Earnings Overview" />
         <TailorEarningsChart orders={orders} totalEarned={totalEarned} />
 
-        <SectionTitle title="Recent Transactions" />
+        <SectionTitle title="Recent Earnings" />
         {isLoading && !isRefreshing ? (
           <View className="py-12 items-center justify-center">
             <ActivityIndicator size="large" color="#14919B" />
@@ -174,10 +178,10 @@ export default function TailorEarningsScreen() {
               <Ionicons name="cash-outline" size={34} color="#14919B" />
             </View>
             <Text className="text-[17px] font-bold text-brand-dark text-center tracking-tight">
-              No Transactions Yet
+              No Earnings Yet
             </Text>
             <Text className="mt-1.5 text-[13px] font-medium text-brand-gray text-center leading-[19px] max-w-[280px]">
-              When you accept and complete customer orders, your transactions and payouts will be recorded here.
+              When you accept and complete customer orders, your earnings and payouts will be recorded here.
             </Text>
           </View>
         ) : (
@@ -195,6 +199,7 @@ export default function TailorEarningsScreen() {
           </View>
         )}
       </View>
+      )}
     </TailorDashboardShell>
   );
 }

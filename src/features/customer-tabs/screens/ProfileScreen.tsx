@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -25,6 +26,7 @@ import { useAppUpdateStore } from "../../../stores/app-update.store";
 import { storage } from "../../../api/client";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
 import { User } from "../../../types/api";
+import { CustomerProfileSkeleton } from "../../../components/ui/Skeleton";
 
 import { useOrders } from "../../booking-orders/hooks/useOrders";
 import { useAppointments } from "../../booking-orders/hooks/useAppointments";
@@ -34,6 +36,7 @@ import { useMeasurements } from "../../measurements-community-checkout/hooks/use
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
+  const authLoading = useAuthStore((state) => state.isLoading);
   const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
 
@@ -43,6 +46,8 @@ export default function ProfileScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(!user);
 
   // Edit form state
   const [editName, setEditName] = useState("");
@@ -50,10 +55,10 @@ export default function ProfileScreen() {
   const [editAddress, setEditAddress] = useState("");
 
   // Live counts for quick metric chips
-  const { orders } = useOrders();
-  const { appointments } = useAppointments();
-  const { designs } = useDesigns();
-  const { measurements } = useMeasurements();
+  const { orders, refresh: refreshOrders } = useOrders();
+  const { appointments, refresh: refreshAppointments } = useAppointments();
+  const { designs, refresh: refreshDesigns } = useDesigns();
+  const { measurements, refresh: refreshMeasurements } = useMeasurements();
 
   const activeOrdersCount = orders.filter(
     (o) =>
@@ -537,32 +542,43 @@ export default function ProfileScreen() {
         onRequestClose={() => setIsEditModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setIsEditModalVisible(false)}>
-          <View className="flex-1 justify-end bg-black/50">
+          <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(15, 23, 42, 0.45)" }}>
             <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
               <View
-                className="rounded-t-3xl bg-white px-5 pt-4 pb-8"
+                className="rounded-t-[32px] bg-white px-5 pt-3 pb-8 shadow-2xl"
                 style={{
                   paddingBottom: Math.max(insets.bottom + 16, 28),
                   maxHeight: "85%",
                 }}
               >
+                {/* Drag Handle */}
+                <View className="h-1.5 w-12 rounded-full bg-slate-200 self-center mb-3 mt-1" />
+
                 {/* Header */}
-                <View className="flex-row items-center justify-between pb-3 border-b border-brand-border">
-                  <View>
-                    <Text className="text-[18px] font-black text-brand-dark">
-                      Edit Profile
-                    </Text>
-                    <Text className="text-[12px] font-medium text-brand-gray">
-                      Update your personal information
-                    </Text>
+                <View className="flex-row items-center justify-between pb-3">
+                  <View className="flex-row items-center flex-1">
+                    <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#E0F7F7] mr-3">
+                      <Ionicons name="person" size={20} color="#14919B" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[17px] font-bold text-brand-dark">
+                        Edit Profile
+                      </Text>
+                      <Text className="text-[12px] font-medium text-brand-gray">
+                        Update your personal information
+                      </Text>
+                    </View>
                   </View>
                   <TouchableOpacity
                     onPress={() => setIsEditModalVisible(false)}
-                    className="h-8 w-8 items-center justify-center rounded-full bg-brand-surface"
+                    className="h-8 w-8 items-center justify-center rounded-xl bg-slate-100 active:bg-slate-200"
                   >
-                    <Ionicons name="close" size={20} color="#1A1D1F" />
+                    <Ionicons name="close" size={18} color="#64748B" />
                   </TouchableOpacity>
                 </View>
+
+                {/* Hairline Divider */}
+                <View className="h-[1px] bg-slate-100 mb-2" />
 
                 <ScrollView
                   showsVerticalScrollIndicator={false}

@@ -42,7 +42,7 @@ export default function SundropScreen() {
         </TouchableOpacity>
 
         <View style={styles.navTitleContainer}>
-          <Text style={styles.navTitle}>Sundrop Atelier</Text>
+          <Text style={styles.navTitle}>Sundrop Tailor</Text>
         </View>
       </View>
 

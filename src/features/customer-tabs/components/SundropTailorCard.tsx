@@ -105,7 +105,7 @@ export function SundropTailorCard({
 
     if (distanceKm !== undefined && !isNaN(distanceKm)) {
       return {
-        locationText: loc || "Bespoke Atelier",
+        locationText: loc || "Bespoke Tailor",
         distanceBadgeText: `${distanceKm.toFixed(1)} km away`,
       };
     }
@@ -128,7 +128,7 @@ export function SundropTailorCard({
     }
 
     return {
-      locationText: distStr || "Bespoke Atelier",
+      locationText: distStr || "Bespoke Tailor",
       distanceBadgeText: isNumericDistance ? distStr : null,
     };
   }, [address, city, distance, distanceKm]);
@@ -309,7 +309,7 @@ export function SundropTailorCard({
       {/* Divider */}
       <View style={styles.cardDivider} />
 
-      {/* Bottom Row: Price & Atelier CTA */}
+      {/* Bottom Row: Price & Tailor CTA */}
       <View style={styles.bottomRow}>
         <View style={styles.priceColumn}>
           <Text style={styles.priceLabel}>{priceLabelText}</Text>
@@ -332,7 +332,7 @@ export function SundropTailorCard({
           activeOpacity={0.85}
           style={styles.ctaButton}
         >
-          <Text style={styles.ctaButtonText}>View Atelier</Text>
+          <Text style={styles.ctaButtonText}>View Tailor</Text>
           <Ionicons name="arrow-forward" size={14} color="#1A0B2E" />
         </TouchableOpacity>
       </View>

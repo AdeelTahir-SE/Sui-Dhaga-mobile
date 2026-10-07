@@ -193,7 +193,7 @@ export function TailorLocationPickerModal({
       padding: 0 14px;
       border-radius: 7px;
       border: none;
-      background: #078B87;
+      background: #14919B;
       color: #FFFFFF;
       font-weight: 700;
       font-size: 12px;
@@ -206,9 +206,9 @@ export function TailorLocationPickerModal({
       height: 38px;
       padding: 0 12px;
       border-radius: 7px;
-      border: 1.5px solid #078B87;
+      border: 1.5px solid #14919B;
       background: #EBF8F9;
-      color: #078B87;
+      color: #14919B;
       font-weight: 700;
       font-size: 12px;
       cursor: pointer;
@@ -308,7 +308,7 @@ export function TailorLocationPickerModal({
       box-shadow: 0 6px 18px rgba(0,0,0,0.22);
       padding: 0;
       overflow: hidden;
-      border: 1px solid #078B87;
+      border: 1px solid #14919B;
     }
     .leaflet-popup-content {
       margin: 10px 14px;
@@ -317,7 +317,7 @@ export function TailorLocationPickerModal({
     .popup-badge {
       display: inline-block;
       background: #EBF8F9;
-      color: #078B87;
+      color: #14919B;
       font-weight: 800;
       font-size: 11px;
       padding: 2px 6px;
@@ -400,7 +400,7 @@ export function TailorLocationPickerModal({
       '  <div class="radar-pulse"></div>',
       '  <div class="ground-dot"></div>',
       '  <svg width="38" height="46" viewBox="0 0 36 44" fill="none" style="filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35)); position: relative; top: -5px;">',
-      '    <path d="M18 0C8.05887 0 0 8.05887 0 18C0 29.5 18 44 18 44C18 44 36 29.5 36 18C36 8.05887 27.9411 0 18 0Z" fill="#078B87"/>',
+      '    <path d="M18 0C8.05887 0 0 8.05887 0 18C0 29.5 18 44 18 44C18 44 36 29.5 36 18C36 8.05887 27.9411 0 18 0Z" fill="#14919B"/>',
       '    <circle cx="18" cy="18" r="7.5" fill="#FFFFFF"/>',
       '    <circle cx="18" cy="18" r="4" fill="#F7B915"/>',
       '  </svg>',
@@ -583,7 +583,7 @@ export function TailorLocationPickerModal({
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <View style={styles.headerIconWrap}>
-                <Ionicons name="location" size={16} color="#078B87" />
+                <Ionicons name="location" size={16} color="#14919B" />
               </View>
               <Text style={styles.headerTitle}>Pin Shop Location</Text>
             </View>
@@ -604,7 +604,7 @@ export function TailorLocationPickerModal({
         <View style={styles.statusStrip}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
             {isGeocoding || isLocating ? (
-              <ActivityIndicator size="small" color="#078B87" />
+              <ActivityIndicator size="small" color="#14919B" />
             ) : (
               <View style={styles.greenPulseDot} />
             )}
@@ -619,7 +619,7 @@ export function TailorLocationPickerModal({
             disabled={isLocating}
             style={styles.detectGpsBtn}
           >
-            <Ionicons name="locate" size={13} color="#078B87" />
+            <Ionicons name="locate" size={13} color="#14919B" />
             <Text style={styles.detectGpsBtnText}>
               {isLocating ? "Locating..." : "Auto-Detect"}
             </Text>
@@ -666,11 +666,11 @@ export function TailorLocationPickerModal({
 
             <View style={styles.infoRow}>
               <View style={styles.metaBadge}>
-                <Ionicons name="business-outline" size={12} color="#078B87" />
+                <Ionicons name="business-outline" size={12} color="#14919B" />
                 <Text style={styles.metaBadgeText}>{currentCity || "City"}</Text>
               </View>
               <View style={styles.metaBadge}>
-                <Ionicons name="compass-outline" size={12} color="#078B87" />
+                <Ionicons name="compass-outline" size={12} color="#14919B" />
                 <Text style={styles.coords}>
                   {currentLat.toFixed(4)}, {currentLng.toFixed(4)}
                 </Text>
@@ -719,12 +719,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerIconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 6,
-    backgroundColor: "#EBF8F9",
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: "#E0F7F7",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 6,
   },
   headerTitle: {
     fontSize: 17,
@@ -733,14 +734,14 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 12,
-    color: "#6B7280",
+    color: "#6F767E",
     marginTop: 2,
   },
   closeBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "#F3F4F6",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -770,17 +771,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "#EBF8F9",
+    backgroundColor: "#E0F7F7",
     borderWidth: 1,
-    borderColor: "#BEE8EB",
+    borderColor: "#B2EBF2",
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   detectGpsBtnText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#078B87",
+    color: "#14919B",
   },
   mapContainer: {
     flex: 1,
@@ -794,10 +795,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   detailsCard: {
-    backgroundColor: "#F7FCFC",
-    borderRadius: 12,
+    backgroundColor: "#F0FAFA",
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#D2EFF1",
+    borderColor: "#E0F7F7",
     padding: 14,
   },
   label: {
@@ -805,7 +806,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
     fontWeight: "800",
-    color: "#078B87",
+    color: "#14919B",
   },
   verifiedBadge: {
     flexDirection: "row",
@@ -853,7 +854,7 @@ const styles = StyleSheet.create({
   },
   coords: {
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-    color: "#078B87",
+    color: "#14919B",
     fontWeight: "700",
     fontSize: 11,
   },
@@ -863,29 +864,29 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     flex: 1,
-    height: 46,
-    borderRadius: 8,
+    height: 48,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: "#E6E8EC",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F7F8FA",
   },
   cancelBtnText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#4B5563",
+    color: "#1A1D1F",
   },
   applyBtn: {
     flex: 2,
-    height: 46,
-    borderRadius: 8,
-    backgroundColor: "#078B87",
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#14919B",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    shadowColor: "#078B87",
+    shadowColor: "#14919B",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,

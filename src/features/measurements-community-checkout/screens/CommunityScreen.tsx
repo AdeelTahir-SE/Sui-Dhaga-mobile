@@ -17,6 +17,8 @@ import { MccScreenShell } from "../components/MccScreenShell";
 import { PostCard } from "../components/PostCard";
 import { useCommunity } from "../hooks/useCommunity";
 import { useAuthStore } from "../../../stores/auth.store";
+import { CommunityFeedSkeleton } from "../../../components/ui/Skeleton";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 
 const CATEGORIES = [
   "For You",
@@ -156,49 +158,26 @@ export default function CommunityScreen() {
           </View>
         </ScrollView>
 
-        {/* Community Highlight Banner with Profile Shortcut */}
-        <View className="mb-4 rounded-2xl border border-primary/20 bg-primary-50 p-4">
+        {/* Community Info Banner */}
+        <View className="mb-4 rounded-2xl border border-brand-border bg-white p-4 shadow-xs">
           <View className="flex-row items-center">
-            <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/15">
-              <Ionicons name="sparkles" size={18} color="#14919B" />
+            <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary-light">
+              <Ionicons name="people" size={20} color="#14919B" />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-[13px] font-bold text-brand-dark">
+              <Text className="text-[14px] font-bold text-brand-dark">
                 Sui Dhaga Community Feed
               </Text>
-              <Text className="mt-0.5 text-[11px] leading-4 text-brand-gray">
+              <Text className="mt-0.5 text-[11.5px] leading-4 text-brand-gray">
                 Discover bespoke tailoring, share your stitched fits & connect with master tailors.
               </Text>
             </View>
           </View>
-
-          {/* Quick link to user's community profile */}
-          <View className="mt-3 pt-2.5 flex-row items-center justify-between border-t border-primary/10">
-            <Text className="text-[11.5px] font-medium text-[#0D7377]">
-              Manage your shared outfits
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/community/profile" as any)}
-              activeOpacity={0.75}
-              className="flex-row items-center bg-white px-3 py-1.5 rounded-full shadow-xs"
-              style={{ borderWidth: 1, borderColor: "#B2EBF2" }}
-            >
-              <Ionicons name="person-outline" size={13} color="#0D7377" />
-              <Text className="ml-1 text-[11.5px] font-bold text-[#0D7377]">
-                My Posts & Profile
-              </Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
-        {/* Loading Indicator */}
+        {/* Loading Skeleton */}
         {isLoading && posts.length === 0 && (
-          <View className="my-12 items-center justify-center py-8">
-            <ActivityIndicator size="large" color="#14919B" />
-            <Text className="mt-3 text-[13px] font-medium text-brand-gray">
-              Loading community designs...
-            </Text>
-          </View>
+          <CommunityFeedSkeleton count={3} />
         )}
 
         {/* Connection Error State */}
@@ -224,29 +203,50 @@ export default function CommunityScreen() {
           </View>
         )}
 
-        {/* Empty Feed State */}
+        {/* Empty Feed State - App Theme */}
         {!isLoading && !error && posts.length === 0 && (
-          <View className="my-8 items-center justify-center rounded-2xl border border-dashed border-brand-border bg-white p-8">
-            <View className="h-14 w-14 items-center justify-center rounded-full bg-primary-50 mb-3">
-              <Ionicons name="images-outline" size={26} color="#14919B" />
+          <View className="my-6 items-center justify-center rounded-2xl border border-brand-border bg-white px-6 py-9 relative overflow-hidden shadow-xs">
+            {/* Top decorative accent line */}
+            <View className="absolute top-0 left-6 right-6 h-[3px] bg-primary/25 rounded-b" />
+
+            {/* Themed Icon with outer & inner circular badges */}
+            <View className="h-16 w-16 rounded-full bg-primary-light items-center justify-center mb-3.5">
+              <View className="h-11 w-11 rounded-full bg-primary items-center justify-center shadow-sm shadow-primary/30">
+                <Ionicons name="shirt-outline" size={22} color="#FFFFFF" />
+              </View>
             </View>
-            <Text className="text-center text-[16px] font-bold text-brand-dark">
+
+            <Text className="text-center text-[16px] font-black text-brand-dark tracking-tight">
               {searchQuery ? `No results for "${searchQuery}"` : "No Posts Yet"}
             </Text>
-            <Text className="mt-1.5 text-center text-[12px] text-brand-gray leading-5 max-w-[260px]">
+            <Text className="mt-1.5 text-center text-[12.5px] font-medium text-brand-gray leading-5 max-w-[270px]">
               {searchQuery
                 ? "Try searching with a different term or browse other categories."
                 : `Be the first to share a bespoke ${
                     category !== "For You" && category !== "Trending" ? category : "design"
                   } with the community!`}
             </Text>
+
             <TouchableOpacity
-              activeOpacity={0.8}
+              activeOpacity={0.88}
               onPress={() => router.push("/community/create" as any)}
-              className="mt-5 rounded-xl bg-primary px-5 py-2.5 shadow-sm shadow-primary/20 flex-row items-center gap-1.5"
+              className="mt-5 relative overflow-hidden flex-row items-center justify-center py-3 px-6 rounded-xl shadow-sm"
+              style={{ borderRadius: 12 }}
             >
-              <Ionicons name="add" size={16} color="#FFFFFF" />
-              <Text className="text-[13px] font-bold text-white">Create First Post</Text>
+              <ButtonTexture variant="greenish" borderRadius={12} />
+              <View className="z-10 flex-row items-center gap-1.5">
+                <Ionicons name="add" size={18} color="#FFFFFF" />
+                <Text
+                  className="text-[13.5px] font-bold text-white tracking-wide"
+                  style={{
+                    textShadowColor: "rgba(0,0,0,0.22)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}
+                >
+                  Create First Post
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
         )}

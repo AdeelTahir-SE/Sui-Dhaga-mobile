@@ -217,30 +217,48 @@ export default function MeasurementsScreen() {
       </View>
 
       {/* Size Guide Modal */}
-      <Modal visible={showSizeGuide} transparent animationType="slide">
-        <View className="flex-1 justify-end bg-black/50">
-          <View className="rounded-t-3xl bg-white p-6 max-h-[80%]">
-            <View className="flex-row items-center justify-between pb-3 border-b border-brand-border">
-              <Text className="text-[17px] font-bold text-brand-dark">Standard Size Guide (Inches)</Text>
-              <TouchableOpacity onPress={() => setShowSizeGuide(false)} className="p-1">
-                <Ionicons name="close" size={22} color="#111" />
+      <Modal visible={showSizeGuide} transparent animationType="slide" onRequestClose={() => setShowSizeGuide(false)}>
+        <View className="flex-1 justify-end" style={{ backgroundColor: "rgba(15, 23, 42, 0.45)" }}>
+          <View className="rounded-t-[32px] bg-white px-5 pt-3 pb-8 max-h-[85%] shadow-2xl">
+            {/* Drag Handle */}
+            <View className="h-1.5 w-12 rounded-full bg-slate-200 self-center mb-3 mt-1" />
+
+            {/* Header */}
+            <View className="flex-row items-center justify-between pb-3">
+              <View className="flex-row items-center flex-1">
+                <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#E0F7F7] mr-3">
+                  <Ionicons name="shirt-outline" size={20} color="#14919B" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[17px] font-bold text-brand-dark">Standard Size Guide (Inches)</Text>
+                  <Text className="text-[12px] font-medium text-brand-gray">Ready-to-wear sizing standard reference</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => setShowSizeGuide(false)}
+                className="h-8 w-8 items-center justify-center rounded-xl bg-slate-100 active:bg-slate-200"
+              >
+                <Ionicons name="close" size={18} color="#64748B" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView className="mt-4">
+            {/* Hairline Divider */}
+            <View className="h-[1px] bg-slate-100 mb-3" />
+
+            <ScrollView className="mt-1" showsVerticalScrollIndicator={false}>
               <View className="rounded-xl border border-brand-border overflow-hidden mb-4">
-                <View className="flex-row bg-[#F8FAFC] py-2 px-3 border-b border-brand-border">
-                  <Text className="flex-1 font-bold text-[11px] text-brand-dark">Size</Text>
-                  <Text className="flex-1 font-bold text-[11px] text-brand-dark text-center">Bust</Text>
-                  <Text className="flex-1 font-bold text-[11px] text-brand-dark text-center">Waist</Text>
-                  <Text className="flex-1 font-bold text-[11px] text-brand-dark text-center">Hips</Text>
-                  <Text className="flex-1 font-bold text-[11px] text-brand-dark text-right">Shoulder</Text>
+                <View className="flex-row bg-[#F0FAFA] py-2 px-3 border-b border-brand-border">
+                  <Text className="flex-1 font-bold text-[11px] text-primary-dark">Size</Text>
+                  <Text className="flex-1 font-bold text-[11px] text-primary-dark text-center">Bust</Text>
+                  <Text className="flex-1 font-bold text-[11px] text-primary-dark text-center">Waist</Text>
+                  <Text className="flex-1 font-bold text-[11px] text-primary-dark text-center">Hips</Text>
+                  <Text className="flex-1 font-bold text-[11px] text-primary-dark text-right">Shoulder</Text>
                 </View>
                 {RTW_SIZES.map((item, idx) => (
                   <View
                     key={item.size}
                     className={`flex-row py-2.5 px-3 border-b border-brand-border/40 ${
-                      idx % 2 === 0 ? "bg-white" : "bg-[#FAF8F5]"
+                      idx % 2 === 0 ? "bg-white" : "bg-[#F7F8FA]"
                     }`}
                   >
                     <Text className="flex-1 font-semibold text-[12px] text-brand-dark">{item.size}</Text>
@@ -264,7 +282,7 @@ export default function MeasurementsScreen() {
 
             <TouchableOpacity
               onPress={() => setShowSizeGuide(false)}
-              className="h-[48px] items-center justify-center rounded-xl bg-primary mt-2"
+              className="h-[48px] items-center justify-center rounded-xl bg-primary mt-2 shadow-xs active:bg-primary-dark"
             >
               <Text className="text-[14px] font-bold text-white">Got It</Text>
             </TouchableOpacity>

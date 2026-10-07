@@ -30,24 +30,7 @@ import { TailorBottomTabs } from "../components/TailorBottomTabs";
 import { TailorPlaceholder } from "../components/TailorPlaceholder";
 import { useTailorsMap } from "../hooks/useTailors";
 
-const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
-  All: { lat: 31.5204, lng: 74.3587 },
-  Lahore: { lat: 31.5204, lng: 74.3587 },
-  Karachi: { lat: 24.8607, lng: 67.0011 },
-  Islamabad: { lat: 33.6844, lng: 73.0479 },
-  Rawalpindi: { lat: 33.5651, lng: 73.0169 },
-  Faisalabad: { lat: 31.4504, lng: 73.135 },
-  Multan: { lat: 30.1575, lng: 71.5249 },
-};
-
-const CITY_CHIPS = [
-  "All",
-  "Lahore",
-  "Karachi",
-  "Islamabad",
-  "Rawalpindi",
-  "Faisalabad",
-];
+const DEFAULT_CENTER = { lat: 31.5204, lng: 74.3587 };
 
 const DISTANCE_OPTIONS = [5, 10, 15] as const;
 type AllowedRadius = (typeof DISTANCE_OPTIONS)[number];
@@ -74,11 +57,9 @@ export default function TailorsMapScreen() {
   const insets = useSafeAreaInsets();
 
   // Filter & Search State
-  const [selectedCity, setSelectedCity] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [minRating, setMinRating] = useState<number | null>(null);
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [maxRadius, setMaxRadius] = useState<AllowedRadius>(10);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
 
@@ -90,14 +71,11 @@ export default function TailorsMapScreen() {
   const [isLocating, setIsLocating] = useState(false);
   const [gpsStatusMsg, setGpsStatusMsg] = useState<string | null>(null);
 
-  // Effective location: device GPS coords if available, otherwise city center or Lahore as default reference
+  // Effective location: device GPS coords if available, otherwise default center
   const effectiveCoords = useMemo(() => {
     if (userCoords) return userCoords;
-    if (selectedCity !== "All" && CITY_COORDINATES[selectedCity]) {
-      return CITY_COORDINATES[selectedCity];
-    }
-    return CITY_COORDINATES["Lahore"];
-  }, [userCoords, selectedCity]);
+    return DEFAULT_CENTER;
+  }, [userCoords]);
 
   // Selected Tailor State
   const [selectedTailorId, setSelectedTailorId] = useState<string | null>(null);
@@ -107,7 +85,6 @@ export default function TailorsMapScreen() {
 
   // Fetch tailors with map endpoint using effective coordinates & maxRadius
   const { tailors, isLoading } = useTailorsMap({
-    city: selectedCity !== "All" ? selectedCity : undefined,
     search: appliedSearch || undefined,
     lat: effectiveCoords?.lat,
     lng: effectiveCoords?.lng,
@@ -142,7 +119,6 @@ export default function TailorsMapScreen() {
       })
       .filter((t) => {
         if (minRating && (t.rating || 0) < minRating) return false;
-        if (verifiedOnly && !t.verified && !t.isVerified) return false;
         // Strictly check distance: only tailors within maxRadius (5, 10, or 15 km)
         if (typeof t.distanceKm === "number") {
           return t.distanceKm <= maxRadius;
@@ -155,7 +131,7 @@ export default function TailorsMapScreen() {
         const distB = typeof b.distanceKm === "number" ? b.distanceKm : 999999;
         return distA - distB;
       });
-  }, [tailors, minRating, verifiedOnly, maxRadius, effectiveCoords]);
+  }, [tailors, minRating, maxRadius, effectiveCoords]);
 
   // Keep a selected tailor in view
   const selectedTailor = useMemo(() => {
@@ -375,15 +351,7 @@ export default function TailorsMapScreen() {
     handleTriggerGps();
   }, [handleTriggerGps]);
 
-  // City chip selection
-  const handleCityChange = (city: string) => {
-    setSelectedCity(city);
-    const coords = CITY_COORDINATES[city] || CITY_COORDINATES["Lahore"];
-    const zoom = city === "All" ? 7 : 13;
-    sendMapCommand(
-      `map.flyTo([${coords.lat}, ${coords.lng}], ${zoom}, { duration: 1.2 });`,
-    );
-  };
+
 
   // Search submission
   const handleSearchSubmit = () => {
@@ -410,7 +378,7 @@ export default function TailorsMapScreen() {
     typeof selectedTailor.latitude === "number" &&
     typeof selectedTailor.longitude === "number"
       ? { lat: selectedTailor.latitude, lng: selectedTailor.longitude }
-      : CITY_COORDINATES["Lahore"];
+      : DEFAULT_CENTER;
 
   // HTML Content for the Leaflet Map
   const mapHtml = useMemo(() => {
@@ -474,7 +442,7 @@ export default function TailorsMapScreen() {
       height: 38px;
       background: #FFFFFF;
       border-radius: 12px;
-      border: 2px solid #078B87;
+      border: 2px solid #14919B;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -486,14 +454,14 @@ export default function TailorsMapScreen() {
     }
     .marker-selected {
       border: 2.5px solid #F7B915 !important;
-      background: #078B87 !important;
+      background: #14919B !important;
       box-shadow: 0 6px 20px rgba(7, 139, 135, 0.55);
       transform: scale(1.12);
     }
     .pin-icon {
       font-size: 13px;
       font-weight: 900;
-      color: #078B87;
+      color: #14919B;
       line-height: 1;
     }
     .marker-selected .pin-icon {
@@ -503,7 +471,7 @@ export default function TailorsMapScreen() {
       font-size: 9px;
       font-weight: 700;
       color: #FFFFFF;
-      background: #078B87;
+      background: #14919B;
       padding: 1px 4px;
       border-radius: 4px;
       margin-top: 2px;
@@ -518,7 +486,7 @@ export default function TailorsMapScreen() {
       height: 0;
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-top: 7px solid #078B87;
+      border-top: 7px solid #14919B;
       position: relative;
       top: -1px;
       z-index: 1;
@@ -720,8 +688,8 @@ export default function TailorsMapScreen() {
         } else {
           userCircle = L.circle([lat, lng], {
             radius: radiusMeters,
-            color: '#078B87',
-            fillColor: '#078B87',
+            color: '#14919B',
+            fillColor: '#14919B',
             fillOpacity: 0.08,
             weight: 1.5,
             dashArray: '5, 5'
@@ -910,7 +878,7 @@ export default function TailorsMapScreen() {
             onPress={() => setIsFilterModalVisible(true)}
             style={[
               styles.circleBtn,
-              minRating || verifiedOnly || maxRadius !== 10
+              minRating || maxRadius !== 10
                 ? styles.activeFilterBtn
                 : null,
             ]}
@@ -920,48 +888,15 @@ export default function TailorsMapScreen() {
               name="options-outline"
               size={19}
               color={
-                minRating || verifiedOnly || maxRadius !== 10
-                  ? "#078B87"
+                minRating || maxRadius !== 10
+                  ? "#14919B"
                   : "#1A1D1F"
               }
             />
           </TouchableOpacity>
         </View>
 
-        {/* City Quick Chips Row */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.cityChipsContent}
-          style={styles.cityChipsScroll}
-        >
-          {CITY_CHIPS.map((cityName) => {
-            const isActive = selectedCity === cityName;
-            return (
-              <TouchableOpacity
-                key={cityName}
-                activeOpacity={0.8}
-                onPress={() => handleCityChange(cityName)}
-                style={[styles.cityChip, isActive && styles.cityChipActive]}
-              >
-                <Ionicons
-                  name="location-sharp"
-                  size={12}
-                  color={isActive ? "#FFFFFF" : "#078B87"}
-                  style={{ marginRight: 4 }}
-                />
-                <Text
-                  style={[
-                    styles.cityChipText,
-                    isActive && styles.cityChipTextActive,
-                  ]}
-                >
-                  {cityName}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+
 
         {/* Quick Distance Radius Bar: 5 km, 10 km, 15 km */}
         <View style={styles.radiusQuickBar}>
@@ -981,7 +916,7 @@ export default function TailorsMapScreen() {
                 <Ionicons
                   name="navigate"
                   size={11}
-                  color={isSelected ? "#FFFFFF" : "#078B87"}
+                  color={isSelected ? "#FFFFFF" : "#14919B"}
                   style={{ marginRight: 3 }}
                 />
                 <Text
@@ -1005,7 +940,7 @@ export default function TailorsMapScreen() {
               onPress={handleTriggerGps}
               style={styles.gpsDetectBadge}
             >
-              <Ionicons name="locate" size={11} color="#078B87" />
+              <Ionicons name="locate" size={11} color="#14919B" />
               <Text style={styles.gpsDetectText}>Detect GPS</Text>
             </TouchableOpacity>
           )}
@@ -1014,7 +949,7 @@ export default function TailorsMapScreen() {
         {/* GPS Status Message Strip if any */}
         {gpsStatusMsg ? (
           <View style={styles.gpsBanner}>
-            <Ionicons name="navigate" size={13} color="#078B87" />
+            <Ionicons name="navigate" size={13} color="#14919B" />
             <Text style={styles.gpsBannerText}>{gpsStatusMsg}</Text>
           </View>
         ) : null}
@@ -1022,15 +957,6 @@ export default function TailorsMapScreen() {
 
       {/* FLOATING ACTION BUTTONS (Right Side) */}
       <View style={styles.fabContainer}>
-        {/* Fit all pins button */}
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={handleFitAllPins}
-          style={styles.fabBtn}
-          accessibilityLabel="Fit all pins in view"
-        >
-          <Ionicons name="scan-outline" size={20} color="#1A1D1F" />
-        </TouchableOpacity>
 
         {/* GPS locate me button */}
         <TouchableOpacity
@@ -1041,9 +967,9 @@ export default function TailorsMapScreen() {
           accessibilityLabel="Locate current position"
         >
           {isLocating ? (
-            <ActivityIndicator size="small" color="#078B87" />
+            <ActivityIndicator size="small" color="#14919B" />
           ) : (
-            <Ionicons name="locate" size={20} color="#078B87" />
+            <Ionicons name="locate" size={20} color="#14919B" />
           )}
         </TouchableOpacity>
 
@@ -1062,12 +988,12 @@ export default function TailorsMapScreen() {
       <View
         style={[
           styles.bottomContainer,
-          { paddingBottom: insets.bottom > 0 ? insets.bottom + 65 : 80 },
+          { paddingBottom: insets.bottom > 0 ? insets.bottom + 12 : 16 },
         ]}
       >
         {isLoading ? (
           <View style={styles.cardLoading}>
-            <ActivityIndicator size="small" color="#078B87" />
+            <ActivityIndicator size="small" color="#14919B" />
             <Text style={styles.cardLoadingText}>
               Finding tailors on map...
             </Text>
@@ -1130,7 +1056,7 @@ export default function TailorsMapScreen() {
                     <Ionicons
                       name="checkmark-circle"
                       size={16}
-                      color="#078B87"
+                      color="#14919B"
                       style={{ marginLeft: 4 }}
                     />
                   ) : null}
@@ -1174,38 +1100,40 @@ export default function TailorsMapScreen() {
           </View>
         ) : (
           <View style={styles.emptyCard}>
-            <Ionicons name="location-outline" size={28} color="#9CA3AF" />
+            <View style={styles.emptyCardIconWrap}>
+              <Ionicons name="location-outline" size={30} color="#14919B" />
+            </View>
             <Text style={styles.emptyCardTitle}>
-              No tailors within {maxRadius} km
+              No Tailors Within {maxRadius} km
             </Text>
             <Text style={styles.emptyCardSubtitle}>
               {userCoords
-                ? `No registered tailors found within ${maxRadius} km of your GPS coordinates.`
-                : `No registered tailors found within ${maxRadius} km of ${selectedCity === "All" ? "your current area" : selectedCity}.`}
+                ? `No registered tailors found within ${maxRadius} km of your location.`
+                : `No registered tailors found within ${maxRadius} km in this area.`}
               {maxRadius < 15
-                ? " Try expanding distance to 10 km or 15 km."
+                ? " Try expanding your search radius to find nearby tailoring masters."
                 : ""}
             </Text>
-            <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+            <View style={styles.emptyCardButtons}>
               {maxRadius < 15 && (
                 <TouchableOpacity
+                  activeOpacity={0.8}
                   onPress={() => setMaxRadius((prev) => (prev === 5 ? 10 : 15))}
                   style={styles.expandRadiusBtn}
                 >
+                  <Ionicons name="navigate-outline" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
                   <Text style={styles.expandRadiusBtnText}>
                     Expand to {maxRadius === 5 ? "10 km" : "15 km"}
                   </Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity
+                activeOpacity={0.8}
                 onPress={() => {
-                  setSelectedCity("All");
                   setSearchQuery("");
                   setAppliedSearch("");
                   setMinRating(null);
-                  setVerifiedOnly(false);
                   setMaxRadius(10);
-                  handleCityChange("All");
                 }}
                 style={styles.resetBtn}
               >
@@ -1267,33 +1195,7 @@ export default function TailorsMapScreen() {
               })}
             </View>
 
-            {/* Verified Filter */}
-            <Text style={styles.filterSectionTitle}>Verification</Text>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setVerifiedOnly(!verifiedOnly)}
-              style={styles.toggleRow}
-            >
-              <View>
-                <Text style={styles.toggleLabel}>Verified Tailors Only</Text>
-                <Text style={styles.toggleDesc}>
-                  Show only boutiques with verified studio credentials
-                </Text>
-              </View>
-              <View
-                style={[
-                  styles.switchTrack,
-                  verifiedOnly && styles.switchTrackActive,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.switchThumb,
-                    verifiedOnly && styles.switchThumbActive,
-                  ]}
-                />
-              </View>
-            </TouchableOpacity>
+
 
             {/* Distance Radius (Strictly 5, 10, 15 km) */}
             <Text style={styles.filterSectionTitle}>Distance Radius</Text>
@@ -1316,7 +1218,7 @@ export default function TailorsMapScreen() {
                     <Ionicons
                       name="navigate-circle"
                       size={14}
-                      color={isSelected ? "#078B87" : "#6B7280"}
+                      color={isSelected ? "#14919B" : "#6B7280"}
                       style={{ marginRight: 4 }}
                     />
                     <Text
@@ -1337,13 +1239,12 @@ export default function TailorsMapScreen() {
               <TouchableOpacity
                 onPress={() => {
                   setMinRating(null);
-                  setVerifiedOnly(false);
                   setMaxRadius(10);
                   setIsFilterModalVisible(false);
                 }}
                 style={styles.modalResetBtn}
               >
-                <Text style={styles.modalResetBtnText}>Reset to 10 km</Text>
+                <Text style={styles.modalResetBtnText}>Reset</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1359,10 +1260,6 @@ export default function TailorsMapScreen() {
         </View>
       </Modal>
 
-      {/* FIXED BOTTOM TABS */}
-      <FixedBottomTabs>
-        <TailorBottomTabs />
-      </FixedBottomTabs>
     </View>
   );
 }
@@ -1405,7 +1302,7 @@ const styles = StyleSheet.create({
   },
   activeFilterBtn: {
     borderWidth: 2,
-    borderColor: "#078B87",
+    borderColor: "#14919B",
     backgroundColor: "#EBF8F9",
   },
   searchInputWrap: {
@@ -1430,40 +1327,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     paddingVertical: 0,
   },
-  cityChipsScroll: {
-    marginTop: 10,
-  },
-  cityChipsContent: {
-    gap: 8,
-    paddingVertical: 2,
-  },
-  cityChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cityChipActive: {
-    backgroundColor: "#078B87",
-    borderColor: "#078B87",
-  },
-  cityChipText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#374151",
-  },
-  cityChipTextActive: {
-    color: "#FFFFFF",
-  },
+
   gpsBanner: {
     marginTop: 8,
     alignSelf: "center",
@@ -1480,12 +1344,12 @@ const styles = StyleSheet.create({
   gpsBannerText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#078B87",
+    color: "#14919B",
   },
   fabContainer: {
     position: "absolute",
     right: 16,
-    top: 155,
+    top: 125,
     zIndex: 15,
     gap: 10,
   },
@@ -1562,7 +1426,7 @@ const styles = StyleSheet.create({
   counterText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#078B87",
+    color: "#14919B",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -1627,7 +1491,7 @@ const styles = StyleSheet.create({
   priceBadgeText: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#078B87",
+    color: "#14919B",
   },
   cardActions: {
     marginTop: 14,
@@ -1635,11 +1499,11 @@ const styles = StyleSheet.create({
   viewProfileBtn: {
     height: 46,
     borderRadius: 10,
-    backgroundColor: "#078B87",
+    backgroundColor: "#14919B",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#078B87",
+    shadowColor: "#14919B",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 6,
@@ -1653,74 +1517,128 @@ const styles = StyleSheet.create({
   emptyCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    padding: 20,
+    padding: 24,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  emptyCardIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#EBF8F9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
   },
   emptyCardTitle: {
-    fontSize: 15,
-    fontWeight: "700",
+    fontSize: 16,
+    fontWeight: "800",
     color: "#1A1D1F",
-    marginTop: 8,
+    marginTop: 6,
   },
   emptyCardSubtitle: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#6F767E",
     textAlign: "center",
-    marginTop: 4,
-    paddingHorizontal: 16,
+    marginTop: 6,
+    lineHeight: 18,
+    paddingHorizontal: 8,
+  },
+  emptyCardButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 16,
   },
   resetBtn: {
-    marginTop: 12,
-    backgroundColor: "#EBF8F9",
+    backgroundColor: "#F3F4F6",
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   resetBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#078B87",
+    color: "#4B5563",
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
     justifyContent: "flex-end",
   },
   modalSheet: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 12,
+    maxHeight: "88%",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 16,
+    shadowRadius: 16,
+    elevation: 20,
+  },
+  dragHandle: {
+    height: 5,
+    width: 44,
+    borderRadius: 2.5,
+    backgroundColor: "#E2E8F0",
+    alignSelf: "center",
+    marginBottom: 12,
+    marginTop: 2,
   },
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    paddingBottom: 4,
+  },
+  modalHeaderIconBadge: {
+    height: 40,
+    width: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    backgroundColor: "#E0F7F7",
+    marginRight: 12,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: "800",
     color: "#1A1D1F",
   },
+  modalSubtitle: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#6F767E",
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    height: 32,
+    width: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 16,
+    backgroundColor: "#F1F5F9",
+  },
+  hairlineDivider: {
+    height: 1,
+    backgroundColor: "#F1F5F9",
+    marginTop: 10,
+    marginBottom: 8,
+  },
   filterSectionTitle: {
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: "700",
-    color: "#374151",
-    marginTop: 16,
+    color: "#1A1D1F",
+    marginTop: 14,
     marginBottom: 8,
   },
   filterOptionsRow: {
@@ -1730,30 +1648,31 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 8,
+    paddingVertical: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F9FAFB",
+    borderColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
   },
   filterChipActive: {
-    borderColor: "#078B87",
-    backgroundColor: "#EBF8F9",
+    borderColor: "#14919B",
+    backgroundColor: "#F0FAFA",
+    borderWidth: 1.5,
   },
   filterChipText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#4B5563",
+    color: "#6F767E",
   },
   filterChipTextActive: {
-    color: "#078B87",
+    color: "#14919B",
     fontWeight: "700",
   },
   toggleRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   toggleLabel: {
     fontSize: 13,
@@ -1769,12 +1688,12 @@ const styles = StyleSheet.create({
     width: 44,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#E2E8F0",
     padding: 2,
     justifyContent: "center",
   },
   switchTrackActive: {
-    backgroundColor: "#078B87",
+    backgroundColor: "#14919B",
   },
   switchThumb: {
     width: 20,
@@ -1793,33 +1712,39 @@ const styles = StyleSheet.create({
   modalActionRow: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 24,
+    marginTop: 20,
+    marginBottom: 6,
   },
   modalResetBtn: {
     flex: 1,
-    height: 44,
-    borderRadius: 10,
+    height: 48,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E6E8EC",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F7F8FA",
   },
   modalResetBtnText: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: "700",
-    color: "#6F767E",
+    color: "#1A1D1F",
   },
   modalApplyBtn: {
     flex: 2,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: "#078B87",
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#14919B",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#14919B",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   modalApplyBtnText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "700",
     color: "#FFFFFF",
   },
@@ -1857,8 +1782,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   radiusPillActive: {
-    backgroundColor: "#078B87",
-    borderColor: "#078B87",
+    backgroundColor: "#14919B",
+    borderColor: "#14919B",
   },
   radiusPillText: {
     fontSize: 11,
@@ -1900,10 +1825,10 @@ const styles = StyleSheet.create({
   gpsDetectText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#078B87",
+    color: "#14919B",
   },
   expandRadiusBtn: {
-    backgroundColor: "#078B87",
+    backgroundColor: "#14919B",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,

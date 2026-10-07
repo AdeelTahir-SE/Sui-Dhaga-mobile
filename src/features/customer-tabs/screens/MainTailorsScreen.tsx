@@ -34,16 +34,9 @@ export default function MainTailorsScreen() {
 
   // Nearest / Distance Filter Options State
   const [isNearbyModalVisible, setIsNearbyModalVisible] = useState(false);
-  const [selectedRadius, setSelectedRadius] = useState<number | null>(null);
+  const [selectedRadius, setSelectedRadius] = useState<number>(25);
 
   const radiusOptions = [
-    {
-      label: "All Distances",
-      value: null,
-      desc: "Show tailors anywhere in the city",
-      icon: "globe-outline",
-      badge: "All",
-    },
     {
       label: "Within 2 km",
       value: 2,
@@ -76,10 +69,14 @@ export default function MainTailorsScreen() {
 
   const filterOptions = ["Near Me", "Rating 4+", "Verified"];
 
-  // Helper to parse numeric distance in km from tailor distance string
-  const parseDistanceKm = (distStr?: string | null): number => {
+  // Helper to parse numeric distance in km from tailor
+  const getTailorDistanceKm = (tailor: any): number => {
+    if (typeof tailor.distanceKm === "number" && !isNaN(tailor.distanceKm)) {
+      return tailor.distanceKm;
+    }
+    const distStr = tailor.distance;
     if (!distStr) return 999;
-    const lower = distStr.toLowerCase().trim();
+    const lower = String(distStr).toLowerCase().trim();
     if (lower.includes("nearby")) return 1.2;
     const match = lower.match(/([0-9.]+)\s*(km|m)?/);
     if (match) {
@@ -90,9 +87,8 @@ export default function MainTailorsScreen() {
     return 999;
   };
 
-  const getTailorCountForRadius = (rad: number | null) => {
-    if (rad === null) return tailors.length;
-    return tailors.filter((t) => parseDistanceKm(t.distance) <= rad).length;
+  const getTailorCountForRadius = (rad: number) => {
+    return tailors.filter((t) => getTailorDistanceKm(t) <= rad).length;
   };
 
   const filteredTailors = useMemo(() => {
@@ -126,12 +122,11 @@ export default function MainTailorsScreen() {
       });
     }
 
-    // 2. Distance Radius Filter
-    if (selectedRadius !== null) {
-      result = result.filter(
-        (t) => parseDistanceKm(t.distance) <= selectedRadius,
-      );
-    }
+    // 2. Distance Radius Filter (strictly nearby regions only, default 25 km max)
+    const effectiveRadius = selectedRadius || 25;
+    result = result.filter(
+      (t) => getTailorDistanceKm(t) <= effectiveRadius,
+    );
 
     // 3. Quick filter chips
     if (activeFilter === "Rating 4+") {
@@ -142,16 +137,13 @@ export default function MainTailorsScreen() {
       );
     } else if (activeFilter === "Near Me") {
       result = result.filter(
-        (t) =>
-          parseDistanceKm(t.distance) <= 10 ||
-          (t.distance || "").toLowerCase().includes("km") ||
-          (t.distance || "").toLowerCase().includes("nearby"),
+        (t) => getTailorDistanceKm(t) <= 10,
       );
     }
 
     // Sort by nearest distance
     result.sort(
-      (a, b) => parseDistanceKm(a.distance) - parseDistanceKm(b.distance),
+      (a, b) => getTailorDistanceKm(a) - getTailorDistanceKm(b),
     );
 
     return result;
@@ -276,7 +268,7 @@ export default function MainTailorsScreen() {
               {/* Header */}
               <View className="flex-row items-center justify-between pb-3">
                 <View className="flex-row items-center flex-1">
-                  <View className="h-10 w-10 items-center justify-center rounded-md bg-[#E0F7F7] mr-3">
+                  <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#E0F7F7] mr-3">
                     <Ionicons name="location" size={20} color="#14919B" />
                   </View>
                   <View className="flex-1">
@@ -290,7 +282,7 @@ export default function MainTailorsScreen() {
                 </View>
                 <TouchableOpacity
                   onPress={() => setIsNearbyModalVisible(false)}
-                  className="h-8 w-8 items-center justify-center rounded-md bg-slate-100 active:bg-slate-200"
+                  className="h-8 w-8 items-center justify-center rounded-xl bg-slate-100 active:bg-slate-200"
                 >
                   <Ionicons name="close" size={18} color="#64748B" />
                 </TouchableOpacity>
@@ -314,7 +306,7 @@ export default function MainTailorsScreen() {
                         key={opt.label}
                         onPress={() => setSelectedRadius(opt.value)}
                         activeOpacity={0.75}
-                        className="flex-row items-center rounded-md p-3.5"
+                        className="flex-row items-center rounded-xl p-3.5"
                         style={{
                           backgroundColor: isSelected ? "#F0FAFA" : "#FFFFFF",
                           borderWidth: isSelected ? 2 : 1,
@@ -322,7 +314,7 @@ export default function MainTailorsScreen() {
                         }}
                       >
                         <View
-                          className="h-10 w-10 items-center justify-center rounded-md mr-3"
+                          className="h-10 w-10 items-center justify-center rounded-xl mr-3"
                           style={{
                             backgroundColor: isSelected ? "#14919B" : "#F0FAFA",
                           }}
@@ -380,7 +372,7 @@ export default function MainTailorsScreen() {
                             {count} {count === 1 ? "tailor" : "tailors"}
                           </Text>
                           <View
-                            className="h-5 w-5 rounded-md items-center justify-center"
+                            className="h-5 w-5 rounded-full items-center justify-center"
                             style={{
                               backgroundColor: isSelected
                                 ? "#14919B"
@@ -392,7 +384,7 @@ export default function MainTailorsScreen() {
                             {isSelected && (
                               <Ionicons
                                 name="checkmark"
-                                size={13}
+                                size={12}
                                 color="#FFFFFF"
                               />
                             )}
@@ -410,11 +402,11 @@ export default function MainTailorsScreen() {
                     router.push("/tailors/map" as any);
                   }}
                   activeOpacity={0.8}
-                  className="mb-2 flex-row items-center justify-between rounded-md p-3.5 bg-[#F0FAFA]"
+                  className="mb-2 flex-row items-center justify-between rounded-xl p-3.5 bg-[#F0FAFA]"
                   style={{ borderWidth: 1, borderColor: "#BCE3E5" }}
                 >
                   <View className="flex-row items-center flex-1">
-                    <View className="h-9 w-9 rounded-md bg-white items-center justify-center shadow-xs mr-3">
+                    <View className="h-9 w-9 rounded-xl bg-white items-center justify-center shadow-xs mr-3">
                       <Ionicons name="map" size={18} color="#14919B" />
                     </View>
                     <View className="flex-1">
@@ -437,11 +429,11 @@ export default function MainTailorsScreen() {
               >
                 <TouchableOpacity
                   onPress={() => {
-                    setSelectedRadius(null);
+                    setSelectedRadius(25);
                     setActiveFilter(null);
                   }}
                   activeOpacity={0.7}
-                  className="h-[50px] px-5 flex-1 items-center justify-center rounded-md bg-white shadow-xs"
+                  className="h-[50px] px-5 flex-1 items-center justify-center rounded-xl bg-white shadow-xs"
                   style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
                 >
                   <Text className="text-[13px] font-bold text-brand-gray">
@@ -457,7 +449,7 @@ export default function MainTailorsScreen() {
                     }
                   }}
                   activeOpacity={0.85}
-                  className="h-[50px] flex-1 items-center justify-center rounded-md bg-primary active:bg-primary-dark shadow-sm px-4"
+                  className="h-[50px] flex-1 items-center justify-center rounded-xl bg-primary active:bg-primary-dark shadow-sm px-4"
                 >
                   <Text className="text-[14px] font-bold text-white">
                     Show Results ({filteredTailors.length})
@@ -484,12 +476,13 @@ export default function MainTailorsScreen() {
                 ? `We couldn't find any tailors matching your search criteria. Try adjusting your search or clearing filters.`
                 : "No tailors are available right now. Please check back later!"}
             </Text>
-            {searchQuery.trim() || activeFilter ? (
+            {searchQuery.trim() || activeFilter || selectedRadius !== 25 ? (
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => {
                   setSearchQuery("");
                   setActiveFilter(null);
+                  setSelectedRadius(25);
                 }}
                 className="h-[48px] px-6 rounded-md bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
               >

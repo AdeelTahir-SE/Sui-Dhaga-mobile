@@ -197,19 +197,28 @@ export function ReelCommentsModal({
           style={[styles.sheetContainer, { height: modalHeight, paddingBottom: Math.max(insets.bottom, 12) }]}
         >
           {/* Drag Handle Bar */}
-          <View className="w-12 h-1.5 bg-gray-300 rounded-full self-center my-2.5" />
+          <View className="w-12 h-1.5 bg-slate-200 rounded-full self-center mb-3 mt-1.5" />
 
           {/* Modal Header */}
-          <View className="flex-row items-center justify-between px-5 pb-3 border-b border-gray-100">
-            <Text className="text-[16px] font-bold text-gray-900">
-              Comments ({comments.length || commentsCount})
-            </Text>
+          <View className="flex-row items-center justify-between px-5 pb-3 border-b border-slate-100">
+            <View className="flex-row items-center flex-1">
+              <View className="h-9 w-9 items-center justify-center rounded-xl bg-[#E0F7F7] mr-2.5">
+                <Ionicons name="chatbubbles" size={18} color="#14919B" />
+              </View>
+              <View>
+                <Text className="text-[16px] font-extrabold text-brand-dark">
+                  Comments ({comments.length || commentsCount})
+                </Text>
+                <Text className="text-[11.5px] font-medium text-brand-gray">
+                  Community feedback & discussions
+                </Text>
+              </View>
+            </View>
             <TouchableOpacity
               onPress={onClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              className="h-7 w-7 items-center justify-center rounded-full bg-gray-100"
+              className="h-8 w-8 items-center justify-center rounded-xl bg-slate-100 active:bg-slate-200"
             >
-              <Ionicons name="close" size={18} color="#4B5563" />
+              <Ionicons name="close" size={18} color="#64748B" />
             </TouchableOpacity>
           </View>
 
@@ -301,18 +310,18 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   backdrop: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15, 23, 42, 0.45)",
   },
   sheetContainer: {
     backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowRadius: 16,
     elevation: 20,
   },
 });

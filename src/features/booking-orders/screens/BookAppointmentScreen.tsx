@@ -1118,11 +1118,11 @@ export default function BookAppointmentScreen() {
         transparent
         onRequestClose={() => setIsSuccessModalOpen(false)}
       >
-        <View className="flex-1 items-center justify-center bg-black/60 px-5">
-          <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl items-center">
+        <View className="flex-1 items-center justify-center px-5" style={{ backgroundColor: "rgba(15, 23, 42, 0.65)" }}>
+          <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl items-center border border-brand-border">
             {/* Celebration Icon */}
-            <View className="h-16 w-16 items-center justify-center rounded-full bg-[#EAF8EE] mb-4">
-              <Ionicons name="checkmark-done" size={32} color="#0D9488" />
+            <View className="h-16 w-16 items-center justify-center rounded-full bg-[#E0F7F7] border border-primary/20 mb-4">
+              <Ionicons name="checkmark-done" size={32} color="#14919B" />
             </View>
 
             <Text className="text-[19px] font-bold text-brand-dark text-center">

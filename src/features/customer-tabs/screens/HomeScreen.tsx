@@ -675,7 +675,7 @@ export default function HomeScreen() {
         <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: "rgba(15, 23, 42, 0.45)",
             justifyContent: "flex-end",
           }}
         >
@@ -696,8 +696,8 @@ export default function HomeScreen() {
               height: Math.min(620, SCREEN_HEIGHT * 0.78),
               maxHeight: SCREEN_HEIGHT - insets.top - 50,
               backgroundColor: "#FFFFFF",
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
               paddingHorizontal: 20,
               paddingTop: 10,
               paddingBottom: insets.bottom > 0 ? insets.bottom + 8 : 20,
@@ -730,39 +730,53 @@ export default function HomeScreen() {
                 marginBottom: 10,
               }}
             >
-              <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text
-                  style={{ fontSize: 18, fontWeight: "900", color: "#1A1D1F" }}
-                  numberOfLines={1}
-                >
-                  All Quick Actions
-                </Text>
-                <Text
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1, paddingRight: 8 }}>
+                <View
                   style={{
-                    fontSize: 12,
-                    fontWeight: "500",
-                    color: "#6F767E",
-                    marginTop: 2,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    backgroundColor: "#E0F7F7",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
                   }}
                 >
-                  Fast shortcuts to everything in Sui Dhaga
-                </Text>
+                  <Ionicons name="flash" size={20} color="#14919B" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 18, fontWeight: "900", color: "#1A1D1F" }}
+                    numberOfLines={1}
+                  >
+                    All Quick Actions
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "500",
+                      color: "#6F767E",
+                      marginTop: 2,
+                    }}
+                  >
+                    Fast shortcuts to everything in Sui Dhaga
+                  </Text>
+                </View>
               </View>
 
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => setActiveModal(null)}
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: "#F4F5F6",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#F1F5F9",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Ionicons name="close" size={22} color="#1A1D1F" />
+                <Ionicons name="close" size={18} color="#64748B" />
               </TouchableOpacity>
             </View>
 
@@ -836,7 +850,7 @@ export default function HomeScreen() {
         <View
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: "rgba(15, 23, 42, 0.45)",
             justifyContent: "flex-end",
           }}
         >
@@ -857,8 +871,8 @@ export default function HomeScreen() {
               height: Math.min(620, SCREEN_HEIGHT * 0.78),
               maxHeight: SCREEN_HEIGHT - insets.top - 50,
               backgroundColor: "#FFFFFF",
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
               paddingHorizontal: 20,
               paddingTop: 10,
               paddingBottom: insets.bottom > 0 ? insets.bottom + 8 : 20,
@@ -891,39 +905,53 @@ export default function HomeScreen() {
                 marginBottom: 10,
               }}
             >
-              <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text
-                  style={{ fontSize: 18, fontWeight: "900", color: "#1A1D1F" }}
-                  numberOfLines={1}
-                >
-                  Design Gallery
-                </Text>
-                <Text
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1, paddingRight: 8 }}>
+                <View
                   style={{
-                    fontSize: 12,
-                    fontWeight: "500",
-                    color: "#6F767E",
-                    marginTop: 2,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    backgroundColor: "#E0F7F7",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
                   }}
                 >
-                  Custom & AI created garment designs
-                </Text>
+                  <Ionicons name="color-wand" size={20} color="#14919B" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 18, fontWeight: "900", color: "#1A1D1F" }}
+                    numberOfLines={1}
+                  >
+                    Design Gallery
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "500",
+                      color: "#6F767E",
+                      marginTop: 2,
+                    }}
+                  >
+                    Custom & AI created garment designs
+                  </Text>
+                </View>
               </View>
 
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => setActiveModal(null)}
                 style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 19,
-                  backgroundColor: "#F4F5F6",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: "#F1F5F9",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Ionicons name="close" size={22} color="#1A1D1F" />
+                <Ionicons name="close" size={18} color="#64748B" />
               </TouchableOpacity>
             </View>
 

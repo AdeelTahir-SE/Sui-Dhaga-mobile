@@ -180,9 +180,12 @@ export default function TailorProfileScreen() {
   const profileUrl = `https://suidhaga.app/tailors/${tailor?.id || tailorId || ""}`;
 
   const isTailor =
-    currentUser?.role === "tailor" ||
-    params.from === "tailor" ||
-    params.role === "tailor";
+    currentUser?.role?.toLowerCase() === "tailor" ||
+    (currentUser as any)?.user_metadata?.role?.toLowerCase() === "tailor" ||
+    (currentUser as any)?.role_name?.toLowerCase() === "tailor" ||
+    params.from?.toLowerCase() === "tailor" ||
+    params.role?.toLowerCase() === "tailor" ||
+    Boolean(myTailorProfile?.id && (myTailorProfile?.shopName || myTailorProfile?.businessName));
 
   const isOwnProfile = Boolean(
     (currentUser?.id &&
@@ -446,11 +449,21 @@ export default function TailorProfileScreen() {
           <TailorHeader
             title=""
             showBack
-            rightIcon={isOwnProfile ? "create-outline" : "share-social-outline"}
+            rightIcon={
+              isTailor
+                ? isOwnProfile
+                  ? "create-outline"
+                  : null
+                : isOwnProfile
+                  ? "create-outline"
+                  : "share-social-outline"
+            }
             onPressRight={
               isOwnProfile
                 ? () => router.push("/tailor-dashboard/complete-profile" as any)
-                : handleShare
+                : isTailor
+                  ? undefined
+                  : handleShare
             }
             floating
           />
@@ -575,7 +588,7 @@ export default function TailorProfileScreen() {
         presentationStyle="fullScreen"
         onRequestClose={() => setIsMapModalVisible(false)}
       >
-        <View className="flex-1 bg-[#F4EFE3]">
+        <View className="flex-1 bg-brand-surface">
           {/* Modal Header */}
           <View className="flex-row items-center justify-between border-b border-brand-border bg-white px-5 pb-3.5 pt-12 shadow-xs">
             <View className="flex-1 pr-3">
@@ -597,9 +610,9 @@ export default function TailorProfileScreen() {
             </View>
             <TouchableOpacity
               onPress={() => setIsMapModalVisible(false)}
-              className="h-10 w-10 items-center justify-center rounded-full bg-brand-surface shadow-xs active:bg-gray-200"
+              className="h-8 w-8 items-center justify-center rounded-xl bg-slate-100 active:bg-slate-200"
             >
-              <Ionicons name="close" size={22} color="#1A1D1F" />
+              <Ionicons name="close" size={18} color="#64748B" />
             </TouchableOpacity>
           </View>
 

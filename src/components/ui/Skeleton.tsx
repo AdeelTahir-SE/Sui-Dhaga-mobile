@@ -647,6 +647,289 @@ export function TailorAppointmentsListSkeleton({ count = 3 }: { count?: number }
   );
 }
 
+/**
+ * Community Post Card Skeleton (Mirrors PostCard in CommunityScreen)
+ */
+export function CommunityPostSkeleton() {
+  return (
+    <View style={communityStyles.postCard}>
+      <SkeletonPulse>
+        {/* Author Header */}
+        <View style={communityStyles.authorHeader}>
+          <SkeletonBox width={36} height={36} borderRadius={18} />
+          <View style={{ marginLeft: 11, flex: 1 }}>
+            <SkeletonBox width="46%" height={14} borderRadius={4} style={{ marginBottom: 5 }} />
+            <SkeletonBox width="30%" height={11} borderRadius={4} />
+          </View>
+          <SkeletonBox width={64} height={22} borderRadius={11} />
+        </View>
+
+        {/* Caption */}
+        <View style={{ marginTop: 12, marginBottom: 11 }}>
+          <SkeletonBox width="92%" height={13} borderRadius={4} style={{ marginBottom: 6 }} />
+          <SkeletonBox width="64%" height={13} borderRadius={4} />
+        </View>
+
+        {/* Media Preview Showcase */}
+        <SkeletonBox width="100%" height={250} borderRadius={16} />
+
+        {/* Action Footer */}
+        <View style={communityStyles.actionRow}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 18 }}>
+            <SkeletonBox width={46} height={18} borderRadius={5} />
+            <SkeletonBox width={46} height={18} borderRadius={5} />
+          </View>
+          <SkeletonBox width={22} height={18} borderRadius={4} />
+        </View>
+      </SkeletonPulse>
+    </View>
+  );
+}
+
+export function CommunityFeedSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <View style={{ width: "100%", marginTop: 2 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <CommunityPostSkeleton key={`community-post-skel-${i}`} />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Community Profile Skeleton (Mirrors CommunityProfileScreen)
+ */
+export function CommunityProfileSkeleton() {
+  return (
+    <View style={{ width: "100%", paddingTop: 2 }}>
+      <SkeletonPulse>
+        {/* Profile Header Summary Card */}
+        <View style={communityStyles.profileCard}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <SkeletonBox width={64} height={64} borderRadius={18} style={{ marginRight: 14 }} />
+            <View style={{ flex: 1 }}>
+              <SkeletonBox width="58%" height={18} borderRadius={5} style={{ marginBottom: 7 }} />
+              <SkeletonBox width="42%" height={12} borderRadius={4} style={{ marginBottom: 6 }} />
+              <SkeletonBox width="52%" height={12} borderRadius={4} />
+            </View>
+          </View>
+
+          {/* Metrics Row (Designs, Likes, Comments) */}
+          <View style={communityStyles.profileMetricsRow}>
+            <View style={{ alignItems: "center", flex: 1 }}>
+              <SkeletonBox width={32} height={18} borderRadius={4} style={{ marginBottom: 4 }} />
+              <SkeletonBox width={48} height={12} borderRadius={4} />
+            </View>
+            <View style={{ width: 1, height: 24, backgroundColor: "#E2E8F0" }} />
+            <View style={{ alignItems: "center", flex: 1 }}>
+              <SkeletonBox width={32} height={18} borderRadius={4} style={{ marginBottom: 4 }} />
+              <SkeletonBox width={36} height={12} borderRadius={4} />
+            </View>
+            <View style={{ width: 1, height: 24, backgroundColor: "#E2E8F0" }} />
+            <View style={{ alignItems: "center", flex: 1 }}>
+              <SkeletonBox width={32} height={18} borderRadius={4} style={{ marginBottom: 4 }} />
+              <SkeletonBox width={58} height={12} borderRadius={4} />
+            </View>
+          </View>
+
+          {/* Share Action Button */}
+          <SkeletonBox width="100%" height={44} borderRadius={8} style={{ marginTop: 16 }} />
+        </View>
+
+        {/* Search Bar & View Mode Toggle */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 }}>
+          <SkeletonBox width="83%" height={44} borderRadius={12} />
+          <SkeletonBox width={44} height={44} borderRadius={12} />
+        </View>
+
+        {/* Category Pills Row */}
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 16 }}>
+          <SkeletonBox width={54} height={30} borderRadius={15} />
+          <SkeletonBox width={74} height={30} borderRadius={15} />
+          <SkeletonBox width={70} height={30} borderRadius={15} />
+          <SkeletonBox width={84} height={30} borderRadius={15} />
+        </View>
+
+        {/* Posts Skeleton Feed */}
+        <CommunityPostSkeleton />
+      </SkeletonPulse>
+    </View>
+  );
+}
+
+/**
+ * Customer Profile Skeleton (Mirrors ProfileScreen)
+ */
+export function CustomerProfileSkeleton() {
+  return (
+    <View style={{ width: "100%", paddingHorizontal: 20, paddingTop: 12 }}>
+      <SkeletonPulse>
+        {/* Main Profile Card */}
+        <View style={profileStyles.card}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <SkeletonBox width={72} height={72} borderRadius={36} />
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <SkeletonBox width="60%" height={18} borderRadius={5} style={{ marginBottom: 8 }} />
+              <SkeletonBox width="46%" height={13} borderRadius={4} style={{ marginBottom: 6 }} />
+              <SkeletonBox width="38%" height={12} borderRadius={4} style={{ marginBottom: 6 }} />
+              <SkeletonBox width="66%" height={12} borderRadius={4} />
+            </View>
+          </View>
+
+          <SkeletonBox width="100%" height={38} borderRadius={10} style={{ marginTop: 14 }} />
+        </View>
+
+        {/* 4 Quick Metric Chips */}
+        <View style={profileStyles.metricsGrid}>
+          <View style={profileStyles.metricChip}>
+            <SkeletonBox width={26} height={18} borderRadius={4} style={{ marginBottom: 5 }} />
+            <SkeletonBox width="70%" height={10} borderRadius={3} />
+          </View>
+          <View style={profileStyles.metricChip}>
+            <SkeletonBox width={26} height={18} borderRadius={4} style={{ marginBottom: 5 }} />
+            <SkeletonBox width="70%" height={10} borderRadius={3} />
+          </View>
+          <View style={profileStyles.metricChip}>
+            <SkeletonBox width={26} height={18} borderRadius={4} style={{ marginBottom: 5 }} />
+            <SkeletonBox width="70%" height={10} borderRadius={3} />
+          </View>
+          <View style={profileStyles.metricChip}>
+            <SkeletonBox width={26} height={18} borderRadius={4} style={{ marginBottom: 5 }} />
+            <SkeletonBox width="70%" height={10} borderRadius={3} />
+          </View>
+        </View>
+
+        {/* Menu rows card */}
+        <View style={profileStyles.menuCard}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <View key={`cust-menu-skel-${i}`} style={profileStyles.menuRow}>
+              <SkeletonBox width={36} height={36} borderRadius={10} style={{ marginRight: 12 }} />
+              <SkeletonBox width="50%" height={14} borderRadius={4} />
+              <View style={{ flex: 1 }} />
+              <SkeletonBox width={16} height={16} borderRadius={4} />
+            </View>
+          ))}
+        </View>
+      </SkeletonPulse>
+    </View>
+  );
+}
+
+export const ProfileScreenSkeleton = CustomerProfileSkeleton;
+
+/**
+ * Tailor Profile Skeleton (Mirrors TailorMyProfileScreen and TailorProfileScreen)
+ */
+export function TailorProfileSkeleton() {
+  return (
+    <View style={{ width: "100%", paddingHorizontal: 20, paddingTop: 12 }}>
+      <SkeletonPulse>
+        {/* Workshop Profile Card */}
+        <View style={profileStyles.card}>
+          <SkeletonBox width="100%" height={105} borderRadius={12} style={{ marginBottom: 14 }} />
+
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <SkeletonBox width={64} height={64} borderRadius={32} />
+            <View style={{ flex: 1, marginLeft: 14 }}>
+              <SkeletonBox width="62%" height={18} borderRadius={5} style={{ marginBottom: 8 }} />
+              <SkeletonBox width="44%" height={13} borderRadius={4} style={{ marginBottom: 6 }} />
+              <SkeletonBox width={84} height={20} borderRadius={6} />
+            </View>
+          </View>
+
+          {/* Specialties row */}
+          <View style={{ flexDirection: "row", gap: 6, marginTop: 14 }}>
+            <SkeletonBox width={72} height={22} borderRadius={6} />
+            <SkeletonBox width={88} height={22} borderRadius={6} />
+            <SkeletonBox width={68} height={22} borderRadius={6} />
+          </View>
+        </View>
+
+        {/* Menu list rows card */}
+        <View style={[profileStyles.menuCard, { marginTop: 14 }]}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View key={`tailor-menu-skel-${i}`} style={profileStyles.menuRow}>
+              <SkeletonBox width={36} height={36} borderRadius={10} style={{ marginRight: 12 }} />
+              <SkeletonBox width="46%" height={14} borderRadius={4} />
+              <View style={{ flex: 1 }} />
+              <SkeletonBox width={16} height={16} borderRadius={4} />
+            </View>
+          ))}
+        </View>
+      </SkeletonPulse>
+    </View>
+  );
+}
+
+/**
+ * Tailor Earnings Skeleton (Mirrors TailorEarningsScreen)
+ */
+export function TailorEarningsSkeleton() {
+  return (
+    <View style={{ width: "100%", paddingHorizontal: 20, paddingTop: 10 }}>
+      <SkeletonPulse>
+        {/* Total Earnings Banner */}
+        <SkeletonBox width={95} height={12} borderRadius={4} style={{ marginBottom: 8 }} />
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <View>
+            <SkeletonBox width={175} height={34} borderRadius={6} style={{ marginBottom: 8 }} />
+            <SkeletonBox width={135} height={22} borderRadius={6} />
+          </View>
+          <SkeletonBox width={52} height={52} borderRadius={26} />
+        </View>
+
+        {/* Stat Cards 2 Columns */}
+        <View style={{ flexDirection: "row", gap: 12, marginBottom: 20 }}>
+          <View style={earningsStyles.statCard}>
+            <SkeletonBox width={95} height={11} borderRadius={3} style={{ marginBottom: 10 }} />
+            <SkeletonBox width={45} height={26} borderRadius={5} />
+          </View>
+          <View style={earningsStyles.statCard}>
+            <SkeletonBox width={95} height={11} borderRadius={3} style={{ marginBottom: 10 }} />
+            <SkeletonBox width={85} height={26} borderRadius={5} />
+          </View>
+        </View>
+
+        {/* Section: Overview Chart */}
+        <SkeletonBox width={140} height={16} borderRadius={4} style={{ marginBottom: 12 }} />
+        <View style={earningsStyles.chartCard}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+            <SkeletonBox width={110} height={14} borderRadius={4} />
+            <SkeletonBox width={70} height={14} borderRadius={4} />
+          </View>
+          {/* Chart bar columns */}
+          <View style={{ flexDirection: "row", alignItems: "flex-end", justifyContent: "space-around", height: 110, paddingTop: 10 }}>
+            <SkeletonBox width={26} height={45} borderRadius={4} />
+            <SkeletonBox width={26} height={70} borderRadius={4} />
+            <SkeletonBox width={26} height={95} borderRadius={4} />
+            <SkeletonBox width={26} height={60} borderRadius={4} />
+            <SkeletonBox width={26} height={85} borderRadius={4} />
+            <SkeletonBox width={26} height={50} borderRadius={4} />
+          </View>
+        </View>
+
+        {/* Section: Recent Earnings Transactions */}
+        <SkeletonBox width={130} height={16} borderRadius={4} style={{ marginTop: 20, marginBottom: 12 }} />
+        <View style={earningsStyles.txListCard}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View key={`tx-skel-${i}`} style={earningsStyles.txRow}>
+              <SkeletonBox width={36} height={36} borderRadius={18} style={{ marginRight: 12 }} />
+              <View style={{ flex: 1 }}>
+                <SkeletonBox width="45%" height={14} borderRadius={4} style={{ marginBottom: 5 }} />
+                <SkeletonBox width="30%" height={11} borderRadius={3} />
+              </View>
+              <View style={{ alignItems: "flex-end" }}>
+                <SkeletonBox width={65} height={15} borderRadius={4} style={{ marginBottom: 5 }} />
+                <SkeletonBox width={45} height={14} borderRadius={4} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </SkeletonPulse>
+    </View>
+  );
+}
+
 
 const tailorStyles = StyleSheet.create({
   card: {
@@ -949,4 +1232,139 @@ const appointmentRequestStyles = StyleSheet.create({
     gap: 10,
   },
 });
+
+const communityStyles = StyleSheet.create({
+  postCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E6E8EC",
+    padding: 14,
+    marginBottom: 14,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  authorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingTop: 8,
+  },
+  profileCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 18,
+    marginBottom: 14,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  profileMetricsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+  },
+});
+
+const profileStyles = StyleSheet.create({
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E6E8EC",
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  metricsGrid: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 14,
+  },
+  metricChip: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E6E8EC",
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E6E8EC",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  menuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+});
+
+const earningsStyles = StyleSheet.create({
+  statCard: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E6E8EC",
+    padding: 16,
+  },
+  chartCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E6E8EC",
+    padding: 16,
+    marginBottom: 14,
+  },
+  txListCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E6E8EC",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  txRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+});
+
 

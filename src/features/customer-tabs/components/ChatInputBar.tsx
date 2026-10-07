@@ -10,6 +10,8 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
+  Keyboard,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -47,6 +49,32 @@ export function ChatInputBar({
 }: ChatInputBarProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => setIsKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setIsKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  // Safe bottom padding:
+  // When keyboard is visible, use small padding above keyboard.
+  // When keyboard is hidden, ensure clearance above Android 3-button nav / gesture bar / iOS home indicator.
+  const safeBottomPadding = isKeyboardVisible
+    ? 6
+    : Math.max(
+        insetsBottom,
+        Platform.OS === "android" ? (insetsBottom > 0 ? insetsBottom : 12) : 10
+      );
 
   // Audio Recorder instance
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -494,108 +522,70 @@ export function ChatInputBar({
       style={[
         styles.container,
         {
-          paddingBottom: Math.max(insetsBottom, 10),
+          paddingBottom: safeBottomPadding,
         },
       ]}
     >
-      {/* Normal Input Layer (Attachment, Camera, TextInput) */}
-      <Animated.View
-        style={[
-          styles.normalInputLayer,
-          {
-            opacity: normalInputOpacity,
-          },
-        ]}
-        pointerEvents={isRecording ? "none" : "auto"}
-      >
-        <TouchableOpacity
-          onPress={onPickAttachment}
-          activeOpacity={0.75}
-          style={styles.circleBtn}
-          accessibilityLabel="Add attachment"
+      <View style={styles.contentRow}>
+        {/* Normal Input Layer (Attachment, Camera, TextInput) */}
+        <Animated.View
+          style={[
+            styles.normalInputLayer,
+            {
+              opacity: normalInputOpacity,
+            },
+          ]}
+          pointerEvents={isRecording ? "none" : "auto"}
         >
-          <Ionicons name="add" size={22} color="#14919B" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onPickAttachment}
+            activeOpacity={0.75}
+            style={styles.circleBtn}
+            accessibilityLabel="Add attachment"
+          >
+            <Ionicons name="add" size={22} color="#14919B" />
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={onTakePhoto}
-          activeOpacity={0.75}
-          style={styles.circleBtn}
-          accessibilityLabel="Take photo"
+          <TouchableOpacity
+            onPress={onTakePhoto}
+            activeOpacity={0.75}
+            style={styles.circleBtn}
+            accessibilityLabel="Take photo"
+          >
+            <Ionicons name="camera-outline" size={19} color="#6F767E" />
+          </TouchableOpacity>
+
+          <TextInput
+            style={styles.textInput}
+            placeholder="Type a message..."
+            placeholderTextColor="#9CA3AF"
+            value={inputText}
+            onChangeText={onChangeInputText}
+            multiline
+          />
+        </Animated.View>
+
+        {/* Recording Overlay Layer (Dustbin, Timer, Cancel / Locked Mode) */}
+        <Animated.View
+          style={[
+            styles.recordingOverlayLayer,
+            {
+              opacity: overlayOpacity,
+              right: isLocked ? 0 : 50,
+            },
+          ]}
+          pointerEvents={isRecording ? "auto" : "none"}
         >
-          <Ionicons name="camera-outline" size={19} color="#6F767E" />
-        </TouchableOpacity>
-
-        <TextInput
-          style={styles.textInput}
-          placeholder="Type a message..."
-          placeholderTextColor="#9CA3AF"
-          value={inputText}
-          onChangeText={onChangeInputText}
-          multiline
-        />
-      </Animated.View>
-
-      {/* Recording Overlay Layer (Dustbin, Timer, Cancel / Locked Mode) */}
-      <Animated.View
-        style={[
-          styles.recordingOverlayLayer,
-          {
-            opacity: overlayOpacity,
-            right: isLocked ? 12 : 58,
-          },
-        ]}
-        pointerEvents={isRecording ? "auto" : "none"}
-      >
-        {isLocked ? (
-          /* Locked Hands-free Mode */
-          <View style={styles.lockedRow}>
-            <AnimatedDustbin
-              isOpen={false}
-              onPress={handleCancelRecording}
-              size={38}
-            />
-
-            <View style={styles.timerWaveformRow}>
-              <Animated.View
-                style={[
-                  styles.redRecordDot,
-                  { opacity: recordingPulseAnim },
-                ]}
-              />
-              <RecordingTimer
-                isRecording={isRecording}
-                startTime={recordingStartTimeRef.current}
-              />
-              <AudioWaveformBar color="#EF4444" count={6} />
-            </View>
-
-            <TouchableOpacity
-              onPress={handleSendRecording}
-              disabled={isSending}
-              activeOpacity={0.85}
-              style={styles.sendLockedBtn}
-              accessibilityLabel="Send voice message"
-            >
-              {isSending ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Ionicons name="send" size={16} color="#FFFFFF" />
-              )}
-            </TouchableOpacity>
-          </View>
-        ) : (
-          /* Holding Mode */
-          <View style={styles.holdingRow}>
-            {/* Left: Dustbin with opening lid animation */}
-            <View style={styles.dustbinTimerRow}>
+          {isLocked ? (
+            /* Locked Hands-free Mode */
+            <View style={styles.lockedRow}>
               <AnimatedDustbin
-                lidAnim={trashLidAnim}
-                scaleAnim={trashScaleAnim}
-                shakeAnim={trashShakeAnim}
+                isOpen={false}
+                onPress={handleCancelRecording}
                 size={38}
               />
-              <View style={styles.liveTimerRow}>
+
+              <View style={styles.timerWaveformRow}>
                 <Animated.View
                   style={[
                     styles.redRecordDot,
@@ -606,149 +596,191 @@ export function ChatInputBar({
                   isRecording={isRecording}
                   startTime={recordingStartTimeRef.current}
                 />
+                <AudioWaveformBar color="#EF4444" count={6} />
               </View>
-            </View>
 
-            {/* Center: Slide to Cancel text that cross-fades into Release to Delete on GPU */}
-            <View style={styles.cancelTextContainer}>
-              {/* Default "Slide to cancel" */}
-              <Animated.View
-                style={[
-                  styles.slideHintRow,
-                  { opacity: cancelTextOpacity },
-                ]}
+              <TouchableOpacity
+                onPress={handleSendRecording}
+                disabled={isSending}
+                activeOpacity={0.85}
+                style={styles.sendLockedBtn}
+                accessibilityLabel="Send voice message"
               >
-                <Ionicons name="chevron-back" size={15} color="#9CA3AF" />
-                <Text style={styles.slideHintText}>Slide to cancel</Text>
-              </Animated.View>
-
-              {/* Active "Release to delete" */}
-              <Animated.View
-                style={[
-                  styles.slideHintRow,
-                  StyleSheet.absoluteFill,
-                  { opacity: deleteTextOpacity, justifyContent: "flex-end" },
-                ]}
-              >
-                <Text style={styles.deleteHintText}>Release to delete</Text>
-              </Animated.View>
+                {isSending ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="send" size={16} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
             </View>
-          </View>
-        )}
-      </Animated.View>
-
-      {/* PERMANENT, UNMOUNTED RIGHT BUTTON (Mic or Send) */}
-      {!isLocked && (
-        <View style={styles.rightButtonContainer}>
-          {canSendText ? (
-            <TouchableOpacity
-              onPress={onSendTextMessage}
-              disabled={!canSendText}
-              activeOpacity={0.85}
-              style={[
-                styles.sendTextBtn,
-                { backgroundColor: canSendText ? "#14919B" : "#E2DDD5" },
-              ]}
-              accessibilityLabel="Send message"
-            >
-              {isSending ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Ionicons name="send" size={17} color="#FFFFFF" />
-              )}
-            </TouchableOpacity>
           ) : (
-            <View style={styles.micButtonWrapper}>
-              {/* Floating Slide-up Lock Capsule */}
-              {isRecording && (
-                <Animated.View
-                  pointerEvents="none"
-                  style={[
-                    styles.lockCapsule,
-                    { transform: [{ translateY: lockSlideAnim }] },
-                  ]}
-                >
-                  <Ionicons name="lock-closed" size={15} color="#14919B" />
-                  <Ionicons name="chevron-up" size={13} color="#14919B" style={{ marginTop: 1 }} />
-                  <Text style={styles.lockCapsuleText}>Lock</Text>
-                </Animated.View>
-              )}
-
-              {/* Pulsing Ripple Aura Ring */}
-              {isRecording && (
-                <Animated.View
-                  pointerEvents="none"
-                  style={[
-                    styles.rippleAura,
-                    {
-                      transform: [
-                        {
-                          scale: micRippleAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [1, 2.2],
-                          }),
-                        },
-                        { translateX: micTranslateX },
-                        { translateY: micTranslateY },
-                      ],
-                      opacity: micRippleAnim.interpolate({
-                        inputRange: [0, 0.7, 1],
-                        outputRange: [0.6, 0.25, 0],
-                      }),
-                    },
-                  ]}
+            /* Holding Mode */
+            <View style={styles.holdingRow}>
+              {/* Left: Dustbin with opening lid animation */}
+              <View style={styles.dustbinTimerRow}>
+                <AnimatedDustbin
+                  lidAnim={trashLidAnim}
+                  scaleAnim={trashScaleAnim}
+                  shakeAnim={trashShakeAnim}
+                  size={38}
                 />
-              )}
+                <View style={styles.liveTimerRow}>
+                  <Animated.View
+                    style={[
+                      styles.redRecordDot,
+                      { opacity: recordingPulseAnim },
+                    ]}
+                  />
+                  <RecordingTimer
+                    isRecording={isRecording}
+                    startTime={recordingStartTimeRef.current}
+                  />
+                </View>
+              </View>
 
-              {/* THE PERMANENT MIC BUTTON WITH TOUCH PAN RESPONDER */}
-              <View {...micPanResponder.panHandlers} style={styles.micTouchArea}>
+              {/* Center: Slide to Cancel text that cross-fades into Release to Delete on GPU */}
+              <View style={styles.cancelTextContainer}>
+                {/* Default "Slide to cancel" */}
                 <Animated.View
                   style={[
-                    styles.micCircle,
-                    {
-                      backgroundColor: isRecording ? "#EF4444" : "#14919B",
-                      shadowColor: isRecording ? "#EF4444" : "#14919B",
-                      transform: [
-                        { scale: micScaleAnim },
-                        { translateX: micTranslateX },
-                        { translateY: micTranslateY },
-                      ],
-                    },
+                    styles.slideHintRow,
+                    { opacity: cancelTextOpacity },
                   ]}
                 >
-                  <Ionicons name="mic" size={20} color="#FFFFFF" />
+                  <Ionicons name="chevron-back" size={15} color="#9CA3AF" />
+                  <Text style={styles.slideHintText}>Slide to cancel</Text>
+                </Animated.View>
+
+                {/* Active "Release to delete" */}
+                <Animated.View
+                  style={[
+                    styles.slideHintRow,
+                    StyleSheet.absoluteFill,
+                    { opacity: deleteTextOpacity, justifyContent: "flex-end" },
+                  ]}
+                >
+                  <Text style={styles.deleteHintText}>Release to delete</Text>
                 </Animated.View>
               </View>
             </View>
           )}
-        </View>
-      )}
+        </Animated.View>
+
+        {/* PERMANENT, UNMOUNTED RIGHT BUTTON (Mic or Send) */}
+        {!isLocked && (
+          <View style={styles.rightButtonContainer}>
+            {canSendText ? (
+              <TouchableOpacity
+                onPress={onSendTextMessage}
+                disabled={!canSendText}
+                activeOpacity={0.85}
+                style={[
+                  styles.sendTextBtn,
+                  { backgroundColor: canSendText ? "#14919B" : "#E2DDD5" },
+                ]}
+                accessibilityLabel="Send message"
+              >
+                {isSending ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="send" size={17} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.micButtonWrapper}>
+                {/* Floating Slide-up Lock Capsule */}
+                {isRecording && (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.lockCapsule,
+                      { transform: [{ translateY: lockSlideAnim }] },
+                    ]}
+                  >
+                    <Ionicons name="lock-closed" size={15} color="#14919B" />
+                    <Ionicons name="chevron-up" size={13} color="#14919B" style={{ marginTop: 1 }} />
+                    <Text style={styles.lockCapsuleText}>Lock</Text>
+                  </Animated.View>
+                )}
+
+                {/* Pulsing Ripple Aura Ring */}
+                {isRecording && (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.rippleAura,
+                      {
+                        transform: [
+                          {
+                            scale: micRippleAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [1, 2.2],
+                            }),
+                          },
+                          { translateX: micTranslateX },
+                          { translateY: micTranslateY },
+                        ],
+                        opacity: micRippleAnim.interpolate({
+                          inputRange: [0, 0.7, 1],
+                          outputRange: [0.6, 0.25, 0],
+                        }),
+                      },
+                    ]}
+                  />
+                )}
+
+                {/* THE PERMANENT MIC BUTTON WITH TOUCH PAN RESPONDER */}
+                <View {...micPanResponder.panHandlers} style={styles.micTouchArea}>
+                  <Animated.View
+                    style={[
+                      styles.micCircle,
+                      {
+                        backgroundColor: isRecording ? "#EF4444" : "#14919B",
+                        shadowColor: isRecording ? "#EF4444" : "#14919B",
+                        transform: [
+                          { scale: micScaleAnim },
+                          { translateX: micTranslateX },
+                          { translateY: micTranslateY },
+                        ],
+                      },
+                    ]}
+                  >
+                    <Ionicons name="mic" size={20} color="#FFFFFF" />
+                  </Animated.View>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
     borderTopWidth: 1,
     borderTopColor: "#EAE5DD",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingTop: 8,
     backgroundColor: "#FFFFFF",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.04,
     shadowRadius: 3,
     elevation: 3,
+  },
+  contentRow: {
+    flexDirection: "row",
+    alignItems: "center",
     position: "relative",
-    minHeight: 62,
+    minHeight: 44,
   },
   normalInputLayer: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    marginRight: 50,
+    marginRight: 6,
   },
   circleBtn: {
     width: 38,
@@ -770,22 +802,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#EAE5DD",
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: Platform.OS === "android" ? 6 : 8,
     fontSize: 14,
     color: "#1A1D1F",
   },
   recordingOverlayLayer: {
     position: "absolute",
-    left: 12,
-    top: 10,
-    bottom: 10,
+    left: 0,
+    top: 0,
+    bottom: 0,
     justifyContent: "center",
+    zIndex: 10,
   },
   lockedRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     height: 44,
+    flex: 1,
   },
   timerWaveformRow: {
     flexDirection: "row",
@@ -816,6 +850,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     height: 44,
+    flex: 1,
   },
   dustbinTimerRow: {
     flexDirection: "row",
@@ -850,9 +885,6 @@ const styles = StyleSheet.create({
     color: "#EF4444",
   },
   rightButtonContainer: {
-    position: "absolute",
-    right: 12,
-    bottom: 10,
     width: 44,
     height: 44,
     alignItems: "center",
@@ -874,10 +906,12 @@ const styles = StyleSheet.create({
   micButtonWrapper: {
     alignItems: "center",
     justifyContent: "center",
+    width: 44,
+    height: 44,
   },
   lockCapsule: {
     position: "absolute",
-    bottom: 56,
+    bottom: 50,
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
     paddingVertical: 7,

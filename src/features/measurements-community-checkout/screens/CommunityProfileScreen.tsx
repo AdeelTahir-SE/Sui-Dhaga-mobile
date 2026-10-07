@@ -24,6 +24,10 @@ import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
 import { isVideoMedia } from "../components/CommunityMediaCarousel";
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
+import {
+  CommunityProfileSkeleton,
+  CommunityPostSkeleton,
+} from "../../../components/ui/Skeleton";
 
 const CATEGORIES = [
   "All",
@@ -302,8 +306,13 @@ export default function CommunityProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 60 }}
       >
-        <View className="px-4 pt-2">
-          {/* User Profile Summary Card */}
+        {isLoading && !isRefreshing && posts.length === 0 ? (
+          <View className="px-4 pt-2">
+            <CommunityProfileSkeleton />
+          </View>
+        ) : (
+          <View className="px-4 pt-2">
+            {/* User Profile Summary Card */}
           <View
             className="rounded-3xl bg-white p-5 shadow-xs mb-4"
             style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
@@ -511,11 +520,8 @@ export default function CommunityProfileScreen() {
 
           {/* Loading Indicator */}
           {isLoading && !isRefreshing ? (
-            <View className="py-20 items-center justify-center">
-              <ActivityIndicator size="large" color="#14919B" />
-              <Text className="mt-3 text-[13px] font-medium text-brand-gray">
-                Loading your community designs...
-              </Text>
+            <View className="py-2">
+              <CommunityPostSkeleton />
             </View>
           ) : error && posts.length === 0 ? (
             <View
@@ -838,6 +844,7 @@ export default function CommunityProfileScreen() {
             </View>
           )}
         </View>
+      )}
       </ScrollView>
 
       {/* Edit Community Post Modal */}

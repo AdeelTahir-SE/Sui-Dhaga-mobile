@@ -2438,16 +2438,16 @@ export default function ConversationChatScreen() {
           <View
             style={{
               backgroundColor: "#FFFFFF",
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
               paddingHorizontal: 20,
               paddingTop: 12,
               paddingBottom: Math.max(insets.bottom + 10, 28),
               shadowColor: "#000",
               shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 10,
-              elevation: 10,
+              shadowOpacity: 0.12,
+              shadowRadius: 14,
+              elevation: 16,
             }}
           >
             <View
@@ -2455,10 +2455,10 @@ export default function ConversationChatScreen() {
                 height: 5,
                 width: 44,
                 borderRadius: 2.5,
-                backgroundColor: "#EAE5DD",
+                backgroundColor: "#E2E8F0",
                 alignSelf: "center",
-                marginBottom: 16,
-                marginTop: 4,
+                marginBottom: 14,
+                marginTop: 2,
               }}
             />
 
@@ -2469,21 +2469,36 @@ export default function ConversationChatScreen() {
                 justifyContent: "space-between",
                 paddingBottom: 14,
                 borderBottomWidth: 1,
-                borderBottomColor: "#EAE5DD",
+                borderBottomColor: "#F1F5F9",
                 marginBottom: 12,
               }}
             >
-              <View>
-                <Text
-                  style={{ fontSize: 16, fontWeight: "800", color: "#1A1D1F" }}
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    backgroundColor: "#E0F7F7",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
+                  }}
                 >
-                  {participantName}
-                </Text>
-                <Text
-                  style={{ fontSize: 12, color: "#6F767E", fontWeight: "500" }}
-                >
-                  Conversation Options
-                </Text>
+                  <Ionicons name="ellipsis-horizontal" size={20} color="#14919B" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 16, fontWeight: "800", color: "#1A1D1F" }}
+                  >
+                    {participantName}
+                  </Text>
+                  <Text
+                    style={{ fontSize: 12, color: "#6F767E", fontWeight: "500", marginTop: 1 }}
+                  >
+                    Conversation Options
+                  </Text>
+                </View>
               </View>
               <TouchableOpacity
                 onPress={() => setIsActionSheetVisible(false)}
@@ -2491,14 +2506,12 @@ export default function ConversationChatScreen() {
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: "#FFFFFF",
-                  borderWidth: 1,
-                  borderColor: "#EAE5DD",
+                  backgroundColor: "#F1F5F9",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Ionicons name="close" size={17} color="#6F767E" />
+                <Ionicons name="close" size={18} color="#64748B" />
               </TouchableOpacity>
             </View>
 
@@ -2860,16 +2873,16 @@ export default function ConversationChatScreen() {
           <View
             style={{
               backgroundColor: "#FFFFFF",
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
               maxHeight: "85%",
               paddingTop: 12,
               paddingBottom: Math.max(insets.bottom + 12, 28),
               shadowColor: "#000",
               shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 10,
-              elevation: 10,
+              shadowOpacity: 0.12,
+              shadowRadius: 14,
+              elevation: 16,
             }}
           >
             {/* Drag Handle */}
@@ -2878,10 +2891,10 @@ export default function ConversationChatScreen() {
                 height: 5,
                 width: 44,
                 borderRadius: 2.5,
-                backgroundColor: "#EAE5DD",
+                backgroundColor: "#E2E8F0",
                 alignSelf: "center",
                 marginBottom: 14,
-                marginTop: 4,
+                marginTop: 2,
               }}
             />
 
@@ -2897,22 +2910,37 @@ export default function ConversationChatScreen() {
                 borderBottomColor: "#F1F5F9",
               }}
             >
-              <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text
-                  style={{ fontSize: 17, fontWeight: "800", color: "#1A1D1F" }}
-                >
-                  Share Saved Measurements
-                </Text>
-                <Text
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1, paddingRight: 8 }}>
+                <View
                   style={{
-                    fontSize: 12,
-                    color: "#6F767E",
-                    fontWeight: "500",
-                    marginTop: 2,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    backgroundColor: "#E0F7F7",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
                   }}
                 >
-                  Select a profile to send fitting details directly in chat
-                </Text>
+                  <Ionicons name="resize-outline" size={20} color="#14919B" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 17, fontWeight: "800", color: "#1A1D1F" }}
+                  >
+                    Share Saved Measurements
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: "#6F767E",
+                      fontWeight: "500",
+                      marginTop: 1,
+                    }}
+                  >
+                    Select a profile to send fitting details directly in chat
+                  </Text>
+                </View>
               </View>
               <TouchableOpacity
                 onPress={() => setIsMeasurementsModalVisible(false)}
@@ -2920,12 +2948,12 @@ export default function ConversationChatScreen() {
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: "#F4F5F6",
+                  backgroundColor: "#F1F5F9",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Ionicons name="close" size={18} color="#6F767E" />
+                <Ionicons name="close" size={18} color="#64748B" />
               </TouchableOpacity>
             </View>
 
