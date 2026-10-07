@@ -39,12 +39,20 @@ const DEFAULT_SPECIALTIES = [
   "Kids Wear",
 ];
 
+const STEPS = [
+  { id: 1, title: "Basic Info", subtitle: "Shop & master identity", icon: "storefront-outline" },
+  { id: 2, title: "Photos", subtitle: "Avatar & shop banner", icon: "images-outline" },
+  { id: 3, title: "Location", subtitle: "Address & map pin", icon: "location-outline" },
+  { id: 4, title: "Services", subtitle: "Specialties & pricing", icon: "cut-outline" },
+];
+
 export default function TailorProfileSetupScreen() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const { profile, isLoading, isSaving, isComplete, error, saveProfile } =
     useTailorProfile();
 
+  const [currentStep, setCurrentStep] = useState<number>(1);
   const [businessName, setBusinessName] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -419,6 +427,50 @@ export default function TailorProfileSetupScreen() {
     }
   };
 
+  const validateCurrentStep = (step: number) => {
+    if (step === 1) {
+      if (!businessName.trim()) {
+        Alert.alert("Required Field", "Please enter your Workshop / Shop Name.");
+        return false;
+      }
+    } else if (step === 3) {
+      if (!city.trim()) {
+        Alert.alert("Required Field", "Please enter your City / Town.");
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (!validateCurrentStep(currentStep)) return;
+    if (currentStep < STEPS.length) {
+      setCurrentStep((prev) => prev + 1);
+    } else {
+      handleSave();
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1);
+    } else {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/tailor-dashboard/profile" as any);
+      }
+    }
+  };
+
+  const handleStepSelect = (stepId: number) => {
+    if (stepId > currentStep && currentStep === 1 && !businessName.trim()) {
+      Alert.alert("Required Field", "Please enter your Workshop / Shop Name first.");
+      return;
+    }
+    setCurrentStep(stepId);
+  };
+
   if (isLoading) {
     return (
       <TailorDashboardShell
@@ -443,16 +495,10 @@ export default function TailorProfileSetupScreen() {
         className="flex-1"
       >
         {/* Header */}
-        <View className="h-14 flex-row items-center justify-between border-b border-brand-border px-4">
+        <View className="h-14 flex-row items-center justify-between border-b border-brand-border px-4 bg-white">
           <TouchableOpacity
             accessibilityRole="button"
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.replace("/tailor-dashboard/profile" as any);
-              }
-            }}
+            onPress={handlePrevStep}
             className="h-10 w-10 items-center justify-center rounded-md"
           >
             <Ionicons name="arrow-back" size={22} color="#1A1D1F" />
@@ -460,7 +506,104 @@ export default function TailorProfileSetupScreen() {
           <Text className="text-[17px] font-black tracking-tight text-brand-dark">
             Edit Tailor Profile
           </Text>
-          <View className="h-10 w-10" />
+          {isComplete ? (
+            <TouchableOpacity
+              onPress={handleSave}
+              disabled={isSaving}
+              className="px-3 py-1.5 rounded-lg bg-primary-50 border border-primary/20 items-center justify-center"
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color="#14919B" />
+              ) : (
+                <Text className="text-[12px] font-bold text-primary">Save</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View className="rounded-full bg-primary-50 border border-primary/20 px-2.5 py-0.5">
+              <Text className="text-[11px] font-bold text-primary">
+                {currentStep}/4
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Multi-Step Indicator Header */}
+        <View className="bg-white border-b border-brand-border px-4 pt-3 pb-3 shadow-xs">
+          {/* Progress bar and subtitle */}
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center gap-1.5 flex-1 mr-2">
+              <View className="h-2 w-2 rounded-full bg-primary" />
+              <Text className="text-[12px] font-black text-brand-dark" numberOfLines={1}>
+                Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].subtitle}
+              </Text>
+            </View>
+            <Text className="text-[11px] font-bold text-primary">
+              {Math.round((currentStep / STEPS.length) * 100)}%
+            </Text>
+          </View>
+          <View className="h-1.5 w-full rounded-full bg-brand-surface overflow-hidden mb-3">
+            <View
+              className="h-full rounded-full bg-primary"
+              style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
+            />
+          </View>
+
+          {/* Stepper Tabs */}
+          <View className="flex-row items-center justify-between">
+            {STEPS.map((step, index) => {
+              const isActive = currentStep === step.id;
+              const isPast = currentStep > step.id;
+              return (
+                <React.Fragment key={step.id}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => handleStepSelect(step.id)}
+                    className="items-center"
+                    style={{ width: 68 }}
+                  >
+                    <View
+                      className={`h-8 w-8 rounded-full items-center justify-center ${
+                        isActive
+                          ? "bg-primary shadow-xs"
+                          : isPast
+                          ? "bg-primary-50 border border-primary/40"
+                          : "bg-brand-surface border border-brand-border"
+                      }`}
+                    >
+                      {isPast ? (
+                        <Ionicons name="checkmark" size={16} color="#14919B" />
+                      ) : (
+                        <Ionicons
+                          name={step.icon as any}
+                          size={15}
+                          color={isActive ? "#FFFFFF" : "#6F767E"}
+                        />
+                      )}
+                    </View>
+                    <Text
+                      numberOfLines={1}
+                      className={`mt-1 text-[11px] text-center ${
+                        isActive
+                          ? "font-black text-primary"
+                          : isPast
+                          ? "font-semibold text-brand-dark"
+                          : "font-medium text-brand-gray"
+                      }`}
+                    >
+                      {step.title}
+                    </Text>
+                  </TouchableOpacity>
+                  {index < STEPS.length - 1 && (
+                    <View
+                      className={`h-[2px] flex-1 mb-4 ${
+                        currentStep > index + 1 ? "bg-primary" : "bg-brand-border"
+                      }`}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </View>
         </View>
 
         <ScrollView
@@ -468,444 +611,572 @@ export default function TailorProfileSetupScreen() {
           contentContainerStyle={{ paddingBottom: 40 }}
           className="px-5 pt-4"
         >
-          {/* Status Badge */}
-          {!isComplete ? (
-            <View className="mb-4 flex-row items-start rounded-md border border-amber-200 bg-amber-50 p-3">
-              <Ionicons
-                name="alert-circle"
-                size={20}
-                color="#D97706"
-                style={{ marginTop: 2 }}
-              />
-              <View className="ml-2.5 flex-1">
-                <Text className="text-[13px] font-bold text-amber-800">
-                  Profile Incomplete
+          {/* STEP 1: Basic & Contact Details */}
+          {currentStep === 1 && (
+            <View>
+              {/* Status Badge */}
+              {!isComplete ? (
+                <View className="mb-4 flex-row items-start rounded-xl border border-amber-200 bg-amber-50 p-3.5">
+                  <Ionicons
+                    name="alert-circle"
+                    size={20}
+                    color="#D97706"
+                    style={{ marginTop: 2 }}
+                  />
+                  <View className="ml-2.5 flex-1">
+                    <Text className="text-[13px] font-bold text-amber-800">
+                      Profile Setup Incomplete
+                    </Text>
+                    <Text className="mt-0.5 text-[11px] leading-4 text-amber-700">
+                      Complete all 4 steps to start receiving stitching orders and appear on the customer tailor search.
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <View className="mb-4 flex-row items-center rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                  <Ionicons name="checkmark-circle" size={20} color="#059669" />
+                  <View className="ml-2.5 flex-1">
+                    <Text className="text-[13px] font-bold text-emerald-800">
+                      Profile Active & Verified
+                    </Text>
+                    <Text className="text-[11px] text-emerald-700">
+                      Your store details are live on Sui Dhaga.
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs mb-4">
+                <Text className="mb-1 text-[15px] font-black tracking-tight text-brand-dark">
+                  Shop & Master Details
                 </Text>
-                <Text className="mt-0.5 text-[11px] leading-4 text-amber-700">
-                  Fill in your workshop name, specialties, city, and pricing to
-                  start receiving stitching orders and appear on the customer
-                  tailors page.
+                <Text className="mb-4 text-[11px] font-medium text-brand-gray">
+                  Provide your business identity and primary contact information
                 </Text>
+
+                {/* Shop / Business Name */}
+                <View className="mb-3.5">
+                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
+                    Business / Shop Name *
+                  </Text>
+                  <TextInput
+                    value={businessName}
+                    onChangeText={setBusinessName}
+                    placeholder="e.g. Rekha Designer Tailors"
+                    placeholderTextColor="#9CA3AF"
+                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                  />
+                </View>
+
+                {/* Owner Full Name */}
+                <View className="mb-3.5">
+                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
+                    Tailor / Master Name
+                  </Text>
+                  <TextInput
+                    value={ownerName}
+                    onChangeText={setOwnerName}
+                    placeholder="e.g. Master Rekha"
+                    placeholderTextColor="#9CA3AF"
+                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                  />
+                </View>
+
+                {/* Phone Number */}
+                <View className="mb-3.5">
+                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
+                    Phone / WhatsApp Number
+                  </Text>
+                  <TextInput
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="e.g. +91 98765 43210"
+                    keyboardType="phone-pad"
+                    placeholderTextColor="#9CA3AF"
+                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                  />
+                </View>
+
+                {/* Experience Years */}
+                <View>
+                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
+                    Years of Experience
+                  </Text>
+                  <TextInput
+                    value={experienceYears}
+                    onChangeText={setExperienceYears}
+                    placeholder="e.g. 8"
+                    keyboardType="numeric"
+                    placeholderTextColor="#9CA3AF"
+                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                  />
+                </View>
               </View>
-            </View>
-          ) : (
-            <View className="mb-4 flex-row items-center rounded-md border border-emerald-200 bg-emerald-50 p-3">
-              <Ionicons name="checkmark-circle" size={20} color="#059669" />
-              <View className="ml-2.5 flex-1">
-                <Text className="text-[13px] font-bold text-emerald-800">
-                  Profile Complete & Active
-                </Text>
-                <Text className="text-[11px] text-emerald-700">
-                  Your profile is live on Sui Dhaga tailor search.
+
+              <View className="rounded-xl border border-primary/20 bg-primary-50/60 p-3 flex-row items-center">
+                <Ionicons name="information-circle-outline" size={18} color="#14919B" />
+                <Text className="ml-2 flex-1 text-[11px] leading-4 text-brand-dark">
+                  Customers reach out to this contact number when confirming fit appointments or asking questions about fabric choices.
                 </Text>
               </View>
             </View>
           )}
 
-          {/* Photos & Branding Section */}
-          <View className="mb-6 rounded-2xl border border-brand-border bg-white p-4 shadow-xs">
-            <Text className="mb-3 text-[15px] font-black tracking-tight text-brand-dark">
-              Profile & Workshop Photos
-            </Text>
+          {/* STEP 2: Photos & Branding */}
+          {currentStep === 2 && (
+            <View>
+              <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs mb-4">
+                <Text className="mb-1 text-[15px] font-black tracking-tight text-brand-dark">
+                  Profile & Workshop Photos
+                </Text>
+                <Text className="mb-4 text-[11px] font-medium text-brand-gray">
+                  Visual presentation helps build trust with prospective clients
+                </Text>
 
-            {/* Profile Avatar Row */}
-            <View className="flex-row items-center justify-between pb-4 border-b border-brand-border/60">
-              <View className="flex-row items-center flex-1 mr-3">
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={pickAvatar}
-                  disabled={isUploadingAvatar}
-                  className="relative"
-                >
-                  <View className="h-16 w-16 rounded-2xl border border-brand-border bg-primary-50 overflow-hidden items-center justify-center">
-                    {avatarUri ? (
+                {/* Profile Avatar Row */}
+                <View className="flex-row items-center justify-between pb-4 border-b border-brand-border/60">
+                  <View className="flex-row items-center flex-1 mr-3">
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={pickAvatar}
+                      disabled={isUploadingAvatar}
+                      className="relative"
+                    >
+                      <View className="h-16 w-16 rounded-2xl border border-brand-border bg-primary-50 overflow-hidden items-center justify-center">
+                        {avatarUri ? (
+                          <Image
+                            source={{ uri: avatarUri }}
+                            style={{ width: "100%", height: "100%" }}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View className="items-center justify-center w-full h-full bg-primary-50">
+                            <Text className="text-[20px] font-black text-primary">
+                              {(businessName || ownerName || "T").charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      {isUploadingAvatar ? (
+                        <View className="absolute inset-0 items-center justify-center rounded-2xl bg-black/40">
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        </View>
+                      ) : (
+                        <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-primary border-2 border-white shadow-xs">
+                          <Ionicons name="camera" size={11} color="#FFFFFF" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+
+                    <View className="ml-3.5 flex-1">
+                      <Text className="text-[14px] font-bold text-brand-dark">
+                        Profile Avatar
+                      </Text>
+                      <Text className="text-[11px] font-medium text-brand-gray mt-0.5">
+                        Your face photo or brand emblem
+                      </Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={pickAvatar}
+                    disabled={isUploadingAvatar}
+                    className="rounded-xl bg-primary-50 px-3 py-1.5 border border-primary/20"
+                  >
+                    <Text className="text-[12px] font-bold text-primary">
+                      {avatarUri ? "Change" : "Upload"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Shop Banner Box */}
+                <View className="pt-4">
+                  <View className="flex-row items-center justify-between mb-2">
+                    <View>
+                      <Text className="text-[14px] font-bold text-brand-dark">
+                        Workshop Cover Banner
+                      </Text>
+                      <Text className="text-[11px] font-medium text-brand-gray">
+                        Wide photo displayed on your storefront
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={pickShopImage}
+                      disabled={isUploadingImage}
+                      className="rounded-xl bg-primary-50 px-3 py-1.5 border border-primary/20"
+                    >
+                      <Text className="text-[12px] font-bold text-primary">
+                        {shopImage ? "Change" : "Upload"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={pickShopImage}
+                    disabled={isUploadingImage}
+                    className="relative h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-primary/40 bg-primary-50/50 mt-1"
+                  >
+                    {shopImage ? (
                       <Image
-                        source={{ uri: avatarUri }}
-                        style={{ width: "100%", height: "100%" }}
+                        source={{ uri: shopImage }}
+                        className="h-full w-full"
                         resizeMode="cover"
                       />
                     ) : (
-                      <View className="items-center justify-center w-full h-full bg-primary-50">
-                        <Text className="text-[20px] font-black text-primary">
-                          {(businessName || ownerName || "T").charAt(0).toUpperCase()}
+                      <View className="items-center justify-center p-3">
+                        <Ionicons name="image-outline" size={28} color="#14919B" />
+                        <Text className="mt-1 text-[12px] font-bold text-primary">
+                          Tap to select banner photo (16:9)
+                        </Text>
+                        <Text className="text-[10px] text-brand-gray mt-0.5">
+                          Workshop exterior, showroom display or stitching bench
                         </Text>
                       </View>
                     )}
+
+                    {isUploadingImage ? (
+                      <View className="absolute inset-0 items-center justify-center bg-black/40">
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                        <Text className="mt-1 text-[11px] font-bold text-white">
+                          Uploading banner...
+                        </Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View className="rounded-xl border border-primary/20 bg-primary-50/60 p-3 flex-row items-center">
+                <Ionicons name="sparkles-outline" size={18} color="#14919B" />
+                <Text className="ml-2 flex-1 text-[11px] leading-4 text-brand-dark">
+                  Photos can also be updated anytime later. Clear, well-lit pictures improve your ranking in local tailor search results.
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* STEP 3: Location & Map Pin */}
+          {currentStep === 3 && (
+            <View>
+              <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs mb-4">
+                <Text className="mb-1 text-[15px] font-black tracking-tight text-brand-dark">
+                  Shop Location & Map Pin
+                </Text>
+                <Text className="mb-4 text-[11px] font-medium text-brand-gray">
+                  Help nearby customers find your boutique or workshop easily
+                </Text>
+
+                {/* City */}
+                <View className="mb-3.5">
+                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
+                    City / Town *
+                  </Text>
+                  <TextInput
+                    value={city}
+                    onChangeText={setCity}
+                    placeholder="e.g. Delhi, Lahore"
+                    placeholderTextColor="#9CA3AF"
+                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                  />
+                </View>
+
+                {/* Shop Address */}
+                <View className="mb-4">
+                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
+                    Shop / Workshop Address
+                  </Text>
+                  <TextInput
+                    value={address}
+                    onChangeText={setAddress}
+                    placeholder="e.g. Shop 12, Fashion Street Market"
+                    placeholderTextColor="#9CA3AF"
+                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                  />
+                </View>
+
+                {/* Interactive Map Pin Box */}
+                <View className="rounded-xl border border-brand-border bg-brand-surface/40 p-3.5">
+                  <View className="flex-row items-center justify-between mb-3">
+                    <View className="flex-row items-center">
+                      <View className="h-7 w-7 rounded-md bg-primary-50 items-center justify-center mr-2">
+                        <Ionicons name="location" size={16} color="#078B87" />
+                      </View>
+                      <View>
+                        <Text className="text-[13px] font-black text-brand-dark">
+                          Exact Map Marker
+                        </Text>
+                        <Text className="text-[10px] text-brand-gray">
+                          Used for distance calculation on customer maps
+                        </Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      activeOpacity={0.8}
+                      onPress={() => setIsMapModalOpen(true)}
+                      className="flex-row items-center rounded-md bg-primary px-3 py-1.5 shadow-xs"
+                    >
+                      <Ionicons name="map" size={13} color="#FFFFFF" />
+                      <Text className="ml-1 text-[11px] font-bold text-white">
+                        {hasLocationPinned ? "Adjust Pin" : "Set on Map"}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                  {isUploadingAvatar ? (
-                    <View className="absolute inset-0 items-center justify-center rounded-2xl bg-black/40">
-                      <ActivityIndicator size="small" color="#FFFFFF" />
+
+                  {hasLocationPinned ? (
+                    <View className="overflow-hidden rounded-lg border border-brand-border">
+                      <TailorLeafletMap
+                        latitude={latitude}
+                        longitude={longitude}
+                        shopName={businessName || "Your Tailor Shop"}
+                        locationText={address ? `${address}, ${city}` : city || "Shop Location"}
+                        height={140}
+                        interactive={false}
+                      />
+                      <View className="bg-[#F7FCFC] p-3 border-t border-brand-border">
+                        <View className="flex-row items-center justify-between mb-1">
+                          <View className="flex-row items-center gap-1.5 flex-1 mr-2">
+                            <Ionicons name="pin" size={13} color="#078B87" />
+                            <Text className="text-[12px] font-black text-brand-dark" numberOfLines={1}>
+                              {address || "Exact Shop Spot Selected"}
+                            </Text>
+                          </View>
+                          <View className="rounded bg-emerald-100 px-2 py-0.5">
+                            <Text className="text-[10px] font-bold text-emerald-800">✓ Pin Linked</Text>
+                          </View>
+                        </View>
+                        <View className="flex-row items-center justify-between mt-1 pt-1.5 border-t border-gray-100">
+                          <Text className="text-[11px] font-semibold text-brand-dark">
+                            City: {city || "Not set"}
+                          </Text>
+                          <Text className="text-[10px] font-mono font-bold text-primary">
+                            GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                          </Text>
+                        </View>
+                      </View>
                     </View>
                   ) : (
-                    <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-primary border-2 border-white shadow-xs">
-                      <Ionicons name="camera" size={11} color="#FFFFFF" />
-                    </View>
-                  )}
-                </TouchableOpacity>
-
-                <View className="ml-3.5 flex-1">
-                  <Text className="text-[14px] font-bold text-brand-dark">
-                    Profile Avatar
-                  </Text>
-                  <Text className="text-[11px] font-medium text-brand-gray mt-0.5">
-                    Your personal face / tailor photo
-                  </Text>
-                </View>
-              </View>
-
-              <TouchableOpacity
-                onPress={pickAvatar}
-                disabled={isUploadingAvatar}
-                className="rounded-xl bg-primary-50 px-3 py-1.5 border border-primary/20"
-              >
-                <Text className="text-[12px] font-bold text-primary">
-                  {avatarUri ? "Change" : "Upload"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Shop Banner Box */}
-            <View className="pt-4">
-              <View className="flex-row items-center justify-between mb-2">
-                <View>
-                  <Text className="text-[14px] font-bold text-brand-dark">
-                    Workshop Cover Banner
-                  </Text>
-                  <Text className="text-[11px] font-medium text-brand-gray">
-                    Wide photo displayed on your storefront
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={pickShopImage}
-                  disabled={isUploadingImage}
-                  className="rounded-xl bg-primary-50 px-3 py-1.5 border border-primary/20"
-                >
-                  <Text className="text-[12px] font-bold text-primary">
-                    {shopImage ? "Change" : "Upload"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={pickShopImage}
-                disabled={isUploadingImage}
-                className="relative h-28 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-primary/40 bg-primary-50/50 mt-1"
-              >
-                {shopImage ? (
-                  <Image
-                    source={{ uri: shopImage }}
-                    className="h-full w-full"
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View className="items-center justify-center p-3">
-                    <Ionicons name="image-outline" size={26} color="#14919B" />
-                    <Text className="mt-1 text-[12px] font-bold text-primary">
-                      Tap to select banner photo (16:9)
-                    </Text>
-                    <Text className="text-[10px] text-brand-gray">
-                      Workshop exterior, showroom or stitching bench
-                    </Text>
-                  </View>
-                )}
-
-                {isUploadingImage ? (
-                  <View className="absolute inset-0 items-center justify-center bg-black/40">
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                    <Text className="mt-1 text-[11px] font-bold text-white">
-                      Uploading...
-                    </Text>
-                  </View>
-                ) : null}
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Business & Personal Info Section */}
-          <Text className="mb-3 mt-2 text-[16px] font-black tracking-tight text-brand-dark">
-            Shop & Personal Details
-          </Text>
-
-          {/* Shop / Business Name */}
-          <View className="mb-3.5">
-            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
-              Business / Shop Name *
-            </Text>
-            <TextInput
-              value={businessName}
-              onChangeText={setBusinessName}
-              placeholder="e.g. Rekha Designer Tailors"
-              placeholderTextColor="#9CA3AF"
-              className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
-            />
-          </View>
-
-          {/* Owner Full Name */}
-          <View className="mb-3.5">
-            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
-              Tailor / Master Name
-            </Text>
-            <TextInput
-              value={ownerName}
-              onChangeText={setOwnerName}
-              placeholder="e.g. Master Rekha"
-              placeholderTextColor="#9CA3AF"
-              className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
-            />
-          </View>
-
-          {/* Phone Number */}
-          <View className="mb-3.5">
-            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
-              Phone / WhatsApp Number
-            </Text>
-            <TextInput
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="e.g. +91 98765 43210"
-              keyboardType="phone-pad"
-              placeholderTextColor="#9CA3AF"
-              className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
-            />
-          </View>
-
-          {/* Location & Experience */}
-          <View className="mb-3.5 flex-row gap-3">
-            <View className="flex-1">
-              <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
-                City / Town *
-              </Text>
-              <TextInput
-                value={city}
-                onChangeText={setCity}
-                placeholder="e.g. Delhi, Lahore"
-                placeholderTextColor="#9CA3AF"
-                className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
-              />
-            </View>
-            <View className="w-32">
-              <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
-                Exp. (Years)
-              </Text>
-              <TextInput
-                value={experienceYears}
-                onChangeText={setExperienceYears}
-                placeholder="e.g. 8"
-                keyboardType="numeric"
-                placeholderTextColor="#9CA3AF"
-                className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
-              />
-            </View>
-          </View>
-
-          {/* Shop Address */}
-          <View className="mb-3.5">
-            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
-              Shop / Workshop Address
-            </Text>
-            <TextInput
-              value={address}
-              onChangeText={setAddress}
-              placeholder="e.g. Shop 12, Fashion Street Market"
-              placeholderTextColor="#9CA3AF"
-              className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
-            />
-          </View>
-
-          {/* Set Address on Map Section */}
-          <View className="mb-4 rounded-xl border border-brand-border bg-white p-4 shadow-xs">
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <View className="h-7 w-7 rounded-md bg-primary-50 items-center justify-center mr-2">
-                  <Ionicons name="location" size={16} color="#078B87" />
-                </View>
-                <View>
-                  <Text className="text-[13px] font-black text-brand-dark">
-                    Shop Location & Map Pin
-                  </Text>
-                  <Text className="text-[10px] text-brand-gray">
-                    Used to match nearby customers searching for tailors
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                accessibilityRole="button"
-                activeOpacity={0.8}
-                onPress={() => setIsMapModalOpen(true)}
-                className="flex-row items-center rounded-md bg-primary px-3 py-1.5 shadow-xs"
-              >
-                <Ionicons name="map" size={13} color="#FFFFFF" />
-                <Text className="ml-1 text-[11px] font-bold text-white">
-                  {hasLocationPinned ? "Adjust Pin" : "Set on Map"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {hasLocationPinned ? (
-              <View className="overflow-hidden rounded-lg border border-brand-border">
-                <TailorLeafletMap
-                  latitude={latitude}
-                  longitude={longitude}
-                  shopName={businessName || "Your Tailor Shop"}
-                  locationText={address ? `${address}, ${city}` : city || "Shop Location"}
-                  height={140}
-                  interactive={false}
-                />
-                <View className="bg-[#F7FCFC] p-3 border-t border-brand-border">
-                  <View className="flex-row items-center justify-between mb-1">
-                    <View className="flex-row items-center gap-1.5 flex-1 mr-2">
-                      <Ionicons name="pin" size={13} color="#078B87" />
-                      <Text className="text-[12px] font-black text-brand-dark" numberOfLines={1}>
-                        {address || "Exact Shop Spot Selected"}
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      activeOpacity={0.7}
+                      onPress={() => setIsMapModalOpen(true)}
+                      className="items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-primary-50/40 py-5 px-4"
+                    >
+                      <View className="h-10 w-10 rounded-full bg-primary/10 items-center justify-center mb-1.5">
+                        <Ionicons name="navigate" size={22} color="#078B87" />
+                      </View>
+                      <Text className="text-[13px] font-black text-primary text-center">
+                        Tap to Pin Your Shop on Interactive Map
                       </Text>
-                    </View>
-                    <View className="rounded bg-emerald-100 px-2 py-0.5">
-                      <Text className="text-[10px] font-bold text-emerald-800">✓ Pin Linked</Text>
-                    </View>
-                  </View>
-                  <View className="flex-row items-center justify-between mt-1 pt-1.5 border-t border-gray-100">
-                    <Text className="text-[11px] font-semibold text-brand-dark">
-                      City: {city || "Not set"}
+                      <Text className="text-[11px] text-brand-gray text-center mt-1">
+                        Drag the pin, search your area or use GPS. Address, city & coordinates auto-fill.
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              <View className="rounded-xl border border-primary/20 bg-primary-50/60 p-3 flex-row items-center">
+                <Ionicons name="navigate-outline" size={18} color="#14919B" />
+                <Text className="ml-2 flex-1 text-[11px] leading-4 text-brand-dark">
+                  Customers in your area search tailors by proximity. Accurate coordinates ensure your shop shows in "Nearby Tailors".
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* STEP 4: Craft, Specialties & Pricing */}
+          {currentStep === 4 && (
+            <View>
+              <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs mb-4">
+                <Text className="mb-1 text-[15px] font-black tracking-tight text-brand-dark">
+                  Services, Specialties & Pricing
+                </Text>
+                <Text className="mb-4 text-[11px] font-medium text-brand-gray">
+                  Define your stitching crafts and starting pricing for customers
+                </Text>
+
+                {/* Starting Price */}
+                <View className="mb-4">
+                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
+                    Starting Stitching Price (₹ / PKR) *
+                  </Text>
+                  <TextInput
+                    value={startingPrice}
+                    onChangeText={setStartingPrice}
+                    placeholder="e.g. 500"
+                    keyboardType="numeric"
+                    placeholderTextColor="#9CA3AF"
+                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                  />
+                </View>
+
+                {/* Specialties */}
+                <Text className="mb-1 text-[13px] font-bold text-brand-dark">
+                  Tailoring Specialties *
+                </Text>
+                <Text className="mb-2.5 text-[11px] font-medium text-brand-gray">
+                  Select all garments and stitching services you offer:
+                </Text>
+
+                <View className="mb-3 flex-row flex-wrap gap-2">
+                  {DEFAULT_SPECIALTIES.map((spec) => {
+                    const isSelected = selectedSpecialties.includes(spec);
+                    return (
+                      <TouchableOpacity
+                        key={spec}
+                        onPress={() => toggleSpecialty(spec)}
+                        className={`flex-row items-center rounded-md border px-3 py-1.5 ${
+                          isSelected
+                            ? "border-primary bg-primary-50"
+                            : "border-brand-border bg-white"
+                        }`}
+                      >
+                        <Ionicons
+                          name={isSelected ? "checkmark-circle" : "add-circle-outline"}
+                          size={15}
+                          color={isSelected ? "#14919B" : "#6F767E"}
+                        />
+                        <Text
+                          className={`ml-1.5 text-[12px] ${
+                            isSelected
+                              ? "font-bold text-primary"
+                              : "font-medium text-brand-dark"
+                          }`}
+                        >
+                          {spec}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Custom Specialty Input */}
+                <View className="mb-4 flex-row gap-2">
+                  <TextInput
+                    value={customSpecialty}
+                    onChangeText={setCustomSpecialty}
+                    placeholder="Add other specialty..."
+                    placeholderTextColor="#9CA3AF"
+                    className="h-10 flex-1 rounded-md border border-brand-border bg-white px-3 text-[12px] font-medium text-brand-dark"
+                  />
+                  <TouchableOpacity
+                    onPress={handleAddCustomSpecialty}
+                    className="h-10 items-center justify-center rounded-md bg-primary-light px-4"
+                  >
+                    <Text className="text-[12px] font-bold text-primary">Add</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Bio / About */}
+                <View>
+                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
+                    About & Workshop Bio
+                  </Text>
+                  <TextInput
+                    value={bio}
+                    onChangeText={setBio}
+                    placeholder="Tell customers about your craftsmanship, fabrics you work with, turnaround time..."
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                    className="h-24 rounded-md border border-brand-border bg-white p-3.5 text-[13px] font-medium text-brand-dark"
+                  />
+                </View>
+              </View>
+
+              {/* Profile Overview Card */}
+              <View className="rounded-xl border border-brand-border bg-brand-surface/70 p-3.5 mb-2">
+                <Text className="text-[12px] font-black text-brand-dark mb-2">
+                  Quick Profile Summary
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  <View className="rounded-md bg-white border border-brand-border px-2.5 py-1">
+                    <Text className="text-[11px] text-brand-gray">
+                      Shop: <Text className="font-bold text-brand-dark">{businessName || "Not set"}</Text>
                     </Text>
-                    <Text className="text-[10px] font-mono font-bold text-primary">
-                      GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                  </View>
+                  <View className="rounded-md bg-white border border-brand-border px-2.5 py-1">
+                    <Text className="text-[11px] text-brand-gray">
+                      City: <Text className="font-bold text-brand-dark">{city || "Not set"}</Text>
+                    </Text>
+                  </View>
+                  <View className="rounded-md bg-white border border-brand-border px-2.5 py-1">
+                    <Text className="text-[11px] text-brand-gray">
+                      Price: <Text className="font-bold text-primary">₹ {startingPrice || "0"}</Text>
+                    </Text>
+                  </View>
+                  <View className="rounded-md bg-white border border-brand-border px-2.5 py-1">
+                    <Text className="text-[11px] text-brand-gray">
+                      Specialties: <Text className="font-bold text-brand-dark">{selectedSpecialties.length}</Text>
                     </Text>
                   </View>
                 </View>
               </View>
-            ) : (
+            </View>
+          )}
+
+          {/* Bottom Step Actions */}
+          <View className="mt-4 flex-row items-center gap-3">
+            {currentStep > 1 && (
               <TouchableOpacity
-                accessibilityRole="button"
-                activeOpacity={0.7}
-                onPress={() => setIsMapModalOpen(true)}
-                className="items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-primary-50/40 py-5 px-4"
+                activeOpacity={0.8}
+                onPress={handlePrevStep}
+                className="h-12 px-4 flex-row items-center justify-center rounded-xl border border-brand-border bg-white"
               >
-                <View className="h-10 w-10 rounded-full bg-primary/10 items-center justify-center mb-1.5">
-                  <Ionicons name="navigate" size={22} color="#078B87" />
-                </View>
-                <Text className="text-[13px] font-black text-primary text-center">
-                  Tap to Pin Your Shop on Interactive Map
-                </Text>
-                <Text className="text-[11px] text-brand-gray text-center mt-1">
-                  Drag the pin, search your area or use GPS. Address, city & coordinates auto-fill.
+                <Ionicons name="chevron-back" size={18} color="#1A1D1F" />
+                <Text className="ml-1 text-[13px] font-bold text-brand-dark">
+                  Back
                 </Text>
               </TouchableOpacity>
             )}
-          </View>
 
-          {/* Starting Price */}
-          <View className="mb-4">
-            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
-              Starting Stitching Price (₹ / PKR) *
-            </Text>
-            <TextInput
-              value={startingPrice}
-              onChangeText={setStartingPrice}
-              placeholder="e.g. 500"
-              keyboardType="numeric"
-              placeholderTextColor="#9CA3AF"
-              className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
-            />
-          </View>
-
-          {/* Specialties */}
-          <Text className="mb-1 mt-3 text-[16px] font-black tracking-tight text-brand-dark">
-            Tailoring Specialties *
-          </Text>
-          <Text className="mb-3 text-[12px] font-medium text-brand-gray">
-            Select what outfits and services you specialize in:
-          </Text>
-
-          <View className="mb-3 flex-row flex-wrap gap-2">
-            {DEFAULT_SPECIALTIES.map((spec) => {
-              const isSelected = selectedSpecialties.includes(spec);
-              return (
-                <TouchableOpacity
-                  key={spec}
-                  onPress={() => toggleSpecialty(spec)}
-                  className={`flex-row items-center rounded-md border px-3 py-1.5 ${
-                    isSelected
-                      ? "border-primary bg-primary-50"
-                      : "border-brand-border bg-white"
-                  }`}
-                >
-                  <Ionicons
-                    name={isSelected ? "checkmark-circle" : "add-circle-outline"}
-                    size={15}
-                    color={isSelected ? "#14919B" : "#6F767E"}
-                  />
-                  <Text
-                    className={`ml-1.5 text-[12px] ${
-                      isSelected
-                        ? "font-bold text-primary"
-                        : "font-medium text-brand-dark"
-                    }`}
-                  >
-                    {spec}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Custom Specialty Input */}
-          <View className="mb-4 flex-row gap-2">
-            <TextInput
-              value={customSpecialty}
-              onChangeText={setCustomSpecialty}
-              placeholder="Add other specialty..."
-              placeholderTextColor="#9CA3AF"
-              className="h-10 flex-1 rounded-md border border-brand-border bg-white px-3 text-[12px] font-medium text-brand-dark"
-            />
             <TouchableOpacity
-              onPress={handleAddCustomSpecialty}
-              className="h-10 items-center justify-center rounded-md bg-primary-light px-4"
+              activeOpacity={0.8}
+              onPress={handleNextStep}
+              disabled={isSaving}
+              className="h-12 flex-1 flex-row items-center justify-center rounded-xl bg-primary shadow-sm"
             >
-              <Text className="text-[12px] font-bold text-primary">Add</Text>
+              {isSaving ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : currentStep < STEPS.length ? (
+                <>
+                  <Text className="mr-1 text-[14px] font-bold text-white">
+                    Next: {STEPS[currentStep].title}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                </>
+              ) : (
+                <>
+                  <Ionicons
+                    name="save-outline"
+                    size={18}
+                    color="#FFFFFF"
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text className="text-[15px] font-bold text-white">
+                    Save Tailor Profile
+                  </Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
 
-          {/* Bio / About */}
-          <View className="mb-6">
-            <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
-              About & Workshop Bio
-            </Text>
-            <TextInput
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Tell customers about your craftsmanship, fabrics you work with, turnaround time..."
-              placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-              className="h-24 rounded-md border border-brand-border bg-white p-3.5 text-[13px] font-medium text-brand-dark"
-            />
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleSave}
-            disabled={isSaving}
-            className="mb-8 h-12 flex-row items-center justify-center rounded-md bg-primary shadow-sm"
-          >
-            {isSaving ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Ionicons
-                  name="save-outline"
-                  size={18}
-                  color="#FFFFFF"
-                  style={{ marginRight: 6 }}
-                />
-                <Text className="text-[15px] font-bold text-white">
-                  Save Tailor Profile
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {/* Quick Save Option for existing profile */}
+          {isComplete && currentStep < STEPS.length && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleSave}
+              disabled={isSaving}
+              className="mt-3 py-2 items-center justify-center"
+            >
+              <Text className="text-[12px] font-bold text-primary">
+                Quick Save All Changes Now
+              </Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
 
