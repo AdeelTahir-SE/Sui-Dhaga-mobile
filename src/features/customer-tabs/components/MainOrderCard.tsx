@@ -65,7 +65,6 @@ export function MainOrderCard({
     }
   };
 
-  // Formatted price string
   const formattedPrice = useMemo(() => {
     if (typeof price === "number") {
       return `Rs. ${price.toLocaleString()}`;
@@ -80,7 +79,6 @@ export function MainOrderCard({
     return "Rs. 0";
   }, [price]);
 
-  // Clean status display
   const statusDisplay = useMemo(() => {
     if (isCompleted) {
       return {
@@ -118,26 +116,94 @@ export function MainOrderCard({
     };
   }, [isCompleted, isCancelled, isConfirmed, status]);
 
-  // Tags list (similar to specialties in Tailor card)
-  const tagsList = useMemo(() => {
-    if (Array.isArray(tags) && tags.length > 0) {
-      return tags.map((t) => t.trim()).filter(Boolean);
+  // Meaningful human-friendly timeline from the user's perspective
+  const timelineInfo = useMemo(() => {
+    if (isCompleted) {
+      if (delivery && !delivery.toLowerCase().includes("progress")) {
+        const cleanDate = delivery.replace(/^(Est\.|Estimated|Delivered on|Delivered)\s*/i, "").trim();
+        return {
+          text: cleanDate ? `Delivered on ${cleanDate}` : "Delivered safely",
+          icon: "checkmark-circle-outline" as const,
+          color: "#059669",
+          bg: "#F0FDF4",
+          border: "#BBF7D0",
+        };
+      }
+      return {
+        text: "Delivered safely",
+        icon: "checkmark-circle-outline" as const,
+        color: "#059669",
+        bg: "#F0FDF4",
+        border: "#BBF7D0",
+      };
     }
-    const list: string[] = [];
-    if (delivery) {
-      list.push(delivery);
+    if (isCancelled) {
+      return {
+        text: "Order cancelled",
+        icon: "close-circle-outline" as const,
+        color: "#E11D48",
+        bg: "#FFF1EE",
+        border: "#FECDD3",
+      };
+    }
+    if (delivery && delivery.toLowerCase() !== "in progress") {
+      const cleanDate = delivery.replace(/^(Est\.|Estimated delivery|Estimated|Delivery by)\s*/i, "").trim();
+      return {
+        text: `Expected delivery: ${cleanDate}`,
+        icon: "calendar-outline" as const,
+        color: "#078B87",
+        bg: "#F0FAFA",
+        border: "#CCF0EE",
+      };
     }
     if (placedOn) {
-      list.push(`Placed ${placedOn}`);
+      return {
+        text: `Ordered on ${placedOn.replace(/^Placed:?\s*/i, "").trim()}`,
+        icon: "time-outline" as const,
+        color: "#078B87",
+        bg: "#F0FAFA",
+        border: "#CCF0EE",
+      };
     }
-    if (list.length === 0) {
-      list.push("Custom Stitching");
-    }
-    return list;
-  }, [tags, delivery, placedOn]);
+    return {
+      text: "Tailoring in progress",
+      icon: "sync-outline" as const,
+      color: "#078B87",
+      bg: "#F0FAFA",
+      border: "#CCF0EE",
+    };
+  }, [isCompleted, isCancelled, delivery, placedOn]);
 
-  // Button label
-  const ctaLabel = button || (isCompleted ? "View Details" : isCancelled ? "Order Details" : "Track Order");
+  // Subtle support reference (kept for support inquiries without dominating the visual hierarchy)
+  const formattedRef = useMemo(() => {
+    const raw = orderId || id;
+    if (!raw || raw === "—" || raw === "-") return null;
+    const clean = String(raw).trim();
+    if (clean.length > 12 && clean.includes("-")) {
+      const parts = clean.split("-");
+      return `#${parts[parts.length - 1].toUpperCase()}`;
+    }
+    if (clean.startsWith("#")) return clean;
+    return `#${clean}`;
+  }, [orderId, id]);
+
+  // Filter out duplicate dates and show only genuine garment tags
+  const customTags = useMemo(() => {
+    if (!Array.isArray(tags) || tags.length === 0) return [];
+    return tags
+      .map((t) => t.trim())
+      .filter((t) => {
+        if (!t) return false;
+        const lower = t.toLowerCase();
+        if (lower.startsWith("est") || lower.startsWith("delivery") || lower.startsWith("placed")) return false;
+        if (lower === "custom stitching" || lower === (item || "").toLowerCase()) return false;
+        return true;
+      });
+  }, [tags, item]);
+
+  const ctaLabel =
+    button ||
+    (isCompleted ? "View Details" : isCancelled ? "Order Details" : "Track Order");
 
   const firstDesignImg =
     (Array.isArray(designImages) && designImages.length > 0 ? designImages[0] : null) ||
@@ -151,10 +217,9 @@ export function MainOrderCard({
       onPress={handleCardPress}
       style={styles.card}
     >
-      {/* TOP ROW: AVATAR / GARMENT IMAGE + ORDER DETAILS */}
+      {/* TOP ROW: AVATAR / GARMENT IMAGE + PRIMARY DETAILS */}
       <View style={styles.topRow}>
-        {/* AVATAR / IMAGE CONTAINER */}
-        <View style={[styles.avatarContainer, { backgroundColor: activeTone.bg, borderColor: activeTone.border }]}>
+        <View style={styles.avatarWrapper}>
           {hasValidImage ? (
             <Image
               source={{ uri: firstDesignImg }}
@@ -164,80 +229,38 @@ export function MainOrderCard({
               transition={200}
             />
           ) : (
-            <View style={styles.initialsWrap}>
-              <View style={[styles.divIconWrap, { backgroundColor: activeTone.iconBg }]}>
+            <View
+              style={[
+                styles.avatarPlaceholder,
+                { backgroundColor: activeTone.bg, borderColor: activeTone.border },
+              ]}
+            >
+              <View
+                style={[
+                  styles.avatarIconWrap,
+                  { backgroundColor: activeTone.iconBg },
+                ]}
+              >
                 <Ionicons
                   name="shirt-outline"
-                  size={18}
+                  size={20}
                   color={activeTone.text}
                 />
               </View>
-              <Text style={[styles.initialText, { color: activeTone.text }]}>
+              <Text style={[styles.avatarInitial, { color: activeTone.text }]}>
                 {initialLetter}
               </Text>
             </View>
           )}
-
-          {/* Status Mini Badge Overlay on Avatar */}
-          <View
-            style={[
-              styles.avatarStatusBadge,
-              {
-                backgroundColor: isCompleted
-                  ? "#059669"
-                  : isCancelled
-                  ? "#E11D48"
-                  : isConfirmed
-                  ? "#2563EB"
-                  : "#078B87",
-              },
-            ]}
-          >
-            <Ionicons
-              name={
-                isCompleted
-                  ? "checkmark"
-                  : isCancelled
-                  ? "close"
-                  : isConfirmed
-                  ? "shield"
-                  : "sync"
-              }
-              size={10}
-              color="#FFFFFF"
-            />
-          </View>
         </View>
 
         {/* MIDDLE INFO BLOCK */}
         <View style={styles.infoBlock}>
-          {/* Header: Item / Outfit Name */}
-          <Text style={styles.itemName} numberOfLines={1}>
-            {item}
-          </Text>
-
-          {/* Order ID & Tailor Meta Row */}
-          <View style={styles.metaRow}>
-            {/* Order ID Pill */}
-            <View style={styles.orderIdPill}>
-              <Ionicons name="receipt-outline" size={11} color="#078B87" />
-              <Text style={styles.orderIdPillText}>#{id}</Text>
-            </View>
-
-            <Text style={styles.dotDivider}>•</Text>
-
-            {/* Tailor Name */}
-            <View style={styles.tailorWrap}>
-              <Ionicons name="storefront-outline" size={12} color="#078B87" />
-              <Text style={styles.tailorText} numberOfLines={1}>
-                {tailor}
-              </Text>
-            </View>
-          </View>
-
-          {/* Badges Strip (Status, Delivery/Timeline) */}
-          <View style={styles.badgesRow}>
-            {/* Status Tag */}
+          {/* Header Row: Item Name & Status Tag */}
+          <View style={styles.headerRow}>
+            <Text style={styles.itemName} numberOfLines={1}>
+              {item}
+            </Text>
             <View
               style={[
                 styles.statusTag,
@@ -256,41 +279,62 @@ export function MainOrderCard({
                 {statusDisplay.label}
               </Text>
             </View>
+          </View>
 
-            {/* Placed date or quick tag if available */}
-            {placedOn ? (
-              <View style={styles.dateTag}>
-                <Ionicons name="time-outline" size={10} color="#475569" />
-                <Text style={styles.dateTagText}>{placedOn}</Text>
-              </View>
-            ) : null}
+          {/* Tailor Row */}
+          <View style={styles.tailorRow}>
+            <Ionicons name="storefront-outline" size={13} color="#64748B" />
+            <Text style={styles.tailorText} numberOfLines={1}>
+              {tailor}
+            </Text>
+          </View>
+
+          {/* Customer-Valued Timeline Banner */}
+          <View
+            style={[
+              styles.timelineBanner,
+              {
+                backgroundColor: timelineInfo.bg,
+                borderColor: timelineInfo.border,
+              },
+            ]}
+          >
+            <Ionicons
+              name={timelineInfo.icon}
+              size={12}
+              color={timelineInfo.color}
+            />
+            <Text
+              style={[styles.timelineText, { color: timelineInfo.color }]}
+              numberOfLines={1}
+            >
+              {timelineInfo.text}
+            </Text>
           </View>
         </View>
       </View>
 
-      {/* TAGS / DETAILS STRIP */}
-      {tagsList.length > 0 ? (
+      {/* CUSTOM GARMENT TAGS (Only shown if meaningful tags exist) */}
+      {customTags.length > 0 ? (
         <View style={styles.tagsWrap}>
-          {tagsList.slice(0, 3).map((tag, idx) => (
+          {customTags.slice(0, 3).map((tag, idx) => (
             <View key={idx} style={styles.tagPill}>
               <Text style={styles.tagPillText} numberOfLines={1}>
                 {tag}
               </Text>
             </View>
           ))}
-          {tagsList.length > 3 ? (
-            <View style={styles.morePill}>
-              <Text style={styles.morePillText}>+{tagsList.length - 3} more</Text>
-            </View>
-          ) : null}
         </View>
       ) : null}
 
-      {/* FOOTER STRIP: PRICING + CTA BUTTON */}
+      {/* FOOTER STRIP: PRICING + SUBTLE REF + CTA BUTTON */}
       <View style={styles.footerRow}>
         <View style={styles.priceContainer}>
           <Text style={styles.priceLabel}>Total Amount</Text>
           <Text style={styles.priceValue}>{formattedPrice}</Text>
+          {formattedRef ? (
+            <Text style={styles.subtleRefText}>Order {formattedRef}</Text>
+          ) : null}
         </View>
 
         <TouchableOpacity
@@ -314,7 +358,7 @@ export function MainOrderCard({
             name={isCancelled ? "chevron-forward" : "arrow-forward"}
             size={14}
             color={isCancelled ? "#64748B" : "#FFFFFF"}
-            style={{ marginLeft: 3, zIndex: 1 }}
+            style={{ marginLeft: 4, zIndex: 1 }}
           />
         </TouchableOpacity>
       </View>
@@ -332,144 +376,102 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
     shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
   },
   topRow: {
     flexDirection: "row",
     alignItems: "flex-start",
   },
-  avatarContainer: {
-    width: 76,
-    height: 76,
-    borderRadius: 16,
-    overflow: "hidden",
+  avatarWrapper: {
     position: "relative",
-    borderWidth: 1,
-    borderColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
   },
   avatarImage: {
-    width: "100%",
-    height: "100%",
+    width: 72,
+    height: 72,
     borderRadius: 15,
+    backgroundColor: "#F1F5F9",
   },
-  initialsWrap: {
-    width: "100%",
-    height: "100%",
+  avatarPlaceholder: {
+    width: 72,
+    height: 72,
+    borderRadius: 15,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 4,
+    padding: 6,
   },
-  divIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  avatarIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 2,
   },
-  initialText: {
-    fontSize: 12,
+  avatarInitial: {
+    fontSize: 11,
     fontWeight: "800",
-    letterSpacing: 0.2,
-  },
-  avatarStatusBadge: {
-    position: "absolute",
-    bottom: 4,
-    right: 4,
-    width: 17,
-    height: 17,
-    borderRadius: 8.5,
-    borderWidth: 1.5,
-    borderColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
+    letterSpacing: 0.5,
   },
   infoBlock: {
     flex: 1,
     marginLeft: 13,
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   itemName: {
-    fontSize: 16,
+    flex: 1,
+    fontSize: 15.5,
     fontWeight: "800",
     color: "#0F172A",
     letterSpacing: -0.2,
   },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 5,
-    flexWrap: "wrap",
-    gap: 4,
-  },
-  orderIdPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F0FAFA",
-    borderWidth: 1,
-    borderColor: "#CCF0EE",
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 6,
-    gap: 3,
-  },
-  orderIdPillText: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#078B87",
-  },
-  dotDivider: {
-    fontSize: 11,
-    color: "#CBD5E1",
-    marginHorizontal: 1,
-  },
-  tailorWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    flexShrink: 1,
-  },
-  tailorText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#475569",
-  },
-  badgesRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    marginTop: 7,
-    flexWrap: "wrap",
-  },
   statusTag: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    gap: 3,
+    gap: 3.5,
   },
   statusTagText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: "700",
   },
-  dateTag: {
+  tailorRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F1F5F9",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    gap: 3,
+    gap: 4,
+    marginTop: 4,
   },
-  dateTagText: {
-    fontSize: 10,
+  tailorText: {
+    fontSize: 12,
     fontWeight: "600",
-    color: "#475569",
+    color: "#64748B",
+    flex: 1,
+  },
+  timelineBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 7,
+    borderWidth: 1,
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+  },
+  timelineText: {
+    fontSize: 11,
+    fontWeight: "600",
   },
   tagsWrap: {
     flexDirection: "row",
@@ -489,18 +491,7 @@ const styles = StyleSheet.create({
   tagPillText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#334155",
-  },
-  morePill: {
-    backgroundColor: "#F1F5F9",
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 7,
-  },
-  morePillText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#64748B",
+    color: "#475569",
   },
   footerRow: {
     flexDirection: "row",
@@ -515,22 +506,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   priceLabel: {
-    fontSize: 10,
-    fontWeight: "600",
+    fontSize: 9.5,
+    fontWeight: "700",
     color: "#94A3B8",
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },
   priceValue: {
-    fontSize: 16,
+    fontSize: 16.5,
     fontWeight: "900",
     color: "#0F172A",
     marginTop: 1,
   },
+  subtleRefText: {
+    fontSize: 10,
+    fontWeight: "500",
+    color: "#94A3B8",
+    marginTop: 2,
+  },
   actionCta: {
     height: 38,
     backgroundColor: "#078B87",
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
     borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
@@ -539,7 +536,7 @@ const styles = StyleSheet.create({
     position: "relative",
     shadowColor: "#078B87",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.22,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 2,
   },
@@ -560,4 +557,3 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
 });
-

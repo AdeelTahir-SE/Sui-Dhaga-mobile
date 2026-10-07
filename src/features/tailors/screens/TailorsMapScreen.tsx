@@ -822,10 +822,19 @@ export default function TailorsMapScreen() {
     selectedTailor?.image ||
     selectedTailor?.avatarUrl ||
     selectedTailor?.avatar;
-  const startingPrice =
+  const actualStartingPrice =
     selectedTailor?.startingPrice && Number(selectedTailor.startingPrice) > 0
-      ? `Rs. ${Number(selectedTailor.startingPrice).toLocaleString()}`
-      : "Price on request";
+      ? Number(selectedTailor.startingPrice)
+      : (selectedTailor as any)?.starting_price && Number((selectedTailor as any).starting_price) > 0
+        ? Number((selectedTailor as any).starting_price)
+        : (selectedTailor as any)?.price && Number((selectedTailor as any).price) > 0
+          ? Number((selectedTailor as any).price)
+          : selectedTailor?.services?.[0]?.price && Number(selectedTailor.services[0].price) > 0
+            ? Number(selectedTailor.services[0].price)
+            : null;
+  const startingPrice = actualStartingPrice
+    ? `Rs. ${actualStartingPrice.toLocaleString()}`
+    : "Pricing on request";
 
   const isFavorite = selectedTailor?.id
     ? !!favorites[selectedTailor.id]

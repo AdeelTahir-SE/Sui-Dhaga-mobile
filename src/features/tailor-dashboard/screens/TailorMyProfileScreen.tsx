@@ -513,10 +513,10 @@ export default function TailorMyProfileScreen() {
             </View>
           </View>
 
-          {/* Group 3: Account & Support */}
+          {/* Group 3: Account Settings & Support */}
           <View className="mt-5">
             <Text className="mb-2.5 px-1 text-[14px] font-bold text-primary">
-              Account & Support
+              Account Settings & Support
             </Text>
             <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
               <ProfileMenuRow

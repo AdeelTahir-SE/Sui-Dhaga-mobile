@@ -22,6 +22,7 @@ export type SundropTailorCardProps = {
   reviewsCount?: number | string;
   onPress?: () => void;
   price?: string | number;
+  startingPrice?: string | number;
 };
 
 export function SundropTailorCard({
@@ -41,7 +42,8 @@ export function SundropTailorCard({
   distanceKm,
   reviewsCount,
   onPress,
-  price = "Rs. 1,500",
+  price,
+  startingPrice,
 }: SundropTailorCardProps) {
   const [imageError, setImageError] = useState(false);
   const isTailorVerified = verified || isVerified;
@@ -146,16 +148,60 @@ export function SundropTailorCard({
     return ["Sundrop Couture", "Bespoke Cut"];
   }, [specialties, specialty]);
 
-  // Price formatting
-  const formattedPrice = useMemo(() => {
-    if (typeof price === "number") {
-      return `Rs. ${price.toLocaleString()}`;
+  // Structured pricing handling
+  const { hasActualPrice, formattedPrice, priceLabelText } = useMemo(() => {
+    const rawVal =
+      startingPrice !== undefined && startingPrice !== null && startingPrice !== ""
+        ? startingPrice
+        : price;
+
+    if (rawVal !== undefined && rawVal !== null && rawVal !== "") {
+      if (typeof rawVal === "number" && rawVal > 0) {
+        return {
+          hasActualPrice: true,
+          formattedPrice: `Rs. ${rawVal.toLocaleString()}`,
+          priceLabelText: "Starting from",
+        };
+      }
+      if (typeof rawVal === "string") {
+        const trimmed = rawVal.trim();
+        const lower = trimmed.toLowerCase();
+        if (
+          lower === "" ||
+          lower === "0" ||
+          lower === "rs. 0" ||
+          lower.includes("on request") ||
+          lower === "not set"
+        ) {
+          return {
+            hasActualPrice: false,
+            formattedPrice: "Pricing on request",
+            priceLabelText: "Pricing",
+          };
+        }
+
+        const numMatch = trimmed.match(/[0-9,.]+/);
+        if (numMatch) {
+          const numParsed = Number(numMatch[0].replace(/,/g, ""));
+          if (!isNaN(numParsed) && numParsed > 0) {
+            return {
+              hasActualPrice: true,
+              formattedPrice: trimmed.startsWith("Rs")
+                ? trimmed
+                : `Rs. ${numParsed.toLocaleString()}`,
+              priceLabelText: "Starting from",
+            };
+          }
+        }
+      }
     }
-    if (typeof price === "string") {
-      return price;
-    }
-    return "Price on request";
-  }, [price]);
+
+    return {
+      hasActualPrice: false,
+      formattedPrice: "Pricing on request",
+      priceLabelText: "Pricing",
+    };
+  }, [price, startingPrice]);
 
   const initialLetter = (name || "T").charAt(0).toUpperCase();
   const hasValidImage = image && !imageError;
@@ -266,8 +312,19 @@ export function SundropTailorCard({
       {/* Bottom Row: Price & Atelier CTA */}
       <View style={styles.bottomRow}>
         <View style={styles.priceColumn}>
-          <Text style={styles.priceLabel}>Starting from</Text>
-          <Text style={styles.priceValue}>{formattedPrice}</Text>
+          <Text style={styles.priceLabel}>{priceLabelText}</Text>
+          <Text
+            style={[
+              styles.priceValue,
+              !hasActualPrice && {
+                fontSize: 13,
+                fontWeight: "700",
+                color: "#CBD5E1",
+              },
+            ]}
+          >
+            {formattedPrice}
+          </Text>
         </View>
 
         <TouchableOpacity

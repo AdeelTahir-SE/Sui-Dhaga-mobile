@@ -114,7 +114,6 @@ export function MinimalOrderCard({
     (typeof image === "string" && image.trim().length > 0 ? image.trim() : null) ||
     (image && typeof image === "object" && (image as any).uri ? (image as any).uri : null);
   const hasValidImage = Boolean(firstDesignImg) && !imageError;
-  const displayId = orderNumber || (id?.length > 8 ? id.slice(0, 8) : id);
 
   return (
     <TouchableOpacity
@@ -143,6 +142,18 @@ export function MinimalOrderCard({
           </View>
         )}
 
+        {/* User-centric Status Pill */}
+        <View
+          style={[
+            styles.statusPill,
+            { backgroundColor: statusBadge.bg, borderColor: statusBadge.border },
+          ]}
+        >
+          <Ionicons name={statusBadge.icon} size={10} color={statusBadge.text} />
+          <Text style={[styles.statusPillText, { color: statusBadge.text }]}>
+            {statusBadge.label}
+          </Text>
+        </View>
       </View>
 
       {/* Card Content */}
@@ -242,22 +253,6 @@ const styles = StyleSheet.create({
   statusPillText: {
     fontSize: 10,
     fontWeight: "700",
-  },
-  orderIdBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
-    borderRadius: 6,
-    borderWidth: 0.5,
-    borderColor: "#E2E8F0",
-  },
-  orderIdText: {
-    fontSize: 9.5,
-    fontWeight: "700",
-    color: "#475569",
   },
   content: {
     padding: 11,

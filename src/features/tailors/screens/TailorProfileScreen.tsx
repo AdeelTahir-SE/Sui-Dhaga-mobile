@@ -15,12 +15,14 @@ import {
 import { CustomerTabsPreview } from "@/features/customer-tabs/components/CustomerTabsPreview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuthStore } from "@/stores/auth.store";
+import { ButtonTexture } from "@/components/ui/ButtonTexture";
 import { RatingLine } from "../components/RatingLine";
 import { TailorHeader } from "../components/TailorHeader";
 import { TailorLeafletMap } from "../components/TailorLeafletMap";
 import { TailorPlaceholder } from "../components/TailorPlaceholder";
 import { TailorScreenShell } from "../components/TailorScreenShell";
 import { useTailorDetails } from "../hooks/useTailors";
+import { useTailorProfile } from "@/features/tailor-dashboard/hooks/useTailorProfile";
 
 const profileHeroImage = require("@/assets/illustrations/tailor-discovery/profile-hero.png");
 const rekhaImage = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
@@ -35,13 +37,16 @@ const galleryImages = [
 ];
 
 export default function TailorProfileScreen() {
-  const { tailorId: rawTailorId, id: rawId } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     tailorId?: string;
     id?: string;
+    from?: string;
+    role?: string;
   }>();
-  const tailorId = rawTailorId || rawId || "";
+  const tailorId = params.tailorId || params.id || "";
   const { tailor, isLoading } = useTailorDetails(tailorId);
   const currentUser = useAuthStore((state) => state.user);
+  const { profile: myTailorProfile } = useTailorProfile();
   const [isStartingChat, setIsStartingChat] = useState(false);
   const [isMapModalVisible, setIsMapModalVisible] = useState(false);
   const [mapZoomLevel, setMapZoomLevel] = useState(1);
@@ -174,6 +179,45 @@ export default function TailorProfileScreen() {
 
   const profileUrl = `https://suidhaga.app/tailors/${tailor?.id || tailorId || ""}`;
 
+  const isTailor =
+    currentUser?.role === "tailor" ||
+    params.from === "tailor" ||
+    params.role === "tailor";
+
+  const isOwnProfile = Boolean(
+    (currentUser?.id &&
+      ((tailor?.userId &&
+        String(currentUser.id).toLowerCase() ===
+          String(tailor.userId).toLowerCase()) ||
+        ((tailor as any)?.user_id &&
+          String(currentUser.id).toLowerCase() ===
+            String((tailor as any).user_id).toLowerCase()) ||
+        ((tailor as any)?.user?.id &&
+          String(currentUser.id).toLowerCase() ===
+            String((tailor as any).user?.id).toLowerCase()) ||
+        ((tailor as any)?.profile?.id &&
+          String(currentUser.id).toLowerCase() ===
+            String((tailor as any).profile?.id).toLowerCase()) ||
+        (tailor?.id &&
+          String(currentUser.id).toLowerCase() ===
+            String(tailor.id).toLowerCase()) ||
+        (tailorId &&
+          String(currentUser.id).toLowerCase() ===
+            String(tailorId).toLowerCase()))) ||
+      (currentUser?.email &&
+        (((tailor as any)?.user?.email &&
+          String(currentUser.email).toLowerCase() ===
+            String((tailor as any).user.email).toLowerCase()) ||
+          ((tailor as any)?.email &&
+            String(currentUser.email).toLowerCase() ===
+              String((tailor as any).email).toLowerCase()))) ||
+      (myTailorProfile?.id &&
+        (String(myTailorProfile.id).toLowerCase() ===
+          String(tailor?.id || tailorId).toLowerCase()))
+  );
+
+  const shouldHideActionButtons = isTailor || isOwnProfile;
+
   const handleShare = async () => {
     try {
       await Share.share({
@@ -187,6 +231,14 @@ export default function TailorProfileScreen() {
   };
 
   const handleMessageTailor = async () => {
+    if (isTailor) {
+      Alert.alert(
+        "Notice",
+        "Tailor accounts cannot message other tailors.",
+      );
+      return;
+    }
+
     if (!currentUser) {
       Alert.alert("Sign In Required", "Please log in to message this tailor.", [
         { text: "Cancel", style: "cancel" },
@@ -212,9 +264,10 @@ export default function TailorProfileScreen() {
     }
 
     if (
-      currentUser.id &&
-      String(currentUser.id).toLowerCase() ===
-        String(targetUserId).toLowerCase()
+      isOwnProfile ||
+      (currentUser.id &&
+        String(currentUser.id).toLowerCase() ===
+          String(targetUserId).toLowerCase())
     ) {
       Alert.alert("Note", "This is your own tailor profile.");
       return;
@@ -265,41 +318,115 @@ export default function TailorProfileScreen() {
   return (
     <TailorScreenShell
       bottomTabs={
-        currentUser?.role === "tailor" ? undefined : (
+        isTailor ? undefined : (
           <CustomerTabsPreview active="Tailors" />
         )
       }
       fixedBottomAction={
-        <View className="flex-row gap-3">
-          <TouchableOpacity
-            onPress={handleMessageTailor}
-            disabled={isStartingChat}
-            className="h-[52px] flex-1 flex-row items-center justify-center rounded-xl border border-primary bg-white shadow-xs active:bg-primary-50"
-          >
-            {isStartingChat ? (
-              <ActivityIndicator size="small" color="#14919B" />
-            ) : (
-              <>
-                <Ionicons name="chatbubble-outline" size={19} color="#14919B" />
-                <Text className="ml-2 text-[15px] font-bold text-primary">
-                  Message
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              const targetId = tailor?.id || tailor?.userId || tailorId || "1";
-              router.push(`/booking/${targetId}` as never);
+        shouldHideActionButtons ? undefined : (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              backgroundColor: "#FFFFFF",
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              borderRadius: 20,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.12,
+              shadowRadius: 10,
+              elevation: 8,
+              borderWidth: 1,
+              borderColor: "rgba(230, 232, 236, 0.8)",
             }}
-            className="h-[52px] flex-1 flex-row items-center justify-center rounded-xl bg-primary shadow-xs active:bg-primary-600"
           >
-            <Ionicons name="calendar-outline" size={19} color="#FFFFFF" />
-            <Text className="ml-2 text-[15px] font-bold text-white">
-              Book Appointment
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Message tailor"
+              onPress={handleMessageTailor}
+              disabled={isStartingChat}
+              activeOpacity={0.8}
+              style={{
+                height: 48,
+                flex: 0.85,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderColor: "#14919B",
+                backgroundColor: "#F0FAFA",
+                paddingHorizontal: 8,
+              }}
+            >
+              {isStartingChat ? (
+                <ActivityIndicator size="small" color="#14919B" />
+              ) : (
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="chatbubble-outline" size={18} color="#14919B" />
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: "#14919B",
+                    }}
+                  >
+                    Message
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Book appointment"
+              onPress={() => {
+                const targetId = tailor?.id || tailor?.userId || tailorId || "1";
+                router.push(`/booking/${targetId}` as never);
+              }}
+              activeOpacity={0.85}
+              style={{
+                height: 48,
+                flex: 1.15,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 12,
+                backgroundColor: "#00949D",
+                overflow: "hidden",
+                position: "relative",
+                paddingHorizontal: 8,
+                shadowColor: "#14919B",
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.25,
+                shadowRadius: 6,
+                elevation: 4,
+              }}
+            >
+              <ButtonTexture variant="greenish" borderRadius={12} />
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
+                <Ionicons name="calendar-outline" size={18} color="#FFFFFF" />
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    marginLeft: 6,
+                    fontSize: 14,
+                    fontWeight: "700",
+                    color: "#FFFFFF",
+                    textShadowColor: "rgba(0,0,0,0.22)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}
+                >
+                  Book Appointment
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )
       }
     >
       {/* Tailor Cover Banner with rounded bottom corners */}
@@ -319,8 +446,12 @@ export default function TailorProfileScreen() {
           <TailorHeader
             title=""
             showBack
-            rightIcon="share-social-outline"
-            onPressRight={handleShare}
+            rightIcon={isOwnProfile ? "create-outline" : "share-social-outline"}
+            onPressRight={
+              isOwnProfile
+                ? () => router.push("/tailor-dashboard/complete-profile" as any)
+                : handleShare
+            }
             floating
           />
         </View>

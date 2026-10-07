@@ -125,13 +125,40 @@ export default function AppointmentDetailsScreen() {
           </Text>
           <View className="mt-6 w-full max-w-[260px] gap-3">
             <TouchableOpacity
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               onPress={() => router.push("/tailors" as any)}
-              className="h-[48px] rounded-xl bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
+              style={{
+                height: 50,
+                borderRadius: 14,
+                backgroundColor: "#00949D",
+                overflow: "hidden",
+                position: "relative",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                shadowColor: "#14919B",
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.25,
+                shadowRadius: 6,
+                elevation: 4,
+              }}
             >
-              <Text className="text-[13px] font-bold text-white">
-                Book An Appointment
-              </Text>
+              <ButtonTexture variant="greenish" borderRadius={14} />
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
+                <Ionicons name="calendar-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "700",
+                    color: "#FFFFFF",
+                    textShadowColor: "rgba(0,0,0,0.2)",
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 2,
+                  }}
+                >
+                  Book New Appointment
+                </Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.8}

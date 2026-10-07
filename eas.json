@@ -1,4 +1,4 @@
-﻿{
+{
   "cli": {
     "version": ">= 14.0.0",
     "appVersionSource": "remote"
@@ -15,6 +15,12 @@
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sui-dhaga-backend.vercel.app",
+        "EXPO_PUBLIC_BACKEND_URL": "https://sui-dhaga-backend.vercel.app",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://nnuxpvskiypxsjsotvnz.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_k5aPuMNR-VUcCgA4SfZ16A_KFOTkpt6"
+      },
       "android": {
         "buildType": "apk"
       }

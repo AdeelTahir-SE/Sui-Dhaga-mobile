@@ -64,6 +64,18 @@ export default function TailorsScreen() {
                 }
                 topRated={tailor.topRated || tailor.isTopRated}
                 tone={getTone(index)}
+                price={
+                  tailor.startingPrice && Number(tailor.startingPrice) > 0
+                    ? Number(tailor.startingPrice)
+                    : (tailor as any).starting_price && Number((tailor as any).starting_price) > 0
+                      ? Number((tailor as any).starting_price)
+                      : (tailor as any).price && Number((tailor as any).price) > 0
+                        ? Number((tailor as any).price)
+                        : tailor.services?.[0]?.price && Number(tailor.services[0].price) > 0
+                          ? Number(tailor.services[0].price)
+                          : "Pricing on request"
+                }
+                startingPrice={tailor.startingPrice}
               />
             ))}
           </View>

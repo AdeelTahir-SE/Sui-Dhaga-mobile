@@ -18,6 +18,8 @@ type TailorListCardProps = {
   tone?: "teal" | "coral" | "gold" | "blue" | "cream";
   topRated?: boolean;
   onPress?: () => void;
+  price?: string | number;
+  startingPrice?: string | number;
 };
 
 export function TailorListCard({
@@ -30,6 +32,8 @@ export function TailorListCard({
   tone = "coral",
   topRated,
   onPress,
+  price,
+  startingPrice,
 }: TailorListCardProps) {
   const handleViewProfile = () => {
     if (onPress) {
@@ -40,6 +44,45 @@ export function TailorListCard({
       router.push("/tailors/rekha-tailors" as any);
     }
   };
+
+  const rawVal =
+    startingPrice !== undefined && startingPrice !== null && startingPrice !== ""
+      ? startingPrice
+      : price;
+
+  let hasActualPrice = false;
+  let formattedPrice = "Pricing on request";
+  let priceLabel = "Pricing";
+
+  if (rawVal !== undefined && rawVal !== null && rawVal !== "") {
+    if (typeof rawVal === "number" && rawVal > 0) {
+      hasActualPrice = true;
+      formattedPrice = `Rs. ${rawVal.toLocaleString()}`;
+      priceLabel = "Starting from";
+    } else if (typeof rawVal === "string") {
+      const trimmed = rawVal.trim();
+      const lower = trimmed.toLowerCase();
+      if (
+        lower &&
+        lower !== "0" &&
+        lower !== "rs. 0" &&
+        !lower.includes("on request") &&
+        lower !== "not set"
+      ) {
+        const numMatch = trimmed.match(/[0-9,.]+/);
+        if (numMatch) {
+          const numParsed = Number(numMatch[0].replace(/,/g, ""));
+          if (!isNaN(numParsed) && numParsed > 0) {
+            hasActualPrice = true;
+            formattedPrice = trimmed.startsWith("Rs")
+              ? trimmed
+              : `Rs. ${numParsed.toLocaleString()}`;
+            priceLabel = "Starting from";
+          }
+        }
+      }
+    }
+  }
 
   return (
     <View className="mb-3 rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
@@ -61,25 +104,39 @@ export function TailorListCard({
           ) : null}
         </View>
       </View>
-      <TouchableOpacity
-        onPress={handleViewProfile}
-        activeOpacity={0.82}
-        style={{
-          marginTop: 12,
-          alignSelf: "flex-end",
-          borderRadius: 6,
-          overflow: "hidden",
-          position: "relative",
-          paddingHorizontal: 20,
-          paddingVertical: 8,
-          backgroundColor: "#078B87",
-        }}
-      >
-        <ButtonTexture variant="greenish" borderRadius={6} />
-        <Text style={{ fontSize: 12, fontWeight: "600", color: "#FFFFFF", zIndex: 1 }}>
-          View Profile
-        </Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+        <View>
+          <Text style={{ fontSize: 10, fontWeight: "600", color: "#94A3B8", textTransform: "uppercase" }}>
+            {priceLabel}
+          </Text>
+          <Text
+            style={{
+              fontSize: hasActualPrice ? 14 : 12.5,
+              fontWeight: "700",
+              color: hasActualPrice ? "#0F172A" : "#64748B",
+            }}
+          >
+            {formattedPrice}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={handleViewProfile}
+          activeOpacity={0.82}
+          style={{
+            borderRadius: 6,
+            overflow: "hidden",
+            position: "relative",
+            paddingHorizontal: 18,
+            paddingVertical: 8,
+            backgroundColor: "#078B87",
+          }}
+        >
+          <ButtonTexture variant="greenish" borderRadius={6} />
+          <Text style={{ fontSize: 12, fontWeight: "600", color: "#FFFFFF", zIndex: 1 }}>
+            View Profile
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

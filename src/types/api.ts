@@ -282,13 +282,20 @@ export interface MeasurementItem {
 
 export interface NotificationItem {
   id: string;
-  userId: string;
+  userId?: string;
+  user_id?: string;
   title: string;
   message: string;
-  type: 'order' | 'appointment' | 'message' | 'system';
-  isRead: boolean;
-  createdAt: string;
+  type: 'order' | 'appointment' | 'message' | 'system' | 'info';
+  isRead?: boolean;
+  is_read?: boolean;
+  readAt?: string;
+  read_at?: string;
+  data?: Record<string, any>;
+  createdAt?: string;
+  created_at?: string;
 }
+
 
 export interface ConversationParticipant {
   id: string;

@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 
 import { AppointmentRequestCard } from "../components/AppointmentRequestCard";
+import { TailorAppointmentsListSkeleton } from "@/components/ui/Skeleton";
 import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
@@ -528,15 +529,7 @@ export default function TailorAppointmentsScreen() {
 
         {/* Content Section */}
         {isLoading && !isRefreshing ? (
-          <View
-            className="py-20 items-center justify-center"
-            style={{ minHeight: 380 }}
-          >
-            <ActivityIndicator size="large" color="#14919B" />
-            <Text className="mt-3 text-[13px] font-medium text-brand-gray">
-              Loading appointments...
-            </Text>
-          </View>
+          <TailorAppointmentsListSkeleton count={4} />
         ) : filteredAppointments.length === 0 ? (
           <View className="flex-1 items-center justify-center py-8 px-4">
             <View className="w-20 h-20 rounded-full bg-primary/10 items-center justify-center mb-4">

@@ -373,6 +373,41 @@ export default function BookAppointmentScreen() {
       return;
     }
 
+    if (currentUser.role === "tailor") {
+      Alert.alert(
+        "Action Not Allowed",
+        "Tailor accounts cannot book tailor appointments."
+      );
+      return;
+    }
+
+    const isOwnBooking = Boolean(
+      currentUser.id &&
+        ((tailor?.userId &&
+          String(currentUser.id).toLowerCase() ===
+            String(tailor.userId).toLowerCase()) ||
+          ((tailor as any)?.user_id &&
+            String(currentUser.id).toLowerCase() ===
+              String((tailor as any).user_id).toLowerCase()) ||
+          ((tailor as any)?.user?.id &&
+            String(currentUser.id).toLowerCase() ===
+              String((tailor as any).user?.id).toLowerCase()) ||
+          (tailor?.id &&
+            String(currentUser.id).toLowerCase() ===
+              String(tailor.id).toLowerCase()) ||
+          (tailorId &&
+            String(currentUser.id).toLowerCase() ===
+              String(tailorId).toLowerCase()))
+    );
+
+    if (isOwnBooking) {
+      Alert.alert(
+        "Action Not Allowed",
+        "You cannot book an appointment with your own tailor profile."
+      );
+      return;
+    }
+
     const finalTailorId = tailor?.id || resolvedTailorId || tailorId;
     if (!finalTailorId) {
       Alert.alert(

@@ -78,6 +78,14 @@ export const authApi = {
     });
   },
 
+  async refreshToken(refreshToken: string) {
+    return apiClient('/auth/refresh-token', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
+      skipAuth: true,
+    });
+  },
+
   async getMe() {
     return apiClient<User>('/users/me', {
       method: 'GET',

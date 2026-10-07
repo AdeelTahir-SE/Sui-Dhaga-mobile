@@ -14,17 +14,24 @@ type TailorDashboardHeaderProps = {
   showDivider?: boolean;
 };
 
+
 export function TailorDashboardHeader({
   title,
   subtitle,
   showBack,
   onBackPress,
   rightText,
-  rightIcon = "notifications-outline",
+  rightIcon = null,
   onRightPress,
   hideRightIcon = false,
   showDivider = false,
 }: TailorDashboardHeaderProps) {
+  const handlePress = () => {
+    if (onRightPress) {
+      onRightPress();
+    }
+  };
+
   return (
     <View className="px-5 pb-3 pt-2">
       <View className="w-full flex-row items-center justify-between">
@@ -64,8 +71,8 @@ export function TailorDashboardHeader({
         </View>
         {!hideRightIcon && (rightText || rightIcon) ? (
           <TouchableOpacity
-            onPress={onRightPress}
-            className="h-10 min-w-10 items-center justify-center px-1"
+            onPress={handlePress}
+            className="h-10 min-w-10 items-center justify-center px-1 relative"
           >
             {rightText ? (
               <Text className="text-[13px] font-bold text-primary">
@@ -77,6 +84,7 @@ export function TailorDashboardHeader({
           </TouchableOpacity>
         ) : null}
       </View>
+
 
       {showDivider ? (
         <View

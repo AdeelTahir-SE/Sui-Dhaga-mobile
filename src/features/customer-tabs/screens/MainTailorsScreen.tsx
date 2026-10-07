@@ -555,11 +555,16 @@ export default function MainTailorsScreen() {
               }
               price={
                 tailor.startingPrice && Number(tailor.startingPrice) > 0
-                  ? `Rs. ${Number(tailor.startingPrice).toLocaleString()}`
-                  : tailor.services?.[0]?.price
-                    ? `Rs. ${Number(tailor.services[0].price).toLocaleString()}`
-                    : "Price on request"
+                  ? Number(tailor.startingPrice)
+                  : (tailor as any).starting_price && Number((tailor as any).starting_price) > 0
+                    ? Number((tailor as any).starting_price)
+                    : (tailor as any).price && Number((tailor as any).price) > 0
+                      ? Number((tailor as any).price)
+                      : tailor.services?.[0]?.price && Number(tailor.services[0].price) > 0
+                        ? Number(tailor.services[0].price)
+                        : "Pricing on request"
               }
+              startingPrice={tailor.startingPrice}
               image={tailor.imageUrl || tailor.image || tailor.avatar}
               topRated={tailor.topRated || tailor.isTopRated}
               verified={tailor.verified || tailor.isVerified}

@@ -33,6 +33,19 @@ export default function LoginScreen() {
 
   const login = useAuthStore((state) => state.login);
   const loginWithGoogle = useAuthStore((state) => state.loginWithGoogle);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const currentUser = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
+
+  React.useEffect(() => {
+    if (!isLoading && isAuthenticated && currentUser) {
+      if (currentUser.role === "tailor") {
+        router.replace("/tailor-dashboard" as any);
+      } else {
+        router.replace("/home" as any);
+      }
+    }
+  }, [isLoading, isAuthenticated, currentUser]);
 
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);

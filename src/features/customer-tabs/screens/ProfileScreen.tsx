@@ -462,10 +462,10 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Group 2: Account & Support */}
+        {/* Group 2: Account Settings & Support */}
         <View className="mt-5">
           <Text className="mb-2.5 px-1 text-[14px] font-bold text-primary">
-            Account & Support
+            Account Settings & Support
           </Text>
           <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
             <ProfileMenuRow

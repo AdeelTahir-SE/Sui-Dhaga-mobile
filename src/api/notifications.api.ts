@@ -2,9 +2,22 @@ import { apiClient } from './client';
 import { NotificationItem } from '../types/api';
 
 export const notificationsApi = {
-  async getNotifications() {
-    return apiClient<NotificationItem[]>('/notifications', {
+  async getNotifications(page = 1, limit = 50) {
+    return apiClient<NotificationItem[]>(`/notifications?page=${page}&limit=${limit}`, {
       method: 'GET',
+    });
+  },
+
+  async getUnreadCount() {
+    return apiClient<{ unreadCount: number }>('/notifications/unread-count', {
+      method: 'GET',
+    });
+  },
+
+  async registerPushToken(pushToken: string) {
+    return apiClient('/notifications/push-token', {
+      method: 'POST',
+      body: JSON.stringify({ pushToken }),
     });
   },
 
@@ -19,4 +32,11 @@ export const notificationsApi = {
       method: 'POST',
     });
   },
+
+  async deleteNotification(id: string) {
+    return apiClient(`/notifications/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
+

@@ -67,15 +67,34 @@ function parseAuthUrl(url: string): { accessToken?: string; code?: string; error
     if (!error && (parsed.queryParams?.error_description || parsed.queryParams?.error)) {
       error = String(parsed.queryParams.error_description || parsed.queryParams.error);
     }
+
+    // Direct regex fallback for custom schemes where URL parsing might omit fragments or queries
+    if (!accessToken) {
+      const tokenMatch = url.match(/[?#&]access_token=([^&#]+)/);
+      if (tokenMatch) accessToken = decodeURIComponent(tokenMatch[1]);
+    }
+    if (!accessToken) {
+      const tokenMatch = url.match(/[?#&]token=([^&#]+)/);
+      if (tokenMatch) accessToken = decodeURIComponent(tokenMatch[1]);
+    }
+    if (!code) {
+      const codeMatch = url.match(/[?#&]code=([^&#]+)/);
+      if (codeMatch) code = decodeURIComponent(codeMatch[1]);
+    }
+    if (!error) {
+      const errMatch = url.match(/[?#&](?:error_description|error)=([^&#]+)/);
+      if (errMatch) error = decodeURIComponent(errMatch[1]);
+    }
   } catch {}
 
   return { accessToken, code, error };
 }
 
+
 function extractAuthData(
   response: any,
   fallbackPayload?: { email?: string; name?: string; fullName?: string; role?: string; phone?: string }
-): { token: string; user: User } | null {
+): { token: string; refreshToken?: string; user: User } | null {
   if (!response) return null;
 
   // The payload might be in response.data, response itself, or response.data.data
@@ -101,6 +120,18 @@ function extractAuthData(
   if (!token || typeof token !== 'string') {
     return null;
   }
+
+  // Search for refresh token
+  const refreshToken =
+    d?.refreshToken ||
+    d?.refresh_token ||
+    d?.session?.refresh_token ||
+    d?.session?.refreshToken ||
+    d?.data?.refreshToken ||
+    d?.data?.refresh_token ||
+    root?.refreshToken ||
+    root?.refresh_token ||
+    undefined;
 
   // Search for user object across possible backend conventions
   let rawUser =
@@ -159,7 +190,7 @@ function extractAuthData(
     updatedAt: rawUser?.updatedAt,
   };
 
-  return { token, user };
+  return { token, refreshToken, user };
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -179,37 +210,31 @@ export const useAuthStore = create<AuthState>((set) => ({
       const token = await storage.getToken();
       const savedUser = await storage.getUser();
 
-      // Automatically purge stale hardcoded mock user if previously cached
-      if (
-        savedUser?.email === 'ayesha.khan.google@gmail.com' ||
-        savedUser?.id === '11111111-1111-1111-1111-111111111111'
-      ) {
-        await storage.removeToken();
-        await storage.removeUser();
+      if (!token && !savedUser) {
         set({ user: null, token: null, isAuthenticated: false, isLoading: false });
         return;
       }
 
-      if (!token) {
-        set({ user: null, token: null, isAuthenticated: false, isLoading: false });
-        return;
+      // Immediately restore authentication from local storage so the user remains logged in
+      if (savedUser) {
+        set({ token, user: savedUser, isAuthenticated: true });
+      } else if (token) {
+        set({ token, isAuthenticated: true });
       }
 
-      set({ token, user: savedUser, isAuthenticated: !!savedUser });
-
-      // Refresh user profile from backend
+      // Try background refresh of profile if network is available
       try {
         const res = await authApi.getMe();
-        const extracted = extractAuthData(res) || (res.data ? { token, user: res.data } : null);
+        const extracted = extractAuthData(res) || (res.data ? { token: token || '', user: res.data } : null);
         if (extracted?.user) {
           await storage.setUser(extracted.user);
           set({ user: extracted.user, isAuthenticated: true });
         }
       } catch {
-        // If network error, keep using saved user from storage
+        // If offline or network error, retain the saved user session
       }
     } catch {
-      set({ user: null, token: null, isAuthenticated: false });
+      // Do not clear user on transient storage errors
     } finally {
       set({ isLoading: false });
     }
@@ -223,6 +248,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (authData) {
         await storage.setToken(authData.token);
+        if (authData.refreshToken) {
+          await storage.setRefreshToken(authData.refreshToken);
+        }
         await storage.setUser(authData.user);
         set({
           user: authData.user,
@@ -286,6 +314,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (authData) {
         await storage.setToken(authData.token);
+        if (authData.refreshToken) {
+          await storage.setRefreshToken(authData.refreshToken);
+        }
         await storage.setUser(authData.user);
         set({
           user: authData.user,
@@ -358,6 +389,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (authData) {
         await storage.setToken(authData.token);
+        if (authData.refreshToken) {
+          await storage.setRefreshToken(authData.refreshToken);
+        }
         await storage.setUser(authData.user);
         set({
           user: authData.user,
@@ -383,85 +417,121 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true, error: null });
     let subscription: { remove: () => void } | null = null;
     try {
-      const currentUser = useAuthStore.getState().user;
-      if (currentUser?.email === 'ayesha.khan.google@gmail.com') {
-        await storage.removeToken();
-        await storage.removeUser();
-        set({ user: null, token: null, isAuthenticated: false });
-      }
+      // 1. Determine app redirect URI based on platform and Expo environment
+      const appRedirectUri = Linking.createURL('auth/callback');
 
-      const redirectUri = Linking.createURL('auth/callback');
+      // 2. Wrap app redirect in the backend's callback bridge so Chrome 302 redirects are never blocked
+      const backendBase = (
+        process.env.EXPO_PUBLIC_BACKEND_URL ||
+        process.env.EXPO_PUBLIC_API_URL ||
+        'https://sui-dhaga-backend.vercel.app'
+      ).replace(/\/+$/, '');
+      const bridgeUrl = `${backendBase}/api/v1/auth/google/callback?appRedirect=${encodeURIComponent(appRedirectUri)}`;
 
-      // 1. Check if backend provides OAuth URL (via Supabase)
+      // 3. Request Google OAuth authorization URL from backend
       let authUrl: string | null = null;
       try {
-        const urlRes = await authApi.getGoogleAuthUrl(redirectUri);
+        const urlRes = await authApi.getGoogleAuthUrl(bridgeUrl);
         if (urlRes?.data?.url) {
           authUrl = urlRes.data.url;
         }
       } catch {
-        // Backend url endpoint not accessible or not configured
+        // Backend url endpoint not accessible or network issue
       }
 
-      let authPayload: any = null;
+      // 3b. Direct Supabase authorize fallback if backend URL endpoint was unavailable
+      if (!authUrl) {
+        const supabaseUrl = (
+          process.env.EXPO_PUBLIC_SUPABASE_URL ||
+          'https://nnuxpvskiypxsjsotvnz.supabase.co'
+        ).trim().replace(/^["']|["']$/g, '').replace(/\/+$/, '');
+        authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(bridgeUrl)}`;
+      }
 
-      if (authUrl) {
-        // Setup deep link listener to immediately catch redirect on Android if Custom Tabs doesn't auto-dismiss
-        const urlPromise = new Promise<{ type: 'success'; url: string }>((resolve) => {
-          subscription = Linking.addEventListener('url', (event) => {
-            if (
-              event.url &&
-              (event.url.includes('auth/callback') ||
-                event.url.includes('access_token') ||
-                event.url.includes('code='))
-            ) {
-              try {
-                WebBrowser.dismissAuthSession();
-              } catch {}
-              resolve({ type: 'success', url: event.url });
-            }
-          });
-        });
+      let finalRedirectUrl: string | null = null;
 
-        const browserPromise = WebBrowser.openAuthSessionAsync(authUrl, redirectUri, {
-          showInRecents: true,
-        });
-
-        const result = await Promise.race([browserPromise, urlPromise]);
-
-        if (subscription && typeof (subscription as any).remove === 'function') {
-          (subscription as any).remove();
-          subscription = null;
-        }
-
-        if (result.type === 'success' && result.url) {
-          const parsedParams = parseAuthUrl(result.url);
-          if (parsedParams.error) {
-            set({ isLoading: false });
-            return { success: false, error: parsedParams.error };
+      // 4. Set up deep link listener to catch incoming token URL
+      const urlPromise = new Promise<string>((resolve) => {
+        subscription = Linking.addEventListener('url', (event) => {
+          if (
+            event.url &&
+            (event.url.includes('auth/callback') ||
+              event.url.includes('access_token') ||
+              event.url.includes('code='))
+          ) {
+            try {
+              WebBrowser.dismissAuthSession();
+            } catch {}
+            resolve(event.url);
           }
-          if (parsedParams.accessToken || parsedParams.code) {
-            authPayload = {
-              accessToken: parsedParams.accessToken || undefined,
-              code: parsedParams.code || undefined,
-            };
-          }
-        } else if (result.type === 'cancel' || result.type === 'dismiss') {
+        });
+      });
+
+      // 5. Open browser auth session with custom tab / system browser
+      const browserPromise = WebBrowser.openAuthSessionAsync(authUrl, appRedirectUri, {
+        showInRecents: true,
+      });
+
+      // Wait for either the deep link to be caught or the browser session to complete
+      const raceResult = await Promise.race([
+        browserPromise,
+        urlPromise.then((url) => ({ type: 'deep_link' as const, url })),
+      ]);
+
+      if (raceResult.type === 'deep_link' && raceResult.url) {
+        finalRedirectUrl = raceResult.url;
+      } else if (raceResult.type === 'success' && (raceResult as any).url) {
+        finalRedirectUrl = (raceResult as any).url;
+      } else if (raceResult.type === 'cancel' || raceResult.type === 'dismiss') {
+        // On Android, switching to the app or tapping 'Open Sui Dhaga App' in the bridge
+        // fires a dismiss/cancel on the Custom Tabs session. Wait up to 3 seconds for deep link event.
+        const graceTimeout = new Promise<null>((res) => setTimeout(() => res(null), 3000));
+        const lateUrl = await Promise.race([urlPromise, graceTimeout]);
+        if (lateUrl) {
+          finalRedirectUrl = lateUrl;
+        } else {
           set({ isLoading: false });
           return { success: false, error: 'Sign in was cancelled.' };
         }
       }
 
-      if (!authPayload) {
+      if (subscription && typeof (subscription as any).remove === 'function') {
+        (subscription as any).remove();
+        subscription = null;
+      }
+
+      if (!finalRedirectUrl) {
+        // As a final check, inspect if initial URL has tokens
+        const initUrl = await Linking.getInitialURL();
+        if (initUrl && (initUrl.includes('access_token') || initUrl.includes('code='))) {
+          finalRedirectUrl = initUrl;
+        }
+      }
+
+      if (!finalRedirectUrl) {
         set({ isLoading: false });
         return { success: false, error: 'Google sign-in could not be completed. Please try again.' };
       }
 
+      const parsedParams = parseAuthUrl(finalRedirectUrl);
+      if (parsedParams.error) {
+        set({ isLoading: false });
+        return { success: false, error: parsedParams.error };
+      }
+
+      if (!parsedParams.accessToken && !parsedParams.code) {
+        set({ isLoading: false });
+        return { success: false, error: 'Authorization credentials were not returned. Please try again.' };
+      }
+
+      const authPayload = {
+        accessToken: parsedParams.accessToken || undefined,
+        code: parsedParams.code || undefined,
+      };
+
       const res = await authApi.googleAuth(authPayload);
       const authData = extractAuthData(res, {
-        email: authPayload.email,
-        name: authPayload.name,
-        fullName: authPayload.fullName,
+        email: authPayload.accessToken ? undefined : undefined,
       });
 
       if (authData) {
@@ -475,7 +545,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           error: null,
         });
 
-        const needsProfileCompletion = res.data?.needsProfileCompletion ?? true;
+        const needsProfileCompletion = (res as any)?.data?.needsProfileCompletion ?? (res as any)?.needsProfileCompletion ?? true;
         return { success: true, needsProfileCompletion };
       } else {
         throw new Error(res.message || 'Google authentication response was invalid.');
@@ -523,6 +593,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       await authApi.logout().catch(() => {});
     } finally {
       await storage.removeToken();
+      await storage.removeRefreshToken();
       await storage.removeUser();
       set({
         user: null,
@@ -536,5 +607,5 @@ export const useAuthStore = create<AuthState>((set) => ({
 }));
 
 onAuthExpired(() => {
-  useAuthStore.getState().logout().catch(() => {});
+  // Deliberately no-op: user remains logged in at all times until specifically clicking Log Out in Settings.
 });

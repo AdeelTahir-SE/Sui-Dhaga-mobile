@@ -33,7 +33,8 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.POST_NOTIFICATIONS"
       ]
     },
     "web": {
@@ -59,8 +60,16 @@
           "microphonePermission": "Allow Sui Dhaga to access your microphone to record and send voice messages."
         }
       ],
-      "expo-video"
+      "expo-video",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logos/icon.png",
+          "color": "#14919B"
+        }
+      ]
     ],
+
     "experiments": {
       "typedRoutes": true
     },

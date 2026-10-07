@@ -13,6 +13,7 @@ import { router } from "expo-router";
 
 const suidhagaHeroBanner = require("../../../../assets/customer-tab-banner/suidhaga-hero-banner.png");
 const sundropBanner = require("../../../../assets/customer-tab-banner/sundrop.png");
+const aiStudioBanner = require("../../../../assets/customer-tab-banner/ai-studio-banner.png");
 
 interface BannerItem {
   id: string;
@@ -33,6 +34,12 @@ const BANNERS: BannerItem[] = [
     image: sundropBanner,
     route: "/sundrop",
     title: "Sundrop Exclusive Collaboration",
+  },
+  {
+    id: "ai-studio",
+    image: aiStudioBanner,
+    route: "/design-studio",
+    title: "AI Studio",
   },
 ];
 

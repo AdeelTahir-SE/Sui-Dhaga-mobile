@@ -158,9 +158,15 @@ export function mapTailorFromBackend(raw: any): TailorItem {
   const startingPrice =
     raw.startingPrice !== undefined && raw.startingPrice !== null && Number(raw.startingPrice) > 0
       ? Number(raw.startingPrice)
+      : raw.starting_price !== undefined && raw.starting_price !== null && Number(raw.starting_price) > 0
+      ? Number(raw.starting_price)
+      : raw.price !== undefined && raw.price !== null && Number(raw.price) > 0
+      ? Number(raw.price)
       : raw.services?.[0]?.price !== undefined && Number(raw.services[0].price) > 0
       ? Number(raw.services[0].price)
-      : raw.hourlyRate || 0;
+      : raw.hourlyRate && Number(raw.hourlyRate) > 0
+      ? Number(raw.hourlyRate)
+      : 0;
 
   const latitude =
     typeof raw.latitude === 'number' && !isNaN(raw.latitude)

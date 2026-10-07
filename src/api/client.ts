@@ -4,6 +4,7 @@ import { CONFIG } from '../constants/config';
 import { ApiResponse } from '../types/api';
 
 const TOKEN_KEY = 'sui_dhaga_auth_token';
+const REFRESH_TOKEN_KEY = 'sui_dhaga_refresh_token';
 const USER_KEY = 'sui_dhaga_user_data';
 
 // Helper for cross-platform secure storage
@@ -40,6 +41,41 @@ export const storage = {
       }
     } catch (err) {
       console.warn('Failed to remove token from storage', err);
+    }
+  },
+
+  async getRefreshToken(): Promise<string | null> {
+    try {
+      if (Platform.OS === 'web') {
+        return typeof window !== 'undefined' ? localStorage.getItem(REFRESH_TOKEN_KEY) : null;
+      }
+      return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+    } catch {
+      return null;
+    }
+  },
+
+  async setRefreshToken(refreshToken: string): Promise<void> {
+    try {
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      } else {
+        await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+      }
+    } catch (err) {
+      console.warn('Failed to save refresh token to storage', err);
+    }
+  },
+
+  async removeRefreshToken(): Promise<void> {
+    try {
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') localStorage.removeItem(REFRESH_TOKEN_KEY);
+      } else {
+        await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+      }
+    } catch (err) {
+      console.warn('Failed to remove refresh token from storage', err);
     }
   },
 
@@ -247,24 +283,60 @@ interface RequestOptions extends RequestInit {
 type AuthExpiredCallback = () => void;
 let authExpiredListener: AuthExpiredCallback | null = null;
 
+let refreshPromise: Promise<string | null> | null = null;
+
+async function tryRefreshToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const refreshToken = await storage.getRefreshToken();
+      if (!refreshToken) return null;
+
+      const baseUrl = CONFIG.API_URL.replace(/\/+$/, '');
+      const res = await fetch(`${baseUrl}/api/v1/auth/refresh-token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!res.ok) {
+        return null;
+      }
+
+      const json = await res.json();
+      const session = json?.data?.session || json?.session || json?.data;
+      const newToken = session?.access_token || session?.accessToken || session?.token;
+      const newRefreshToken = session?.refresh_token || session?.refreshToken;
+
+      if (newToken && typeof newToken === 'string') {
+        await storage.setToken(newToken);
+        if (newRefreshToken && typeof newRefreshToken === 'string') {
+          await storage.setRefreshToken(newRefreshToken);
+        }
+        return newToken;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 export function onAuthExpired(callback: AuthExpiredCallback) {
   authExpiredListener = callback;
 }
 
 function handleAuthExpirationIfNeeded(status: number, message: string) {
-  const lowerMsg = (message || '').toLowerCase();
-  const isAuthError =
-    status === 401 ||
-    lowerMsg.includes('jwt expired') ||
-    lowerMsg.includes('token expired') ||
-    lowerMsg.includes('invalid token') ||
-    lowerMsg.includes('auth.uid()') ||
-    lowerMsg.includes('violates row-level security') ||
-    lowerMsg.includes('unauthorized');
-
-  if (isAuthError && authExpiredListener) {
-    authExpiredListener();
-  }
+  // Never automatically log out or wipe user credentials without user action.
+  // Sessions persist until the user explicitly selects "Log Out" in settings.
 }
 
 export async function apiClient<T = any>(endpoint: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
@@ -343,7 +415,6 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
           });
         } else {
           const errorMessage = extractErrorMessage(data, xhr.status);
-          handleAuthExpirationIfNeeded(xhr.status, errorMessage);
           reject(new ApiError(errorMessage, xhr.status, data));
         }
       };
@@ -376,8 +447,43 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
     }
 
     if (!response.ok) {
+      // If 401 Unauthorized, automatically attempt to refresh token and retry request seamlessly
+      if (
+        response.status === 401 &&
+        !skipAuth &&
+        !endpoint.includes('refresh-token') &&
+        !endpoint.includes('login') &&
+        !endpoint.includes('register')
+      ) {
+        const newToken = await tryRefreshToken();
+        if (newToken) {
+          const retryHeaders = {
+            ...headers,
+            Authorization: `Bearer ${newToken}`,
+          };
+          const retryRes = await fetch(url, {
+            ...fetchOptions,
+            headers: retryHeaders,
+          });
+          const retryText = await retryRes.text();
+          let retryData: any = {};
+          try {
+            retryData = retryText ? JSON.parse(retryText) : {};
+          } catch {
+            retryData = { raw: retryText };
+          }
+          if (retryRes.ok) {
+            return {
+              success: retryData.success !== undefined ? retryData.success : true,
+              message: retryData.message,
+              data: retryData.data !== undefined ? retryData.data : retryData,
+              error: retryData.error,
+            };
+          }
+        }
+      }
+
       const errorMessage = extractErrorMessage(data, response.status);
-      handleAuthExpirationIfNeeded(response.status, errorMessage);
       throw new ApiError(errorMessage, response.status, data);
     }
 

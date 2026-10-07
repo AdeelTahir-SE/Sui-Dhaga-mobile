@@ -144,3 +144,58 @@ export async function unsubscribeChannel(channel: RealtimeChannel | null): Promi
     console.warn('[Supabase Realtime] Failed to unsubscribe channel:', err);
   }
 }
+
+export interface NotificationRealtimeCallbacks {
+  onInsert?: (newNotification: any) => void;
+  onUpdate?: (updatedNotification: any) => void;
+  onDelete?: (oldNotification: any) => void;
+}
+
+/**
+ * Subscribe to Supabase Postgres Realtime changes on notifications table for a specific user.
+ */
+export async function subscribeToUserNotifications(
+  userId: string,
+  callbacks: NotificationRealtimeCallbacks
+): Promise<RealtimeChannel | null> {
+  if (!userId) return null;
+
+  const client = await getRealtimeClient();
+  if (!client) return null;
+
+  try {
+    const channelName = `notifications_${userId}_${Date.now()}`;
+    const channel = client.channel(channelName);
+
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload: any) => {
+          if (payload.eventType === 'INSERT' && callbacks.onInsert) {
+            callbacks.onInsert(payload.new);
+          } else if (payload.eventType === 'UPDATE' && callbacks.onUpdate) {
+            callbacks.onUpdate(payload.new);
+          } else if (payload.eventType === 'DELETE' && callbacks.onDelete) {
+            callbacks.onDelete(payload.old);
+          }
+        }
+      )
+      .subscribe((status: string, err: any) => {
+        if (err) {
+          console.warn(`[Supabase Realtime] Notifications subscription error for ${userId}:`, err);
+        }
+      });
+
+    return channel;
+  } catch (err) {
+    console.warn('[Supabase Realtime] Failed to subscribe to notifications:', err);
+    return null;
+  }
+}
+

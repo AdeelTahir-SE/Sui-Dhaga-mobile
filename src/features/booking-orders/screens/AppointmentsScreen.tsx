@@ -13,7 +13,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
 import { AppointmentCard } from "../components/AppointmentCard";
+import { AppointmentsListSkeleton } from "../components/AppointmentCardSkeleton";
 import { BookingOrdersScreenShell } from "../components/BookingOrdersScreenShell";
+import { ButtonTexture } from "@/components/ui/ButtonTexture";
 import { useAppointments } from "../hooks/useAppointments";
 
 export default function AppointmentsScreen() {
@@ -289,16 +291,202 @@ export default function AppointmentsScreen() {
           </View>
         ) : null}
 
-        {/* Loading Indicator */}
+        {/* Loading Skeleton */}
         {isLoading && !isRefreshing ? (
-          <View className="py-16 items-center justify-center flex-1">
-            <ActivityIndicator size="large" color="#14919B" />
-            <Text className="mt-3 text-[13px] font-medium text-brand-gray">
-              Loading appointments...
+          <AppointmentsListSkeleton count={4} />
+        ) : filteredAppointments.length === 0 ? (
+          <View
+            className="flex-1 items-center justify-center py-10 px-5 rounded-3xl bg-white border border-[#E2E8F0] shadow-sm my-2"
+          >
+            {/* Visual Icon with soft teal glow and sparkle badge */}
+            <View className="relative mb-4">
+              <View className="w-20 h-20 rounded-full bg-[#E0F7F7] items-center justify-center border-[3px] border-[#F0FAFA] shadow-xs">
+                <Ionicons
+                  name={
+                    searchQuery.trim() || activeFilter !== null
+                      ? "calendar-outline"
+                      : "calendar-clear"
+                  }
+                  size={36}
+                  color="#14919B"
+                />
+              </View>
+              <View className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#14919B] items-center justify-center border-2 border-white shadow-xs">
+                <Ionicons name="sparkles" size={11} color="#FFFFFF" />
+              </View>
+            </View>
+
+            {/* Title */}
+            <Text className="text-[19px] font-extrabold text-brand-dark text-center tracking-tight">
+              {searchQuery.trim()
+                ? "No Matching Appointments"
+                : activeFilter
+                ? `No ${activeFilterOption?.badge} Appointments`
+                : "No Appointments Found"}
             </Text>
+
+            {/* Description */}
+            <Text className="mt-2 text-center text-[13.5px] font-medium text-brand-gray max-w-[280px] leading-[20px] mb-6">
+              {searchQuery.trim()
+                ? `We couldn't find any appointments matching "${searchQuery}". Try a different search term or clear filters.`
+                : activeFilter
+                ? `You don't have any ${activeFilterOption?.badge.toLowerCase()} appointments scheduled. Switch filter to view all bookings.`
+                : "You don't have any appointments scheduled yet. Book a visit or measurement consultation with an expert tailor."}
+            </Text>
+
+            {/* Actions */}
+            {searchQuery.trim() || activeFilter !== null ? (
+              <View className="w-full max-w-[280px] gap-3 items-center">
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setSearchQuery("");
+                    setActiveFilter(null);
+                    setSelectedFilter(null);
+                  }}
+                  className="h-[46px] w-full rounded-xl bg-slate-100 flex-row items-center justify-center active:bg-slate-200"
+                >
+                  <Ionicons name="refresh-outline" size={17} color="#475569" style={{ marginRight: 6 }} />
+                  <Text className="text-[13.5px] font-bold text-brand-dark">
+                    Clear Search & Filters
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => router.push("/tailors" as any)}
+                  style={{
+                    height: 50,
+                    width: "100%",
+                    borderRadius: 14,
+                    backgroundColor: "#00949D",
+                    overflow: "hidden",
+                    position: "relative",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#14919B",
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 6,
+                    elevation: 4,
+                  }}
+                >
+                  <ButtonTexture variant="greenish" borderRadius={14} />
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
+                    <Ionicons name="calendar-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: "700",
+                        color: "#FFFFFF",
+                        textShadowColor: "rgba(0,0,0,0.2)",
+                        textShadowOffset: { width: 0, height: 1 },
+                        textShadowRadius: 2,
+                      }}
+                    >
+                      Book New Appointment
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => router.push("/tailors" as any)}
+                  style={{
+                    height: 52,
+                    width: "100%",
+                    maxWidth: 280,
+                    borderRadius: 14,
+                    backgroundColor: "#00949D",
+                    overflow: "hidden",
+                    position: "relative",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    shadowColor: "#14919B",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.28,
+                    shadowRadius: 8,
+                    elevation: 5,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Book New Appointment"
+                >
+                  <ButtonTexture variant="greenish" borderRadius={14} />
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      zIndex: 1,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: "rgba(255, 255, 255, 0.2)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 8,
+                      }}
+                    >
+                      <Ionicons name="calendar-outline" size={16} color="#FFFFFF" />
+                    </View>
+                    <Text
+                      style={{
+                        fontSize: 14.5,
+                        fontWeight: "800",
+                        color: "#FFFFFF",
+                        letterSpacing: -0.2,
+                        textShadowColor: "rgba(0, 0, 0, 0.22)",
+                        textShadowOffset: { width: 0, height: 1 },
+                        textShadowRadius: 2,
+                      }}
+                    >
+                      Book New Appointment
+                    </Text>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={16}
+                      color="#FFFFFF"
+                      style={{ marginLeft: 8, opacity: 0.95 }}
+                    />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Trust/Perk Indicators */}
+                <View className="flex-row items-center justify-center gap-3.5 mt-5 pt-4 border-t border-slate-100 w-full">
+                  <View className="flex-row items-center">
+                    <Ionicons name="checkmark-circle" size={14} color="#14919B" />
+                    <Text className="ml-1 text-[11.5px] font-semibold text-slate-500">
+                      Verified Tailors
+                    </Text>
+                  </View>
+                  <View className="h-1 w-1 rounded-full bg-slate-300" />
+                  <View className="flex-row items-center">
+                    <Ionicons name="sparkles" size={12} color="#14919B" />
+                    <Text className="ml-1 text-[11.5px] font-semibold text-slate-500">
+                      Custom Fittings
+                    </Text>
+                  </View>
+                  <View className="h-1 w-1 rounded-full bg-slate-300" />
+                  <View className="flex-row items-center">
+                    <Ionicons name="shield-checkmark" size={13} color="#14919B" />
+                    <Text className="ml-1 text-[11.5px] font-semibold text-slate-500">
+                      Easy Reschedule
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
           </View>
         ) : (
-          <View className={`mt-1 ${filteredAppointments.length === 0 ? "flex-1 justify-center" : ""}`}>
+          <View className="mt-1">
             {/* Appointments Count & Header Row */}
             <View className="flex-row items-center justify-between mb-3">
               <Text className="text-[13px] font-bold text-brand-dark uppercase tracking-wider">
@@ -309,78 +497,35 @@ export default function AppointmentsScreen() {
               </Text>
             </View>
 
-            {filteredAppointments.length > 0 ? (
-              filteredAppointments.map((appt, index) => {
-                const tailorAvatar =
-                  appt.tailorAvatar ||
-                  appt.tailor?.avatar ||
-                  appt.tailor?.avatar_url ||
-                  appt.tailor?.imageUrl ||
-                  appt.tailor?.image;
+            {filteredAppointments.map((appt, index) => {
+              const tailorAvatar =
+                appt.tailorAvatar ||
+                appt.tailor?.avatar ||
+                appt.tailor?.avatar_url ||
+                appt.tailor?.imageUrl ||
+                appt.tailor?.image;
 
-                return (
-                  <AppointmentCard
-                    key={appt.id || index}
-                    id={appt.id}
-                    tailor={appt.tailorName || appt.tailor?.name || "Master Tailor"}
-                    avatar={tailorAvatar}
-                    service={appt.serviceType || "Custom Stitching & Fitting"}
-                    date={appt.appointmentDate || appt.date || "Scheduled"}
-                    time={appt.appointmentTime || appt.time || ""}
-                    status={appt.status || "Upcoming"}
-                    location={appt.location}
-                    placeholderTone={getTone(index)}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/appointments/[appointmentId]",
-                        params: { appointmentId: appt.id },
-                      } as any)
-                    }
-                  />
-                );
-              })
-            ) : (
-              <View
-                className="items-center justify-center rounded-2xl bg-gray-50/60 py-10 px-4 shadow-xs my-2 flex-1"
-                style={{ borderWidth: 1, borderColor: "#E2E8F0", borderStyle: "dashed" }}
-              >
-                <View className="h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-3">
-                  <Ionicons name="calendar-outline" size={30} color="#14919B" />
-                </View>
-                <Text className="text-[17px] font-bold text-brand-dark">
-                  {searchQuery ? "No Matching Appointments" : "No Appointments Found"}
-                </Text>
-                <Text className="mt-1 text-center text-[12.5px] font-medium text-brand-gray max-w-[270px]">
-                  {searchQuery
-                    ? "Try adjusting your search query or clear the filter."
-                    : "You don't have any appointments scheduled. Book a visit or fitting with an expert tailor."}
-                </Text>
-                {searchQuery ? (
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => {
-                      setSearchQuery("");
-                      setActiveFilter(null);
-                    }}
-                    className="mt-4 rounded-xl bg-slate-100 px-4 py-2"
-                  >
-                    <Text className="text-[12.5px] font-bold text-brand-dark">
-                      Clear Search & Filters
-                    </Text>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => router.push("/tailors" as any)}
-                    className="mt-4 rounded-xl bg-primary px-5 py-2.5 shadow-xs active:bg-primary-dark"
-                  >
-                    <Text className="text-[13px] font-bold text-white">
-                      Book New Appointment
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
+              return (
+                <AppointmentCard
+                  key={appt.id || index}
+                  id={appt.id}
+                  tailor={appt.tailorName || appt.tailor?.name || "Master Tailor"}
+                  avatar={tailorAvatar}
+                  service={appt.serviceType || "Custom Stitching & Fitting"}
+                  date={appt.appointmentDate || appt.date || "Scheduled"}
+                  time={appt.appointmentTime || appt.time || ""}
+                  status={appt.status || "Upcoming"}
+                  location={appt.location}
+                  placeholderTone={getTone(index)}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/appointments/[appointmentId]",
+                      params: { appointmentId: appt.id },
+                    } as any)
+                  }
+                />
+              );
+            })}
           </View>
         )}
       </View>

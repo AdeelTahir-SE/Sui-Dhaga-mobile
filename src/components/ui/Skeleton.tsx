@@ -142,38 +142,27 @@ export function OrderCardSkeleton() {
         {/* Top Row: Avatar/Image + Order Details */}
         <View style={orderStyles.topRow}>
           {/* Avatar Thumbnail */}
-          <SkeletonBox width={76} height={76} borderRadius={16} />
+          <SkeletonBox width={72} height={72} borderRadius={15} />
 
           {/* Info Block */}
           <View style={orderStyles.infoBlock}>
-            {/* Item Name */}
-            <SkeletonBox width="64%" height={16} borderRadius={5} />
-
-            {/* Meta Row: Order ID + Tailor Name */}
-            <View style={orderStyles.metaRow}>
-              <SkeletonBox width={54} height={18} borderRadius={6} />
-              <SkeletonBox
-                width={6}
-                height={6}
-                borderRadius={3}
-                style={{ marginHorizontal: 2 }}
-              />
-              <SkeletonBox width={76} height={14} borderRadius={4} />
+            {/* Header: Item Name + Status Badge */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <SkeletonBox width="52%" height={16} borderRadius={5} />
+              <SkeletonBox width={68} height={22} borderRadius={6} />
             </View>
 
-            {/* Badges Strip */}
-            <View style={orderStyles.badgesRow}>
-              <SkeletonBox width={76} height={20} borderRadius={6} />
-              <SkeletonBox width={64} height={20} borderRadius={6} />
+            {/* Tailor Row */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6 }}>
+              <SkeletonBox width={14} height={14} borderRadius={7} />
+              <SkeletonBox width={95} height={13} borderRadius={4} />
+            </View>
+
+            {/* Customer-First Timeline Banner */}
+            <View style={{ marginTop: 8 }}>
+              <SkeletonBox width="85%" height={22} borderRadius={7} />
             </View>
           </View>
-        </View>
-
-        {/* Tags Strip */}
-        <View style={orderStyles.tagsWrap}>
-          <SkeletonBox width={88} height={22} borderRadius={7} />
-          <SkeletonBox width={76} height={22} borderRadius={7} />
-          <SkeletonBox width={62} height={22} borderRadius={7} />
         </View>
 
         {/* Footer Row: Price + CTA */}
@@ -183,9 +172,9 @@ export function OrderCardSkeleton() {
               width={60}
               height={9}
               borderRadius={3}
-              style={{ marginBottom: 5 }}
+              style={{ marginBottom: 4 }}
             />
-            <SkeletonBox width={80} height={18} borderRadius={4} />
+            <SkeletonBox width={85} height={18} borderRadius={4} />
           </View>
           <SkeletonBox width={105} height={38} borderRadius={10} />
         </View>
@@ -551,6 +540,114 @@ export function DesignsGridSkeleton({ count = 4 }: { count?: number }) {
   );
 }
 
+/**
+ * Appointment Card Skeleton (Mirrors AppointmentCard in AppointmentsScreen)
+ */
+export function AppointmentCardSkeleton() {
+  return (
+    <View style={appointmentStyles.card}>
+      <SkeletonPulse>
+        {/* Top Row: Avatar + Info + Status */}
+        <View style={appointmentStyles.topRow}>
+          {/* Avatar / Icon Container */}
+          <SkeletonBox width={52} height={52} borderRadius={13} />
+
+          {/* Info Block */}
+          <View style={appointmentStyles.infoBlock}>
+            {/* Tailor Name Row */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <SkeletonBox width="58%" height={15} borderRadius={4} />
+              <SkeletonBox width={14} height={14} borderRadius={7} />
+            </View>
+
+            {/* Service Row */}
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 5 }}>
+              <SkeletonBox width={12} height={12} borderRadius={6} />
+              <SkeletonBox width="68%" height={12} borderRadius={4} />
+            </View>
+
+            {/* Date & Time Pill */}
+            <View style={{ marginTop: 7 }}>
+              <SkeletonBox width={135} height={20} borderRadius={6} />
+            </View>
+          </View>
+
+          {/* Right Status Pill */}
+          <SkeletonBox width={72} height={24} borderRadius={8} />
+        </View>
+
+        {/* Subtle Divider */}
+        <View style={appointmentStyles.divider} />
+
+        {/* Bottom Action Row */}
+        <View style={appointmentStyles.bottomRow}>
+          {/* Location */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5, flex: 1, marginRight: 8 }}>
+            <SkeletonBox width={12} height={12} borderRadius={6} />
+            <SkeletonBox width="60%" height={12} borderRadius={4} />
+          </View>
+
+          {/* Details Button */}
+          <SkeletonBox width={58} height={22} borderRadius={6} />
+        </View>
+      </SkeletonPulse>
+    </View>
+  );
+}
+
+export function AppointmentsListSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <View style={{ width: "100%", marginTop: 2 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <AppointmentCardSkeleton key={`appointment-skeleton-${i}`} />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Tailor Appointment Request Card Skeleton (Mirrors AppointmentRequestCard in TailorAppointmentsScreen)
+ */
+export function AppointmentRequestCardSkeleton() {
+  return (
+    <View style={appointmentRequestStyles.card}>
+      <SkeletonPulse>
+        <View style={appointmentRequestStyles.contentRow}>
+          <SkeletonBox width={48} height={48} borderRadius={12} />
+          <View style={appointmentRequestStyles.infoCol}>
+            <View style={appointmentRequestStyles.headerRow}>
+              <SkeletonBox width="48%" height={16} borderRadius={5} />
+              <SkeletonBox width={70} height={22} borderRadius={6} />
+            </View>
+            <View style={{ marginTop: 6 }}>
+              <SkeletonBox width="64%" height={13} borderRadius={4} />
+            </View>
+            <View style={appointmentRequestStyles.scheduleRow}>
+              <SkeletonBox width={85} height={22} borderRadius={6} />
+              <SkeletonBox width={72} height={22} borderRadius={6} />
+            </View>
+          </View>
+        </View>
+        <View style={appointmentRequestStyles.actionsRow}>
+          <SkeletonBox width="48%" height={38} borderRadius={10} />
+          <SkeletonBox width="48%" height={38} borderRadius={10} />
+        </View>
+      </SkeletonPulse>
+    </View>
+  );
+}
+
+export function TailorAppointmentsListSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <View style={{ width: "100%", marginTop: 2 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <AppointmentRequestCardSkeleton key={`tailor-appointment-skeleton-${i}`} />
+      ))}
+    </View>
+  );
+}
+
+
 const tailorStyles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
@@ -772,3 +869,84 @@ const minimalCardStyles = StyleSheet.create({
     borderTopColor: "#F1F5F9",
   },
 });
+
+const appointmentStyles = StyleSheet.create({
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  infoBlock: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F1F5F9",
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  bottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+});
+
+const appointmentRequestStyles = StyleSheet.create({
+  card: {
+    marginBottom: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
+    padding: 14,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  contentRow: {
+    flexDirection: "row",
+  },
+  infoCol: {
+    marginLeft: 14,
+    flex: 1,
+    justifyContent: "center",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  scheduleRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  actionsRow: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+});
+

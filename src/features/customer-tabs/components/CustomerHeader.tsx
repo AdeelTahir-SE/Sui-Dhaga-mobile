@@ -18,7 +18,7 @@ type CustomerHeaderProps = {
 export function CustomerHeader({
   title,
   subtitle,
-  rightIcon = "notifications-outline",
+  rightIcon = null,
   avatarUrl,
   onRightPress,
   centered,

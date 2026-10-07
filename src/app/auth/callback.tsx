@@ -26,6 +26,20 @@ export default function AuthCallbackScreen() {
       try {
         WebBrowser.maybeCompleteAuthSession();
 
+        // 0. If user is already authenticated (e.g. handled directly in LoginScreen)
+        if (useAuthStore.getState().isAuthenticated) {
+          const user = useAuthStore.getState().user;
+          const needsCompletion = !user?.phone || !user?.role;
+          if (needsCompletion) {
+            router.replace("/auth/complete-profile" as any);
+          } else if (user?.role === "tailor") {
+            router.replace("/tailor-dashboard" as any);
+          } else {
+            router.replace("/home" as any);
+          }
+          return;
+        }
+
         // 1. Check if error returned in params
         if (params.error || params.error_description) {
           const err = params.error_description || params.error || "Authentication failed";
@@ -33,16 +47,16 @@ export default function AuthCallbackScreen() {
           return;
         }
 
-        // 2. Read initial URL in case tokens were passed in fragment
-        const initialUrl = await Linking.getInitialURL();
+        // 2. Read parameters and initial URL in case tokens were passed in query or fragment
         let token = params.access_token || params.token || "";
         let code = params.code || "";
 
-        if (!token && !code && initialUrl) {
+        const initialUrl = await Linking.getInitialURL();
+        if ((!token && !code) && initialUrl) {
           if (initialUrl.includes("#")) {
             const hash = initialUrl.split("#")[1];
             const searchParams = new URLSearchParams(hash);
-            token = searchParams.get("access_token") || "";
+            token = searchParams.get("access_token") || searchParams.get("token") || "";
             code = searchParams.get("code") || "";
           }
           if (!token && !code) {
@@ -50,6 +64,19 @@ export default function AuthCallbackScreen() {
             token = (parsed.queryParams?.access_token as string) || (parsed.queryParams?.token as string) || "";
             code = (parsed.queryParams?.code as string) || "";
           }
+          if (!token) {
+            const match = initialUrl.match(/[?#&]access_token=([^&#]+)/);
+            if (match) token = decodeURIComponent(match[1]);
+          }
+        }
+
+        if (!token && !code) {
+          // If still no token but user is authenticated, redirect
+          if (useAuthStore.getState().isAuthenticated) {
+            router.replace("/home" as any);
+            return;
+          }
+          throw new Error("Authentication callback did not receive authorization credentials.");
         }
 
         // 3. Process with Auth Store

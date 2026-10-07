@@ -10,12 +10,17 @@ import "../global.css";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "../stores/auth.store";
 import { AuthRequiredModal } from "../features/auth/components/AuthRequiredModal";
+import {
+  registerForPushNotificationsAsync,
+  setupPushNotificationListeners,
+} from "../services/push-notifications.service";
 
 // Ensure auth session from deep linking is completed on app resume
 WebBrowser.maybeCompleteAuthSession();
 
 export default function RootLayout() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -29,8 +34,22 @@ export default function RootLayout() {
       RNStatusBar.setBarStyle("dark-content", true);
     }
 
-    return () => clearTimeout(timer);
+    // Initialize notification channels and lockscreen listeners
+    const cleanupNotifications = setupPushNotificationListeners();
+
+    return () => {
+      clearTimeout(timer);
+      cleanupNotifications();
+    };
   }, []);
+
+  // When user is authenticated, register their device push token with backend
+  useEffect(() => {
+    if (user?.id) {
+      registerForPushNotificationsAsync();
+    }
+  }, [user?.id]);
+
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

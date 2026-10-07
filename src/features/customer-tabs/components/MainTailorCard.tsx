@@ -25,6 +25,7 @@ type MainTailorCardProps = {
   reviewsCount?: number | string;
   onPress?: () => void;
   price?: string | number;
+  startingPrice?: string | number;
 };
 
 const toneConfig: Record<string, { bg: string; text: string }> = {
@@ -54,7 +55,8 @@ export function MainTailorCard({
   distanceKm,
   reviewsCount,
   onPress,
-  price = "Rs. 1,500",
+  price,
+  startingPrice,
 }: MainTailorCardProps) {
   const [imageError, setImageError] = useState(false);
 
@@ -165,16 +167,60 @@ export function MainTailorCard({
     return ["Custom Stitching"];
   }, [specialties, specialty]);
 
-  // Price formatting
-  const formattedPrice = useMemo(() => {
-    if (typeof price === "number") {
-      return `Rs. ${price.toLocaleString()}`;
+  // Check if actual pricing is set by tailor
+  const { hasActualPrice, formattedPrice, priceLabelText } = useMemo(() => {
+    const rawVal =
+      startingPrice !== undefined && startingPrice !== null && startingPrice !== ""
+        ? startingPrice
+        : price;
+
+    if (rawVal !== undefined && rawVal !== null && rawVal !== "") {
+      if (typeof rawVal === "number" && rawVal > 0) {
+        return {
+          hasActualPrice: true,
+          formattedPrice: `Rs. ${rawVal.toLocaleString()}`,
+          priceLabelText: "Starting from",
+        };
+      }
+      if (typeof rawVal === "string") {
+        const trimmed = rawVal.trim();
+        const lower = trimmed.toLowerCase();
+        if (
+          lower === "" ||
+          lower === "0" ||
+          lower === "rs. 0" ||
+          lower.includes("on request") ||
+          lower === "not set"
+        ) {
+          return {
+            hasActualPrice: false,
+            formattedPrice: "Pricing on request",
+            priceLabelText: "Pricing",
+          };
+        }
+
+        const numMatch = trimmed.match(/[0-9,.]+/);
+        if (numMatch) {
+          const numParsed = Number(numMatch[0].replace(/,/g, ""));
+          if (!isNaN(numParsed) && numParsed > 0) {
+            return {
+              hasActualPrice: true,
+              formattedPrice: trimmed.startsWith("Rs")
+                ? trimmed
+                : `Rs. ${numParsed.toLocaleString()}`,
+              priceLabelText: "Starting from",
+            };
+          }
+        }
+      }
     }
-    if (typeof price === "string") {
-      return price;
-    }
-    return "Price on request";
-  }, [price]);
+
+    return {
+      hasActualPrice: false,
+      formattedPrice: "Pricing on request",
+      priceLabelText: "Pricing",
+    };
+  }, [price, startingPrice]);
 
   const activeTone = toneConfig[tone] || toneConfig.teal;
   const initialLetter = (name || "T").charAt(0).toUpperCase();
@@ -297,8 +343,19 @@ export function MainTailorCard({
       {/* 3. FOOTER ROW: PRICING + VIEW PROFILE CTA */}
       <View style={styles.footerRow}>
         <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>Starting from</Text>
-          <Text style={styles.priceValue}>{formattedPrice}</Text>
+          <Text style={styles.priceLabel}>{priceLabelText}</Text>
+          <Text
+            style={[
+              styles.priceValue,
+              !hasActualPrice && {
+                fontSize: 13,
+                fontWeight: "700",
+                color: "#64748B",
+              },
+            ]}
+          >
+            {formattedPrice}
+          </Text>
         </View>
 
         <TouchableOpacity

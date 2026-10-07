@@ -15,7 +15,7 @@ export function TailorHeader({
   title,
   subtitle,
   showBack,
-  rightIcon = "notifications-outline",
+  rightIcon = null,
   onPressRight,
   floating = false,
 }: TailorHeaderProps) {

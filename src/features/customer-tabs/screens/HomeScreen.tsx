@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 import { useAuthStore } from "../../../stores/auth.store";
+
 import { useAppointments } from "../../booking-orders/hooks/useAppointments";
 import { useOrders } from "../../booking-orders/hooks/useOrders";
 import { useDesigns } from "../../design-studio/hooks/useDesigns";
@@ -51,6 +52,7 @@ export default function HomeScreen() {
   const { designs, isLoading: designsLoading } = useDesigns();
   const { orders, isLoading: ordersLoading } = useOrders();
   const { appointments, isLoading: appointmentsLoading } = useAppointments();
+
 
   const pendingOrders = useMemo(() => {
     return orders
@@ -185,23 +187,6 @@ export default function HomeScreen() {
             <Text className="mt-0.5 text-[13px] font-medium text-brand-gray">
               Ready to look your best today?
             </Text>
-          </View>
-
-          {/* Action Icons */}
-          <View className="flex-row items-center">
-            <TouchableOpacity
-              onPress={() => router.push("/messages" as never)}
-              activeOpacity={0.7}
-              className="relative p-2"
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons
-                name="notifications-outline"
-                size={24}
-                color="#000000"
-              />
-              <View className="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-red-500" />
-            </TouchableOpacity>
           </View>
         </View>
 
