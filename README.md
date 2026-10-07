@@ -26,7 +26,7 @@
 
 > **Try the latest build on your Android device:**
 >
-> 👉 **[Download APK](YOUR_APK_LINK_HERE)**
+> 👉 **[Download APK]([YOUR_APK_LINK_HERE](https://drive.google.com/file/d/1V2iOrs21xR46zGUpPfCZrwenY8GA-a-t/view?usp=sharing)**
 >
 > _Replace the link above with your actual APK URL._
 
