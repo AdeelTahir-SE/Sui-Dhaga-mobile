@@ -238,18 +238,6 @@ export default function TailorProfileScreen() {
 
   const shouldHideActionButtons = isTailor || isOwnProfile;
 
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        title: `${name} | Sui Dhaga`,
-        message: `Check out ${name}'s tailor profile on Sui Dhaga: ${profileUrl}\n📍 Location: ${location}\n⭐ Rating: ${rating} (${reviewsCount})`,
-        url: profileUrl,
-      });
-    } catch (error) {
-      console.error("Error sharing tailor profile:", error);
-    }
-  };
-
   const handleMessageTailor = async () => {
     if (isTailor) {
       Alert.alert(
@@ -295,11 +283,12 @@ export default function TailorProfileScreen() {
 
     setIsStartingChat(true);
     const avatarUrl =
-      typeof avatarSource === "object" && avatarSource && "uri" in avatarSource
+      rawAvatarUri ||
+      (typeof avatarSource === "object" && avatarSource && "uri" in avatarSource
         ? (avatarSource as any).uri
         : typeof avatarSource === "string"
           ? avatarSource
-          : "";
+          : "");
 
     const resolvedTailorId =
       tailor?.userId ||
@@ -466,21 +455,11 @@ export default function TailorProfileScreen() {
           <TailorHeader
             title=""
             showBack
-            rightIcon={
-              isTailor
-                ? isOwnProfile
-                  ? "create-outline"
-                  : null
-                : isOwnProfile
-                  ? "create-outline"
-                  : "share-social-outline"
-            }
+            rightIcon={isOwnProfile ? "create-outline" : null}
             onPressRight={
               isOwnProfile
                 ? () => router.push("/tailor-dashboard/complete-profile" as any)
-                : isTailor
-                  ? undefined
-                  : handleShare
+                : undefined
             }
             floating
           />
@@ -597,22 +576,11 @@ export default function TailorProfileScreen() {
           </View>
         </View>
 
-        {/* Customer Reviews & Ratings Showcase */}
-        <View className="mb-3 mt-7 flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            <Ionicons name="star" size={20} color="#F59E0B" />
-            <Text className="ml-1.5 text-[18px] font-bold text-brand-dark">
-              Customer Reviews
-            </Text>
-          </View>
-          <View className="flex-row items-center rounded-full bg-[#FEF3C7] px-2.5 py-0.5">
-            <Text className="text-[12px] font-black text-[#D97706]">
-              ⭐ {rating}
-            </Text>
-            <Text className="text-[11px] font-medium text-brand-gray ml-1">
-              ({reviews.length > 0 ? reviews.length : tailor?.reviewsCount ?? tailor?.reviews ?? 0})
-            </Text>
-          </View>
+        {/* Customer Reviews */}
+        <View className="mb-3 mt-7">
+          <Text className="text-[18px] font-bold text-brand-dark">
+            Customer Reviews
+          </Text>
         </View>
 
         {isLoadingReviews ? (

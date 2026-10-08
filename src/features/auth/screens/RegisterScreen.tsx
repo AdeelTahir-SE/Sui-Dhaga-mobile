@@ -180,10 +180,11 @@ export default function RegisterScreen() {
     try {
       const result = await loginWithGoogle();
       if (result.success) {
-        if (result.needsProfileCompletion) {
+        const currentUser = useAuthStore.getState().user;
+        const hasEstablishedRole = currentUser?.role === "tailor" || currentUser?.role === "customer";
+        if (result.needsProfileCompletion && !hasEstablishedRole) {
           router.replace("/auth/complete-profile" as any);
         } else {
-          const currentUser = useAuthStore.getState().user;
           if (currentUser?.role === "tailor") {
             router.replace("/tailor-dashboard" as any);
           } else {

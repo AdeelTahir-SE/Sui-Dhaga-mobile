@@ -91,6 +91,9 @@ export interface TailorItem {
   verification_status?: string;
   review_count?: number;
   banner_url?: string;
+  organizationName?: string;
+  organization?: string;
+  organization_name?: string;
   profile?: {
     id?: string;
     fullName?: string;

@@ -3,11 +3,13 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import Constants from "expo-constants";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -525,13 +527,22 @@ export default function TailorMyProfileScreen() {
             <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
               <ProfileMenuRow
                 title="Tailor Partner Support"
-                subtitle="partners@suidhaga.app • Partner Helpline"
+                subtitle="suidhagaofficial.pakistan@gmail.com"
                 icon="help-circle-outline"
                 isLast
                 onPress={() => {
                   Alert.alert(
                     "Sui Dhaga Partner Support",
-                    "Need help with your workshop profile, orders, payouts or customer bookings?\n\nEmail: partners@suidhaga.app\nToll-Free: +91 1800-SUI-DHAGA\nMon-Sat: 9:00 AM - 8:00 PM"
+                    "Need help with your workshop profile, orders, payouts or customer bookings?\n\nEmail: suidhagaofficial.pakistan@gmail.com",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Send Email",
+                        onPress: () => {
+                          Linking.openURL("mailto:suidhagaofficial.pakistan@gmail.com").catch(() => {});
+                        },
+                      },
+                    ]
                   );
                 }}
               />
@@ -559,7 +570,7 @@ export default function TailorMyProfileScreen() {
           </TouchableOpacity>
 
           <Text className="mt-5 text-center text-[11px] font-medium text-brand-gray/60">
-            Sui Dhaga Partner • v1.0.0
+            Sui Dhaga Partner • v{Constants.expoConfig?.version || "1.0.1"}
           </Text>
         </View>
         )}

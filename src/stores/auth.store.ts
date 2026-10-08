@@ -401,7 +401,9 @@ export const useAuthStore = create<AuthState>((set) => ({
           error: null,
         });
 
-        const needsProfileCompletion = (res as any)?.data?.needsProfileCompletion ?? (res as any)?.needsProfileCompletion ?? true;
+        const needsProfileCompletion = Boolean(
+          (res as any)?.data?.needsProfileCompletion ?? (res as any)?.needsProfileCompletion ?? false
+        );
         return { success: true, needsProfileCompletion };
       } else {
         throw new Error(res.message || 'Google authentication response was invalid.');
@@ -545,7 +547,9 @@ export const useAuthStore = create<AuthState>((set) => ({
           error: null,
         });
 
-        const needsProfileCompletion = (res as any)?.data?.needsProfileCompletion ?? (res as any)?.needsProfileCompletion ?? true;
+        const needsProfileCompletion = Boolean(
+          (res as any)?.data?.needsProfileCompletion ?? (res as any)?.needsProfileCompletion ?? false
+        );
         return { success: true, needsProfileCompletion };
       } else {
         throw new Error(res.message || 'Google authentication response was invalid.');

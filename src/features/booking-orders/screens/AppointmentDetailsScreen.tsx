@@ -374,6 +374,7 @@ export default function AppointmentDetailsScreen() {
         clientId: clientId,
         recipientId: clientId,
         name: displayCustomerName,
+        avatar: displayCustomerAvatar || "",
       },
     } as any);
   };
@@ -388,6 +389,7 @@ export default function AppointmentDetailsScreen() {
         clientId: currentUser?.id,
         recipientId: targetUserId,
         name: displayTailorName,
+        avatar: displayTailorAvatar || "",
       },
     } as any);
   };
@@ -926,7 +928,11 @@ export default function AppointmentDetailsScreen() {
           </View>
           <TouchableOpacity
             activeOpacity={0.8}
-            onPress={() => router.push("/contact" as any)}
+            onPress={() => {
+              Linking.openURL("mailto:suidhagaofficial.pakistan@gmail.com?subject=Support%20Request%20-%20Appointment%20" + (appointmentId || "")).catch(() => {
+                Alert.alert("Contact Support", "Please email us directly at:\nsuidhagaofficial.pakistan@gmail.com");
+              });
+            }}
             className="mt-3.5 h-[40px] items-center justify-center rounded-xl bg-white border border-brand-border shadow-2xs"
           >
             <Text className="text-[12px] font-semibold text-primary">

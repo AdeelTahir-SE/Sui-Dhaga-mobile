@@ -29,8 +29,8 @@ export default function AuthCallbackScreen() {
         // 0. If user is already authenticated (e.g. handled directly in LoginScreen)
         if (useAuthStore.getState().isAuthenticated) {
           const user = useAuthStore.getState().user;
-          const needsCompletion = !user?.phone || !user?.role;
-          if (needsCompletion) {
+          const hasEstablishedRole = user?.role === "tailor" || user?.role === "customer";
+          if (!hasEstablishedRole) {
             router.replace("/auth/complete-profile" as any);
           } else if (user?.role === "tailor") {
             router.replace("/tailor-dashboard" as any);
@@ -89,10 +89,11 @@ export default function AuthCallbackScreen() {
 
         if (result.success) {
           setStatusMessage("Sign in complete! Redirecting...");
-          if (result.needsProfileCompletion) {
+          const user = useAuthStore.getState().user;
+          const hasEstablishedRole = user?.role === "tailor" || user?.role === "customer";
+          if (result.needsProfileCompletion && !hasEstablishedRole) {
             router.replace("/auth/complete-profile" as any);
           } else {
-            const user = useAuthStore.getState().user;
             if (user?.role === "tailor") {
               router.replace("/tailor-dashboard" as any);
             } else {

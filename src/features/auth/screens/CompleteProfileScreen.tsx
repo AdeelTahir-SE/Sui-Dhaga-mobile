@@ -54,8 +54,15 @@ export default function CompleteProfileScreen() {
   const { user, completeProfile, logout } = useAuthStore();
 
   useEffect(() => {
-    if (!user || user.email === "ayesha.khan.google@gmail.com") {
+    if (!user) {
       router.replace("/auth/login" as any);
+      return;
+    }
+    // If user already has an established tailor profile or existing completed role, route them directly
+    if (user.role === "tailor") {
+      router.replace("/tailor-dashboard" as any);
+    } else if (user.role === "customer" && user.phone) {
+      router.replace("/home" as any);
     }
   }, [user]);
 

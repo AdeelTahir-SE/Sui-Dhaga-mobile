@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   RefreshControl,
   ScrollView,
@@ -545,20 +546,29 @@ export default function ProfileScreen() {
               subtitle={
                 isCheckingUpdate
                   ? "Checking for new version..."
-                  : `Version v${Constants.expoConfig?.version || "1.0.0"} (Tap to check)`
+                  : `Version v${Constants.expoConfig?.version || "1.0.1"} (Tap to check)`
               }
               icon="cloud-download-outline"
               onPress={() => checkForUpdate(true)}
             />
             <ProfileMenuRow
               title="Help & Customer Care"
-              subtitle="support@suidhaga.app • 1800-SUI-DHAGA"
+              subtitle="suidhagaofficial.pakistan@gmail.com"
               icon="help-circle-outline"
               isLast
               onPress={() => {
                 Alert.alert(
                   "Sui Dhaga Support",
-                  "Need help with an order, appointment or measurement?\n\nEmail: support@suidhaga.app\nToll-Free: +91 1800-SUI-DHAGA\nMon-Sat: 9:00 AM - 8:00 PM"
+                  "Need help with an order, appointment or measurement?\n\nEmail: suidhagaofficial.pakistan@gmail.com",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Send Email",
+                      onPress: () => {
+                        Linking.openURL("mailto:suidhagaofficial.pakistan@gmail.com").catch(() => {});
+                      },
+                    },
+                  ]
                 );
               }}
             />
@@ -586,7 +596,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <Text className="mt-5 text-center text-[11px] font-medium text-brand-gray/60">
-          Sui Dhaga • v{Constants.expoConfig?.version || "1.0.0"}
+          Sui Dhaga • v{Constants.expoConfig?.version || "1.0.1"}
         </Text>
       </View>
       )}

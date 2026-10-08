@@ -91,6 +91,12 @@ export const usersApi = {
     });
   },
 
+  async getUserById(userId: string): Promise<ApiResponse<User>> {
+    return apiClient<User>(`/users/${encodeURIComponent(userId)}`, {
+      method: 'GET',
+    });
+  },
+
   async uploadAvatar(
     fileOrFormData: ImageAssetInput | FormData
   ): Promise<ApiResponse<AvatarUploadResponseData>> {

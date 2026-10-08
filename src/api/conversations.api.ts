@@ -235,6 +235,7 @@ export interface CheckConversationResult {
 export function extractConversationsList(resData: any): any[] {
   if (!resData) return [];
   if (Array.isArray(resData)) return resData;
+  if (Array.isArray(resData.records)) return resData.records;
   if (Array.isArray(resData.conversations)) return resData.conversations;
   if (Array.isArray(resData.data)) return resData.data;
   if (Array.isArray(resData.items)) return resData.items;
@@ -490,6 +491,8 @@ export const conversationsApi = {
     let list: MessageItem[] = [];
     if (Array.isArray(res.data)) {
       list = res.data;
+    } else if (Array.isArray((res.data as any)?.records)) {
+      list = (res.data as any).records;
     } else if (Array.isArray((res.data as any)?.messages)) {
       list = (res.data as any).messages;
     } else if (Array.isArray((res.data as any)?.data)) {
@@ -588,6 +591,8 @@ export const conversationsApi = {
     let list: MessageItem[] = [];
     if (Array.isArray(res.data)) {
       list = res.data;
+    } else if (Array.isArray((res.data as any)?.records)) {
+      list = (res.data as any).records;
     } else if (Array.isArray((res.data as any)?.messages)) {
       list = (res.data as any).messages;
     } else if (Array.isArray((res.data as any)?.data)) {

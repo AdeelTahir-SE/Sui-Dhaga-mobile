@@ -11,6 +11,8 @@ export interface TailorFilters {
   city?: string;
   lat?: number;
   lng?: number;
+  organization?: string;
+  organizationName?: string;
   limit?: number;
   page?: number;
 }
@@ -24,6 +26,8 @@ export interface CreateTailorProfilePayload {
   longitude?: number;
   experienceYears?: number;
   bio?: string;
+  organizationName?: string;
+  organization?: string;
 }
 
 export interface UpdateTailorProfilePayload {
@@ -35,6 +39,8 @@ export interface UpdateTailorProfilePayload {
   longitude?: number;
   experienceYears?: number;
   bio?: string;
+  organizationName?: string;
+  organization?: string;
 }
 
 export async function buildBannerFormData(
@@ -241,6 +247,9 @@ export function mapTailorFromBackend(raw: any): TailorItem {
     isTopRated: raw.isTopRated ?? raw.topRated ?? (ratingNum >= 4.5),
     topRated: raw.isTopRated ?? raw.topRated ?? (ratingNum >= 4.5),
     services: Array.isArray(raw.services) ? raw.services : [],
+    organizationName: raw.organization_name || raw.organizationName || raw.organization || null,
+    organization: raw.organization_name || raw.organizationName || raw.organization || null,
+    organization_name: raw.organization_name || raw.organizationName || raw.organization || null,
   };
 }
 

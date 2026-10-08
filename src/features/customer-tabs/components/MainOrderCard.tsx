@@ -124,17 +124,17 @@ export function MainOrderCard({
         return {
           text: cleanDate ? `Delivered on ${cleanDate}` : "Delivered safely",
           icon: "checkmark-circle-outline" as const,
-          color: "#059669",
-          bg: "#F0FDF4",
-          border: "#BBF7D0",
+          color: "#64748B",
+          bg: "transparent",
+          border: "transparent",
         };
       }
       return {
         text: "Delivered safely",
         icon: "checkmark-circle-outline" as const,
-        color: "#059669",
-        bg: "#F0FDF4",
-        border: "#BBF7D0",
+        color: "#64748B",
+        bg: "transparent",
+        border: "transparent",
       };
     }
     if (isCancelled) {

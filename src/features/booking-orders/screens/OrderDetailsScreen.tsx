@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   ScrollView,
   Text,
@@ -1171,7 +1172,15 @@ export default function OrderDetailsScreen() {
               </Text>
             </View>
           </View>
-          <TouchableOpacity className="mt-4 h-[42px] items-center justify-center rounded-xl bg-white border border-brand-border">
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              Linking.openURL("mailto:suidhagaofficial.pakistan@gmail.com?subject=Support%20Request%20-%20Order%20" + (order?.id || orderId || "")).catch(() => {
+                Alert.alert("Contact Support", "Please email us directly at:\nsuidhagaofficial.pakistan@gmail.com");
+              });
+            }}
+            className="mt-4 h-[42px] items-center justify-center rounded-xl bg-white border border-brand-border shadow-2xs"
+          >
             <Text className="text-[13px] font-semibold text-primary">
               Contact Support
             </Text>

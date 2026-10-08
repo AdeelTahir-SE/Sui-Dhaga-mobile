@@ -22,7 +22,22 @@ const sundropBanner = require("../../../../assets/customer-tab-banner/sundrop.pn
 export default function SundropScreen() {
   const insets = useSafeAreaInsets();
   const screenWidth = Dimensions.get("window").width;
-  const { tailors, isLoading, isRefreshing, refresh } = useTailors();
+  const { tailors: fetchedTailors, isLoading, isRefreshing, refresh } = useTailors({
+    organization: "sundrop",
+  });
+
+  // Only show tailors belonging to the 'sundrop' organization
+  const tailors = fetchedTailors.filter((tailor) => {
+    const org = (
+      tailor.organizationName ||
+      (tailor as any).organization_name ||
+      tailor.organization ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+    return org === "sundrop";
+  });
 
   const bannerHeight = Math.round((screenWidth - 32) / 2.5);
 
@@ -91,7 +106,7 @@ export default function SundropScreen() {
           </View>
         ) : tailors.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No tailors yet</Text>
+            <Text style={styles.emptyText}>No Sundrop tailors found</Text>
           </View>
         ) : (
           <View style={styles.tailorsList}>
