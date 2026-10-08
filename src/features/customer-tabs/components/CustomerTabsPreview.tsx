@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Text, TouchableOpacity, View } from "react-native";
+import { useAuthStore } from "../../../stores/auth.store";
 
 type CustomerTab =
   | "Home"
@@ -61,6 +62,15 @@ const tabs: TabItem[] = [
 ];
 
 export function CustomerTabsPreview({ active }: CustomerTabsPreviewProps) {
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  const isUnauthenticated =
+    !user ||
+    !isAuthenticated ||
+    user.id === "guest" ||
+    user.id?.startsWith("guest");
+
   return (
     <View className="flex-row items-center justify-around">
       {tabs.map((tab) => {
@@ -71,7 +81,13 @@ export function CustomerTabsPreview({ active }: CustomerTabsPreviewProps) {
             key={tab.label}
             accessibilityRole="button"
             activeOpacity={0.7}
-            onPress={() => router.push(tab.href as never)}
+            onPress={() => {
+              if (tab.label === "Profile" && isUnauthenticated) {
+                router.push("/auth/login" as never);
+                return;
+              }
+              router.push(tab.href as never);
+            }}
             className="flex-1 items-center justify-center py-0.5"
           >
             <View

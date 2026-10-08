@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -26,15 +26,27 @@ import { TailorProfileSkeleton } from "@/components/ui/Skeleton";
 
 export default function TailorMyProfileScreen() {
   const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authLoading = useAuthStore((state) => state.isLoading);
   const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
   const { profile, isLoading, refresh } = useTailorProfile();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
+  useEffect(() => {
+    if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+      router.replace("/auth/login" as any);
+    }
+  }, [user, isAuthenticated, authLoading]);
+
   useFocusEffect(
     useCallback(() => {
+      if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+        router.replace("/auth/login" as any);
+        return;
+      }
       refresh?.();
-    }, [refresh])
+    }, [refresh, user, isAuthenticated, authLoading])
   );
 
   const pickAvatar = async () => {
@@ -248,6 +260,20 @@ export default function TailorMyProfileScreen() {
     null;
 
   const initials = (shopName || "T").charAt(0).toUpperCase();
+
+  const isUnauthenticated =
+    !user ||
+    !isAuthenticated ||
+    user.id === "guest" ||
+    user.id?.startsWith("guest");
+
+  if (isUnauthenticated) {
+    return (
+      <TailorDashboardShell bottomTabs={<TailorDashboardTabs active="Profile" />}>
+        <TailorProfileSkeleton />
+      </TailorDashboardShell>
+    );
+  }
 
   return (
     <TailorDashboardShell bottomTabs={<TailorDashboardTabs active="Profile" />}>

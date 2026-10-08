@@ -49,6 +49,15 @@ export default function HomeScreen() {
   const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
   const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authLoading = useAuthStore((state) => state.isLoading);
+
+  useEffect(() => {
+    if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+      router.replace("/auth/login" as any);
+    }
+  }, [user, isAuthenticated, authLoading]);
+
   const { designs, isLoading: designsLoading } = useDesigns();
   const { orders, isLoading: ordersLoading } = useOrders();
   const { appointments, isLoading: appointmentsLoading } = useAppointments();

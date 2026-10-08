@@ -376,6 +376,7 @@ export default function OrderDetailsScreen() {
         clientId: clientId,
         recipientId: clientId,
         name: displayCustomerName,
+        avatar: displayCustomerAvatar || "",
       },
     } as any);
   };
@@ -390,6 +391,7 @@ export default function OrderDetailsScreen() {
         clientId: currentUser?.id,
         recipientId: targetUserId,
         name: displayTailorName,
+        avatar: displayTailorAvatar || "",
       },
     } as any);
   };

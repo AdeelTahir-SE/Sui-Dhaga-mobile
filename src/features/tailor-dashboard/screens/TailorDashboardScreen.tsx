@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
   Modal,
@@ -47,6 +47,15 @@ export default function TailorDashboardScreen() {
     useState(false);
 
   const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authLoading = useAuthStore((state) => state.isLoading);
+
+  useEffect(() => {
+    if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+      router.replace("/auth/login" as any);
+    }
+  }, [user, isAuthenticated, authLoading]);
+
   const { profile } = useTailorProfile();
   const { orders } = useOrders();
   const { appointments } = useAppointments();

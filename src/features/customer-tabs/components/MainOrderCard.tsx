@@ -203,7 +203,7 @@ export function MainOrderCard({
 
   const ctaLabel =
     button ||
-    (isCompleted ? "★ Rate & Review" : isCancelled ? "Order Details" : "Track Order");
+    (isCompleted ? "View Details" : isCancelled ? "Order Details" : "Track Order");
 
   const firstDesignImg =
     (Array.isArray(designImages) && designImages.length > 0 ? designImages[0] : null) ||
@@ -293,10 +293,12 @@ export function MainOrderCard({
           <View
             style={[
               styles.timelineBanner,
-              {
-                backgroundColor: timelineInfo.bg,
-                borderColor: timelineInfo.border,
-              },
+              isCompleted
+                ? styles.timelineDeliveredPlain
+                : {
+                    backgroundColor: timelineInfo.bg,
+                    borderColor: timelineInfo.border,
+                  },
             ]}
           >
             <Ionicons
@@ -305,7 +307,11 @@ export function MainOrderCard({
               color={timelineInfo.color}
             />
             <Text
-              style={[styles.timelineText, { color: timelineInfo.color }]}
+              style={[
+                styles.timelineText,
+                { color: timelineInfo.color },
+                isCompleted ? styles.timelineDeliveredText : null,
+              ]}
               numberOfLines={1}
             >
               {timelineInfo.text}
@@ -355,9 +361,9 @@ export function MainOrderCard({
             {ctaLabel}
           </Text>
           <Ionicons
-            name={isCancelled ? "chevron-forward" : isCompleted ? "star" : "arrow-forward"}
+            name={isCancelled ? "chevron-forward" : "arrow-forward"}
             size={14}
-            color={isCancelled ? "#64748B" : isCompleted ? "#FDE68A" : "#FFFFFF"}
+            color={isCancelled ? "#64748B" : "#FFFFFF"}
             style={{ marginLeft: 4, zIndex: 1 }}
           />
         </TouchableOpacity>
@@ -469,9 +475,22 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     maxWidth: "100%",
   },
+  timelineDeliveredPlain: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+    marginTop: 6,
+  },
   timelineText: {
     fontSize: 11,
     fontWeight: "600",
+  },
+  timelineDeliveredText: {
+    color: "#64748B",
+    fontSize: 12,
+    fontWeight: "500",
   },
   tagsWrap: {
     flexDirection: "row",

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useGlobalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -8,7 +8,6 @@ import {
   Linking,
   Modal,
   ScrollView,
-  Share,
   Text,
   TouchableOpacity,
   View,
@@ -42,13 +41,22 @@ const galleryImages = [
 ];
 
 export default function TailorProfileScreen() {
-  const params = useLocalSearchParams<{
+  const localParams = useLocalSearchParams<{
     tailorId?: string;
     id?: string;
     from?: string;
     role?: string;
   }>();
-  const tailorId = params.tailorId || params.id || "";
+  const globalParams = useGlobalSearchParams<{
+    tailorId?: string;
+    id?: string;
+  }>();
+  const tailorId =
+    localParams.tailorId ||
+    localParams.id ||
+    globalParams.tailorId ||
+    globalParams.id ||
+    "";
   const { tailor, isLoading } = useTailorDetails(tailorId);
   const currentUser = useAuthStore((state) => state.user);
   const { profile: myTailorProfile } = useTailorProfile();
@@ -200,8 +208,8 @@ export default function TailorProfileScreen() {
     currentUser?.role?.toLowerCase() === "tailor" ||
     (currentUser as any)?.user_metadata?.role?.toLowerCase() === "tailor" ||
     (currentUser as any)?.role_name?.toLowerCase() === "tailor" ||
-    params.from?.toLowerCase() === "tailor" ||
-    params.role?.toLowerCase() === "tailor" ||
+    localParams.from?.toLowerCase() === "tailor" ||
+    localParams.role?.toLowerCase() === "tailor" ||
     Boolean(myTailorProfile?.id && (myTailorProfile?.shopName || myTailorProfile?.businessName));
 
   const isOwnProfile = Boolean(

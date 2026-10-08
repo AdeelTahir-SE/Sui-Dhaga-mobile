@@ -37,27 +37,28 @@ const toneConfig: Record<string, { bg: string; text: string }> = {
   cream: { bg: "#FDF8F0", text: "#B45309" },
 };
 
-export function MainTailorCard({
-  id,
-  name,
-  rating,
-  distance,
-  specialty,
-  specialties,
-  image,
-  tone = "teal",
-  topRated,
-  verified = true,
-  isVerified = true,
-  experienceYears,
-  city,
-  address,
-  distanceKm,
-  reviewsCount,
-  onPress,
-  price,
-  startingPrice,
-}: MainTailorCardProps) {
+export function MainTailorCard(props: MainTailorCardProps) {
+  const {
+    id,
+    name,
+    rating,
+    distance,
+    specialty,
+    specialties,
+    image,
+    tone = "teal",
+    topRated,
+    verified = true,
+    isVerified = true,
+    experienceYears,
+    city,
+    address,
+    distanceKm,
+    reviewsCount,
+    onPress,
+    price,
+    startingPrice,
+  } = props;
   const [imageError, setImageError] = useState(false);
 
   const isTailorVerified = verified || isVerified;
@@ -65,10 +66,11 @@ export function MainTailorCard({
   const handleCardPress = () => {
     if (onPress) {
       onPress();
-    } else if (id) {
-      router.push(`/tailors/${id}` as any);
-    } else {
-      router.push("/tailors/rekha-tailors" as any);
+      return;
+    }
+    const targetId = id || (props as any).tailorId || (props as any).userId;
+    if (targetId) {
+      router.push(`/tailors/${targetId}` as any);
     }
   };
 

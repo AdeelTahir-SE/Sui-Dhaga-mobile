@@ -19,8 +19,10 @@ import { useAuthStore } from "../../../stores/auth.store";
 import { useTailorProfile } from "../hooks/useTailorProfile";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
+import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorLocationPickerModal, SelectedLocation } from "../components/TailorLocationPickerModal";
 import { TailorLeafletMap } from "../../tailors/components/TailorLeafletMap";
+import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 import { tailorsApi } from "../../../api/tailors.api";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
 import { storage } from "../../../api/client";
@@ -63,6 +65,7 @@ export default function TailorProfileSetupScreen() {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [hasLocationPinned, setHasLocationPinned] = useState(false);
   const [experienceYears, setExperienceYears] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
   const [startingPrice, setStartingPrice] = useState("");
   const [bio, setBio] = useState("");
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
@@ -133,6 +136,12 @@ export default function TailorProfileSetupScreen() {
           ? p.experience_years
           : "";
       setExperienceYears(String(expVal));
+      setOrganizationName(
+        p.organizationName ||
+          p.organization_name ||
+          p.organization ||
+          ""
+      );
       setStartingPrice(
         p.startingPrice !== undefined && p.startingPrice !== null && p.startingPrice !== ""
           ? String(p.startingPrice)
@@ -348,6 +357,8 @@ export default function TailorProfileSetupScreen() {
         longitude: hasLocationPinned ? Number(longitude) : undefined,
       },
       experienceYears: Number(experienceYears) || 0,
+      organizationName: organizationName.trim() || undefined,
+      organization: organizationName.trim() || undefined,
       startingPrice: priceNum,
       specialties: selectedSpecialties,
       specialty: selectedSpecialties[0] || "",
@@ -494,42 +505,24 @@ export default function TailorProfileSetupScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         className="flex-1"
       >
-        {/* Header */}
-        <View className="h-14 flex-row items-center justify-between border-b border-brand-border px-4 bg-white">
-          <TouchableOpacity
-            accessibilityRole="button"
-            onPress={handlePrevStep}
-            className="h-10 w-10 items-center justify-center rounded-md"
-          >
-            <Ionicons name="arrow-back" size={22} color="#1A1D1F" />
-          </TouchableOpacity>
-          <Text className="text-[17px] font-black tracking-tight text-brand-dark">
-            Edit Tailor Profile
-          </Text>
-          {isComplete ? (
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={isSaving}
-              className="px-3 py-1.5 rounded-lg bg-primary-50 border border-primary/20 items-center justify-center"
-            >
-              {isSaving ? (
-                <ActivityIndicator size="small" color="#14919B" />
-              ) : (
-                <Text className="text-[12px] font-bold text-primary">Save</Text>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <View className="rounded-full bg-primary-50 border border-primary/20 px-2.5 py-0.5">
-              <Text className="text-[11px] font-bold text-primary">
-                {currentStep}/4
-              </Text>
-            </View>
-          )}
-        </View>
+        {/* Themed Dashboard Header */}
+        <TailorDashboardHeader
+          title={isComplete ? "Edit Tailor Profile" : "Tailor Profile Setup"}
+          subtitle={
+            isComplete
+              ? "Manage your workshop branding, craft & pricing"
+              : "Complete your store profile to start receiving orders"
+          }
+          showBack={true}
+          onBackPress={handlePrevStep}
+          rightText={isComplete ? (isSaving ? "Saving..." : "Save") : undefined}
+          onRightPress={isComplete ? handleSave : undefined}
+          showDivider={false}
+        />
 
-        {/* Multi-Step Indicator Header */}
-        <View className="bg-white border-b border-brand-border px-4 pt-3 pb-3 shadow-xs">
-          {/* Progress bar and subtitle */}
+        {/* Craft Segmented Steps & Progress Bar */}
+        <View className="bg-white border-b border-brand-border px-4 pt-1 pb-3 shadow-xs">
+          {/* Progress bar (shows completion percentage) */}
           <View className="flex-row items-center justify-between mb-2">
             <View className="flex-row items-center gap-1.5 flex-1 mr-2">
               <View className="h-2 w-2 rounded-full bg-primary" />
@@ -537,73 +530,76 @@ export default function TailorProfileSetupScreen() {
                 Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].subtitle}
               </Text>
             </View>
-            <Text className="text-[11px] font-bold text-primary">
-              {Math.round((currentStep / STEPS.length) * 100)}%
-            </Text>
+            <View className="rounded-full bg-primary-50 px-2 py-0.5 border border-primary/20">
+              <Text className="text-[10px] font-black text-primary">
+                {Math.round((currentStep / STEPS.length) * 100)}% Complete
+              </Text>
+            </View>
           </View>
-          <View className="h-1.5 w-full rounded-full bg-brand-surface overflow-hidden mb-3">
+
+          <View className="h-1.5 w-full rounded-full bg-brand-surface overflow-hidden mb-2.5">
             <View
               className="h-full rounded-full bg-primary"
               style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
             />
           </View>
 
-          {/* Stepper Tabs */}
-          <View className="flex-row items-center justify-between">
-            {STEPS.map((step, index) => {
+          {/* Segmented Pill Tabs */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
+          >
+            {STEPS.map((step) => {
               const isActive = currentStep === step.id;
-              const isPast = currentStep > step.id;
+              const isPast = currentStep > step.id || isComplete;
               return (
-                <React.Fragment key={step.id}>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => handleStepSelect(step.id)}
-                    className="items-center"
-                    style={{ width: 68 }}
+                <TouchableOpacity
+                  key={step.id}
+                  activeOpacity={0.7}
+                  onPress={() => handleStepSelect(step.id)}
+                  className={`flex-row items-center px-3.5 py-2 rounded-xl border ${
+                    isActive
+                      ? "bg-primary-50 border-primary shadow-xs"
+                      : isPast
+                      ? "bg-white border-brand-border"
+                      : "bg-brand-surface/60 border-transparent"
+                  }`}
+                >
+                  <View
+                    className={`h-6 w-6 rounded-lg items-center justify-center mr-2 ${
+                      isActive
+                        ? "bg-primary"
+                        : isPast
+                        ? "bg-primary/15"
+                        : "bg-brand-surface"
+                    }`}
                   >
-                    <View
-                      className={`h-8 w-8 rounded-full items-center justify-center ${
-                        isActive
-                          ? "bg-primary shadow-xs"
-                          : isPast
-                          ? "bg-primary-50 border border-primary/40"
-                          : "bg-brand-surface border border-brand-border"
-                      }`}
-                    >
-                      {isPast ? (
-                        <Ionicons name="checkmark" size={16} color="#14919B" />
-                      ) : (
-                        <Ionicons
-                          name={step.icon as any}
-                          size={15}
-                          color={isActive ? "#FFFFFF" : "#6F767E"}
-                        />
-                      )}
-                    </View>
-                    <Text
-                      numberOfLines={1}
-                      className={`mt-1 text-[11px] text-center ${
-                        isActive
-                          ? "font-black text-primary"
-                          : isPast
-                          ? "font-semibold text-brand-dark"
-                          : "font-medium text-brand-gray"
-                      }`}
-                    >
-                      {step.title}
-                    </Text>
-                  </TouchableOpacity>
-                  {index < STEPS.length - 1 && (
-                    <View
-                      className={`h-[2px] flex-1 mb-4 ${
-                        currentStep > index + 1 ? "bg-primary" : "bg-brand-border"
-                      }`}
-                    />
-                  )}
-                </React.Fragment>
+                    {isPast && !isActive ? (
+                      <Ionicons name="checkmark" size={13} color="#14919B" />
+                    ) : (
+                      <Ionicons
+                        name={step.icon as any}
+                        size={13}
+                        color={isActive ? "#FFFFFF" : "#6F767E"}
+                      />
+                    )}
+                  </View>
+                  <Text
+                    className={`text-[12px] ${
+                      isActive
+                        ? "font-black text-primary"
+                        : isPast
+                        ? "font-bold text-brand-dark"
+                        : "font-medium text-brand-gray"
+                    }`}
+                  >
+                    {step.title}
+                  </Text>
+                </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
         </View>
 
         <ScrollView
@@ -616,46 +612,45 @@ export default function TailorProfileSetupScreen() {
             <View>
               {/* Status Badge */}
               {!isComplete ? (
-                <View className="mb-4 flex-row items-start rounded-xl border border-amber-200 bg-amber-50 p-3.5">
-                  <Ionicons
-                    name="alert-circle"
-                    size={20}
-                    color="#D97706"
-                    style={{ marginTop: 2 }}
-                  />
-                  <View className="ml-2.5 flex-1">
-                    <Text className="text-[13px] font-bold text-amber-800">
-                      Profile Setup Incomplete
+                <View className="mb-4 flex-row items-start rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+                  <View className="h-8 w-8 rounded-xl bg-amber-100 items-center justify-center mr-3 mt-0.5">
+                    <Ionicons name="sparkles" size={16} color="#D97706" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-[13px] font-black text-amber-900">
+                      Profile Setup In Progress
                     </Text>
-                    <Text className="mt-0.5 text-[11px] leading-4 text-amber-700">
-                      Complete all 4 steps to start receiving stitching orders and appear on the customer tailor search.
+                    <Text className="mt-0.5 text-[12px] leading-4 text-amber-700">
+                      Complete all 4 steps to start receiving stitching orders and appear in local tailor search results.
                     </Text>
                   </View>
                 </View>
               ) : (
-                <View className="mb-4 flex-row items-center rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                  <Ionicons name="checkmark-circle" size={20} color="#059669" />
-                  <View className="ml-2.5 flex-1">
-                    <Text className="text-[13px] font-bold text-emerald-800">
-                      Profile Active & Verified
+                <View className="mb-4 flex-row items-center rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3.5">
+                  <View className="h-8 w-8 rounded-xl bg-emerald-100 items-center justify-center mr-3">
+                    <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-[13px] font-black text-emerald-900">
+                      Storefront Live & Verified
                     </Text>
                     <Text className="text-[11px] text-emerald-700">
-                      Your store details are live on Sui Dhaga.
+                      Your tailor profile is visible to customers across the region.
                     </Text>
                   </View>
                 </View>
               )}
 
-              <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs mb-4">
-                <Text className="mb-1 text-[15px] font-black tracking-tight text-brand-dark">
+              <View className="rounded-2xl border border-brand-border bg-white p-5 shadow-xs mb-4">
+                <Text className="mb-1 text-[16px] font-black tracking-tight text-brand-dark">
                   Shop & Master Details
                 </Text>
-                <Text className="mb-4 text-[11px] font-medium text-brand-gray">
+                <Text className="mb-4 text-[12px] font-medium text-brand-gray">
                   Provide your business identity and primary contact information
                 </Text>
 
                 {/* Shop / Business Name */}
-                <View className="mb-3.5">
+                <View className="mb-4">
                   <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
                     Business / Shop Name *
                   </Text>
@@ -664,12 +659,12 @@ export default function TailorProfileSetupScreen() {
                     onChangeText={setBusinessName}
                     placeholder="e.g. Rekha Designer Tailors"
                     placeholderTextColor="#9CA3AF"
-                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                    className="h-12 rounded-xl border border-brand-border bg-brand-surface/30 px-4 text-[13.5px] font-medium text-brand-dark"
                   />
                 </View>
 
                 {/* Owner Full Name */}
-                <View className="mb-3.5">
+                <View className="mb-4">
                   <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
                     Tailor / Master Name
                   </Text>
@@ -678,12 +673,12 @@ export default function TailorProfileSetupScreen() {
                     onChangeText={setOwnerName}
                     placeholder="e.g. Master Rekha"
                     placeholderTextColor="#9CA3AF"
-                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                    className="h-12 rounded-xl border border-brand-border bg-brand-surface/30 px-4 text-[13.5px] font-medium text-brand-dark"
                   />
                 </View>
 
                 {/* Phone Number */}
-                <View className="mb-3.5">
+                <View className="mb-4">
                   <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
                     Phone / WhatsApp Number
                   </Text>
@@ -693,12 +688,12 @@ export default function TailorProfileSetupScreen() {
                     placeholder="e.g. +91 98765 43210"
                     keyboardType="phone-pad"
                     placeholderTextColor="#9CA3AF"
-                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                    className="h-12 rounded-xl border border-brand-border bg-brand-surface/30 px-4 text-[13.5px] font-medium text-brand-dark"
                   />
                 </View>
 
                 {/* Experience Years */}
-                <View>
+                <View className="mb-4">
                   <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
                     Years of Experience
                   </Text>
@@ -708,14 +703,32 @@ export default function TailorProfileSetupScreen() {
                     placeholder="e.g. 8"
                     keyboardType="numeric"
                     placeholderTextColor="#9CA3AF"
-                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                    className="h-12 rounded-xl border border-brand-border bg-brand-surface/30 px-4 text-[13.5px] font-medium text-brand-dark"
                   />
+                </View>
+
+                {/* Organization Name */}
+                <View>
+                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
+                    Organization Name (Optional)
+                  </Text>
+                  <TextInput
+                    value={organizationName}
+                    onChangeText={setOrganizationName}
+                    placeholder="e.g. sundrop"
+                    placeholderTextColor="#9CA3AF"
+                    autoCapitalize="none"
+                    className="h-12 rounded-xl border border-brand-border bg-brand-surface/30 px-4 text-[13.5px] font-medium text-brand-dark"
+                  />
+                  <Text className="mt-1 text-[11px] text-brand-gray">
+                    Set to "sundrop" to display your store in the Sundrop collection.
+                  </Text>
                 </View>
               </View>
 
-              <View className="rounded-xl border border-primary/20 bg-primary-50/60 p-3 flex-row items-center">
-                <Ionicons name="information-circle-outline" size={18} color="#14919B" />
-                <Text className="ml-2 flex-1 text-[11px] leading-4 text-brand-dark">
+              <View className="rounded-2xl border border-primary/20 bg-primary-50/60 p-4 flex-row items-center">
+                <Ionicons name="information-circle-outline" size={20} color="#14919B" />
+                <Text className="ml-2.5 flex-1 text-[12px] leading-4 text-brand-dark">
                   Customers reach out to this contact number when confirming fit appointments or asking questions about fabric choices.
                 </Text>
               </View>
@@ -725,11 +738,11 @@ export default function TailorProfileSetupScreen() {
           {/* STEP 2: Photos & Branding */}
           {currentStep === 2 && (
             <View>
-              <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs mb-4">
-                <Text className="mb-1 text-[15px] font-black tracking-tight text-brand-dark">
+              <View className="rounded-2xl border border-brand-border bg-white p-5 shadow-xs mb-4">
+                <Text className="mb-1 text-[16px] font-black tracking-tight text-brand-dark">
                   Profile & Workshop Photos
                 </Text>
-                <Text className="mb-4 text-[11px] font-medium text-brand-gray">
+                <Text className="mb-4 text-[12px] font-medium text-brand-gray">
                   Visual presentation helps build trust with prospective clients
                 </Text>
 
@@ -742,7 +755,7 @@ export default function TailorProfileSetupScreen() {
                       disabled={isUploadingAvatar}
                       className="relative"
                     >
-                      <View className="h-16 w-16 rounded-2xl border border-brand-border bg-primary-50 overflow-hidden items-center justify-center">
+                      <View className="h-16 w-16 rounded-2xl border-2 border-primary/20 bg-primary-50 overflow-hidden items-center justify-center shadow-xs">
                         {avatarUri ? (
                           <Image
                             source={{ uri: avatarUri }}
@@ -751,7 +764,7 @@ export default function TailorProfileSetupScreen() {
                           />
                         ) : (
                           <View className="items-center justify-center w-full h-full bg-primary-50">
-                            <Text className="text-[20px] font-black text-primary">
+                            <Text className="text-[22px] font-black text-primary">
                               {(businessName || ownerName || "T").charAt(0).toUpperCase()}
                             </Text>
                           </View>
@@ -769,7 +782,7 @@ export default function TailorProfileSetupScreen() {
                     </TouchableOpacity>
 
                     <View className="ml-3.5 flex-1">
-                      <Text className="text-[14px] font-bold text-brand-dark">
+                      <Text className="text-[14px] font-black text-brand-dark">
                         Profile Avatar
                       </Text>
                       <Text className="text-[11px] font-medium text-brand-gray mt-0.5">
@@ -781,7 +794,7 @@ export default function TailorProfileSetupScreen() {
                   <TouchableOpacity
                     onPress={pickAvatar}
                     disabled={isUploadingAvatar}
-                    className="rounded-xl bg-primary-50 px-3 py-1.5 border border-primary/20"
+                    className="rounded-xl bg-primary-50 px-3.5 py-2 border border-primary/20 active:bg-primary-100"
                   >
                     <Text className="text-[12px] font-bold text-primary">
                       {avatarUri ? "Change" : "Upload"}
@@ -793,7 +806,7 @@ export default function TailorProfileSetupScreen() {
                 <View className="pt-4">
                   <View className="flex-row items-center justify-between mb-2">
                     <View>
-                      <Text className="text-[14px] font-bold text-brand-dark">
+                      <Text className="text-[14px] font-black text-brand-dark">
                         Workshop Cover Banner
                       </Text>
                       <Text className="text-[11px] font-medium text-brand-gray">
@@ -803,7 +816,7 @@ export default function TailorProfileSetupScreen() {
                     <TouchableOpacity
                       onPress={pickShopImage}
                       disabled={isUploadingImage}
-                      className="rounded-xl bg-primary-50 px-3 py-1.5 border border-primary/20"
+                      className="rounded-xl bg-primary-50 px-3.5 py-2 border border-primary/20 active:bg-primary-100"
                     >
                       <Text className="text-[12px] font-bold text-primary">
                         {shopImage ? "Change" : "Upload"}
@@ -815,7 +828,7 @@ export default function TailorProfileSetupScreen() {
                     activeOpacity={0.8}
                     onPress={pickShopImage}
                     disabled={isUploadingImage}
-                    className="relative h-32 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-primary/40 bg-primary-50/50 mt-1"
+                    className="relative h-36 w-full items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-primary/30 bg-primary-50/40 mt-1"
                   >
                     {shopImage ? (
                       <Image
@@ -824,12 +837,14 @@ export default function TailorProfileSetupScreen() {
                         resizeMode="cover"
                       />
                     ) : (
-                      <View className="items-center justify-center p-3">
-                        <Ionicons name="image-outline" size={28} color="#14919B" />
-                        <Text className="mt-1 text-[12px] font-bold text-primary">
+                      <View className="items-center justify-center p-4">
+                        <View className="h-10 w-10 rounded-full bg-primary/10 items-center justify-center mb-1">
+                          <Ionicons name="image-outline" size={22} color="#14919B" />
+                        </View>
+                        <Text className="text-[12px] font-bold text-primary">
                           Tap to select banner photo (16:9)
                         </Text>
-                        <Text className="text-[10px] text-brand-gray mt-0.5">
+                        <Text className="text-[11px] text-brand-gray mt-0.5 text-center">
                           Workshop exterior, showroom display or stitching bench
                         </Text>
                       </View>
@@ -847,9 +862,9 @@ export default function TailorProfileSetupScreen() {
                 </View>
               </View>
 
-              <View className="rounded-xl border border-primary/20 bg-primary-50/60 p-3 flex-row items-center">
-                <Ionicons name="sparkles-outline" size={18} color="#14919B" />
-                <Text className="ml-2 flex-1 text-[11px] leading-4 text-brand-dark">
+              <View className="rounded-2xl border border-primary/20 bg-primary-50/60 p-4 flex-row items-center">
+                <Ionicons name="sparkles-outline" size={20} color="#14919B" />
+                <Text className="ml-2.5 flex-1 text-[12px] leading-4 text-brand-dark">
                   Photos can also be updated anytime later. Clear, well-lit pictures improve your ranking in local tailor search results.
                 </Text>
               </View>
@@ -859,16 +874,16 @@ export default function TailorProfileSetupScreen() {
           {/* STEP 3: Location & Map Pin */}
           {currentStep === 3 && (
             <View>
-              <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs mb-4">
-                <Text className="mb-1 text-[15px] font-black tracking-tight text-brand-dark">
+              <View className="rounded-2xl border border-brand-border bg-white p-5 shadow-xs mb-4">
+                <Text className="mb-1 text-[16px] font-black tracking-tight text-brand-dark">
                   Shop Location & Map Pin
                 </Text>
-                <Text className="mb-4 text-[11px] font-medium text-brand-gray">
+                <Text className="mb-4 text-[12px] font-medium text-brand-gray">
                   Help nearby customers find your boutique or workshop easily
                 </Text>
 
                 {/* City */}
-                <View className="mb-3.5">
+                <View className="mb-4">
                   <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
                     City / Town *
                   </Text>
@@ -877,7 +892,7 @@ export default function TailorProfileSetupScreen() {
                     onChangeText={setCity}
                     placeholder="e.g. Delhi, Lahore"
                     placeholderTextColor="#9CA3AF"
-                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                    className="h-12 rounded-xl border border-brand-border bg-brand-surface/30 px-4 text-[13.5px] font-medium text-brand-dark"
                   />
                 </View>
 
@@ -891,23 +906,23 @@ export default function TailorProfileSetupScreen() {
                     onChangeText={setAddress}
                     placeholder="e.g. Shop 12, Fashion Street Market"
                     placeholderTextColor="#9CA3AF"
-                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                    className="h-12 rounded-xl border border-brand-border bg-brand-surface/30 px-4 text-[13.5px] font-medium text-brand-dark"
                   />
                 </View>
 
                 {/* Interactive Map Pin Box */}
-                <View className="rounded-xl border border-brand-border bg-brand-surface/40 p-3.5">
-                  <View className="flex-row items-center justify-between mb-3">
-                    <View className="flex-row items-center">
-                      <View className="h-7 w-7 rounded-md bg-primary-50 items-center justify-center mr-2">
-                        <Ionicons name="location" size={16} color="#078B87" />
+                <View className="rounded-2xl border border-brand-border bg-brand-surface/30 p-4">
+                  <View className="flex-row items-center justify-between mb-3.5">
+                    <View className="flex-row items-center flex-1 mr-2">
+                      <View className="h-8 w-8 rounded-xl bg-primary-50 items-center justify-center mr-2.5">
+                        <Ionicons name="location" size={18} color="#14919B" />
                       </View>
-                      <View>
+                      <View className="flex-1">
                         <Text className="text-[13px] font-black text-brand-dark">
                           Exact Map Marker
                         </Text>
-                        <Text className="text-[10px] text-brand-gray">
-                          Used for distance calculation on customer maps
+                        <Text className="text-[11px] text-brand-gray" numberOfLines={1}>
+                          Used for customer search and distance calculations
                         </Text>
                       </View>
                     </View>
@@ -915,7 +930,7 @@ export default function TailorProfileSetupScreen() {
                       accessibilityRole="button"
                       activeOpacity={0.8}
                       onPress={() => setIsMapModalOpen(true)}
-                      className="flex-row items-center rounded-md bg-primary px-3 py-1.5 shadow-xs"
+                      className="flex-row items-center rounded-xl bg-primary px-3.5 py-2 shadow-xs"
                     >
                       <Ionicons name="map" size={13} color="#FFFFFF" />
                       <Text className="ml-1 text-[11px] font-bold text-white">
@@ -925,7 +940,7 @@ export default function TailorProfileSetupScreen() {
                   </View>
 
                   {hasLocationPinned ? (
-                    <View className="overflow-hidden rounded-lg border border-brand-border">
+                    <View className="overflow-hidden rounded-xl border border-brand-border bg-white">
                       <TailorLeafletMap
                         latitude={latitude}
                         longitude={longitude}
@@ -934,23 +949,23 @@ export default function TailorProfileSetupScreen() {
                         height={140}
                         interactive={false}
                       />
-                      <View className="bg-[#F7FCFC] p-3 border-t border-brand-border">
-                        <View className="flex-row items-center justify-between mb-1">
+                      <View className="bg-primary-50/40 p-3.5 border-t border-brand-border">
+                        <View className="flex-row items-center justify-between mb-1.5">
                           <View className="flex-row items-center gap-1.5 flex-1 mr-2">
-                            <Ionicons name="pin" size={13} color="#078B87" />
+                            <Ionicons name="pin" size={14} color="#14919B" />
                             <Text className="text-[12px] font-black text-brand-dark" numberOfLines={1}>
                               {address || "Exact Shop Spot Selected"}
                             </Text>
                           </View>
-                          <View className="rounded bg-emerald-100 px-2 py-0.5">
-                            <Text className="text-[10px] font-bold text-emerald-800">✓ Pin Linked</Text>
+                          <View className="rounded-md bg-emerald-100 px-2 py-0.5">
+                            <Text className="text-[10px] font-black text-emerald-800">✓ Pin Linked</Text>
                           </View>
                         </View>
-                        <View className="flex-row items-center justify-between mt-1 pt-1.5 border-t border-gray-100">
-                          <Text className="text-[11px] font-semibold text-brand-dark">
+                        <View className="flex-row items-center justify-between mt-1 pt-2 border-t border-brand-border/60">
+                          <Text className="text-[11px] font-bold text-brand-dark">
                             City: {city || "Not set"}
                           </Text>
-                          <Text className="text-[10px] font-mono font-bold text-primary">
+                          <Text className="text-[10px] font-mono font-black text-primary">
                             GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
                           </Text>
                         </View>
@@ -961,10 +976,10 @@ export default function TailorProfileSetupScreen() {
                       accessibilityRole="button"
                       activeOpacity={0.7}
                       onPress={() => setIsMapModalOpen(true)}
-                      className="items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-primary-50/40 py-5 px-4"
+                      className="items-center justify-center rounded-xl border-2 border-dashed border-primary/40 bg-primary-50/40 py-6 px-4"
                     >
-                      <View className="h-10 w-10 rounded-full bg-primary/10 items-center justify-center mb-1.5">
-                        <Ionicons name="navigate" size={22} color="#078B87" />
+                      <View className="h-11 w-11 rounded-2xl bg-primary/10 items-center justify-center mb-2">
+                        <Ionicons name="navigate" size={24} color="#14919B" />
                       </View>
                       <Text className="text-[13px] font-black text-primary text-center">
                         Tap to Pin Your Shop on Interactive Map
@@ -977,9 +992,9 @@ export default function TailorProfileSetupScreen() {
                 </View>
               </View>
 
-              <View className="rounded-xl border border-primary/20 bg-primary-50/60 p-3 flex-row items-center">
-                <Ionicons name="navigate-outline" size={18} color="#14919B" />
-                <Text className="ml-2 flex-1 text-[11px] leading-4 text-brand-dark">
+              <View className="rounded-2xl border border-primary/20 bg-primary-50/60 p-4 flex-row items-center">
+                <Ionicons name="navigate-outline" size={20} color="#14919B" />
+                <Text className="ml-2.5 flex-1 text-[12px] leading-4 text-brand-dark">
                   Customers in your area search tailors by proximity. Accurate coordinates ensure your shop shows in "Nearby Tailors".
                 </Text>
               </View>
@@ -989,11 +1004,11 @@ export default function TailorProfileSetupScreen() {
           {/* STEP 4: Craft, Specialties & Pricing */}
           {currentStep === 4 && (
             <View>
-              <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs mb-4">
-                <Text className="mb-1 text-[15px] font-black tracking-tight text-brand-dark">
+              <View className="rounded-2xl border border-brand-border bg-white p-5 shadow-xs mb-4">
+                <Text className="mb-1 text-[16px] font-black tracking-tight text-brand-dark">
                   Services, Specialties & Pricing
                 </Text>
-                <Text className="mb-4 text-[11px] font-medium text-brand-gray">
+                <Text className="mb-4 text-[12px] font-medium text-brand-gray">
                   Define your stitching crafts and starting pricing for customers
                 </Text>
 
@@ -1008,7 +1023,7 @@ export default function TailorProfileSetupScreen() {
                     placeholder="e.g. 500"
                     keyboardType="numeric"
                     placeholderTextColor="#9CA3AF"
-                    className="h-11 rounded-md border border-brand-border bg-white px-3.5 text-[13px] font-medium text-brand-dark"
+                    className="h-12 rounded-xl border border-brand-border bg-brand-surface/30 px-4 text-[13.5px] font-medium text-brand-dark"
                   />
                 </View>
 
@@ -1020,17 +1035,17 @@ export default function TailorProfileSetupScreen() {
                   Select all garments and stitching services you offer:
                 </Text>
 
-                <View className="mb-3 flex-row flex-wrap gap-2">
+                <View className="mb-3.5 flex-row flex-wrap gap-2">
                   {DEFAULT_SPECIALTIES.map((spec) => {
                     const isSelected = selectedSpecialties.includes(spec);
                     return (
                       <TouchableOpacity
                         key={spec}
                         onPress={() => toggleSpecialty(spec)}
-                        className={`flex-row items-center rounded-md border px-3 py-1.5 ${
+                        className={`flex-row items-center rounded-xl border px-3.5 py-2 ${
                           isSelected
                             ? "border-primary bg-primary-50"
-                            : "border-brand-border bg-white"
+                            : "border-brand-border bg-brand-surface/40"
                         }`}
                       >
                         <Ionicons
@@ -1041,8 +1056,8 @@ export default function TailorProfileSetupScreen() {
                         <Text
                           className={`ml-1.5 text-[12px] ${
                             isSelected
-                              ? "font-bold text-primary"
-                              : "font-medium text-brand-dark"
+                              ? "font-black text-primary"
+                              : "font-semibold text-brand-dark"
                           }`}
                         >
                           {spec}
@@ -1059,13 +1074,13 @@ export default function TailorProfileSetupScreen() {
                     onChangeText={setCustomSpecialty}
                     placeholder="Add other specialty..."
                     placeholderTextColor="#9CA3AF"
-                    className="h-10 flex-1 rounded-md border border-brand-border bg-white px-3 text-[12px] font-medium text-brand-dark"
+                    className="h-11 flex-1 rounded-xl border border-brand-border bg-brand-surface/30 px-3.5 text-[13px] font-medium text-brand-dark"
                   />
                   <TouchableOpacity
                     onPress={handleAddCustomSpecialty}
-                    className="h-10 items-center justify-center rounded-md bg-primary-light px-4"
+                    className="h-11 items-center justify-center rounded-xl bg-primary-50 border border-primary/20 px-4"
                   >
-                    <Text className="text-[12px] font-bold text-primary">Add</Text>
+                    <Text className="text-[12px] font-black text-primary">Add</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -1082,33 +1097,33 @@ export default function TailorProfileSetupScreen() {
                     multiline
                     numberOfLines={4}
                     textAlignVertical="top"
-                    className="h-24 rounded-md border border-brand-border bg-white p-3.5 text-[13px] font-medium text-brand-dark"
+                    className="h-28 rounded-xl border border-brand-border bg-brand-surface/30 p-3.5 text-[13px] font-medium text-brand-dark"
                   />
                 </View>
               </View>
 
               {/* Profile Overview Card */}
-              <View className="rounded-xl border border-brand-border bg-brand-surface/70 p-3.5 mb-2">
-                <Text className="text-[12px] font-black text-brand-dark mb-2">
+              <View className="rounded-2xl border border-brand-border bg-brand-surface/70 p-4 mb-2">
+                <Text className="text-[13px] font-black text-brand-dark mb-2.5">
                   Quick Profile Summary
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
-                  <View className="rounded-md bg-white border border-brand-border px-2.5 py-1">
+                  <View className="rounded-xl bg-white border border-brand-border px-3 py-1.5 shadow-2xs">
                     <Text className="text-[11px] text-brand-gray">
                       Shop: <Text className="font-bold text-brand-dark">{businessName || "Not set"}</Text>
                     </Text>
                   </View>
-                  <View className="rounded-md bg-white border border-brand-border px-2.5 py-1">
+                  <View className="rounded-xl bg-white border border-brand-border px-3 py-1.5 shadow-2xs">
                     <Text className="text-[11px] text-brand-gray">
                       City: <Text className="font-bold text-brand-dark">{city || "Not set"}</Text>
                     </Text>
                   </View>
-                  <View className="rounded-md bg-white border border-brand-border px-2.5 py-1">
+                  <View className="rounded-xl bg-white border border-brand-border px-3 py-1.5 shadow-2xs">
                     <Text className="text-[11px] text-brand-gray">
-                      Price: <Text className="font-bold text-primary">₹ {startingPrice || "0"}</Text>
+                      Price: <Text className="font-black text-primary">₹ {startingPrice || "0"}</Text>
                     </Text>
                   </View>
-                  <View className="rounded-md bg-white border border-brand-border px-2.5 py-1">
+                  <View className="rounded-xl bg-white border border-brand-border px-3 py-1.5 shadow-2xs">
                     <Text className="text-[11px] text-brand-gray">
                       Specialties: <Text className="font-bold text-brand-dark">{selectedSpecialties.length}</Text>
                     </Text>
@@ -1119,47 +1134,51 @@ export default function TailorProfileSetupScreen() {
           )}
 
           {/* Bottom Step Actions */}
-          <View className="mt-4 flex-row items-center gap-3">
+          <View className="mt-5 flex-row items-center gap-3">
             {currentStep > 1 && (
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={handlePrevStep}
-                className="h-12 px-4 flex-row items-center justify-center rounded-xl border border-brand-border bg-white"
+                className="h-12 px-5 flex-row items-center justify-center rounded-xl border border-brand-border bg-white shadow-xs active:bg-brand-surface"
               >
-                <Ionicons name="chevron-back" size={18} color="#1A1D1F" />
-                <Text className="ml-1 text-[13px] font-bold text-brand-dark">
+                <Ionicons name="arrow-back" size={17} color="#1A1D1F" />
+                <Text className="ml-1.5 text-[13px] font-bold text-brand-dark">
                   Back
                 </Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               onPress={handleNextStep}
               disabled={isSaving}
-              className="h-12 flex-1 flex-row items-center justify-center rounded-xl bg-primary shadow-sm"
+              className="h-12 flex-1 flex-row items-center justify-center rounded-xl overflow-hidden shadow-sm relative"
             >
+              <ButtonTexture variant="greenish" borderRadius={12} />
               {isSaving ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
+                <View className="flex-row items-center gap-2">
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text className="text-[14px] font-black text-white">Saving...</Text>
+                </View>
               ) : currentStep < STEPS.length ? (
-                <>
-                  <Text className="mr-1 text-[14px] font-bold text-white">
+                <View className="flex-row items-center">
+                  <Text className="mr-1.5 text-[14px] font-black text-white">
                     Next: {STEPS[currentStep].title}
                   </Text>
                   <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
-                </>
+                </View>
               ) : (
-                <>
+                <View className="flex-row items-center">
                   <Ionicons
-                    name="save-outline"
-                    size={18}
+                    name="checkmark-circle-outline"
+                    size={19}
                     color="#FFFFFF"
                     style={{ marginRight: 6 }}
                   />
-                  <Text className="text-[15px] font-bold text-white">
+                  <Text className="text-[15px] font-black text-white">
                     Save Tailor Profile
                   </Text>
-                </>
+                </View>
               )}
             </TouchableOpacity>
           </View>
@@ -1170,9 +1189,9 @@ export default function TailorProfileSetupScreen() {
               activeOpacity={0.7}
               onPress={handleSave}
               disabled={isSaving}
-              className="mt-3 py-2 items-center justify-center"
+              className="mt-3.5 py-2 items-center justify-center"
             >
-              <Text className="text-[12px] font-bold text-primary">
+              <Text className="text-[13px] font-bold text-primary">
                 Quick Save All Changes Now
               </Text>
             </TouchableOpacity>

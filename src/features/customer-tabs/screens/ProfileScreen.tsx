@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -37,6 +37,7 @@ import { useMeasurements } from "../../measurements-community-checkout/hooks/use
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const authLoading = useAuthStore((state) => state.isLoading);
   const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
@@ -106,8 +107,19 @@ export default function ProfileScreen() {
           storage.setUser(updatedUser).catch(() => {});
         }
       })
-      .catch(() => {
-        // Ignore network errors on background refresh
+      .catch((err: any) => {
+        const status = err?.status || err?.response?.status;
+        const msg = String(err?.message || "").toLowerCase();
+        if (
+          status === 401 ||
+          msg.includes("unauthorized") ||
+          msg.includes("jwt") ||
+          msg.includes("invalid token")
+        ) {
+          logout().then(() => {
+            router.replace("/auth/login" as any);
+          });
+        }
       })
       .finally(() => {
         if (isMounted) {
@@ -118,34 +130,30 @@ export default function ProfileScreen() {
     return () => {
       isMounted = false;
     };
-  }, [user, setUser]);
+  }, [user, setUser, logout]);
+
+  useEffect(() => {
+    if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+      router.replace("/auth/login" as any);
+    }
+  }, [user, isAuthenticated, authLoading]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+        router.replace("/auth/login" as any);
+        return;
+      }
+      const cleanup = fetchFreshUser();
+      return cleanup;
+    }, [fetchFreshUser, user, isAuthenticated, authLoading])
+  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
       await Promise.allSettled([
-        usersApi.getMe().then((res) => {
-          if (res.data) {
-            const serverUser = res.data;
-            const actualAvatar =
-              serverUser.avatar_url ||
-              serverUser.avatarUrl ||
-              serverUser.avatar ||
-              (serverUser as any).image ||
-              (serverUser as any).imageUrl ||
-              user?.avatar_url ||
-              user?.avatarUrl;
-            const updatedUser: User = {
-              ...(user || {}),
-              ...serverUser,
-              avatar_url: actualAvatar,
-              avatarUrl: actualAvatar,
-              avatar: actualAvatar,
-            };
-            setUser(updatedUser);
-            storage.setUser(updatedUser).catch(() => {});
-          }
-        }),
+        fetchFreshUser(),
         refreshOrders?.(),
         refreshAppointments?.(),
         refreshDesigns?.(),
@@ -155,13 +163,6 @@ export default function ProfileScreen() {
       setIsRefreshing(false);
     }
   };
-
-  useFocusEffect(
-    useCallback(() => {
-      const cleanup = fetchFreshUser();
-      return cleanup;
-    }, [fetchFreshUser])
-  );
 
   const openEditModal = () => {
     setEditName(user?.fullName || user?.name || "");
@@ -185,61 +186,46 @@ export default function ProfileScreen() {
         address: editAddress.trim(),
       };
 
+      if (!user || user.id === "guest" || user.id?.startsWith("guest")) {
+        router.replace("/auth/login" as any);
+        return;
+      }
+
       const res = await usersApi.updateProfile(payload);
       const updatedData = res.data || payload;
 
-      const updatedUser: User = user
-        ? {
-            ...user,
-            ...updatedData,
-            fullName: editName.trim(),
-            name: editName.trim(),
-            phone: editPhone.trim(),
-            address: editAddress.trim(),
-          }
-        : {
-            id: "guest",
-            email: "customer@suidhaga.app",
-            role: "customer" as const,
-            fullName: editName.trim(),
-            name: editName.trim(),
-            phone: editPhone.trim(),
-            address: editAddress.trim(),
-          };
+      const updatedUser: User = {
+        ...user,
+        ...updatedData,
+        fullName: editName.trim(),
+        name: editName.trim(),
+        phone: editPhone.trim(),
+        address: editAddress.trim(),
+      };
 
       setUser(updatedUser);
       await storage.setUser(updatedUser).catch(() => {});
       setIsEditModalVisible(false);
       Alert.alert("Success", "Profile updated successfully!");
     } catch (err: any) {
-      // Fallback local update if API endpoint returns 404/500
-      const updatedUser: User = user
-        ? {
-            ...user,
-            fullName: editName.trim(),
-            name: editName.trim(),
-            phone: editPhone.trim(),
-            address: editAddress.trim(),
-          }
-        : {
-            id: "guest",
-            email: "customer@suidhaga.app",
-            role: "customer" as const,
-            fullName: editName.trim(),
-            name: editName.trim(),
-            phone: editPhone.trim(),
-            address: editAddress.trim(),
-          };
-      setUser(updatedUser);
-      await storage.setUser(updatedUser).catch(() => {});
-      setIsEditModalVisible(false);
-      Alert.alert(
-        "Profile Saved",
-        "Your profile changes have been saved to your device."
-      );
+      if (user && user.id !== "guest" && !user.id?.startsWith("guest")) {
+        const updatedUser: User = {
+          ...user,
+          fullName: editName.trim(),
+          name: editName.trim(),
+          phone: editPhone.trim(),
+          address: editAddress.trim(),
+        };
+        setUser(updatedUser);
+        await storage.setUser(updatedUser).catch(() => {});
+        setIsEditModalVisible(false);
+        Alert.alert(
+          "Profile Saved",
+          "Your profile changes have been saved to your device."
+        );
+      }
     } finally {
       setIsSavingProfile(false);
-
     }
   };
 
@@ -267,27 +253,21 @@ export default function ProfileScreen() {
         const asset = result.assets[0];
         setIsUploading(true);
 
+        if (!user || user.id === "guest" || user.id?.startsWith("guest")) {
+          router.replace("/auth/login" as any);
+          return;
+        }
+
         try {
           const res = await usersApi.uploadAvatar(asset);
           const newAvatarUrl = extractAvatarUrl(res.data) || asset.uri;
 
-          const updatedUser: User = user
-            ? {
-                ...user,
-                avatar: newAvatarUrl,
-                avatarUrl: newAvatarUrl,
-                avatar_url: newAvatarUrl,
-              }
-            : {
-                id: "guest",
-                email: "guest@suidhaga.app",
-                name: "Guest User",
-                fullName: "Guest User",
-                role: "customer" as const,
-                avatar: newAvatarUrl,
-                avatarUrl: newAvatarUrl,
-                avatar_url: newAvatarUrl,
-              };
+          const updatedUser: User = {
+            ...user,
+            avatar: newAvatarUrl,
+            avatarUrl: newAvatarUrl,
+            avatar_url: newAvatarUrl,
+          };
 
           setUser(updatedUser);
           await storage.setUser(updatedUser).catch(() => {});
@@ -295,23 +275,12 @@ export default function ProfileScreen() {
         } catch (uploadErr: any) {
           // Fallback to local image preview so user sees their chosen avatar immediately
           const localAvatarUri = asset.uri;
-          const updatedUser: User = user
-            ? {
-                ...user,
-                avatar: localAvatarUri,
-                avatarUrl: localAvatarUri,
-                avatar_url: localAvatarUri,
-              }
-            : {
-                id: "guest",
-                email: "guest@suidhaga.app",
-                name: "Guest User",
-                fullName: "Guest User",
-                role: "customer" as const,
-                avatar: localAvatarUri,
-                avatarUrl: localAvatarUri,
-                avatar_url: localAvatarUri,
-              };
+          const updatedUser: User = {
+            ...user,
+            avatar: localAvatarUri,
+            avatarUrl: localAvatarUri,
+            avatar_url: localAvatarUri,
+          };
 
           setUser(updatedUser);
           await storage.setUser(updatedUser).catch(() => {});
@@ -350,14 +319,29 @@ export default function ProfileScreen() {
     );
   };
 
-  const emailPrefix = user?.email ? user.email.split("@")[0] : "Customer";
+  const isUnauthenticated =
+    !user ||
+    !isAuthenticated ||
+    user.id === "guest" ||
+    user.id?.startsWith("guest");
+
+  if (isUnauthenticated) {
+    return (
+      <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Profile" />}>
+        <CustomerProfileSkeleton />
+      </CustomerTabShell>
+    );
+  }
+
+  const emailPrefix = user?.email ? user.email.split("@")[0] : "";
   const displayName =
     user?.fullName?.trim() ||
     user?.name?.trim() ||
-    emailPrefix;
-  const displayEmail = user?.email || "customer@suidhaga.app";
-  const displayPhone = user?.phone || "+91 (Not configured)";
-  const displayAddress = user?.address || "Address not provided yet";
+    emailPrefix ||
+    "User";
+  const displayEmail = user?.email || "";
+  const displayPhone = user?.phone || "";
+  const displayAddress = user?.address || "";
 
   const avatarUri =
     user?.avatar_url ||
@@ -377,7 +361,7 @@ export default function ProfileScreen() {
   };
   const initials = getInitials(displayName);
 
-  const showSkeleton = !user || (authLoading && !user) || (isInitialLoading && !user);
+  const showSkeleton = authLoading || isInitialLoading;
 
   return (
     <CustomerTabShell

@@ -48,7 +48,12 @@ export function AuthRequiredModal() {
   const isLoading = useAuthStore((state) => state.isLoading);
 
   const isAuthPage = isAuthRoute(pathname, segments);
-  const isUnauthenticated = !isAuthenticated || !user;
+  const isUnauthenticated =
+    !isAuthenticated ||
+    !user ||
+    !user.id ||
+    user.id === "guest" ||
+    user.id.startsWith("guest");
 
   useEffect(() => {
     // When authentication check is complete and user is unauthenticated on a protected page,

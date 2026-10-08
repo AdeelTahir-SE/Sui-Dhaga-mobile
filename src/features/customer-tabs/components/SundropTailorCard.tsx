@@ -25,36 +25,38 @@ export type SundropTailorCardProps = {
   startingPrice?: string | number;
 };
 
-export function SundropTailorCard({
-  id,
-  name,
-  rating,
-  distance,
-  specialty,
-  specialties,
-  image,
-  topRated,
-  verified = true,
-  isVerified = true,
-  experienceYears,
-  city,
-  address,
-  distanceKm,
-  reviewsCount,
-  onPress,
-  price,
-  startingPrice,
-}: SundropTailorCardProps) {
+export function SundropTailorCard(props: SundropTailorCardProps) {
+  const {
+    id,
+    name,
+    rating,
+    distance,
+    specialty,
+    specialties,
+    image,
+    topRated,
+    verified = true,
+    isVerified = true,
+    experienceYears,
+    city,
+    address,
+    distanceKm,
+    reviewsCount,
+    onPress,
+    price,
+    startingPrice,
+  } = props;
   const [imageError, setImageError] = useState(false);
   const isTailorVerified = verified || isVerified;
 
   const handleCardPress = () => {
     if (onPress) {
       onPress();
-    } else if (id) {
-      router.push(`/tailors/${id}` as any);
-    } else {
-      router.push("/tailors/rekha-tailors" as any);
+      return;
+    }
+    const targetId = id || (props as any).tailorId || (props as any).userId;
+    if (targetId) {
+      router.push(`/tailors/${targetId}` as any);
     }
   };
 

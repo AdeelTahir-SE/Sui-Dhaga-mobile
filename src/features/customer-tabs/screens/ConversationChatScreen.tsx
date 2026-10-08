@@ -30,6 +30,7 @@ import {
   isAudioAttachment,
 } from "../../../api/conversations.api";
 import { usersApi } from "../../../api/users.api";
+import { tailorsApi } from "../../../api/tailors.api";
 import { CONFIG } from "../../../constants/config";
 import { usePresence } from "../../../hooks/usePresence";
 import {
@@ -317,6 +318,8 @@ export default function ConversationChatScreen() {
   const [conversation, setConversation] = useState<ConversationItem | null>(
     null,
   );
+  const [fetchedParticipant, setFetchedParticipant] = useState<any>(null);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [inputText, setInputText] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<string[]>([]);
@@ -1213,46 +1216,55 @@ export default function ConversationChatScreen() {
   const curUserId = currentUser?.id ? String(currentUser.id).toLowerCase() : "";
 
   // 1. Resolve other participant profile object if available in conversation data
+  const rawP = Array.isArray(conversation?.participant) ? conversation.participant[0] : conversation?.participant;
+  const rawP1 = Array.isArray(conversation?.participant1) ? conversation.participant1[0] : conversation?.participant1;
+  const rawP2 = Array.isArray(conversation?.participant2) ? conversation.participant2[0] : conversation?.participant2;
+
   let otherParticipantProfile: any = null;
   if (
-    conversation?.participant &&
+    rawP &&
     String(
-      conversation.participant.id ||
-        conversation.participant._id ||
-        conversation.participant.user_id ||
-        conversation.participant.userId ||
+      rawP.id ||
+        rawP._id ||
+        rawP.user_id ||
+        rawP.userId ||
         "",
     ).toLowerCase() !== curUserId
   ) {
-    otherParticipantProfile = conversation.participant;
+    otherParticipantProfile = rawP;
   } else if (
-    conversation?.participant1 &&
+    rawP1 &&
     String(
-      conversation.participant1.id ||
-        conversation.participant1._id ||
-        conversation.participant1_id ||
+      rawP1.id ||
+        rawP1._id ||
+        rawP1.user_id ||
+        rawP1.userId ||
+        conversation?.participant1_id ||
         "",
     ).toLowerCase() !== curUserId
   ) {
-    otherParticipantProfile = conversation.participant1;
+    otherParticipantProfile = rawP1;
   } else if (
-    conversation?.participant2 &&
+    rawP2 &&
     String(
-      conversation.participant2.id ||
-        conversation.participant2._id ||
-        conversation.participant2_id ||
+      rawP2.id ||
+        rawP2._id ||
+        rawP2.user_id ||
+        rawP2.userId ||
+        conversation?.participant2_id ||
         "",
     ).toLowerCase() !== curUserId
   ) {
-    otherParticipantProfile = conversation.participant2;
+    otherParticipantProfile = rawP2;
   } else if (
     Array.isArray(conversation?.participants) &&
     conversation.participants.length > 0
   ) {
     otherParticipantProfile =
       conversation.participants.find((p: any) => {
+        const itemP = Array.isArray(p) ? p[0] : p;
         const pId = String(
-          p?.id || p?._id || p?.userId || p?.user_id || "",
+          itemP?.id || itemP?._id || itemP?.userId || itemP?.user_id || "",
         ).toLowerCase();
         return pId && pId !== curUserId;
       }) || null;
@@ -1318,6 +1330,7 @@ export default function ConversationChatScreen() {
 
   const resolvedOtherParticipant =
     otherParticipantProfile ||
+    fetchedParticipant ||
     ({
       id: otherUserId,
       name: params.name || (isTailor ? "Client" : "Tailor"),
@@ -1329,23 +1342,98 @@ export default function ConversationChatScreen() {
   const participant = resolvedOtherParticipant;
 
   const participantName =
-    participant.fullName ||
-    participant.full_name ||
-    participant.name ||
+    participant?.fullName ||
+    participant?.full_name ||
+    participant?.name ||
     params.name ||
-    participant.shopName ||
-    participant.shop_name ||
+    participant?.shopName ||
+    participant?.shop_name ||
+    fetchedParticipant?.fullName ||
+    fetchedParticipant?.full_name ||
+    fetchedParticipant?.name ||
     (isTailor ? "Client" : "Tailor");
 
-  const avatarUrl =
-    participant.avatarUrl ||
-    participant.avatar_url ||
-    participant.avatar ||
-    participant.imageUrl ||
-    participant.image_url ||
-    participant.image ||
-    participant.profileImage ||
+  const resolveCleanAvatar = (url: any): string | null => {
+    if (!url || typeof url !== "string") return null;
+    const trimmed = url.trim();
+    if (!trimmed || trimmed === "null" || trimmed === "undefined") return null;
+    if (
+      trimmed.startsWith("http://") ||
+      trimmed.startsWith("https://") ||
+      trimmed.startsWith("data:") ||
+      trimmed.startsWith("blob:")
+    ) {
+      return trimmed;
+    }
+    const backendBase = (
+      process.env.EXPO_PUBLIC_BACKEND_URL ||
+      process.env.EXPO_PUBLIC_API_URL ||
+      "https://sui-dhaga-backend.vercel.app"
+    ).replace(/\/+$/, "");
+    return `${backendBase}${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
+  };
+
+  const rawCandidateAvatar =
+    participant?.avatarUrl ||
+    participant?.avatar_url ||
+    participant?.avatar ||
+    participant?.imageUrl ||
+    participant?.image_url ||
+    participant?.image ||
+    participant?.profileImage ||
+    participant?.profile?.avatar_url ||
+    participant?.profile?.avatarUrl ||
+    participant?.user?.avatar_url ||
+    participant?.user?.avatarUrl ||
+    fetchedParticipant?.avatarUrl ||
+    fetchedParticipant?.avatar_url ||
+    fetchedParticipant?.avatar ||
+    fetchedParticipant?.profile?.avatar_url ||
+    fetchedParticipant?.bannerUrl ||
     params.avatar;
+
+  const avatarUrl = resolveCleanAvatar(rawCandidateAvatar);
+
+  // Proactively fetch participant details if avatarUrl is missing
+  useEffect(() => {
+    if (!otherUserId || otherUserId.toLowerCase() === curUserId) return;
+    let isMounted = true;
+
+    if (avatarUrl && avatarUrl.startsWith("http")) return;
+
+    (async () => {
+      try {
+        // Try getting user profile
+        const userRes = await usersApi.getUserById(otherUserId).catch(() => null);
+        const userData = userRes?.data;
+        if (isMounted && userData) {
+          const av = userData.avatarUrl || userData.avatar || (userData as any).avatar_url;
+          if (av) {
+            setFetchedParticipant(userData);
+            return;
+          }
+        }
+
+        // Try getting tailor profile if other is tailor
+        const tailorRes = await tailorsApi.getTailorById(otherUserId).catch(() => null);
+        const tailorData = tailorRes?.data;
+        if (isMounted && tailorData) {
+          const av =
+            tailorData.avatarUrl ||
+            tailorData.avatar ||
+            (tailorData as any).profile?.avatar_url ||
+            (tailorData as any).bannerUrl;
+          if (av) {
+            setFetchedParticipant(tailorData);
+          }
+        }
+      } catch {}
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [otherUserId, curUserId, avatarUrl]);
 
   const isBlocked = isBlockedByMe || isBlockedByOther;
 
@@ -1592,30 +1680,36 @@ export default function ConversationChatScreen() {
             <View style={{ position: "relative", marginRight: 10 }}>
               <View
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
                   overflow: "hidden",
                   alignItems: "center",
                   justifyContent: "center",
-                  borderWidth: 1,
-                  borderColor: "#EAE5DD",
+                  borderWidth: 2,
+                  borderColor: "#14919B",
                   backgroundColor: "#FFFFFF",
+                  shadowColor: "#0D7377",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 4,
+                  elevation: 3,
                 }}
               >
-                {avatarUrl ? (
+                {avatarUrl && !avatarLoadError ? (
                   <Image
                     source={{ uri: avatarUrl }}
-                    style={{ width: 40, height: 40, borderRadius: 20 }}
+                    style={{ width: 44, height: 44, borderRadius: 22 }}
                     contentFit="cover"
                     transition={200}
+                    onError={() => setAvatarLoadError(true)}
                   />
                 ) : (
                   <View
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 20,
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
                       backgroundColor: "#E0F7F7",
                       alignItems: "center",
                       justifyContent: "center",
@@ -1623,9 +1717,9 @@ export default function ConversationChatScreen() {
                   >
                     <Text
                       style={{
-                        fontSize: 15,
+                        fontSize: 16,
                         fontWeight: "800",
-                        color: "#14919B",
+                        color: "#0D7377",
                       }}
                     >
                       {participantName.charAt(0).toUpperCase()}
@@ -1637,13 +1731,13 @@ export default function ConversationChatScreen() {
               <View
                 style={{
                   position: "absolute",
-                  bottom: 0,
-                  right: 0,
-                  width: 11,
-                  height: 11,
-                  borderRadius: 5.5,
-                  backgroundColor: isOtherOnline ? "#22C55E" : "#94A3B8",
-                  borderWidth: 2,
+                  bottom: -1,
+                  right: -1,
+                  width: 13,
+                  height: 13,
+                  borderRadius: 6.5,
+                  backgroundColor: isOtherOnline ? "#10B981" : "#94A3B8",
+                  borderWidth: 2.5,
                   borderColor: "#FFFFFF",
                 }}
               />
@@ -2185,13 +2279,14 @@ export default function ConversationChatScreen() {
 
                   const attachments = extractMessageAttachments(item);
 
-                  const messageAvatar =
+                  const rawMsgAvatar =
                     (item as any).senderAvatar ||
                     (item as any).sender_avatar ||
                     (item as any).sender?.avatar_url ||
                     (item as any).sender?.avatarUrl ||
                     (item as any).sender?.avatar ||
                     avatarUrl;
+                  const messageAvatar = resolveCleanAvatar(rawMsgAvatar) || avatarUrl;
 
                   const itemDate = item.createdAt || (item as any).created_at;
                   const currDateDivider = getMessageDateDivider(itemDate);
@@ -2271,7 +2366,7 @@ export default function ConversationChatScreen() {
                           marginBottom: isSameSenderAsNext ? 4 : 12,
                         }}
                       >
-                        {/* Incoming person avatar with realtime online presence dot */}
+                        {/* Incoming person avatar */}
                         {!isOutgoing && (
                           <View
                             style={{
@@ -2282,15 +2377,20 @@ export default function ConversationChatScreen() {
                           >
                             <View
                               style={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 14,
+                                width: 32,
+                                height: 32,
+                                borderRadius: 16,
                                 overflow: "hidden",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                borderWidth: 1,
-                                borderColor: "#EAE5DD",
+                                borderWidth: 1.5,
+                                borderColor: "#14919B",
                                 backgroundColor: "#FFFFFF",
+                                shadowColor: "#0D7377",
+                                shadowOffset: { width: 0, height: 1 },
+                                shadowOpacity: 0.1,
+                                shadowRadius: 2,
+                                elevation: 2,
                               }}
                             >
                               {!isSameSenderAsNext ? (
@@ -2298,9 +2398,9 @@ export default function ConversationChatScreen() {
                                   <Image
                                     source={{ uri: messageAvatar }}
                                     style={{
-                                      width: 28,
-                                      height: 28,
-                                      borderRadius: 14,
+                                      width: 32,
+                                      height: 32,
+                                      borderRadius: 16,
                                     }}
                                     contentFit="cover"
                                     transition={200}
@@ -2308,9 +2408,9 @@ export default function ConversationChatScreen() {
                                 ) : (
                                   <View
                                     style={{
-                                      width: 28,
-                                      height: 28,
-                                      borderRadius: 14,
+                                      width: 32,
+                                      height: 32,
+                                      borderRadius: 16,
                                       backgroundColor: "#E0F7F7",
                                       alignItems: "center",
                                       justifyContent: "center",
@@ -2318,9 +2418,9 @@ export default function ConversationChatScreen() {
                                   >
                                     <Text
                                       style={{
-                                        fontSize: 11,
+                                        fontSize: 13,
                                         fontWeight: "800",
-                                        color: "#14919B",
+                                        color: "#0D7377",
                                       }}
                                     >
                                       {participantName.charAt(0).toUpperCase()}
@@ -2328,7 +2428,7 @@ export default function ConversationChatScreen() {
                                   </View>
                                 )
                               ) : (
-                                <View style={{ width: 28, height: 28 }} />
+                                <View style={{ width: 32, height: 32 }} />
                               )}
                             </View>
 

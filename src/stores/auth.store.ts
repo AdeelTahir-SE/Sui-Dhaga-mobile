@@ -210,19 +210,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       const token = await storage.getToken();
       const savedUser = await storage.getUser();
 
-      if (!token && !savedUser) {
+      // If there is no token or no saved user, or if savedUser is a placeholder guest
+      if (!token || !savedUser || !savedUser.id || savedUser.id === 'guest' || savedUser.id.startsWith('guest')) {
+        await storage.removeToken().catch(() => {});
+        await storage.removeRefreshToken().catch(() => {});
+        await storage.removeUser().catch(() => {});
         set({ user: null, token: null, isAuthenticated: false, isLoading: false });
         return;
       }
 
-      // Immediately restore authentication from local storage so the user remains logged in
-      if (savedUser) {
-        set({ token, user: savedUser, isAuthenticated: true });
-      } else if (token) {
-        set({ token, isAuthenticated: true });
-      }
+      // Temporarily restore authentication from local storage
+      set({ token, user: savedUser, isAuthenticated: true });
 
-      // Try background refresh of profile if network is available
+      // Verify and refresh profile from backend
       try {
         const res = await authApi.getMe();
         const extracted = extractAuthData(res) || (res.data ? { token: token || '', user: res.data } : null);
@@ -230,8 +230,23 @@ export const useAuthStore = create<AuthState>((set) => ({
           await storage.setUser(extracted.user);
           set({ user: extracted.user, isAuthenticated: true });
         }
-      } catch {
-        // If offline or network error, retain the saved user session
+      } catch (err: any) {
+        const status = err?.status || err?.response?.status;
+        const msg = String(err?.message || '').toLowerCase();
+        if (
+          status === 401 ||
+          msg.includes('unauthorized') ||
+          msg.includes('jwt') ||
+          msg.includes('invalid token') ||
+          msg.includes('token expired') ||
+          msg.includes('not authenticated')
+        ) {
+          await storage.removeToken().catch(() => {});
+          await storage.removeRefreshToken().catch(() => {});
+          await storage.removeUser().catch(() => {});
+          set({ user: null, token: null, isAuthenticated: false });
+        }
+        // If true network failure/offline, retain saved session for offline support
       }
     } catch {
       // Do not clear user on transient storage errors
@@ -611,5 +626,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 }));
 
 onAuthExpired(() => {
-  // Deliberately no-op: user remains logged in at all times until specifically clicking Log Out in Settings.
+  const { isAuthenticated, logout } = useAuthStore.getState();
+  if (isAuthenticated) {
+    logout().catch(() => {});
+  }
 });

@@ -56,6 +56,14 @@ const PRESET_TAGS = [
 export default function CommunityProfileScreen() {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authLoading = useAuthStore((state) => state.isLoading);
+
+  useEffect(() => {
+    if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+      router.replace("/auth/login" as any);
+    }
+  }, [user, isAuthenticated, authLoading]);
 
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -286,6 +294,31 @@ export default function CommunityProfileScreen() {
     );
   };
 
+  const isUnauthenticated =
+    !user ||
+    !isAuthenticated ||
+    user.id === "guest" ||
+    user.id?.startsWith("guest");
+
+  if (isUnauthenticated) {
+    return (
+      <MccScreenShell
+        header={
+          <MccHeader
+            title="Community Profile"
+            showBack
+            titleClassName="text-[18px] font-bold text-brand-dark"
+            hideRight
+          />
+        }
+      >
+        <View className="px-4 pt-2">
+          <CommunityProfileSkeleton />
+        </View>
+      </MccScreenShell>
+    );
+  }
+
   return (
     <MccScreenShell
       header={
@@ -362,12 +395,14 @@ export default function CommunityProfileScreen() {
                 </View>
 
                 <Text className="mt-0.5 text-[12.5px] font-medium text-slate-500" numberOfLines={1}>
-                  {user?.email || "Sui Dhaga Creator"}
+                  {user?.email || ""}
                 </Text>
 
-                <Text className="mt-1 text-[11.5px] font-medium text-slate-500" numberOfLines={1}>
-                  {user?.city ? `📍 ${user.city}` : "Bespoke Fashion Enthusiast"}
-                </Text>
+                {user?.city ? (
+                  <Text className="mt-1 text-[11.5px] font-medium text-slate-500" numberOfLines={1}>
+                    📍 {user.city}
+                  </Text>
+                ) : null}
               </View>
             </View>
 

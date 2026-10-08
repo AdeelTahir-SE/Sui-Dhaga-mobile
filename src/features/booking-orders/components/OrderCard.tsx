@@ -118,7 +118,6 @@ export function OrderCard({
     };
   }, [isCompleted, isCancelled, isConfirmed, status]);
 
-  // Meaningful human-friendly timeline from the user's perspective
   const timelineInfo = useMemo(() => {
     if (isCompleted) {
       if (delivery && !delivery.toLowerCase().includes("progress")) {
@@ -126,17 +125,17 @@ export function OrderCard({
         return {
           text: cleanDate ? `Delivered on ${cleanDate}` : "Delivered safely",
           icon: "checkmark-circle-outline" as const,
-          color: "#059669",
-          bg: "#F0FDF4",
-          border: "#BBF7D0",
+          color: "#64748B",
+          bg: "transparent",
+          border: "transparent",
         };
       }
       return {
         text: "Delivered safely",
         icon: "checkmark-circle-outline" as const,
-        color: "#059669",
-        bg: "#F0FDF4",
-        border: "#BBF7D0",
+        color: "#64748B",
+        bg: "transparent",
+        border: "transparent",
       };
     }
     if (isCancelled) {
@@ -292,10 +291,12 @@ export function OrderCard({
           <View
             style={[
               styles.timelineBanner,
-              {
-                backgroundColor: timelineInfo.bg,
-                borderColor: timelineInfo.border,
-              },
+              isCompleted
+                ? styles.timelineDeliveredPlain
+                : {
+                    backgroundColor: timelineInfo.bg,
+                    borderColor: timelineInfo.border,
+                  },
             ]}
           >
             <Ionicons
@@ -304,7 +305,11 @@ export function OrderCard({
               color={timelineInfo.color}
             />
             <Text
-              style={[styles.timelineText, { color: timelineInfo.color }]}
+              style={[
+                styles.timelineText,
+                { color: timelineInfo.color },
+                isCompleted ? styles.timelineDeliveredText : null,
+              ]}
               numberOfLines={1}
             >
               {timelineInfo.text}
@@ -468,9 +473,22 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     maxWidth: "100%",
   },
+  timelineDeliveredPlain: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 2,
+    marginTop: 6,
+  },
   timelineText: {
     fontSize: 11,
     fontWeight: "600",
+  },
+  timelineDeliveredText: {
+    color: "#64748B",
+    fontSize: 12,
+    fontWeight: "500",
   },
   tagsWrap: {
     flexDirection: "row",

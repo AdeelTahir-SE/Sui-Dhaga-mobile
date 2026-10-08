@@ -30,7 +30,7 @@ export default function Index() {
   }
 
   // Once checked, if user is already logged in, route directly into the app
-  if (isAuthenticated && user) {
+  if (isAuthenticated && user && user.id && user.id !== "guest" && !user.id.startsWith("guest")) {
     if (user.role === "tailor") {
       return <Redirect href="/tailor-dashboard" />;
     }

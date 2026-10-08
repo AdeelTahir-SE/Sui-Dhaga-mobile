@@ -387,9 +387,10 @@ export function onAuthExpired(callback: AuthExpiredCallback) {
   authExpiredListener = callback;
 }
 
-function handleAuthExpirationIfNeeded(status: number, message: string) {
-  // Never automatically log out or wipe user credentials without user action.
-  // Sessions persist until the user explicitly selects "Log Out" in settings.
+function handleAuthExpirationIfNeeded(status: number, message?: string) {
+  if (status === 401) {
+    authExpiredListener?.();
+  }
 }
 
 export async function apiClient<T = any>(endpoint: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
@@ -556,6 +557,7 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
       }
 
       const errorMessage = extractErrorMessage(data, response.status);
+      handleAuthExpirationIfNeeded(response.status, errorMessage);
       throw new ApiError(errorMessage, response.status, data);
     }
 

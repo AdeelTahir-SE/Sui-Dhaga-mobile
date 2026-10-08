@@ -24,19 +24,20 @@ type TailorListCardProps = {
   startingPrice?: string | number;
 };
 
-export const TailorListCard = memo(function TailorListCard({
-  id,
-  image,
-  name,
-  rating,
-  distance,
-  specialty,
-  tone = "coral",
-  topRated,
-  onPress,
-  price,
-  startingPrice,
-}: TailorListCardProps) {
+export const TailorListCard = memo(function TailorListCard(props: TailorListCardProps) {
+  const {
+    id,
+    image,
+    name,
+    rating,
+    distance,
+    specialty,
+    tone = "coral",
+    topRated,
+    onPress,
+    price,
+    startingPrice,
+  } = props;
   const [isFavorite, setIsFavorite] = useState(false);
 
   const handleToggleFavorite = () => {
@@ -48,10 +49,11 @@ export const TailorListCard = memo(function TailorListCard({
     lightHaptic();
     if (onPress) {
       onPress();
-    } else if (id) {
-      router.push(`/tailors/${id}` as any);
-    } else {
-      router.push("/tailors/rekha-tailors" as any);
+      return;
+    }
+    const targetId = id || (props as any).tailorId || (props as any).userId;
+    if (targetId) {
+      router.push(`/tailors/${targetId}` as any);
     }
   };
 
