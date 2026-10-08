@@ -107,12 +107,53 @@ export default function ProfileScreen() {
       })
       .catch(() => {
         // Ignore network errors on background refresh
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsInitialLoading(false);
+        }
       });
 
     return () => {
       isMounted = false;
     };
   }, [user, setUser]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.allSettled([
+        usersApi.getMe().then((res) => {
+          if (res.data) {
+            const serverUser = res.data;
+            const actualAvatar =
+              serverUser.avatar_url ||
+              serverUser.avatarUrl ||
+              serverUser.avatar ||
+              (serverUser as any).image ||
+              (serverUser as any).imageUrl ||
+              user?.avatar_url ||
+              user?.avatarUrl;
+            const updatedUser: User = {
+              ...(user || {}),
+              ...serverUser,
+              avatar_url: actualAvatar,
+              avatarUrl: actualAvatar,
+              avatar: actualAvatar,
+            };
+            setUser(updatedUser);
+            storage.setUser(updatedUser).catch(() => {});
+          }
+        }),
+        refreshOrders?.(),
+        refreshAppointments?.(),
+        refreshDesigns?.(),
+        refreshMeasurements?.(),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -335,8 +376,20 @@ export default function ProfileScreen() {
   };
   const initials = getInitials(displayName);
 
+  const showSkeleton = !user || (authLoading && !user) || (isInitialLoading && !user);
+
   return (
-    <CustomerTabShell bottomTabs={<CustomerTabsPreview active="Profile" />}>
+    <CustomerTabShell
+      bottomTabs={<CustomerTabsPreview active="Profile" />}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          tintColor="#14919B"
+          colors={["#14919B"]}
+        />
+      }
+    >
       {/* Top Header Bar */}
       <View className="px-5 pt-3 pb-2">
         <Text className="text-[24px] font-black tracking-tight text-brand-dark">
@@ -347,7 +400,10 @@ export default function ProfileScreen() {
         </Text>
       </View>
 
-      <View className="px-5 pt-3 pb-8">
+      {showSkeleton ? (
+        <CustomerProfileSkeleton />
+      ) : (
+        <View className="px-5 pt-3 pb-8">
         {/* Main Profile Card */}
         <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs">
           <View className="flex-row items-center">
@@ -533,6 +589,7 @@ export default function ProfileScreen() {
           Sui Dhaga • v{Constants.expoConfig?.version || "1.0.0"}
         </Text>
       </View>
+      )}
 
       {/* Edit Profile Modal */}
       <Modal

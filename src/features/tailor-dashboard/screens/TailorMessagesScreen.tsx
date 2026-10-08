@@ -335,7 +335,7 @@ export default function TailorMessagesScreen() {
               {/* Header */}
               <View className="flex-row items-center justify-between pb-3">
                 <View className="flex-row items-center flex-1">
-                  <View className="h-10 w-10 items-center justify-center rounded-md bg-[#E0F7F7] mr-3">
+                  <View className="h-10 w-10 items-center justify-center rounded-xl bg-[#E0F7F7] mr-3">
                     <Ionicons name="filter" size={20} color="#14919B" />
                   </View>
                   <View className="flex-1">
@@ -349,7 +349,7 @@ export default function TailorMessagesScreen() {
                 </View>
                 <TouchableOpacity
                   onPress={() => setIsFilterModalVisible(false)}
-                  className="h-8 w-8 items-center justify-center rounded-md bg-slate-100 active:bg-slate-200"
+                  className="h-8 w-8 items-center justify-center rounded-xl bg-slate-100 active:bg-slate-200"
                 >
                   <Ionicons name="close" size={18} color="#64748B" />
                 </TouchableOpacity>
@@ -372,7 +372,7 @@ export default function TailorMessagesScreen() {
                         key={opt.label}
                         onPress={() => setSelectedFilter(opt.value)}
                         activeOpacity={0.75}
-                        className="flex-row items-center rounded-md p-3.5"
+                        className="flex-row items-center rounded-xl p-3.5"
                         style={{
                           backgroundColor: isSelected ? "#F0FAFA" : "#FFFFFF",
                           borderWidth: isSelected ? 2 : 1,
@@ -380,7 +380,7 @@ export default function TailorMessagesScreen() {
                         }}
                       >
                         <View
-                          className="h-10 w-10 items-center justify-center rounded-md mr-3"
+                          className="h-10 w-10 items-center justify-center rounded-xl mr-3"
                           style={{
                             backgroundColor: isSelected ? "#14919B" : "#F0FAFA",
                           }}
@@ -435,10 +435,10 @@ export default function TailorMessagesScreen() {
                               isSelected ? "text-[#14919B]" : "text-slate-400"
                             }`}
                           >
-                            {count} {count === 1 ? "chat" : "chats"}
+                            {count} {count === 1 ? "inquiry" : "inquiries"}
                           </Text>
                           <View
-                            className="h-5 w-5 rounded-md items-center justify-center"
+                            className="h-5 w-5 rounded-full items-center justify-center"
                             style={{
                               backgroundColor: isSelected
                                 ? "#14919B"
@@ -450,7 +450,7 @@ export default function TailorMessagesScreen() {
                             {isSelected && (
                               <Ionicons
                                 name="checkmark"
-                                size={13}
+                                size={12}
                                 color="#FFFFFF"
                               />
                             )}
@@ -473,7 +473,7 @@ export default function TailorMessagesScreen() {
                     setActiveFilter(null);
                   }}
                   activeOpacity={0.7}
-                  className="h-[50px] px-5 flex-1 items-center justify-center rounded-md bg-white shadow-xs"
+                  className="h-[50px] px-5 flex-1 items-center justify-center rounded-xl bg-white shadow-xs"
                   style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
                 >
                   <Text className="text-[13px] font-bold text-brand-gray">
@@ -487,7 +487,7 @@ export default function TailorMessagesScreen() {
                     setActiveFilter(selectedFilter);
                   }}
                   activeOpacity={0.85}
-                  className="h-[50px] flex-1 items-center justify-center rounded-md bg-primary active:bg-primary-dark shadow-sm px-4"
+                  className="h-[50px] flex-1 items-center justify-center rounded-xl bg-primary active:bg-primary-dark shadow-sm px-4"
                 >
                   <Text className="text-[14px] font-bold text-white">
                     Show Results ({filteredConversations.length})
