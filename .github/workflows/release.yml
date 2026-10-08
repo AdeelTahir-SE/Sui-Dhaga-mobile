@@ -1,0 +1,187 @@
+name: Mobile Release (Android & iOS)
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile (production or preview)'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - preview
+      tag_name:
+        description: 'Tag name (optional, for manual runs)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Expo / EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Android APK with EAS
+        id: eas_build_android
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          PROFILE="${{ github.event.inputs.profile || 'production' }}"
+          echo "Building Android APK using profile: $PROFILE"
+          eas build --platform android --profile "$PROFILE" --non-interactive --wait --json > android-build.json
+          cat android-build.json
+
+      - name: Download Android APK
+        run: |
+          mkdir -p artifacts
+          node -e "
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync('android-build.json', 'utf8'));
+            const build = Array.isArray(data) ? data[0] : data;
+            const url = build?.artifacts?.buildUrl || build?.artifacts?.applicationArchiveUrl;
+            if (!url) {
+              console.error('No build URL found in EAS JSON output:', JSON.stringify(data, null, 2));
+              process.exit(1);
+            }
+            fs.writeFileSync('artifacts/apk_url.txt', url);
+            console.log('APK download URL resolved:', url);
+          "
+          TAG_NAME="${{ github.event.inputs.tag_name || github.ref_name }}"
+          APK_FILE="sui-dhaga-${TAG_NAME}-android.apk"
+          curl -L -f -o "artifacts/$APK_FILE" "$(cat artifacts/apk_url.txt)"
+          echo "Downloaded $APK_FILE successfully."
+          ls -lh artifacts/
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: artifacts/*.apk
+          retention-days: 7
+
+  build-ios:
+    name: Build iOS App
+    runs-on: ubuntu-latest
+    continue-on-error: true # Do not fail release pipeline if Apple credentials are not yet configured in EAS
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Expo / EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build iOS with EAS
+        id: eas_build_ios
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          PROFILE="${{ github.event.inputs.profile || 'production' }}"
+          echo "Building iOS using profile: $PROFILE"
+          eas build --platform ios --profile "$PROFILE" --non-interactive --wait --json > ios-build.json
+          cat ios-build.json
+
+      - name: Download iOS artifact
+        run: |
+          mkdir -p artifacts
+          node -e "
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync('ios-build.json', 'utf8'));
+            const build = Array.isArray(data) ? data[0] : data;
+            const url = build?.artifacts?.buildUrl || build?.artifacts?.applicationArchiveUrl;
+            if (!url) {
+              console.error('No build URL found in EAS JSON output:', JSON.stringify(data, null, 2));
+              process.exit(1);
+            }
+            fs.writeFileSync('artifacts/ios_url.txt', url);
+            console.log('iOS download URL resolved:', url);
+          "
+          TAG_NAME="${{ github.event.inputs.tag_name || github.ref_name }}"
+          curl -L -f -o "artifacts/sui-dhaga-${TAG_NAME}-ios.ipa" "$(cat artifacts/ios_url.txt)" || \
+          curl -L -f -o "artifacts/sui-dhaga-${TAG_NAME}-ios.tar.gz" "$(cat artifacts/ios_url.txt)"
+          echo "Downloaded iOS artifact successfully."
+          ls -lh artifacts/
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-archive
+          path: artifacts/*
+          retention-days: 7
+
+  create-draft-release:
+    name: Create GitHub Draft Release
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    if: always() && (needs.build-android.result == 'success' || needs.build-ios.result == 'success')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: List downloaded release assets
+        run: |
+          echo "=== Files to be attached to Draft Release ==="
+          ls -lh release-assets
+
+      - name: Create Draft Release on GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: Sui Dhaga ${{ github.event.inputs.tag_name || github.ref_name }} (Draft)
+          draft: true
+          prerelease: false
+          files: release-assets/*
+          generate_release_notes: true
+          body: |
+            ## 🧵 Sui Dhaga Release ${{ github.event.inputs.tag_name || github.ref_name }}
+
+            > ⚠️ **Draft Release — Pending Verification**
+            > This release has been built and saved as a draft. 
+            >
+            > ### 🧪 Verification Steps:
+            > 1. Download the **Android APK** (`sui-dhaga-*-android.apk`) directly from the Assets section below.
+            > 2. Install and test on your Android device (check login, AI design studio, tailor marketplace, orders).
+            > 3. Verify that all features operate as expected.
+            > 4. Once verified, click **Edit release** in the top right, and click **Publish release** to make it live for production!

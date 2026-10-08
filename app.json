@@ -18,6 +18,7 @@
       "backgroundColor": "#FFFFFF"
     },
     "ios": {
+      "bundleIdentifier": "com.suidhaga.app",
       "icon": "./assets/logos/icon.png"
     },
     "android": {
