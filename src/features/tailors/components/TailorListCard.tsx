@@ -1,3 +1,4 @@
+import { useState, useMemo, memo } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import type { ImageSource } from "expo-image";
@@ -7,6 +8,7 @@ import { RatingLine } from "./RatingLine";
 import { TailorBadge } from "./TailorBadge";
 import { TailorPlaceholder } from "./TailorPlaceholder";
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
+import { lightHaptic } from "../../../utils/haptics";
 
 type TailorListCardProps = {
   id?: string;
@@ -22,7 +24,7 @@ type TailorListCardProps = {
   startingPrice?: string | number;
 };
 
-export function TailorListCard({
+export const TailorListCard = memo(function TailorListCard({
   id,
   image,
   name,
@@ -35,7 +37,15 @@ export function TailorListCard({
   price,
   startingPrice,
 }: TailorListCardProps) {
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const handleToggleFavorite = () => {
+    lightHaptic();
+    setIsFavorite((prev) => !prev);
+  };
+
   const handleViewProfile = () => {
+    lightHaptic();
     if (onPress) {
       onPress();
     } else if (id) {
@@ -45,44 +55,48 @@ export function TailorListCard({
     }
   };
 
-  const rawVal =
-    startingPrice !== undefined && startingPrice !== null && startingPrice !== ""
-      ? startingPrice
-      : price;
+  const { hasActualPrice, formattedPrice, priceLabel } = useMemo(() => {
+    const rawVal =
+      startingPrice !== undefined && startingPrice !== null && startingPrice !== ""
+        ? startingPrice
+        : price;
 
-  let hasActualPrice = false;
-  let formattedPrice = "Pricing on request";
-  let priceLabel = "Pricing";
+    let hasActual = false;
+    let formatted = "Pricing on request";
+    let label = "Pricing";
 
-  if (rawVal !== undefined && rawVal !== null && rawVal !== "") {
-    if (typeof rawVal === "number" && rawVal > 0) {
-      hasActualPrice = true;
-      formattedPrice = `Rs. ${rawVal.toLocaleString()}`;
-      priceLabel = "Starting from";
-    } else if (typeof rawVal === "string") {
-      const trimmed = rawVal.trim();
-      const lower = trimmed.toLowerCase();
-      if (
-        lower &&
-        lower !== "0" &&
-        lower !== "rs. 0" &&
-        !lower.includes("on request") &&
-        lower !== "not set"
-      ) {
-        const numMatch = trimmed.match(/[0-9,.]+/);
-        if (numMatch) {
-          const numParsed = Number(numMatch[0].replace(/,/g, ""));
-          if (!isNaN(numParsed) && numParsed > 0) {
-            hasActualPrice = true;
-            formattedPrice = trimmed.startsWith("Rs")
-              ? trimmed
-              : `Rs. ${numParsed.toLocaleString()}`;
-            priceLabel = "Starting from";
+    if (rawVal !== undefined && rawVal !== null && rawVal !== "") {
+      if (typeof rawVal === "number" && rawVal > 0) {
+        hasActual = true;
+        formatted = `Rs. ${rawVal.toLocaleString()}`;
+        label = "Starting from";
+      } else if (typeof rawVal === "string") {
+        const trimmed = rawVal.trim();
+        const lower = trimmed.toLowerCase();
+        if (
+          lower &&
+          lower !== "0" &&
+          lower !== "rs. 0" &&
+          !lower.includes("on request") &&
+          lower !== "not set"
+        ) {
+          const numMatch = trimmed.match(/[0-9,.]+/);
+          if (numMatch) {
+            const numParsed = Number(numMatch[0].replace(/,/g, ""));
+            if (!isNaN(numParsed) && numParsed > 0) {
+              hasActual = true;
+              formatted = trimmed.startsWith("Rs")
+                ? trimmed
+                : `Rs. ${numParsed.toLocaleString()}`;
+              label = "Starting from";
+            }
           }
         }
       }
     }
-  }
+
+    return { hasActualPrice: hasActual, formattedPrice: formatted, priceLabel: label };
+  }, [price, startingPrice]);
 
   return (
     <View className="mb-3 rounded-md border border-brand-border bg-white p-3.5 shadow-xs">
@@ -93,7 +107,17 @@ export function TailorListCard({
             <Text className="text-[15px] font-bold text-brand-dark">
               {name}
             </Text>
-            <Ionicons name="heart-outline" size={21} color="#1A1D1F" />
+            <TouchableOpacity
+              onPress={handleToggleFavorite}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons
+                name={isFavorite ? "heart" : "heart-outline"}
+                size={21}
+                color={isFavorite ? "#EF4444" : "#1A1D1F"}
+              />
+            </TouchableOpacity>
           </View>
           <RatingLine rating={rating} distance={distance} />
           <Text className="mt-2 text-[12px] text-brand-gray">{specialty}</Text>
@@ -139,4 +163,4 @@ export function TailorListCard({
       </View>
     </View>
   );
-}
+});

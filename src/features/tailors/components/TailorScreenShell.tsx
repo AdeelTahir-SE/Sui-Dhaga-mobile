@@ -10,12 +10,14 @@ type TailorScreenShellProps = {
   children: React.ReactNode;
   bottomTabs?: React.ReactNode;
   fixedBottomAction?: React.ReactNode;
+  scrollable?: boolean;
 };
 
 export function TailorScreenShell({
   children,
   bottomTabs,
   fixedBottomAction,
+  scrollable = true,
 }: TailorScreenShellProps) {
   const insets = useSafeAreaInsets();
 
@@ -24,16 +26,27 @@ export function TailorScreenShell({
 
   return (
     <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingBottom: insets.bottom + tabsHeight + actionHeight + 24,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </ScrollView>
+      {scrollable ? (
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: insets.bottom + tabsHeight + actionHeight + 24,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View
+          className="flex-1"
+          style={{
+            paddingBottom: insets.bottom + tabsHeight + actionHeight,
+          }}
+        >
+          {children}
+        </View>
+      )}
 
       {fixedBottomAction ? (
         <View

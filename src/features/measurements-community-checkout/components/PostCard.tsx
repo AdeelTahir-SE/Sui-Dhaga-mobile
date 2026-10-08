@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { PlaceholderVisual } from "./PlaceholderVisual";
 import { CommunityMediaCarousel } from "./CommunityMediaCarousel";
+import { lightHaptic } from "../../../utils/haptics";
+import { DEFAULT_BLURHASH, getOptimizedImageUrl } from "../../../utils/imageOptimizer";
 
 type PostCardProps = {
   author: string;
@@ -57,6 +59,7 @@ export const PostCard = memo(function PostCard({
     // Throttle double clicks within 350ms
     if (now - lastLikeTapRef.current < 350) return;
     lastLikeTapRef.current = now;
+    lightHaptic();
 
     if (onLikePress) {
       onLikePress();
@@ -67,21 +70,25 @@ export const PostCard = memo(function PostCard({
   }, [onLikePress, isLiked]);
 
   const imageSource =
-    typeof postImage === "string" ? { uri: postImage } : postImage;
+    typeof postImage === "string"
+      ? { uri: getOptimizedImageUrl(postImage, { width: 720, quality: 75 }) }
+      : postImage;
 
   const avatarSource =
-    typeof avatarImage === "string" ? { uri: avatarImage } : avatarImage;
+    typeof avatarImage === "string"
+      ? { uri: getOptimizedImageUrl(avatarImage, { width: 120, quality: 75 }) }
+      : avatarImage;
 
   // Resolve media list for single vs carousel presentation
   const mediaList: string[] = [];
   if (images && images.length > 0) {
     images.forEach((img) => {
       if (typeof img === "string" && img.trim().length > 0) {
-        mediaList.push(img.trim());
+        mediaList.push(getOptimizedImageUrl(img.trim(), { width: 720, quality: 75 }) || img.trim());
       }
     });
   } else if (typeof postImage === "string" && postImage.trim().length > 0) {
-    mediaList.push(postImage.trim());
+    mediaList.push(getOptimizedImageUrl(postImage.trim(), { width: 720, quality: 75 }) || postImage.trim());
   }
 
   return (
@@ -98,6 +105,8 @@ export const PostCard = memo(function PostCard({
               source={avatarSource}
               contentFit="cover"
               cachePolicy="memory-disk"
+              placeholder={{ blurhash: DEFAULT_BLURHASH }}
+              transition={150}
               style={{ width: 34, height: 34, borderRadius: 17 }}
             />
           ) : (
@@ -167,6 +176,7 @@ export const PostCard = memo(function PostCard({
               source={imageSource}
               contentFit="cover"
               cachePolicy="memory-disk"
+              placeholder={{ blurhash: DEFAULT_BLURHASH }}
               style={{ height: "100%", width: "100%" }}
               transition={200}
             />

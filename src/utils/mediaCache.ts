@@ -88,6 +88,8 @@ export async function getCachedVideoUri(remoteUri?: string | null): Promise<stri
   return remoteUri;
 }
 
+import { getOptimizedImageUrl } from "./imageOptimizer";
+
 // ==================== 3. PRELOAD & PREFETCH FOR FEED ====================
 export function prefetchPostMedia(post: CommunityPost): void {
   if (!post.images || post.images.length === 0) return;
@@ -99,14 +101,16 @@ export function prefetchPostMedia(post: CommunityPost): void {
       getCachedVideoUri(uri).catch(() => {});
     } else {
       // Prefetch and cache image into disk and memory
-      ExpoImage.prefetch(uri, "memory-disk").catch(() => {});
+      const targetUri = getOptimizedImageUrl(uri, { width: 720, quality: 75 }) || uri;
+      ExpoImage.prefetch(targetUri, "memory-disk").catch(() => {});
     }
   });
 
   if (post.author?.avatarUrl || post.author?.avatar) {
     const avatar = post.author.avatarUrl || post.author.avatar;
     if (avatar) {
-      ExpoImage.prefetch(avatar, "memory-disk").catch(() => {});
+      const targetAvatar = getOptimizedImageUrl(avatar, { width: 120, quality: 75 }) || avatar;
+      ExpoImage.prefetch(targetAvatar, "memory-disk").catch(() => {});
     }
   }
 }

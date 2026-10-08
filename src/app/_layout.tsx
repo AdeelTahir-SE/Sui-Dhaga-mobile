@@ -20,6 +20,9 @@ import {
   setupPushNotificationListeners,
 } from "../services/push-notifications.service";
 
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "../services/queryClient";
+
 // Ensure auth session from deep linking is completed on app resume
 WebBrowser.maybeCompleteAuthSession();
 
@@ -58,27 +61,29 @@ export default function RootLayout() {
 
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider
-        initialMetrics={initialWindowMetrics}
-        style={{ flex: 1, backgroundColor: "#FFFFFF" }}
-      >
-        <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: "#FFFFFF" },
-          }}
-        />
-        <AuthRequiredModal />
-        <AppUpdateModal
-          visible={isVisible}
-          updateInfo={updateInfo}
-          onUpdate={triggerUpdate}
-          onDismiss={dismissModal}
-        />
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider
+          initialMetrics={initialWindowMetrics}
+          style={{ flex: 1, backgroundColor: "#FFFFFF" }}
+        >
+          <StatusBar style="dark" />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: "#FFFFFF" },
+            }}
+          />
+          <AuthRequiredModal />
+          <AppUpdateModal
+            visible={isVisible}
+            updateInfo={updateInfo}
+            onUpdate={triggerUpdate}
+            onDismiss={dismissModal}
+          />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }
 

@@ -29,6 +29,7 @@ import { TailorBadge } from "../components/TailorBadge";
 import { TailorBottomTabs } from "../components/TailorBottomTabs";
 import { TailorPlaceholder } from "../components/TailorPlaceholder";
 import { useTailorsMap } from "../hooks/useTailors";
+import { lightHaptic, selectionHaptic } from "../../../utils/haptics";
 
 const DEFAULT_CENTER = { lat: 31.5204, lng: 74.3587 };
 
@@ -184,6 +185,7 @@ export default function TailorsMapScreen() {
       if (!data) return;
       if (data.type === "TAILOR_PIN_CLICKED") {
         if (data.tailorId) {
+          lightHaptic();
           setSelectedTailorId(data.tailorId);
         }
       } else if (data.type === "USER_LOCATED") {
@@ -268,6 +270,7 @@ export default function TailorsMapScreen() {
 
   // Center on tailor when card changes
   const handleSelectTailor = (tailor: TailorItem) => {
+    lightHaptic();
     setSelectedTailorId(tailor.id);
     if (
       typeof tailor.latitude === "number" &&
@@ -365,10 +368,12 @@ export default function TailorsMapScreen() {
 
   // Fit all pins in map
   const handleFitAllPins = () => {
+    lightHaptic();
     sendMapCommand("fitAllBounds();");
   };
 
   const toggleFavorite = (tailorId: string) => {
+    lightHaptic();
     setFavorites((prev) => ({ ...prev, [tailorId]: !prev[tailorId] }));
   };
 
@@ -761,10 +766,8 @@ export default function TailorsMapScreen() {
 </html>
     `;
   }, [
-    filteredTailors,
     initialCenter.lat,
     initialCenter.lng,
-    selectedTailor?.id,
   ]);
 
   // Selected tailor card attributes

@@ -1,174 +1,97 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { tailorsApi, TailorFilters } from '../../../api/tailors.api';
 import { TailorItem } from '../../../types/api';
 
 export function useTailors(initialFilters?: TailorFilters) {
-  const [tailors, setTailors] = useState<TailorItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const queryKey = ['tailors', initialFilters];
 
-  const fetchTailors = useCallback(async (filters?: TailorFilters) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await tailorsApi.getTailors(filters);
+  const {
+    data: tailors = [],
+    isLoading,
+    isRefetching,
+    error,
+    refetch,
+  } = useQuery<TailorItem[], Error>({
+    queryKey,
+    queryFn: async () => {
+      const res = await tailorsApi.getTailors(initialFilters);
       if (res.data && Array.isArray(res.data)) {
-        setTailors(res.data);
-      } else {
-        setTailors([]);
+        return res.data;
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load tailors');
-      setTailors([]);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    setIsLoading(true);
-    setError(null);
-    tailorsApi.getTailors(initialFilters)
-      .then((res) => {
-        if (isMounted) {
-          if (res.data && Array.isArray(res.data)) {
-            setTailors(res.data);
-          } else {
-            setTailors([]);
-          }
-        }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          setError(err.message || 'Failed to load tailors');
-          setTailors([]);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsRefreshing(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [initialFilters]);
+      return [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+  });
 
   const refresh = useCallback(async () => {
-    setIsRefreshing(true);
-    await fetchTailors(initialFilters);
-  }, [fetchTailors, initialFilters]);
+    await refetch();
+  }, [refetch]);
 
   return {
     tailors,
     isLoading,
-    isRefreshing,
-    error,
+    isRefreshing: isRefetching,
+    error: error ? error.message : null,
     refresh,
   };
 }
 
 export function useTailorDetails(tailorId: string) {
-  const [tailor, setTailor] = useState<TailorItem | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: tailor = null,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<TailorItem | null, Error>({
+    queryKey: ['tailor', tailorId],
+    queryFn: async () => {
+      if (!tailorId) return null;
+      const res = await tailorsApi.getTailorById(tailorId);
+      return res.data || null;
+    },
+    enabled: !!tailorId,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    if (!tailorId) return;
-
-    let isMounted = true;
-    setIsLoading(true);
-    setError(null);
-
-    tailorsApi.getTailorById(tailorId)
-      .then((res) => {
-        if (isMounted && res.data) {
-          setTailor(res.data);
-        }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          setError(err.message || 'Failed to load tailor details');
-          setTailor(null);
-        }
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [tailorId]);
-
-  return { tailor, isLoading, error };
+  return {
+    tailor,
+    isLoading,
+    error: error ? error.message : null,
+    refetch,
+  };
 }
 
-export function useTailorsMap(params?: { city?: string; search?: string; lat?: number; lng?: number; radius?: number }) {
-  const [tailors, setTailors] = useState<TailorItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const city = params?.city;
-  const search = params?.search;
-  const lat = params?.lat;
-  const lng = params?.lng;
-  const radius = params?.radius;
-
-  const fetchMapTailors = useCallback(async (customParams?: typeof params) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await tailorsApi.getTailorsMap(customParams ?? { city, search, lat, lng, radius });
+export function useTailorsMap(params?: {
+  city?: string;
+  search?: string;
+  lat?: number;
+  lng?: number;
+  radius?: number;
+}) {
+  const {
+    data: tailors = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<TailorItem[], Error>({
+    queryKey: ['tailors-map', params],
+    queryFn: async () => {
+      const res = await tailorsApi.getTailorsMap(params);
       if (res.data && Array.isArray(res.data)) {
-        setTailors(res.data);
-      } else {
-        setTailors([]);
+        return res.data;
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load map tailors');
-      setTailors([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [city, search, lat, lng, radius]);
+      return [];
+    },
+    staleTime: 3 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    let isMounted = true;
-    setIsLoading(true);
-    setError(null);
-    tailorsApi.getTailorsMap({ city, search, lat, lng, radius })
-      .then((res) => {
-        if (isMounted) {
-          if (res.data && Array.isArray(res.data)) {
-            setTailors(res.data);
-          } else {
-            setTailors([]);
-          }
-        }
-      })
-      .catch((err) => {
-        if (isMounted) {
-          setError(err.message || 'Failed to load map tailors');
-          setTailors([]);
-        }
-      })
-      .finally(() => {
-        if (isMounted) setIsLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [city, search, lat, lng, radius]);
-
-  return { tailors, isLoading, error, refetch: fetchMapTailors };
+  return {
+    tailors,
+    isLoading,
+    error: error ? error.message : null,
+    refetch,
+  };
 }
 
 export function useNearbyTailors(params?: {
@@ -181,52 +104,31 @@ export function useNearbyTailors(params?: {
   page?: number;
   limit?: number;
 }) {
-  const [tailors, setTailors] = useState<TailorItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const isEnabled =
+    params?.lat !== undefined &&
+    params?.lng !== undefined &&
+    !isNaN(params.lat) &&
+    !isNaN(params.lng);
 
-  const lat = params?.lat;
-  const lng = params?.lng;
-  const radius = params?.radius;
-  const city = params?.city;
-  const search = params?.search;
-  const minRating = params?.minRating;
-  const page = params?.page;
-  const limit = params?.limit;
+  const {
+    data: tailors = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<TailorItem[], Error>({
+    queryKey: ['tailors-nearby', params],
+    queryFn: async () => {
+      const res = await tailorsApi.getNearbyTailors(params as any);
+      return res.data || [];
+    },
+    enabled: isEnabled,
+    staleTime: 3 * 60 * 1000,
+  });
 
-  const fetchNearby = useCallback(async () => {
-    if (lat === undefined || lng === undefined || isNaN(lat) || isNaN(lng)) {
-      setIsLoading(false);
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await tailorsApi.getNearbyTailors({
-        lat,
-        lng,
-        radius,
-        city,
-        search,
-        minRating,
-        page,
-        limit,
-      });
-      setTailors(res.data || []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load nearby tailors');
-      setTailors([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [lat, lng, radius, city, search, minRating, page, limit]);
-
-  useEffect(() => {
-    fetchNearby();
-  }, [fetchNearby]);
-
-  return { tailors, isLoading, error, refetch: fetchNearby };
+  return {
+    tailors,
+    isLoading: isEnabled ? isLoading : false,
+    error: error ? error.message : null,
+    refetch,
+  };
 }
-
-
-

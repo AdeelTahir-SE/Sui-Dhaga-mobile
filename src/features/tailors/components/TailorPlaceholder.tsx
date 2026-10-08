@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { Image, type ImageSource } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { DEFAULT_BLURHASH, getOptimizedImageUrl } from "../../../utils/imageOptimizer";
 
 type PlaceholderTone = "teal" | "coral" | "gold" | "blue" | "cream";
 
@@ -58,15 +59,23 @@ export function TailorPlaceholder({
         ? "shirt-outline"
         : "person";
 
+  const optimizedSource =
+    typeof image === "string"
+      ? getOptimizedImageUrl(image, { width: 300, quality: 75 })
+      : image;
+
   return (
     <View
       className={`${sizeClasses[size]} items-center justify-center overflow-hidden rounded-md ${toneClasses[tone]}`}
       style={style}
     >
       <Image
-        source={image ?? generatedAssets[variant]}
+        source={optimizedSource ?? generatedAssets[variant]}
         contentFit={image ? "cover" : "contain"}
         style={StyleSheet.absoluteFill}
+        placeholder={{ blurhash: DEFAULT_BLURHASH }}
+        transition={200}
+        cachePolicy="memory-disk"
       />
       <View className="absolute inset-0 bg-white/10" />
       {size === "xs" ? (
