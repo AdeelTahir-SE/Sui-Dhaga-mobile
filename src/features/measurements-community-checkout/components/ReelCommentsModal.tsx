@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,8 @@ import {
   setCachedComments,
   appendCachedComment,
 } from "../../../utils/mediaCache";
+import { useCommunityStore } from "../../../stores/community.store";
+import { CommentsListSkeleton } from "../../../components/ui/Skeleton";
 
 type ReelCommentsModalProps = {
   visible: boolean;
@@ -30,19 +32,19 @@ type ReelCommentsModalProps = {
   postId: string;
   commentsCount?: number;
   onCommentAdded?: () => void;
+  onCommentsCountSync?: (count: number) => void;
 };
 
-export function ReelCommentsModal({
+export const ReelCommentsModal = memo(function ReelCommentsModal({
   visible,
   onClose,
   postId,
   commentsCount = 0,
   onCommentAdded,
+  onCommentsCountSync,
 }: ReelCommentsModalProps) {
   const insets = useSafeAreaInsets();
-  const [comments, setComments] = useState<CommunityComment[]>(() => {
-    return postId ? getCachedComments(postId) || [] : [];
-  });
+  const [comments, setComments] = useState<CommunityComment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -61,8 +63,16 @@ export function ReelCommentsModal({
         if (Array.isArray(res.data)) {
           setComments(res.data);
           setCachedComments(postId, res.data);
+          useCommunityStore.getState().syncCommentsCount(postId, res.data.length);
+          if (onCommentsCountSync) {
+            onCommentsCountSync(res.data.length);
+          }
         } else {
           setComments([]);
+          useCommunityStore.getState().syncCommentsCount(postId, 0);
+          if (onCommentsCountSync) {
+            onCommentsCountSync(0);
+          }
         }
       } catch (err: any) {
         if (!isSilent) {
@@ -74,7 +84,7 @@ export function ReelCommentsModal({
         }
       }
     },
-    [postId, visible]
+    [postId, visible, onCommentsCountSync]
   );
 
   useEffect(() => {
@@ -83,12 +93,14 @@ export function ReelCommentsModal({
       if (cached && cached.length > 0) {
         setComments(cached);
         setIsLoading(false);
-        // Silent background refresh to keep comments up to date without showing a loader
+        // Silent background refresh to keep comments fresh
         fetchComments(true);
       } else {
+        setComments([]);
         fetchComments(false);
       }
     } else {
+      setComments([]);
       setCommentText("");
       setError(null);
     }
@@ -105,6 +117,7 @@ export function ReelCommentsModal({
         const newCmt = res.data;
         setComments((prev) => [...prev, newCmt]);
         appendCachedComment(postId, newCmt);
+        useCommunityStore.getState().incrementCommentsCount(postId, 1);
         setCommentText("");
         if (onCommentAdded) {
           onCommentAdded();
@@ -117,7 +130,7 @@ export function ReelCommentsModal({
     }
   };
 
-  const renderCommentItem = ({ item }: { item: CommunityComment }) => {
+  const renderCommentItem = useCallback(({ item }: { item: CommunityComment }) => {
     const authorName =
       item.user?.fullName ||
       item.user?.full_name ||
@@ -176,7 +189,10 @@ export function ReelCommentsModal({
         </View>
       </View>
     );
-  };
+  }, []);
+
+  // Compute accurate count: if comments fetched, use actual array length; otherwise fallback to post's count
+  const displayCount = isLoading && comments.length === 0 ? commentsCount : comments.length;
 
   return (
     <Modal
@@ -207,7 +223,7 @@ export function ReelCommentsModal({
               </View>
               <View>
                 <Text className="text-[16px] font-extrabold text-brand-dark">
-                  Comments ({comments.length || commentsCount})
+                  Comments ({displayCount})
                 </Text>
                 <Text className="text-[11.5px] font-medium text-brand-gray">
                   Community feedback & discussions
@@ -225,10 +241,7 @@ export function ReelCommentsModal({
           {/* Comments List */}
           <View style={{ flex: 1 }}>
             {isLoading && comments.length === 0 ? (
-              <View className="flex-1 items-center justify-center py-12">
-                <ActivityIndicator size="small" color="#14919B" />
-                <Text className="mt-2 text-[12px] text-gray-400">Loading comments...</Text>
-              </View>
+              <CommentsListSkeleton count={4} />
             ) : error && comments.length === 0 ? (
               <View className="flex-1 items-center justify-center py-10 px-6">
                 <Ionicons name="alert-circle-outline" size={28} color="#EF4444" />
@@ -257,6 +270,10 @@ export function ReelCommentsModal({
                 renderItem={renderCommentItem}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 10 }}
+                initialNumToRender={8}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                removeClippedSubviews
               />
             )}
           </View>
@@ -302,7 +319,7 @@ export function ReelCommentsModal({
       </View>
     </Modal>
   );
-}
+});
 
 const styles = StyleSheet.create({
   modalOverlay: {

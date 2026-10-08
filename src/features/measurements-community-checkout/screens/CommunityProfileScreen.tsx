@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { communityApi } from "../../../api/community.api";
 import { useAuthStore } from "../../../stores/auth.store";
+import { useCommunityStore } from "../../../stores/community.store";
 import { CommunityPost, CreateCommunityPostPayload } from "../../../types/api";
 import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
@@ -130,6 +131,7 @@ export default function CommunityProfileScreen() {
       }
 
       setPosts(fetched);
+      useCommunityStore.getState().upsertPosts(fetched);
     } catch (err: any) {
       setError(err?.message || "Failed to load your community posts");
     } finally {
@@ -268,6 +270,7 @@ export default function CommunityProfileScreen() {
             try {
               await communityApi.deletePost(post.id);
               setPosts((prev) => prev.filter((p) => p.id !== post.id));
+              useCommunityStore.getState().removePost(post.id);
               Alert.alert("Deleted", "Your community post has been removed.");
             } catch (err: any) {
               Alert.alert(

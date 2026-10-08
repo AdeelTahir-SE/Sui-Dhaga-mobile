@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback, memo } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Share,
+  Animated,
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,12 +28,13 @@ type ReelItemViewProps = {
   isMuted: boolean;
   onToggleMute: () => void;
   onToggleLike: () => void;
+  onDoubleTapLike?: () => void;
   onOpenComments: () => void;
   onShare?: () => void;
   onBookmark?: () => void;
 };
 
-export function ReelItemView({
+function _ReelItemView({
   post,
   isActive,
   height,
@@ -40,6 +42,7 @@ export function ReelItemView({
   isMuted,
   onToggleMute,
   onToggleLike,
+  onDoubleTapLike,
   onOpenComments,
   onShare,
 }: ReelItemViewProps) {
@@ -47,6 +50,13 @@ export function ReelItemView({
   const [isCaptionExpanded, setIsCaptionExpanded] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+
+  // Double tap to like heart animation
+  const [showHeartPop, setShowHeartPop] = useState(false);
+  const heartScale = useRef(new Animated.Value(0)).current;
+  const heartOpacity = useRef(new Animated.Value(0)).current;
+  const lastTapRef = useRef<number>(0);
+  const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Filter valid media
   const mediaList: string[] = (post.images || []).filter(
@@ -107,6 +117,15 @@ export function ReelItemView({
     }
   }, [isActive]);
 
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleTogglePlayPause = () => {
     if (!isVideo || !player) return;
     if (userPaused) {
@@ -115,6 +134,60 @@ export function ReelItemView({
     } else {
       setUserPaused(true);
       player.pause();
+    }
+  };
+
+  const triggerHeartAnimation = () => {
+    setShowHeartPop(true);
+    heartScale.setValue(0.3);
+    heartOpacity.setValue(1);
+
+    Animated.sequence([
+      Animated.spring(heartScale, {
+        toValue: 1.25,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heartOpacity, {
+        toValue: 0,
+        duration: 350,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowHeartPop(false);
+    });
+  };
+
+  const handleMediaTap = () => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300;
+
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap detected!
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+        singleTapTimerRef.current = null;
+      }
+      lastTapRef.current = 0;
+
+      // Like post (guaranteed like, never unlikes)
+      if (onDoubleTapLike) {
+        onDoubleTapLike();
+      } else {
+        onToggleLike();
+      }
+
+      // Display animated heart pop
+      triggerHeartAnimation();
+    } else {
+      lastTapRef.current = now;
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+      }
+      singleTapTimerRef.current = setTimeout(() => {
+        handleTogglePlayPause();
+      }, DOUBLE_TAP_DELAY);
     }
   };
 
@@ -148,7 +221,6 @@ export function ReelItemView({
   const isTailor = post.author?.role === "tailor" || post.author?.isVerified;
   const captionText = post.content || post.caption || post.title || "";
 
-  // Dynamic bottom padding to clear device navigation bar or home indicator
   const safeBottom = Math.max(insets.bottom, 16);
 
   return (
@@ -160,7 +232,7 @@ export function ReelItemView({
           <Text className="mt-3 text-sm text-gray-500 font-medium">Bespoke Design</Text>
         </View>
       ) : mediaList.length === 1 ? (
-        <TouchableWithoutFeedback onPress={handleTogglePlayPause}>
+        <TouchableWithoutFeedback onPress={handleMediaTap}>
           <View style={StyleSheet.absoluteFill}>
             {isVideo ? (
               <VideoView
@@ -211,7 +283,7 @@ export function ReelItemView({
           {mediaList.map((uri, idx) => {
             const isThisVideo = isVideoMedia(uri);
             return (
-              <TouchableWithoutFeedback key={`${uri}-${idx}`} onPress={handleTogglePlayPause}>
+              <TouchableWithoutFeedback key={`${uri}-${idx}`} onPress={handleMediaTap}>
                 <View style={{ width, height, position: "relative" }}>
                   {isThisVideo && idx === activeMediaIndex ? (
                     <VideoView
@@ -247,6 +319,24 @@ export function ReelItemView({
             );
           })}
         </ScrollView>
+      )}
+
+      {/* Double Tap Heart Pop Animation */}
+      {showHeartPop && (
+        <View pointerEvents="none" style={StyleSheet.absoluteFill} className="items-center justify-center z-50">
+          <Animated.View
+            style={{
+              transform: [{ scale: heartScale }],
+              opacity: heartOpacity,
+              shadowColor: "#E11D48",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.6,
+              shadowRadius: 16,
+            }}
+          >
+            <Ionicons name="heart" size={110} color="#E11D48" />
+          </Animated.View>
+        </View>
       )}
 
       {/* 2. TOP SMOOTH GRADIENT SCRIM */}
@@ -440,7 +530,7 @@ export function ReelItemView({
           </TouchableOpacity>
         ) : null}
 
-        {/* Tags (Pure White) */}
+        {/* Tags */}
         {post.tags && post.tags.length > 0 && (
           <View className="flex-row flex-wrap gap-1.5 mb-2">
             {post.tags.slice(0, 5).map((tag, idx) => (
@@ -477,6 +567,19 @@ export function ReelItemView({
     </View>
   );
 }
+
+export const ReelItemView = memo(_ReelItemView, (prevProps, nextProps) => {
+  return (
+    prevProps.post.id === nextProps.post.id &&
+    (prevProps.post.isLiked ?? prevProps.post.is_liked) === (nextProps.post.isLiked ?? nextProps.post.is_liked) &&
+    (prevProps.post.likesCount ?? prevProps.post.likes_count) === (nextProps.post.likesCount ?? nextProps.post.likes_count) &&
+    (prevProps.post.commentsCount ?? prevProps.post.comments_count) === (nextProps.post.commentsCount ?? nextProps.post.comments_count) &&
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.isMuted === nextProps.isMuted &&
+    prevProps.height === nextProps.height &&
+    prevProps.width === nextProps.width
+  );
+});
 
 const styles = StyleSheet.create({
   topScrim: {

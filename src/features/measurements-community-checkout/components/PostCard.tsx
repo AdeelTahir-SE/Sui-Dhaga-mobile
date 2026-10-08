@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback, memo } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,7 +26,7 @@ type PostCardProps = {
   onLikePress?: () => void;
 };
 
-export function PostCard({
+export const PostCard = memo(function PostCard({
   author,
   handle,
   caption,
@@ -47,18 +47,24 @@ export function PostCard({
 }: PostCardProps) {
   const [internalLiked, setInternalLiked] = useState(false);
   const [internalLikeCount, setInternalLikeCount] = useState(initialLikes);
+  const lastLikeTapRef = useRef<number>(0);
 
   const isLiked = controlledIsLiked !== undefined ? controlledIsLiked : internalLiked;
   const currentLikes = likesCount !== undefined ? likesCount : internalLikeCount;
 
-  const handleLike = () => {
+  const handleLike = useCallback(() => {
+    const now = Date.now();
+    // Throttle double clicks within 350ms
+    if (now - lastLikeTapRef.current < 350) return;
+    lastLikeTapRef.current = now;
+
     if (onLikePress) {
       onLikePress();
     } else {
-      setInternalLiked(!internalLiked);
-      setInternalLikeCount((prev) => (internalLiked ? Math.max(0, prev - 1) : prev + 1));
+      setInternalLiked((prev) => !prev);
+      setInternalLikeCount((prev) => (isLiked ? Math.max(0, prev - 1) : prev + 1));
     }
-  };
+  }, [onLikePress, isLiked]);
 
   const imageSource =
     typeof postImage === "string" ? { uri: postImage } : postImage;
@@ -91,6 +97,7 @@ export function PostCard({
             <Image
               source={avatarSource}
               contentFit="cover"
+              cachePolicy="memory-disk"
               style={{ width: 34, height: 34, borderRadius: 17 }}
             />
           ) : (
@@ -159,6 +166,7 @@ export function PostCard({
             <Image
               source={imageSource}
               contentFit="cover"
+              cachePolicy="memory-disk"
               style={{ height: "100%", width: "100%" }}
               transition={200}
             />
@@ -202,4 +210,4 @@ export function PostCard({
       </View>
     </View>
   );
-}
+});

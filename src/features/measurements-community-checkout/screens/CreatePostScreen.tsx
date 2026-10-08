@@ -21,6 +21,7 @@ import { SectionTitle } from "../components/SectionTitle";
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 import { isVideoMedia } from "../components/CommunityMediaCarousel";
 import { communityApi } from "../../../api/community.api";
+import { useCommunityStore } from "../../../stores/community.store";
 
 const CATEGORIES = [
   "Lehenga",
@@ -209,6 +210,9 @@ export default function CreatePostScreen() {
       const res = await communityApi.createPost(formData);
 
       if (res.success || res.data) {
+        if (res.data) {
+          useCommunityStore.getState().upsertPost(res.data);
+        }
         Alert.alert(
           "Post Published! ✨",
           "Your outfit post has been shared to the Sui Dhaga community.",

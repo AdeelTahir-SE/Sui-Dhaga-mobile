@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -18,7 +18,7 @@ import { communityApi } from "../../../api/community.api";
 import { CommunityPost } from "../../../types/api";
 import { ReelItemView } from "../components/ReelItemView";
 import { ReelCommentsModal } from "../components/ReelCommentsModal";
-
+import { useCommunityStore } from "../../../stores/community.store";
 import { prefetchPostMedia } from "../../../utils/mediaCache";
 
 export default function PostDetailsScreen() {
@@ -26,11 +26,11 @@ export default function PostDetailsScreen() {
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
 
-  // Track exact container dimensions to guarantee pixel-perfect snap without offset drift
+  // Track exact container dimensions
   const [containerHeight, setContainerHeight] = useState(windowHeight);
   const [containerWidth, setContainerWidth] = useState(windowWidth);
 
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [orderedPostIds, setOrderedPostIds] = useState<string[]>([]);
   const [activePostId, setActivePostId] = useState<string | null>(postId || null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +41,18 @@ export default function PostDetailsScreen() {
   const [commentsTargetPostId, setCommentsTargetPostId] = useState<string | null>(null);
 
   const flatListRef = useRef<FlatList<CommunityPost>>(null);
+
+  // Connect to global community store
+  const postsById = useCommunityStore((state) => state.postsById);
+  const upsertPosts = useCommunityStore((state) => state.upsertPosts);
+  const storeToggleLike = useCommunityStore((state) => state.toggleLike);
+  const storeLikePost = useCommunityStore((state) => state.likePost);
+  const syncCommentsCount = useCommunityStore((state) => state.syncCommentsCount);
+
+  // Derive reactive posts array matching current order
+  const posts = useMemo(() => {
+    return orderedPostIds.map((id) => postsById[id]).filter(Boolean);
+  }, [orderedPostIds, postsById]);
 
   const handleContainerLayout = (e: LayoutChangeEvent) => {
     const { height: h, width: w } = e.nativeEvent.layout;
@@ -69,16 +81,13 @@ export default function PostDetailsScreen() {
 
       let combined: CommunityPost[] = [...feedList];
 
-      // Ensure the targeted post is at the start or preserved
       const targetPost = targetRes && "data" in targetRes ? (targetRes.data as CommunityPost | null) : null;
       if (targetPost && targetPost.id) {
         const existingIdx = combined.findIndex((p) => p.id === targetPost.id);
         if (existingIdx > 0) {
-          // Move target post to top for immediate viewing
           const [targeted] = combined.splice(existingIdx, 1);
           combined = [targeted, ...combined];
         } else if (existingIdx === -1) {
-          // Prepend target post
           combined = [targetPost, ...combined];
         }
       }
@@ -86,8 +95,11 @@ export default function PostDetailsScreen() {
       if (combined.length === 0) {
         setError("No community designs found");
       } else {
-        setPosts(combined);
+        // Save into store
+        upsertPosts(combined);
+        setOrderedPostIds(combined.map((p) => p.id));
         setActivePostId(combined[0].id);
+
         // Pre-cache media for initial designs
         combined.slice(0, 5).forEach((p) => prefetchPostMedia(p));
       }
@@ -96,13 +108,13 @@ export default function PostDetailsScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [postId]);
+  }, [postId, upsertPosts]);
 
   useEffect(() => {
     loadPostsFeed();
   }, [loadPostsFeed]);
 
-  // Proactively cache upcoming videos and images as user views posts
+  // Proactively cache upcoming videos and images
   useEffect(() => {
     if (!activePostId || posts.length === 0) return;
     const currentIdx = posts.findIndex((p) => p.id === activePostId);
@@ -112,7 +124,7 @@ export default function PostDetailsScreen() {
     }
   }, [activePostId, posts]);
 
-  // Track currently viewable reel item
+  // Track viewable item
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems && viewableItems.length > 0) {
       const topItem = viewableItems[0]?.item;
@@ -126,98 +138,29 @@ export default function PostDetailsScreen() {
     itemVisiblePercentThreshold: 60,
   }).current;
 
-  // Optimistic Like Handler
-  const handleToggleLike = async (id: string) => {
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          const currentlyLiked = Boolean(p.isLiked ?? p.is_liked);
-          const curCount = p.likesCount ?? p.likes_count ?? 0;
-          const nextLiked = !currentlyLiked;
-          const nextCount = nextLiked ? curCount + 1 : Math.max(0, curCount - 1);
-          return {
-            ...p,
-            isLiked: nextLiked,
-            is_liked: nextLiked,
-            likesCount: nextCount,
-            likes_count: nextCount,
-          };
-        }
-        return p;
-      })
-    );
+  // Like handlers with debounce and double-tap safety
+  const handleToggleLike = useCallback((id: string) => {
+    storeToggleLike(id);
+  }, [storeToggleLike]);
 
-    try {
-      const res = await communityApi.toggleLike(id);
-      if (res && res.data && res.data.post) {
-        const serverPost = res.data.post;
-        const serverLiked = res.data.liked;
-        setPosts((prev) =>
-          prev.map((p) =>
-            p.id === id
-              ? {
-                  ...p,
-                  ...serverPost,
-                  isLiked: serverLiked,
-                  is_liked: serverLiked,
-                }
-              : p
-          )
-        );
-      }
-    } catch {
-      // Revert if API failed
-      setPosts((prev) =>
-        prev.map((p) => {
-          if (p.id === id) {
-            const currentlyLiked = Boolean(p.isLiked ?? p.is_liked);
-            const curCount = p.likesCount ?? p.likes_count ?? 0;
-            const revLiked = !currentlyLiked;
-            const revCount = revLiked ? curCount + 1 : Math.max(0, curCount - 1);
-            return {
-              ...p,
-              isLiked: revLiked,
-              is_liked: revLiked,
-              likesCount: revCount,
-              likes_count: revCount,
-            };
-          }
-          return p;
-        })
-      );
-    }
-  };
+  const handleDoubleTapLike = useCallback((id: string) => {
+    storeLikePost(id);
+  }, [storeLikePost]);
 
-  const handleOpenComments = (id: string) => {
+  const handleOpenComments = useCallback((id: string) => {
     setCommentsTargetPostId(id);
     setCommentsModalVisible(true);
-  };
+  }, []);
 
-  const handleCommentAdded = (id: string) => {
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          const cnt = (p.commentsCount ?? p.comments_count ?? 0) + 1;
-          return {
-            ...p,
-            commentsCount: cnt,
-            comments_count: cnt,
-          };
-        }
-        return p;
-      })
-    );
-  };
-
-  const handleShare = async (post: CommunityPost) => {
+  const handleShare = useCallback(async (post: CommunityPost) => {
     try {
       await Share.share({
         message: `Watch this bespoke design on Sui Dhaga: "${post.title || post.caption || post.content || "Bespoke Design"}"`,
       });
     } catch {}
-  };
+  }, []);
 
-  const activePost = posts.find((p) => p.id === (commentsTargetPostId || activePostId));
+  const activePost = (commentsTargetPostId && postsById[commentsTargetPostId]) || (activePostId && postsById[activePostId]) || posts[0];
 
   return (
     <View
@@ -276,6 +219,7 @@ export default function PostDetailsScreen() {
               isMuted={isMuted}
               onToggleMute={() => setIsMuted((m) => !m)}
               onToggleLike={() => handleToggleLike(item.id)}
+              onDoubleTapLike={() => handleDoubleTapLike(item.id)}
               onOpenComments={() => handleOpenComments(item.id)}
               onShare={() => handleShare(item)}
             />
@@ -351,9 +295,10 @@ export default function PostDetailsScreen() {
           onClose={() => setCommentsModalVisible(false)}
           postId={commentsTargetPostId || activePost.id}
           commentsCount={activePost.commentsCount ?? activePost.comments_count ?? 0}
-          onCommentAdded={() => {
-            if (commentsTargetPostId || activePost.id) {
-              handleCommentAdded(commentsTargetPostId || activePost.id);
+          onCommentsCountSync={(count) => {
+            const targetId = commentsTargetPostId || activePost.id;
+            if (targetId) {
+              syncCommentsCount(targetId, count);
             }
           }}
         />

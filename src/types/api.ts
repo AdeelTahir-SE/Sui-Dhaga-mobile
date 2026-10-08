@@ -419,3 +419,37 @@ export interface CreateCommunityPostPayload {
   tags?: string[] | string;
   images?: string[];
 }
+
+export interface ReviewItem {
+  id: string;
+  orderId?: string;
+  order_id?: string;
+  customerId?: string;
+  customer_id?: string;
+  tailorId?: string;
+  tailor_id?: string;
+  rating: number;
+  comment?: string;
+  images?: string[];
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
+  customer?: {
+    id?: string;
+    fullName?: string;
+    full_name?: string;
+    name?: string;
+    avatarUrl?: string;
+    avatar_url?: string;
+  };
+}
+
+export interface CreateReviewPayload {
+  rating: number;
+  comment?: string;
+  images?: string[];
+  tailorId?: string;
+  tailor_id?: string;
+}
+

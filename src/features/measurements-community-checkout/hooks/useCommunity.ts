@@ -1,31 +1,60 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { communityApi, GetCommunityPostsParams } from "../../../api/community.api";
 import { CommunityComment, CommunityPost } from "../../../types/api";
+import { useCommunityStore } from "../../../stores/community.store";
 
 export function useCommunity(initialCategory = "For You") {
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [category, setCategory] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const activeRequestRef = useRef<number>(0);
 
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Subscribe to store updates for this category
+  const categoryKey = useMemo(() => {
+    return `${category.toLowerCase()}_${debouncedSearch.trim().toLowerCase()}`;
+  }, [category, debouncedSearch]);
+
+  const postsById = useCommunityStore((state) => state.postsById);
+  const categoryLists = useCommunityStore((state) => state.categoryLists);
+  const setCategoryPosts = useCommunityStore((state) => state.setCategoryPosts);
+  const storeToggleLike = useCommunityStore((state) => state.toggleLike);
+
+  const posts = useMemo(() => {
+    const ids = categoryLists[categoryKey] || [];
+    return ids.map((id) => postsById[id]).filter(Boolean);
+  }, [categoryLists, categoryKey, postsById]);
+
   const fetchPosts = useCallback(
     async (cat?: string, search?: string, isRefresh = false) => {
       const requestId = ++activeRequestRef.current;
+      const currentCat = cat !== undefined ? cat : category;
+      const currentSearch = search !== undefined ? search : debouncedSearch;
+      const currentKey = `${currentCat.toLowerCase()}_${currentSearch.trim().toLowerCase()}`;
+
+      // Check if we already have cached posts to display immediately
+      const existingIds = useCommunityStore.getState().categoryLists[currentKey];
+      const hasCached = existingIds && existingIds.length > 0;
+
       if (isRefresh) {
         setIsRefreshing(true);
-      } else {
+      } else if (!hasCached) {
         setIsLoading(true);
       }
       setError(null);
 
       try {
-        const currentCat = cat !== undefined ? cat : category;
-        const currentSearch = search !== undefined ? search : searchQuery;
-
         const params: GetCommunityPostsParams = {
           limit: 30,
         };
@@ -46,7 +75,8 @@ export function useCommunity(initialCategory = "For You") {
           ? res.data
           : (res.data as any)?.records || [];
 
-        setPosts(records);
+        // Save normalized in store
+        setCategoryPosts(currentKey, records);
         setError(null);
       } catch (err: any) {
         if (requestId !== activeRequestRef.current) return;
@@ -54,7 +84,6 @@ export function useCommunity(initialCategory = "For You") {
           err?.message ||
           "Unable to connect to community feed. Please check your internet connection.";
         setError(msg);
-        setPosts([]);
       } finally {
         if (requestId === activeRequestRef.current) {
           setIsLoading(false);
@@ -62,78 +91,23 @@ export function useCommunity(initialCategory = "For You") {
         }
       }
     },
-    [category, searchQuery]
+    [category, debouncedSearch, setCategoryPosts]
   );
 
   useEffect(() => {
-    fetchPosts(category, searchQuery);
-  }, [category, searchQuery, fetchPosts]);
+    fetchPosts(category, debouncedSearch);
+  }, [category, debouncedSearch, fetchPosts]);
 
   const refresh = useCallback(() => {
-    fetchPosts(category, searchQuery, true);
-  }, [category, searchQuery, fetchPosts]);
+    fetchPosts(category, debouncedSearch, true);
+  }, [category, debouncedSearch, fetchPosts]);
 
-  const toggleLike = useCallback(async (postId: string) => {
-    // Optimistic update
-    setPosts((prevPosts) =>
-      prevPosts.map((p) => {
-        if (p.id === postId) {
-          const currentlyLiked = Boolean(p.isLiked ?? p.is_liked);
-          const currentCount = p.likesCount ?? p.likes_count ?? 0;
-          const nextLiked = !currentlyLiked;
-          const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
-          return {
-            ...p,
-            isLiked: nextLiked,
-            is_liked: nextLiked,
-            likesCount: nextCount,
-            likes_count: nextCount,
-          };
-        }
-        return p;
-      })
-    );
-
-    try {
-      const res = await communityApi.toggleLike(postId);
-      if (res.data?.post) {
-        const serverPost = res.data.post;
-        const serverLiked = res.data.liked;
-        setPosts((prevPosts) =>
-          prevPosts.map((p) =>
-            p.id === postId
-              ? {
-                  ...p,
-                  ...serverPost,
-                  isLiked: serverLiked,
-                  is_liked: serverLiked,
-                }
-              : p
-          )
-        );
-      }
-    } catch {
-      // Revert optimistic update on failure
-      setPosts((prevPosts) =>
-        prevPosts.map((p) => {
-          if (p.id === postId) {
-            const currentlyLiked = Boolean(p.isLiked ?? p.is_liked);
-            const currentCount = p.likesCount ?? p.likes_count ?? 0;
-            const revertedLiked = !currentlyLiked;
-            const revertedCount = revertedLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
-            return {
-              ...p,
-              isLiked: revertedLiked,
-              is_liked: revertedLiked,
-              likesCount: revertedCount,
-              likes_count: revertedCount,
-            };
-          }
-          return p;
-        })
-      );
-    }
-  }, []);
+  const toggleLike = useCallback(
+    async (postId: string) => {
+      return storeToggleLike(postId);
+    },
+    [storeToggleLike]
+  );
 
   return {
     posts,
@@ -141,7 +115,7 @@ export function useCommunity(initialCategory = "For You") {
     setCategory,
     searchQuery,
     setSearchQuery,
-    isLoading,
+    isLoading: isLoading && posts.length === 0,
     isRefreshing,
     error,
     refresh,
@@ -150,11 +124,16 @@ export function useCommunity(initialCategory = "For You") {
 }
 
 export function usePostDetails(postId: string) {
-  const [post, setPost] = useState<CommunityPost | null>(null);
+  const post = useCommunityStore((state) => state.postsById[postId] || null);
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const upsertPost = useCommunityStore((state) => state.upsertPost);
+  const storeToggleLike = useCommunityStore((state) => state.toggleLike);
+  const incrementCommentsCount = useCommunityStore((state) => state.incrementCommentsCount);
+  const syncCommentsCount = useCommunityStore((state) => state.syncCommentsCount);
 
   const fetchDetails = useCallback(async () => {
     if (!postId) return;
@@ -167,24 +146,24 @@ export function usePostDetails(postId: string) {
       ]);
 
       if (postRes.data) {
-        setPost(postRes.data);
+        const loadedComments = Array.isArray(commentsRes.data) ? commentsRes.data : [];
+        const serverPost = postRes.data;
+        // Make sure comment count reflects the actual comments array length if available
+        const actualCount = loadedComments.length > 0 ? loadedComments.length : (serverPost.commentsCount ?? serverPost.comments_count ?? 0);
+        serverPost.commentsCount = actualCount;
+        serverPost.comments_count = actualCount;
+
+        upsertPost(serverPost);
+        setComments(loadedComments);
       } else {
         setError("Post not found");
       }
-
-      if (Array.isArray(commentsRes.data)) {
-        setComments(commentsRes.data);
-      } else {
-        setComments([]);
-      }
     } catch (err: any) {
       setError(err?.message || "Failed to load post details");
-      setPost(null);
-      setComments([]);
     } finally {
       setIsLoading(false);
     }
-  }, [postId]);
+  }, [postId, upsertPost]);
 
   useEffect(() => {
     fetchDetails();
@@ -199,16 +178,8 @@ export function usePostDetails(postId: string) {
         if (res.data) {
           const newComment = res.data;
           setComments((prev) => [...prev, newComment]);
-          // Increment comment count on post
-          setPost((prev) => {
-            if (!prev) return null;
-            const count = (prev.commentsCount ?? prev.comments_count ?? 0) + 1;
-            return {
-              ...prev,
-              commentsCount: count,
-              comments_count: count,
-            };
-          });
+          // Synchronize comment count in global store
+          incrementCommentsCount(postId, 1);
           return true;
         }
         return false;
@@ -218,46 +189,13 @@ export function usePostDetails(postId: string) {
         setIsSubmittingComment(false);
       }
     },
-    [postId]
+    [postId, incrementCommentsCount]
   );
 
   const toggleLike = useCallback(async () => {
-    if (!post) return;
-    const currentlyLiked = Boolean(post.isLiked ?? post.is_liked);
-    const currentCount = post.likesCount ?? post.likes_count ?? 0;
-    const nextLiked = !currentlyLiked;
-    const nextCount = nextLiked ? currentCount + 1 : Math.max(0, currentCount - 1);
-
-    // Optimistic
-    setPost({
-      ...post,
-      isLiked: nextLiked,
-      is_liked: nextLiked,
-      likesCount: nextCount,
-      likes_count: nextCount,
-    });
-
-    try {
-      const res = await communityApi.toggleLike(post.id);
-      if (res.data?.post) {
-        setPost({
-          ...post,
-          ...res.data.post,
-          isLiked: res.data.liked,
-          is_liked: res.data.liked,
-        });
-      }
-    } catch {
-      // Revert
-      setPost({
-        ...post,
-        isLiked: currentlyLiked,
-        is_liked: currentlyLiked,
-        likesCount: currentCount,
-        likes_count: currentCount,
-      });
-    }
-  }, [post]);
+    if (!postId) return;
+    return storeToggleLike(postId);
+  }, [postId, storeToggleLike]);
 
   return {
     post,

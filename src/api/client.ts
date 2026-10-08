@@ -140,10 +140,34 @@ export const storage = {
       } else {
         await SecureStore.deleteItemAsync(USER_KEY);
       }
+      apiCache.clear();
     } catch (err) {
       console.warn('Failed to remove user from storage', err);
     }
   },
+};
+
+interface CacheRecord {
+  etag: string;
+  data: ApiResponse<any>;
+  timestamp: number;
+}
+
+const httpCache = new Map<string, CacheRecord>();
+
+export const apiCache = {
+  get: (url: string) => httpCache.get(url),
+  set: (url: string, etag: string, data: ApiResponse<any>) => {
+    httpCache.set(url, { etag, data, timestamp: Date.now() });
+  },
+  invalidatePrefix: (prefix: string) => {
+    for (const key of httpCache.keys()) {
+      if (key.includes(prefix)) {
+        httpCache.delete(key);
+      }
+    }
+  },
+  clear: () => httpCache.clear(),
 };
 
 export class ApiError extends Error {
@@ -275,9 +299,10 @@ function extractErrorMessage(data: any, status: number): string {
   return `Request failed with status ${status}`;
 }
 
-interface RequestOptions extends RequestInit {
+export interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
   skipAuth?: boolean;
+  skipCache?: boolean;
 }
 
 type AuthExpiredCallback = () => void;
@@ -340,7 +365,8 @@ function handleAuthExpirationIfNeeded(status: number, message: string) {
 }
 
 export async function apiClient<T = any>(endpoint: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
-  const { params, skipAuth = false, headers: customHeaders, ...fetchOptions } = options;
+  const { params, skipAuth = false, skipCache = false, headers: customHeaders, ...fetchOptions } = options;
+  const isGet = !fetchOptions.method || fetchOptions.method.toUpperCase() === 'GET';
 
   let baseUrl = CONFIG.API_URL.replace(/\/+$/, '');
   let path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
@@ -384,6 +410,12 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
+  }
+
+  // If GET and not skipping cache, attach ETag if available
+  const cachedEntry = isGet && !skipCache ? apiCache.get(url) : null;
+  if (cachedEntry?.etag) {
+    headers['If-None-Match'] = cachedEntry.etag;
   }
 
   // If body is FormData, use XMLHttpRequest to prevent expo/fetch "Unsupported FormDataPart implementation" error
@@ -438,6 +470,11 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
       headers,
     });
 
+    // 304 Not Modified: Backend confirmed cached data is 100% current and unchanged
+    if (isGet && response.status === 304 && cachedEntry) {
+      return cachedEntry.data as ApiResponse<T>;
+    }
+
     const responseText = await response.text();
     let data: any = {};
     try {
@@ -473,12 +510,19 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
             retryData = { raw: retryText };
           }
           if (retryRes.ok) {
-            return {
+            const retryResult: ApiResponse<T> = {
               success: retryData.success !== undefined ? retryData.success : true,
               message: retryData.message,
               data: retryData.data !== undefined ? retryData.data : retryData,
               error: retryData.error,
             };
+            if (isGet && !skipCache) {
+              const etag = retryRes.headers?.get ? retryRes.headers.get('etag') : null;
+              if (etag) {
+                apiCache.set(url, etag, retryResult);
+              }
+            }
+            return retryResult;
           }
         }
       }
@@ -487,12 +531,27 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
       throw new ApiError(errorMessage, response.status, data);
     }
 
-    return {
+    const result: ApiResponse<T> = {
       success: data.success !== undefined ? data.success : true,
       message: data.message,
       data: data.data !== undefined ? data.data : data,
       error: data.error,
     };
+
+    if (isGet && !skipCache) {
+      const etag = response.headers?.get ? response.headers.get('etag') : null;
+      if (etag) {
+        apiCache.set(url, etag, result);
+      }
+    } else if (!isGet) {
+      // Automatically invalidate related cached resources upon mutations (POST/PUT/PATCH/DELETE)
+      const resourceSegment = path.split('/')[3] || path.split('/')[2];
+      if (resourceSegment) {
+        apiCache.invalidatePrefix(resourceSegment);
+      }
+    }
+
+    return result;
   } catch (error: any) {
     if (error instanceof ApiError) {
       throw error;

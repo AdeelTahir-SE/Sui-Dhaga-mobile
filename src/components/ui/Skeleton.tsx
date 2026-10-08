@@ -1367,4 +1367,109 @@ const earningsStyles = StyleSheet.create({
   },
 });
 
+/**
+ * Comment Item Skeleton (Mirrors comments in ReelCommentsModal / PostDetails)
+ */
+export function CommentItemSkeleton() {
+  return (
+    <View style={commentStyles.row}>
+      <SkeletonPulse style={{ flexDirection: "row", alignItems: "flex-start", width: "100%" }}>
+        {/* Avatar */}
+        <SkeletonBox width={36} height={36} borderRadius={18} />
+
+        {/* Content */}
+        <View style={commentStyles.content}>
+          {/* Author Name + Time Row */}
+          <View style={commentStyles.headerRow}>
+            <SkeletonBox width={110} height={13} borderRadius={4} />
+            <SkeletonBox width={38} height={10} borderRadius={3} />
+          </View>
+
+          {/* Comment text lines */}
+          <SkeletonBox width="92%" height={12} borderRadius={4} style={{ marginTop: 8 }} />
+          <SkeletonBox width="58%" height={12} borderRadius={4} style={{ marginTop: 5 }} />
+        </View>
+      </SkeletonPulse>
+    </View>
+  );
+}
+
+export function CommentsListSkeleton({ count = 5 }: { count?: number }) {
+  return (
+    <View style={{ width: "100%" }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <CommentItemSkeleton key={`comment-skeleton-${i}`} />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Review Card Skeleton (Mirrors customer review card in TailorProfileScreen)
+ */
+export function ReviewCardSkeleton() {
+  return (
+    <View style={reviewStyles.card}>
+      <SkeletonPulse>
+        <View style={reviewStyles.topRow}>
+          <SkeletonBox width={38} height={38} borderRadius={19} />
+          <View style={{ marginLeft: 10, flex: 1 }}>
+            <SkeletonBox width={120} height={14} borderRadius={4} />
+            <SkeletonBox width={70} height={11} borderRadius={3} style={{ marginTop: 5 }} />
+          </View>
+          <SkeletonBox width={60} height={18} borderRadius={6} />
+        </View>
+        <SkeletonBox width="95%" height={13} borderRadius={4} style={{ marginTop: 10 }} />
+        <SkeletonBox width="70%" height={13} borderRadius={4} style={{ marginTop: 5 }} />
+      </SkeletonPulse>
+    </View>
+  );
+}
+
+export function ReviewsListSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <View style={{ width: "100%", gap: 10 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <ReviewCardSkeleton key={`review-skeleton-${i}`} />
+      ))}
+    </View>
+  );
+}
+
+const commentStyles = StyleSheet.create({
+  row: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+    width: "100%",
+  },
+  content: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+});
+
+const reviewStyles = StyleSheet.create({
+  card: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 14,
+    width: "100%",
+  },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+});
+
+
 

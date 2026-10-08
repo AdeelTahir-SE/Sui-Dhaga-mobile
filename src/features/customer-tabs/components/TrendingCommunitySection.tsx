@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import { communityApi } from "../../../api/community.api";
+import { useCommunityStore } from "../../../stores/community.store";
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 import { CommunityPost } from "../../../types/api";
 import { TrendingDesignsListSkeleton } from "../../../components/ui/Skeleton";
@@ -26,9 +27,17 @@ export function TrendingCommunitySection({
   title = "Trending Design",
   onViewAll,
 }: TrendingCommunitySectionProps) {
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [trendingPostIds, setTrendingPostIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const postsById = useCommunityStore((state) => state.postsById);
+  const upsertPosts = useCommunityStore((state) => state.upsertPosts);
+  const storeToggleLike = useCommunityStore((state) => state.toggleLike);
+
+  const posts = useMemo(() => {
+    return trendingPostIds.map((id) => postsById[id]).filter(Boolean);
+  }, [trendingPostIds, postsById]);
 
   const fetchTrending = useCallback(async () => {
     setIsLoading(true);
@@ -43,80 +52,22 @@ export function TrendingCommunitySection({
         ? res.data
         : (res.data as any)?.records || [];
 
-      setPosts(records);
+      upsertPosts(records);
+      setTrendingPostIds(records.map((r: any) => r.id));
     } catch (err: any) {
       setError(err?.message || "Could not load trending community designs.");
-      setPosts([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [upsertPosts]);
 
   useEffect(() => {
     fetchTrending();
   }, [fetchTrending]);
 
-  const toggleLike = async (postId: string) => {
-    setPosts((prevPosts) =>
-      prevPosts.map((p) => {
-        if (p.id === postId) {
-          const currentlyLiked = Boolean(p.isLiked ?? p.is_liked);
-          const currentCount = p.likesCount ?? p.likes_count ?? 0;
-          const nextLiked = !currentlyLiked;
-          const nextCount = nextLiked
-            ? currentCount + 1
-            : Math.max(0, currentCount - 1);
-          return {
-            ...p,
-            isLiked: nextLiked,
-            is_liked: nextLiked,
-            likesCount: nextCount,
-            likes_count: nextCount,
-          };
-        }
-        return p;
-      }),
-    );
-
-    try {
-      const res = await communityApi.toggleLike(postId);
-      if (res.data?.post) {
-        const serverPost = res.data.post;
-        const serverLiked = res.data.liked;
-        setPosts((prevPosts) =>
-          prevPosts.map((p) =>
-            p.id === postId
-              ? {
-                  ...p,
-                  ...serverPost,
-                  isLiked: serverLiked,
-                  is_liked: serverLiked,
-                }
-              : p,
-          ),
-        );
-      }
-    } catch {
-      // Revert on failure
-      setPosts((prevPosts) =>
-        prevPosts.map((p) => {
-          if (p.id === postId) {
-            const currentlyLiked = Boolean(p.isLiked ?? p.is_liked);
-            const currentCount = p.likesCount ?? p.likes_count ?? 0;
-            const nextLiked = !currentlyLiked;
-            return {
-              ...p,
-              isLiked: nextLiked,
-              is_liked: nextLiked,
-              likesCount: currentCount,
-              likes_count: currentCount,
-            };
-          }
-          return p;
-        }),
-      );
-    }
-  };
+  const toggleLike = useCallback((postId: string) => {
+    storeToggleLike(postId);
+  }, [storeToggleLike]);
 
   const handleViewAll = () => {
     if (onViewAll) {
@@ -193,7 +144,7 @@ export function TrendingCommunitySection({
           contentContainerStyle={styles.scrollContent}
           className="-mx-5 px-5"
         >
-          {posts.map((item) => {
+          {posts.map((item: CommunityPost) => {
             const authorName =
               item.author?.fullName ||
               item.author?.full_name ||

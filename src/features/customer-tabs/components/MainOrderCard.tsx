@@ -203,7 +203,7 @@ export function MainOrderCard({
 
   const ctaLabel =
     button ||
-    (isCompleted ? "View Details" : isCancelled ? "Order Details" : "Track Order");
+    (isCompleted ? "★ Rate & Review" : isCancelled ? "Order Details" : "Track Order");
 
   const firstDesignImg =
     (Array.isArray(designImages) && designImages.length > 0 ? designImages[0] : null) ||
@@ -355,9 +355,9 @@ export function MainOrderCard({
             {ctaLabel}
           </Text>
           <Ionicons
-            name={isCancelled ? "chevron-forward" : "arrow-forward"}
+            name={isCancelled ? "chevron-forward" : isCompleted ? "star" : "arrow-forward"}
             size={14}
-            color={isCancelled ? "#64748B" : "#FFFFFF"}
+            color={isCancelled ? "#64748B" : isCompleted ? "#FDE68A" : "#FFFFFF"}
             style={{ marginLeft: 4, zIndex: 1 }}
           />
         </TouchableOpacity>

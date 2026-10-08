@@ -1,11 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
   Linking,
   Modal,
+  ScrollView,
   Share,
   Text,
   TouchableOpacity,
@@ -23,7 +25,9 @@ import { TailorPlaceholder } from "../components/TailorPlaceholder";
 import { TailorScreenShell } from "../components/TailorScreenShell";
 import { useTailorDetails } from "../hooks/useTailors";
 import { useTailorProfile } from "@/features/tailor-dashboard/hooks/useTailorProfile";
-import { TailorProfileSkeleton } from "@/components/ui/Skeleton";
+import { TailorProfileSkeleton, ReviewsListSkeleton } from "@/components/ui/Skeleton";
+import { reviewsApi } from "@/api/reviews.api";
+import type { ReviewItem } from "@/types/api";
 
 const profileHeroImage = require("@/assets/illustrations/tailor-discovery/profile-hero.png");
 const rekhaImage = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
@@ -51,6 +55,23 @@ export default function TailorProfileScreen() {
   const [isStartingChat, setIsStartingChat] = useState(false);
   const [isMapModalVisible, setIsMapModalVisible] = useState(false);
   const [mapZoomLevel, setMapZoomLevel] = useState(1);
+  const [reviews, setReviews] = useState<ReviewItem[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+
+  useEffect(() => {
+    const tId = tailor?.id || tailorId;
+    if (!tId) return;
+    setIsLoadingReviews(true);
+    reviewsApi
+      .getTailorReviews(tId)
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setReviews(res.data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingReviews(false));
+  }, [tailor?.id, tailorId]);
 
   const insets = useSafeAreaInsets();
 
@@ -575,6 +596,127 @@ export default function TailorProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Customer Reviews & Ratings Showcase */}
+        <View className="mb-3 mt-7 flex-row items-center justify-between">
+          <View className="flex-row items-center">
+            <Ionicons name="star" size={20} color="#F59E0B" />
+            <Text className="ml-1.5 text-[18px] font-bold text-brand-dark">
+              Customer Reviews
+            </Text>
+          </View>
+          <View className="flex-row items-center rounded-full bg-[#FEF3C7] px-2.5 py-0.5">
+            <Text className="text-[12px] font-black text-[#D97706]">
+              ⭐ {rating}
+            </Text>
+            <Text className="text-[11px] font-medium text-brand-gray ml-1">
+              ({reviews.length > 0 ? reviews.length : tailor?.reviewsCount ?? tailor?.reviews ?? 0})
+            </Text>
+          </View>
+        </View>
+
+        {isLoadingReviews ? (
+          <ReviewsListSkeleton count={2} />
+        ) : reviews.length > 0 ? (
+          <View className="gap-3">
+            {reviews.map((rev, idx) => {
+              const cust = rev.customer;
+              const reviewerName =
+                cust?.fullName ||
+                cust?.full_name ||
+                cust?.name ||
+                "Verified Customer";
+              const reviewerAvatar = cust?.avatarUrl || cust?.avatar_url;
+              const revDate = rev.createdAt || rev.created_at;
+              const formattedRevDate = revDate
+                ? new Date(revDate).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : "Recent";
+
+              return (
+                <View
+                  key={rev.id || idx}
+                  className="rounded-2xl border border-brand-border bg-white p-4 shadow-2xs"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <View className="flex-row items-center flex-1 pr-2">
+                      {reviewerAvatar ? (
+                        <Image
+                          source={{ uri: reviewerAvatar }}
+                          style={{ width: 36, height: 36, borderRadius: 18 }}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10 border border-primary/20">
+                          <Ionicons name="person" size={18} color="#14919B" />
+                        </View>
+                      )}
+                      <View className="ml-2.5 flex-1">
+                        <Text
+                          className="text-[13.5px] font-bold text-brand-dark"
+                          numberOfLines={1}
+                        >
+                          {reviewerName}
+                        </Text>
+                        <Text className="text-[11px] text-brand-gray">
+                          {formattedRevDate}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Star Rating */}
+                    <View className="flex-row items-center bg-amber-50 px-2 py-0.5 rounded-md">
+                      <Ionicons name="star" size={13} color="#F59E0B" />
+                      <Text className="ml-1 text-[12px] font-black text-amber-700">
+                        {rev.rating}.0
+                      </Text>
+                    </View>
+                  </View>
+
+                  {rev.comment ? (
+                    <Text className="mt-2.5 text-[13px] leading-5 text-brand-dark/90 font-normal">
+                      {rev.comment}
+                    </Text>
+                  ) : null}
+
+                  {rev.images && rev.images.length > 0 ? (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={{ gap: 8, marginTop: 10 }}
+                    >
+                      {rev.images.map((imgUri, imgIdx) => (
+                        <View
+                          key={imgIdx}
+                          className="h-16 w-16 overflow-hidden rounded-xl border border-slate-200"
+                        >
+                          <Image
+                            source={{ uri: imgUri }}
+                            style={{ width: "100%", height: "100%" }}
+                            contentFit="cover"
+                          />
+                        </View>
+                      ))}
+                    </ScrollView>
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <View className="rounded-2xl border border-dashed border-brand-border bg-[#F8FAFC] p-4 items-center justify-center">
+            <Ionicons name="chatbubbles-outline" size={26} color="#94A3B8" />
+            <Text className="mt-1.5 text-[13px] font-bold text-brand-dark text-center">
+              No Written Reviews Yet
+            </Text>
+            <Text className="mt-0.5 text-[11.5px] text-brand-gray text-center max-w-[280px]">
+              Clients who complete stitching orders with this tailor can rate and share outfit photos here.
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Full Screen Interactive Leaflet Map Modal */}

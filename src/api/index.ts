@@ -9,3 +9,4 @@ export * from './notifications.api';
 export * from './conversations.api';
 export * from './users.api';
 export * from './community.api';
+export * from './reviews.api';

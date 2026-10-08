@@ -26,6 +26,8 @@ import { ButtonTexture } from "@/components/ui/ButtonTexture";
 import { tailorsApi } from "@/api/tailors.api";
 import { ordersApi } from "@/api/orders.api";
 import { apiClient } from "@/api/client";
+import { RateReviewModal } from "../components/RateReviewModal";
+import { useOrderReview } from "../hooks/useOrderReview";
 import type { TailorItem } from "@/types/api";
 
 export default function OrderDetailsScreen() {
@@ -405,6 +407,24 @@ export default function OrderDetailsScreen() {
     normStatus === "confirmed" ||
     normStatus === "accepted" ||
     normStatus === "processing";
+  const isCompleted =
+    normStatus === "completed" || normStatus === "delivered";
+
+  const effectiveOrderId = orderId || order?.id || "";
+  const effectiveTailorId =
+    displayTailorId ||
+    tailorInfo?.id ||
+    order?.tailorId ||
+    (order as any)?.tailor_id ||
+    "";
+
+  const {
+    review,
+    setReview,
+    isReviewed,
+    isLoading: isReviewLoading,
+  } = useOrderReview(effectiveOrderId, effectiveTailorId);
+  const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
 
   const handleAcceptOrder = async () => {
     setIsActionLoading("accept");
@@ -985,6 +1005,160 @@ export default function OrderDetailsScreen() {
           </View>
         )}
 
+        {/* Customer Post-Completion Rating & Review Section */}
+        {!isTailor && isCompleted && !isReviewed && (
+          <View className="mt-5 rounded-2xl bg-white border border-[#E2E8F0] p-4.5 shadow-sm">
+            <View className="flex-row items-center justify-between mb-2">
+              <View className="flex-row items-center">
+                <View className="h-8 w-8 rounded-full bg-[#FEF3C7] items-center justify-center mr-2.5">
+                  <Ionicons name="star" size={17} color="#D97706" />
+                </View>
+                <Text className="text-[15px] font-black text-brand-dark">
+                  Rate & Review Stitching
+                </Text>
+              </View>
+              <View className="bg-[#FEF3C7] px-2.5 py-0.5 rounded-full">
+                <Text className="text-[10.5px] font-bold text-[#D97706]">
+                  Order Completed
+                </Text>
+              </View>
+            </View>
+
+            <Text className="text-[12.5px] text-brand-gray mb-3.5 leading-[19px]">
+              How was the custom fitting and quality from {displayTailorName}? Leave a star rating & review for the tailor.
+            </Text>
+
+            {/* Quick Star Rating Tap Row */}
+            <View className="flex-row items-center justify-between bg-[#F8FAFC] rounded-xl p-3 mb-3.5 border border-slate-100">
+              <Text className="text-[12px] font-bold text-brand-dark">
+                Tap stars to rate:
+              </Text>
+              <View className="flex-row gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    activeOpacity={0.7}
+                    onPress={() => setIsReviewModalVisible(true)}
+                  >
+                    <Ionicons name="star-outline" size={26} color="#F59E0B" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setIsReviewModalVisible(true)}
+              activeOpacity={0.85}
+              className="h-[46px] rounded-xl bg-primary items-center justify-center flex-row overflow-hidden relative shadow-sm"
+            >
+              <ButtonTexture variant="greenish" borderRadius={12} />
+              <Ionicons
+                name="star"
+                size={16}
+                color="#FFFFFF"
+                style={{ marginRight: 6, zIndex: 1 }}
+              />
+              <Text className="text-[13px] font-bold text-white" style={{ zIndex: 1 }}>
+                Write Rating & Review
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Customer Existing Review Card */}
+        {!isTailor && isCompleted && isReviewed && (
+          <View className="mt-5 rounded-2xl bg-white border border-[#BCE3E5] p-4.5 shadow-sm">
+            <View className="flex-row items-center justify-between mb-2.5">
+              <View className="flex-row items-center">
+                <View className="h-8 w-8 rounded-full bg-[#E0F7F7] items-center justify-center mr-2.5">
+                  <Ionicons name="checkmark-circle" size={18} color="#0D7377" />
+                </View>
+                <Text className="text-[15px] font-black text-brand-dark">
+                  Your Rating & Review
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsReviewModalVisible(true)}
+                activeOpacity={0.7}
+                className="flex-row items-center px-3 py-1 rounded-lg bg-[#F0FAFA] border border-[#BCE3E5]"
+              >
+                <Ionicons name="create-outline" size={13} color="#14919B" />
+                <Text className="text-[11px] font-bold text-[#14919B] ml-1">
+                  Edit Review
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Stars Row */}
+            <View className="flex-row items-center mb-2">
+              <View className="flex-row mr-2">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Ionicons
+                    key={s}
+                    name={s <= (review?.rating || 5) ? "star" : "star-outline"}
+                    size={18}
+                    color="#F59E0B"
+                    style={{ marginRight: 2 }}
+                  />
+                ))}
+              </View>
+              <Text className="text-[13px] font-extrabold text-brand-dark">
+                {review?.rating}.0 / 5.0
+              </Text>
+            </View>
+
+            {review?.comment ? (
+              <Text className="text-[12.5px] text-brand-dark leading-[19px] mb-2 bg-[#F8FAFC] p-3 rounded-xl border border-slate-100">
+                {review.comment}
+              </Text>
+            ) : null}
+
+            {review?.images && review.images.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginTop: 4 }}>
+                {review.images.map((imgUri, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    onPress={() => setPreviewImageUri(imgUri)}
+                    activeOpacity={0.85}
+                    style={{ width: 64, height: 64, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: "#E2E8F0" }}
+                  >
+                    <Image source={{ uri: imgUri }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : null}
+          </View>
+        )}
+
+        {/* Tailor View of Customer Review */}
+        {isTailor && isCompleted && isReviewed && (
+          <View className="mt-5 rounded-2xl bg-white border border-[#E2E8F0] p-4.5 shadow-sm">
+            <View className="flex-row items-center justify-between mb-2">
+              <View className="flex-row items-center">
+                <Ionicons name="chatbox-ellipses" size={18} color="#14919B" />
+                <Text className="text-[14px] font-black text-brand-dark ml-2">
+                  Customer Review & Rating
+                </Text>
+              </View>
+              <View className="flex-row items-center bg-[#FEF3C7] px-2.5 py-0.5 rounded-full">
+                <Ionicons name="star" size={12} color="#D97706" />
+                <Text className="text-[11px] font-bold text-[#D97706] ml-1">
+                  {review?.rating}.0 / 5
+                </Text>
+              </View>
+            </View>
+            {review?.comment ? (
+              <Text className="text-[12px] text-brand-gray leading-relaxed bg-[#F8FAFC] p-3 rounded-xl border border-slate-100 mt-1">
+                "{review.comment}"
+              </Text>
+            ) : (
+              <Text className="text-[12px] text-brand-gray italic mt-1">
+                Customer left a {review?.rating}-star rating!
+              </Text>
+            )}
+          </View>
+        )}
+
         <View className="mt-5 rounded-xl bg-brand-surface p-4">
           <View className="flex-row">
             <Ionicons name="headset-outline" size={22} color="#1A1D1F" />
@@ -1048,6 +1222,19 @@ export default function OrderDetailsScreen() {
             )}
           </View>
         </Modal>
+
+        {/* Star Rating & Review Modal */}
+        <RateReviewModal
+          visible={isReviewModalVisible}
+          onClose={() => setIsReviewModalVisible(false)}
+          orderId={effectiveOrderId}
+          tailorId={effectiveTailorId}
+          tailorName={displayTailorName}
+          tailorAvatar={displayTailorAvatar || undefined}
+          itemName={itemName}
+          existingReview={review}
+          onReviewSubmitted={(newRev) => setReview(newRev)}
+        />
       </View>
     </BookingOrdersScreenShell>
   );
