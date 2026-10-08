@@ -22,6 +22,8 @@ import {
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../services/queryClient";
+import "../services/alert.service";
+import { ThemedAlertModal } from "../components/ui/ThemedAlertModal";
 
 // Ensure auth session from deep linking is completed on app resume
 WebBrowser.maybeCompleteAuthSession();
@@ -81,6 +83,7 @@ export default function RootLayout() {
             onUpdate={triggerUpdate}
             onDismiss={dismissModal}
           />
+          <ThemedAlertModal />
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
