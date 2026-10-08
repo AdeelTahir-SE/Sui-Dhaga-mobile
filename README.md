@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="#-download">
+  <a href="https://github.com/AdeelTahir-SE/Sui-Dhaga-mobile/releases/latest">
     <img src="https://img.shields.io/badge/Download-APK-14919B?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" />
   </a>
   &nbsp;
@@ -26,7 +26,8 @@
 
 > **Try the latest build on your Android device:**
 >
-> 👉 **[Download APK][YOUR_APK_LINK_HERE](https://drive.google.com/file/d/1V2iOrs21xR46zGUpPfCZrwenY8GA-a-t/view?usp=sharing)**
+> 🚀 **[Download APK from GitHub Releases](https://github.com/AdeelTahir-SE/Sui-Dhaga-mobile/releases/latest)**  
+> ☁️ **[Alternative: Google Drive Mirror](https://drive.google.com/file/d/1V2iOrs21xR46zGUpPfCZrwenY8GA-a-t/view?usp=sharing)**
 >
 
 ---
