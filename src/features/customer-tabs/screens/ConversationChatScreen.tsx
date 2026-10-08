@@ -333,6 +333,10 @@ export default function ConversationChatScreen() {
   );
   const [reportDetails, setReportDetails] = useState("");
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [isBlockedByMe, setIsBlockedByMe] = useState(false);
+  const [isBlockedByOther, setIsBlockedByOther] = useState(false);
+  const [isCheckingBlockStatus, setIsCheckingBlockStatus] = useState(false);
+  const [isBlockingOrUnblocking, setIsBlockingOrUnblocking] = useState(false);
   const { isOnline } = usePresence();
   const { measurements } = useMeasurements();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -1179,26 +1183,119 @@ export default function ConversationChatScreen() {
   };
 
   const curUserId = currentUser?.id ? String(currentUser.id).toLowerCase() : "";
+
+  // 1. Resolve other participant profile object if available in conversation data
+  let otherParticipantProfile: any = null;
+  if (
+    conversation?.participant &&
+    String(
+      conversation.participant.id ||
+        conversation.participant._id ||
+        conversation.participant.user_id ||
+        conversation.participant.userId ||
+        "",
+    ).toLowerCase() !== curUserId
+  ) {
+    otherParticipantProfile = conversation.participant;
+  } else if (
+    conversation?.participant1 &&
+    String(
+      conversation.participant1.id ||
+        conversation.participant1._id ||
+        conversation.participant1_id ||
+        "",
+    ).toLowerCase() !== curUserId
+  ) {
+    otherParticipantProfile = conversation.participant1;
+  } else if (
+    conversation?.participant2 &&
+    String(
+      conversation.participant2.id ||
+        conversation.participant2._id ||
+        conversation.participant2_id ||
+        "",
+    ).toLowerCase() !== curUserId
+  ) {
+    otherParticipantProfile = conversation.participant2;
+  } else if (
+    Array.isArray(conversation?.participants) &&
+    conversation.participants.length > 0
+  ) {
+    otherParticipantProfile =
+      conversation.participants.find((p: any) => {
+        const pId = String(
+          p?.id || p?._id || p?.userId || p?.user_id || "",
+        ).toLowerCase();
+        return pId && pId !== curUserId;
+      }) || null;
+  }
+
+  // 2. Resolve target otherUserId strictly avoiding currentUser.id
+  const convP1Id = String(
+    conversation?.participant1_id ||
+      (conversation as any)?.participant1Id ||
+      "",
+  );
+  const convP2Id = String(
+    conversation?.participant2_id ||
+      (conversation as any)?.participant2Id ||
+      "",
+  );
+
+  let derivedOtherUserId = "";
+  if (
+    otherParticipantProfile?.id &&
+    String(otherParticipantProfile.id).toLowerCase() !== curUserId
+  ) {
+    derivedOtherUserId = String(otherParticipantProfile.id);
+  } else if (
+    otherParticipantProfile?._id &&
+    String(otherParticipantProfile._id).toLowerCase() !== curUserId
+  ) {
+    derivedOtherUserId = String(otherParticipantProfile._id);
+  } else if (
+    otherParticipantProfile?.userId &&
+    String(otherParticipantProfile.userId).toLowerCase() !== curUserId
+  ) {
+    derivedOtherUserId = String(otherParticipantProfile.userId);
+  } else if (
+    otherParticipantProfile?.user_id &&
+    String(otherParticipantProfile.user_id).toLowerCase() !== curUserId
+  ) {
+    derivedOtherUserId = String(otherParticipantProfile.user_id);
+  } else if (convP1Id && convP1Id.toLowerCase() !== curUserId) {
+    derivedOtherUserId = convP1Id;
+  } else if (convP2Id && convP2Id.toLowerCase() !== curUserId) {
+    derivedOtherUserId = convP2Id;
+  } else if (
+    params.recipientId &&
+    String(params.recipientId).toLowerCase() !== curUserId
+  ) {
+    derivedOtherUserId = String(params.recipientId);
+  } else if (
+    isTailor &&
+    params.clientId &&
+    String(params.clientId).toLowerCase() !== curUserId
+  ) {
+    derivedOtherUserId = String(params.clientId);
+  } else if (
+    !isTailor &&
+    params.tailorId &&
+    String(params.tailorId).toLowerCase() !== curUserId
+  ) {
+    derivedOtherUserId = String(params.tailorId);
+  }
+
+  const otherUserId = derivedOtherUserId;
+
   const resolvedOtherParticipant =
-    conversation?.participant ||
-    (conversation?.participant1 && conversation?.participant2
-      ? String(
-          conversation.participant1.id ||
-            conversation.participant1._id ||
-            conversation.participant1_id ||
-            "",
-        ).toLowerCase() === curUserId
-        ? conversation.participant2
-        : conversation.participant1
-      : null) ||
-    conversation?.participant2 ||
-    conversation?.participant1 ||
-    conversation?.participants?.[0] ||
+    otherParticipantProfile ||
     ({
-      name: params.name || "Tailor",
-      fullName: params.name || "Tailor",
+      id: otherUserId,
+      name: params.name || (isTailor ? "Client" : "Tailor"),
+      fullName: params.name || (isTailor ? "Client" : "Tailor"),
       avatarUrl: params.avatar,
-      role: "Tailor",
+      role: isTailor ? "Customer" : "Tailor",
     } as any);
 
   const participant = resolvedOtherParticipant;
@@ -1210,7 +1307,7 @@ export default function ConversationChatScreen() {
     params.name ||
     participant.shopName ||
     participant.shop_name ||
-    "Tailor";
+    (isTailor ? "Client" : "Tailor");
 
   const avatarUrl =
     participant.avatarUrl ||
@@ -1222,15 +1319,45 @@ export default function ConversationChatScreen() {
     participant.profileImage ||
     params.avatar;
 
+  const isBlocked = isBlockedByMe || isBlockedByOther;
+
   const canSend =
+    !isBlocked &&
     (inputText.trim().length > 0 || pendingAttachments.length > 0) &&
     !isSending;
+
+  // Check block status between current user and other user
+  useEffect(() => {
+    if (!otherUserId || !currentUser?.id) return;
+    let isMounted = true;
+    setIsCheckingBlockStatus(true);
+
+    usersApi
+      .getBlockStatus(otherUserId)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res?.data) {
+          setIsBlockedByMe(Boolean(res.data.blockedByMe));
+          setIsBlockedByOther(Boolean(res.data.blockedByOther));
+        }
+      })
+      .catch((err) => {
+        console.warn("Failed to check block status:", err);
+      })
+      .finally(() => {
+        if (isMounted) setIsCheckingBlockStatus(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [otherUserId, currentUser?.id]);
 
   const handleGoToCreateOrder = () => {
     router.push({
       pathname: "/orders/create",
       params: {
-        tailorId: resolvedTailorId || "1",
+        tailorId: resolvedTailorId || otherUserId || "1",
         tailorName: participantName || "Tailor",
         avatar: avatarUrl || "",
         conversationId: activeConvId || params.conversationId || "",
@@ -1238,19 +1365,18 @@ export default function ConversationChatScreen() {
     } as any);
   };
 
-  const otherUserId =
-    resolvedOtherParticipant?.id ||
-    resolvedOtherParticipant?._id ||
-    resolvedOtherParticipant?.user_id ||
-    resolvedOtherParticipant?.userId ||
-    resolvedTailorId ||
-    params.recipientId ||
-    params.tailorId ||
-    params.clientId;
-  const isOtherOnline = isOnline(otherUserId);
+  const isOtherOnline = otherUserId ? isOnline(otherUserId) : false;
 
   const handleBlockPerson = () => {
     setIsActionSheetVisible(false);
+    if (!otherUserId) {
+      Alert.alert(
+        "Notice",
+        "Unable to identify user profile to block. Please make sure this conversation is active.",
+      );
+      return;
+    }
+
     Alert.alert(
       "Block User?",
       `Are you sure you want to block ${participantName}? You will no longer receive messages or orders from them.`,
@@ -1260,21 +1386,72 @@ export default function ConversationChatScreen() {
           text: "Block",
           style: "destructive",
           onPress: async () => {
+            setIsBlockingOrUnblocking(true);
             try {
-              if (otherUserId) {
-                await usersApi.blockUser(String(otherUserId));
-              }
+              await usersApi.blockUser(String(otherUserId));
+              setIsBlockedByMe(true);
               Alert.alert(
                 "User Blocked",
-                `${participantName} has been blocked.`,
-                [{ text: "OK", onPress: () => router.back() }],
+                `${participantName} has been blocked. You will no longer receive messages or orders from them.`,
+                [
+                  { text: "OK" },
+                  {
+                    text: "Leave Chat",
+                    style: "cancel",
+                    onPress: () => router.back(),
+                  },
+                ],
               );
-            } catch {
+            } catch (err: any) {
               Alert.alert(
-                "User Blocked",
-                `${participantName} has been blocked.`,
+                "Unable to Block User",
+                err?.message ||
+                  "Failed to block user. Please check your internet connection and try again.",
               );
-              router.back();
+            } finally {
+              setIsBlockingOrUnblocking(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleUnblockPerson = () => {
+    setIsActionSheetVisible(false);
+    if (!otherUserId) {
+      Alert.alert(
+        "Notice",
+        "Unable to identify user profile to unblock.",
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Unblock User?",
+      `Are you sure you want to unblock ${participantName}? You will be able to send and receive messages again.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unblock",
+          style: "default",
+          onPress: async () => {
+            setIsBlockingOrUnblocking(true);
+            try {
+              await usersApi.unblockUser(String(otherUserId));
+              setIsBlockedByMe(false);
+              Alert.alert(
+                "User Unblocked",
+                `${participantName} has been unblocked. You can now chat and place orders again.`,
+              );
+            } catch (err: any) {
+              Alert.alert(
+                "Unable to Unblock User",
+                err?.message ||
+                  "Failed to unblock user. Please check your internet connection and try again.",
+              );
+            } finally {
+              setIsBlockingOrUnblocking(false);
             }
           },
         },
@@ -1288,26 +1465,40 @@ export default function ConversationChatScreen() {
   };
 
   const handleSubmitReport = async () => {
+    if (!otherUserId) {
+      Alert.alert(
+        "Notice",
+        "Unable to identify user profile to report. Please make sure this conversation is active.",
+      );
+      return;
+    }
+
+    if (!reportReason || !reportReason.trim()) {
+      Alert.alert(
+        "Reason Required",
+        "Please select a reason for reporting this user.",
+      );
+      return;
+    }
+
     setIsSubmittingReport(true);
     try {
-      if (otherUserId) {
-        await usersApi.reportUser(
-          String(otherUserId),
-          reportReason,
-          reportDetails.trim() || undefined,
-        );
-      }
+      await usersApi.reportUser(
+        String(otherUserId),
+        reportReason.trim(),
+        reportDetails.trim() || undefined,
+      );
       setIsReportModalVisible(false);
       setReportDetails("");
       Alert.alert(
         "Report Submitted",
         "Thank you for letting us know. Our safety and moderation team will review this user.",
       );
-    } catch {
-      setIsReportModalVisible(false);
+    } catch (err: any) {
       Alert.alert(
-        "Report Received",
-        "Your report has been submitted to the moderation team.",
+        "Report Failed",
+        err?.message ||
+          "Could not submit report. Please check your connection and try again.",
       );
     } finally {
       setIsSubmittingReport(false);

@@ -121,4 +121,25 @@ export const usersApi = {
       body: JSON.stringify({ targetId }),
     });
   },
+
+  async unblockUser(targetId: string): Promise<ApiResponse<any>> {
+    return apiClient<any>('/users/unblock', {
+      method: 'POST',
+      body: JSON.stringify({ targetId }),
+    });
+  },
+
+  async getBlockStatus(
+    targetId: string
+  ): Promise<ApiResponse<{ isBlocked: boolean; blockedByMe: boolean; blockedByOther: boolean }>> {
+    return apiClient<any>(`/users/${encodeURIComponent(targetId)}/block-status`, {
+      method: 'GET',
+    });
+  },
+
+  async getBlockedUsers(): Promise<ApiResponse<any[]>> {
+    return apiClient<any[]>('/users/blocked', {
+      method: 'GET',
+    });
+  },
 };

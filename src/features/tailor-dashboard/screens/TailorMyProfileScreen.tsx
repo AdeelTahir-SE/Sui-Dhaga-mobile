@@ -20,6 +20,7 @@ import { ProfileMenuRow } from "../../customer-tabs/components/ProfileMenuRow";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
 import { storage } from "../../../api/client";
 import { User } from "../../../types/api";
+import { TailorProfileSkeleton } from "@/components/ui/Skeleton";
 
 export default function TailorMyProfileScreen() {
   const user = useAuthStore((state) => state.user);
@@ -262,8 +263,11 @@ export default function TailorMyProfileScreen() {
           </Text>
         </View>
 
-        <View className="px-5 pt-3">
-          {/* Main Profile Card */}
+        {isLoading && !profile ? (
+          <TailorProfileSkeleton />
+        ) : (
+          <View className="px-5 pt-3">
+            {/* Main Profile Card */}
           <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
             {/* Optional Workshop Banner Cover */}
             {bannerUri ? (
@@ -558,6 +562,7 @@ export default function TailorMyProfileScreen() {
             Sui Dhaga Partner • v1.0.0
           </Text>
         </View>
+        )}
       </ScrollView>
     </TailorDashboardShell>
   );

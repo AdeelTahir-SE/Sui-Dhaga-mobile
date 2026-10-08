@@ -23,6 +23,7 @@ import { TailorPlaceholder } from "../components/TailorPlaceholder";
 import { TailorScreenShell } from "../components/TailorScreenShell";
 import { useTailorDetails } from "../hooks/useTailors";
 import { useTailorProfile } from "@/features/tailor-dashboard/hooks/useTailorProfile";
+import { TailorProfileSkeleton } from "@/components/ui/Skeleton";
 
 const profileHeroImage = require("@/assets/illustrations/tailor-discovery/profile-hero.png");
 const rekhaImage = require("@/assets/illustrations/customer-tabs/tailors/rekha.png");
@@ -55,14 +56,9 @@ export default function TailorProfileScreen() {
 
   if (isLoading) {
     return (
-      <View
-        className="flex-1 items-center justify-center py-10 bg-white"
-        style={{ paddingTop: insets.top }}
-      >
-        <ActivityIndicator size="large" color="#14919B" />
-        <Text className="mt-4 text-[14px] font-medium text-brand-gray">
-          Loading tailor profile...
-        </Text>
+      <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}>
+        <TailorHeader title="Tailor Profile" showBack rightIcon={null} />
+        <TailorProfileSkeleton />
       </View>
     );
   }
