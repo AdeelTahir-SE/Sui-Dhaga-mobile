@@ -822,6 +822,20 @@ export default function ConversationChatScreen() {
 
   const sendVoiceMessage = async (voiceUri: string) => {
     if (isSending) return;
+    if (isBlockedByMe) {
+      Alert.alert(
+        "Blocked User",
+        "You have blocked this user. Unblock them to send messages.",
+      );
+      return;
+    }
+    if (isBlockedByOther) {
+      Alert.alert(
+        "Cannot Send",
+        "You cannot send messages because this user has blocked you.",
+      );
+      return;
+    }
     setIsSending(true);
 
     const tempId = "temp_" + Date.now();
@@ -934,6 +948,20 @@ export default function ConversationChatScreen() {
   };
 
   const handleSend = async () => {
+    if (isBlockedByMe) {
+      Alert.alert(
+        "Blocked User",
+        "You have blocked this user. Unblock them to send messages.",
+      );
+      return;
+    }
+    if (isBlockedByOther) {
+      Alert.alert(
+        "Cannot Send",
+        "You cannot send messages because this user has blocked you.",
+      );
+      return;
+    }
     const textToSend = inputText.trim();
     const attachmentsToSend = [...pendingAttachments];
     if ((!textToSend && attachmentsToSend.length === 0) || isSending) return;
@@ -2597,17 +2625,132 @@ export default function ConversationChatScreen() {
           </View>
         )}
 
-        <ChatInputBar
-          inputText={inputText}
-          onChangeInputText={setInputText}
-          pendingAttachments={pendingAttachments}
-          isSending={isSending}
-          onSendTextMessage={handleSend}
-          onSendVoiceMessage={sendVoiceMessage}
-          onPickAttachment={handlePickAttachment}
-          onTakePhoto={handleTakePhoto}
-          insetsBottom={insets.bottom}
-        />
+        {isBlockedByMe ? (
+          <View
+            style={{
+              backgroundColor: "#FEF2F2",
+              borderTopWidth: 1,
+              borderColor: "#FEE2E2",
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              paddingBottom: Math.max(insets.bottom, 14),
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                flex: 1,
+                marginRight: 10,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "#FEE2E2",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 10,
+                }}
+              >
+                <Ionicons name="ban" size={20} color="#EF4444" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: "#991B1B",
+                  }}
+                >
+                  You blocked this user
+                </Text>
+                <Text style={{ fontSize: 11, color: "#7F1D1D", marginTop: 1 }}>
+                  You cannot send or receive messages until unblocked.
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              onPress={handleUnblockPerson}
+              disabled={isBlockingOrUnblocking}
+              activeOpacity={0.8}
+              style={{
+                backgroundColor: "#EF4444",
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 10,
+              }}
+            >
+              {isBlockingOrUnblocking ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text
+                  style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 12 }}
+                >
+                  Unblock
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : isBlockedByOther ? (
+          <View
+            style={{
+              backgroundColor: "#F8FAFC",
+              borderTopWidth: 1,
+              borderColor: "#E2E8F0",
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              paddingBottom: Math.max(insets.bottom, 14),
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: "#F1F5F9",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 10,
+              }}
+            >
+              <Ionicons name="alert-circle" size={20} color="#64748B" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "700",
+                  color: "#334155",
+                }}
+              >
+                Messaging unavailable
+              </Text>
+              <Text style={{ fontSize: 11, color: "#64748B", marginTop: 1 }}>
+                You cannot send messages to this user.
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <ChatInputBar
+            inputText={inputText}
+            onChangeInputText={setInputText}
+            pendingAttachments={pendingAttachments}
+            isSending={isSending}
+            onSendTextMessage={handleSend}
+            onSendVoiceMessage={sendVoiceMessage}
+            onPickAttachment={handlePickAttachment}
+            onTakePhoto={handleTakePhoto}
+            insetsBottom={insets.bottom}
+          />
+        )}
       </KeyboardAvoidingView>
 
       {/* Options Action Sheet Modal */}
@@ -2754,18 +2897,18 @@ export default function ConversationChatScreen() {
                 <Ionicons name="chevron-forward" size={17} color="#14919B" />
               </TouchableOpacity>
 
-              {/* 2. Block Person */}
+              {/* 2. Block or Unblock Person */}
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={handleBlockPerson}
+                onPress={isBlockedByMe ? handleUnblockPerson : handleBlockPerson}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
                   padding: 14,
                   borderRadius: 14,
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: isBlockedByMe ? "#F0FAFA" : "#FFFFFF",
                   borderWidth: 1,
-                  borderColor: "#FEE2E2",
+                  borderColor: isBlockedByMe ? "#99F6E4" : "#FEE2E2",
                 }}
               >
                 <View
@@ -2773,29 +2916,41 @@ export default function ConversationChatScreen() {
                     width: 40,
                     height: 40,
                     borderRadius: 20,
-                    backgroundColor: "#FEE2E2",
+                    backgroundColor: isBlockedByMe ? "#CCFBF1" : "#FEE2E2",
                     alignItems: "center",
                     justifyContent: "center",
                     marginRight: 12,
                   }}
                 >
-                  <Ionicons name="ban-outline" size={19} color="#EF4444" />
+                  <Ionicons
+                    name={
+                      isBlockedByMe ? "shield-checkmark-outline" : "ban-outline"
+                    }
+                    size={19}
+                    color={isBlockedByMe ? "#0D9488" : "#EF4444"}
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
                     style={{
                       fontSize: 14,
                       fontWeight: "700",
-                      color: "#EF4444",
+                      color: isBlockedByMe ? "#0D9488" : "#EF4444",
                     }}
                   >
-                    Block Person
+                    {isBlockedByMe ? "Unblock Person" : "Block Person"}
                   </Text>
                   <Text style={{ fontSize: 12, color: "#6F767E" }}>
-                    Stop receiving messages and orders from this user
+                    {isBlockedByMe
+                      ? "Allow direct messages and interactions again"
+                      : "Stop receiving messages and orders from this user"}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={17} color="#FCA5A5" />
+                <Ionicons
+                  name="chevron-forward"
+                  size={17}
+                  color={isBlockedByMe ? "#5EEAD4" : "#FCA5A5"}
+                />
               </TouchableOpacity>
 
               {/* 3. Report */}

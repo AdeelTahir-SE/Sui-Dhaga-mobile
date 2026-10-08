@@ -1303,7 +1303,7 @@ const styles = StyleSheet.create({
   activeFilterBtn: {
     borderWidth: 2,
     borderColor: "#14919B",
-    backgroundColor: "#EBF8F9",
+    backgroundColor: "#F0FAFA",
   },
   searchInputWrap: {
     flex: 1,
@@ -1483,7 +1483,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   priceBadge: {
-    backgroundColor: "#EBF8F9",
+    backgroundColor: "#F0FAFA",
     paddingHorizontal: 8,
     paddingVertical: 2.5,
     borderRadius: 6,
@@ -1531,7 +1531,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#EBF8F9",
+    backgroundColor: "#E0F7F7",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
@@ -1814,9 +1814,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#EBF8F9",
+    backgroundColor: "#E0F7F7",
     borderWidth: 1,
-    borderColor: "#BEE8EB",
+    borderColor: "#B2EBF2",
     paddingHorizontal: 8,
     paddingVertical: 3.5,
     borderRadius: 10,

@@ -204,7 +204,7 @@ export function AiChatDrawer({
           {/* Section Divider & Title: Previous Chats */}
           <View style={styles.sectionHeaderRow}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Ionicons name="time-outline" size={15} color="#0E7490" style={{ marginRight: 6 }} />
+              <Ionicons name="time-outline" size={15} color="#0D7377" style={{ marginRight: 6 }} />
               <Text style={styles.sectionTitle}>PREVIOUS CHATS</Text>
             </View>
             <View style={styles.countBadge}>
@@ -530,19 +530,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 11,
     fontWeight: "800",
-    color: "#0E7490",
+    color: "#0D7377",
     letterSpacing: 0.6,
   },
   countBadge: {
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 10,
-    backgroundColor: "#E0F2FE",
+    backgroundColor: "#E0F7F7",
   },
   countBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#0369A1",
+    color: "#0D7377",
   },
   filterRow: {
     flexDirection: "row",
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   filterChipActive: {
-    backgroundColor: "#E6F7F7",
+    backgroundColor: "#E0F7F7",
     borderColor: "#B2EBF2",
   },
   filterChipText: {
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
   filterChipTextActive: {
-    color: "#0E7490",
+    color: "#0D7377",
     fontWeight: "800",
   },
   chatListScroll: {

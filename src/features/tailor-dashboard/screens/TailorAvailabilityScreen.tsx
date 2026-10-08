@@ -542,22 +542,37 @@ export default function TailorAvailabilityScreen() {
 
             {/* Modal Header */}
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 14 }}>
-              <View>
-                <Text style={{ fontSize: 18, fontWeight: "700", color: "#1A1D1F" }}>
-                  Edit Hours: {editingDay?.day}
-                </Text>
-                <Text style={{ fontSize: 12, fontWeight: "500", color: "#64748B", marginTop: 2 }}>
-                  Set shop opening, closing, and break timings
-                </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    backgroundColor: "#E0F7F7",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginRight: 12,
+                  }}
+                >
+                  <Ionicons name="time" size={20} color="#14919B" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 17, fontWeight: "700", color: "#1A1D1F" }}>
+                    Edit Hours: {editingDay?.day}
+                  </Text>
+                  <Text style={{ fontSize: 12, fontWeight: "500", color: "#64748B", marginTop: 2 }}>
+                    Set shop opening, closing, and break timings
+                  </Text>
+                </View>
               </View>
               <TouchableOpacity
                 onPress={() => setEditingDay(null)}
                 style={{
-                  width: 34,
-                  height: 34,
+                  width: 32,
+                  height: 32,
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRadius: 17,
+                  borderRadius: 10,
                   backgroundColor: "#F1F5F9",
                 }}
               >

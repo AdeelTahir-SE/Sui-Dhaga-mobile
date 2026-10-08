@@ -207,7 +207,7 @@ export function TailorLocationPickerModal({
       padding: 0 12px;
       border-radius: 7px;
       border: 1.5px solid #14919B;
-      background: #EBF8F9;
+      background: #E0F7F7;
       color: #14919B;
       font-weight: 700;
       font-size: 12px;
@@ -316,7 +316,7 @@ export function TailorLocationPickerModal({
     }
     .popup-badge {
       display: inline-block;
-      background: #EBF8F9;
+      background: #E0F7F7;
       color: #14919B;
       font-weight: 800;
       font-size: 11px;
