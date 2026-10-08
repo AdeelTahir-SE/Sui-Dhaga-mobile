@@ -26,7 +26,7 @@
 
 > **Try the latest build on your Android device:**
 >
-> 👉 **[Download APK]([YOUR_APK_LINK_HERE](https://drive.google.com/file/d/1V2iOrs21xR46zGUpPfCZrwenY8GA-a-t/view?usp=sharing))**
+> 👉 **[Download APK][YOUR_APK_LINK_HERE](https://drive.google.com/file/d/1V2iOrs21xR46zGUpPfCZrwenY8GA-a-t/view?usp=sharing)**
 >
 
 ---
