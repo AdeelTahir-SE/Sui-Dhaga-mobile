@@ -1,5 +1,7 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -13,6 +15,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
+import { useTailorProfile } from "../hooks/useTailorProfile";
+import { useAuthStore } from "@/stores/auth.store";
+import { tailorsApi } from "@/api/tailors.api";
+import { storage } from "@/api/client";
 
 interface DayTiming {
   day: string;
@@ -65,9 +71,60 @@ const INITIAL_DAY_TIMINGS: DayTiming[] = [
   { day: "Sunday", dayShort: "Sun", isOpen: false, openTime: "11:00 AM", closeTime: "06:00 PM", hasBreak: false, breakStart: "01:00 PM", breakEnd: "02:00 PM" },
 ];
 
+function mapServerSlotsToDayTimings(slots: any[]): DayTiming[] {
+  if (!Array.isArray(slots) || slots.length === 0) return INITIAL_DAY_TIMINGS;
+
+  const dayMap = new Map<string, any>();
+  slots.forEach((s) => {
+    const rawDay = (s.day_of_week || s.dayOfWeek || s.day || "").trim().toLowerCase();
+    if (rawDay) {
+      dayMap.set(rawDay, s);
+    }
+  });
+
+  return INITIAL_DAY_TIMINGS.map((def) => {
+    const found =
+      dayMap.get(def.day.toLowerCase()) ||
+      dayMap.get(def.dayShort.toLowerCase());
+    if (!found) return def;
+
+    const isOpen =
+      found.is_available !== undefined
+        ? Boolean(found.is_available)
+        : found.isAvailable !== undefined
+        ? Boolean(found.isAvailable)
+        : found.isOpen !== undefined
+        ? Boolean(found.isOpen)
+        : def.isOpen;
+
+    const hasBreak =
+      found.has_break !== undefined
+        ? Boolean(found.has_break)
+        : found.hasBreak !== undefined
+        ? Boolean(found.hasBreak)
+        : def.hasBreak;
+
+    return {
+      day: def.day,
+      dayShort: def.dayShort,
+      isOpen,
+      openTime: found.start_time || found.startTime || found.openTime || def.openTime,
+      closeTime: found.end_time || found.endTime || found.closeTime || def.closeTime,
+      hasBreak,
+      breakStart: found.break_start || found.breakStart || def.breakStart,
+      breakEnd: found.break_end || found.breakEnd || def.breakEnd,
+    };
+  });
+}
+
 export default function TailorAvailabilityScreen() {
+  const { profile, isLoading: isProfileLoading } = useTailorProfile();
+  const user = useAuthStore((state) => state.user);
+
   // Individual 7 Days Operating Schedule State
   const [dayTimings, setDayTimings] = useState<DayTiming[]>(INITIAL_DAY_TIMINGS);
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Edit Modal State
   const [editingDay, setEditingDay] = useState<DayTiming | null>(null);
@@ -80,10 +137,77 @@ export default function TailorAvailabilityScreen() {
     setTimeout(() => setToastMessage(null), 2800);
   }, []);
 
+  const targetTailorId = profile?.id || (profile as any)?.userId || user?.id;
+
+  // Hydrate from Storage then Backend API on mount
+  useEffect(() => {
+    let isMounted = true;
+    if (!targetTailorId) {
+      setIsLoadingAvailability(false);
+      return;
+    }
+
+    // 1. Fast offline load
+    storage
+      .getTailorAvailability(targetTailorId)
+      .then((cached) => {
+        if (isMounted && cached && Array.isArray(cached) && cached.length > 0) {
+          setDayTimings(mapServerSlotsToDayTimings(cached));
+        }
+      })
+      .catch(() => {});
+
+    // 2. Fetch live from server
+    tailorsApi
+      .getTailorAvailability(targetTailorId)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          setDayTimings(mapServerSlotsToDayTimings(res.data));
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not fetch remote availability:", err);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingAvailability(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [targetTailorId]);
+
+  // Save Schedule to Backend & Storage
+  const handleSaveSchedule = useCallback(
+    async (timingsToSave?: DayTiming[], feedbackMsg?: string) => {
+      const toSave = timingsToSave || dayTimings;
+      const effectiveId = targetTailorId;
+      if (!effectiveId) {
+        Alert.alert("Profile Required", "Please set up your tailor profile first.");
+        return;
+      }
+
+      setIsSaving(true);
+      try {
+        await tailorsApi.saveTailorAvailability(effectiveId, toSave);
+        showToast(feedbackMsg || "Shop timings saved & published ✨");
+      } catch (err: any) {
+        console.warn("Error persisting tailor availability:", err);
+        showToast("Working hours saved locally.");
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [dayTimings, targetTailorId, showToast]
+  );
+
   // Quick Preset Actions
   const applyPreset = (presetType: "standard" | "bazaar" | "fullweek") => {
+    let nextTimings: DayTiming[] = [];
+    let msg = "";
     if (presetType === "standard") {
-      setDayTimings([
+      nextTimings = [
         { day: "Monday", dayShort: "Mon", isOpen: true, openTime: "09:00 AM", closeTime: "08:00 PM", hasBreak: true, breakStart: "01:00 PM", breakEnd: "02:00 PM" },
         { day: "Tuesday", dayShort: "Tue", isOpen: true, openTime: "09:00 AM", closeTime: "08:00 PM", hasBreak: true, breakStart: "01:00 PM", breakEnd: "02:00 PM" },
         { day: "Wednesday", dayShort: "Wed", isOpen: true, openTime: "09:00 AM", closeTime: "08:00 PM", hasBreak: true, breakStart: "01:00 PM", breakEnd: "02:00 PM" },
@@ -91,10 +215,10 @@ export default function TailorAvailabilityScreen() {
         { day: "Friday", dayShort: "Fri", isOpen: true, openTime: "09:00 AM", closeTime: "08:00 PM", hasBreak: true, breakStart: "12:30 PM", breakEnd: "02:30 PM" },
         { day: "Saturday", dayShort: "Sat", isOpen: true, openTime: "10:00 AM", closeTime: "09:00 PM", hasBreak: true, breakStart: "02:00 PM", breakEnd: "03:00 PM" },
         { day: "Sunday", dayShort: "Sun", isOpen: false, openTime: "11:00 AM", closeTime: "06:00 PM", hasBreak: false, breakStart: "01:00 PM", breakEnd: "02:00 PM" },
-      ]);
-      showToast("Standard timings applied (Mon-Sat open, Sun off)");
+      ];
+      msg = "Standard timings applied & saved (Mon-Sat open, Sun off)";
     } else if (presetType === "bazaar") {
-      setDayTimings([
+      nextTimings = [
         { day: "Monday", dayShort: "Mon", isOpen: true, openTime: "11:00 AM", closeTime: "10:00 PM", hasBreak: true, breakStart: "02:00 PM", breakEnd: "03:00 PM" },
         { day: "Tuesday", dayShort: "Tue", isOpen: true, openTime: "11:00 AM", closeTime: "10:00 PM", hasBreak: true, breakStart: "02:00 PM", breakEnd: "03:00 PM" },
         { day: "Wednesday", dayShort: "Wed", isOpen: true, openTime: "11:00 AM", closeTime: "10:00 PM", hasBreak: true, breakStart: "02:00 PM", breakEnd: "03:00 PM" },
@@ -102,10 +226,10 @@ export default function TailorAvailabilityScreen() {
         { day: "Friday", dayShort: "Fri", isOpen: true, openTime: "11:00 AM", closeTime: "10:00 PM", hasBreak: true, breakStart: "12:30 PM", breakEnd: "02:30 PM" },
         { day: "Saturday", dayShort: "Sat", isOpen: true, openTime: "11:00 AM", closeTime: "11:00 PM", hasBreak: true, breakStart: "02:00 PM", breakEnd: "03:00 PM" },
         { day: "Sunday", dayShort: "Sun", isOpen: false, openTime: "11:00 AM", closeTime: "06:00 PM", hasBreak: false, breakStart: "01:00 PM", breakEnd: "02:00 PM" },
-      ]);
-      showToast("Bazaar schedule applied (11 AM – 10 PM)");
+      ];
+      msg = "Bazaar schedule applied & saved (11 AM – 10 PM)";
     } else if (presetType === "fullweek") {
-      setDayTimings([
+      nextTimings = [
         { day: "Monday", dayShort: "Mon", isOpen: true, openTime: "10:00 AM", closeTime: "09:00 PM", hasBreak: true, breakStart: "01:30 PM", breakEnd: "02:30 PM" },
         { day: "Tuesday", dayShort: "Tue", isOpen: true, openTime: "10:00 AM", closeTime: "09:00 PM", hasBreak: true, breakStart: "01:30 PM", breakEnd: "02:30 PM" },
         { day: "Wednesday", dayShort: "Wed", isOpen: true, openTime: "10:00 AM", closeTime: "09:00 PM", hasBreak: true, breakStart: "01:30 PM", breakEnd: "02:30 PM" },
@@ -113,50 +237,58 @@ export default function TailorAvailabilityScreen() {
         { day: "Friday", dayShort: "Fri", isOpen: true, openTime: "10:00 AM", closeTime: "09:00 PM", hasBreak: true, breakStart: "12:30 PM", breakEnd: "02:30 PM" },
         { day: "Saturday", dayShort: "Sat", isOpen: true, openTime: "10:00 AM", closeTime: "09:00 PM", hasBreak: true, breakStart: "01:30 PM", breakEnd: "02:30 PM" },
         { day: "Sunday", dayShort: "Sun", isOpen: true, openTime: "11:00 AM", closeTime: "08:00 PM", hasBreak: false, breakStart: "02:00 PM", breakEnd: "03:00 PM" },
-      ]);
-      showToast("7-Day schedule applied (Mon-Sun Open)");
+      ];
+      msg = "7-Day schedule applied & saved (Mon-Sun Open)";
     }
+    setDayTimings(nextTimings);
+    handleSaveSchedule(nextTimings, msg);
   };
 
   // Toggle open/closed for a specific day
   const handleToggleDay = (dayName: string) => {
-    setDayTimings((prev) =>
-      prev.map((d) => (d.day === dayName ? { ...d, isOpen: !d.isOpen } : d))
+    const updated = dayTimings.map((d) =>
+      d.day === dayName ? { ...d, isOpen: !d.isOpen } : d
+    );
+    setDayTimings(updated);
+    const dayItem = updated.find((d) => d.day === dayName);
+    handleSaveSchedule(
+      updated,
+      `${dayName} is now marked as ${dayItem?.isOpen ? "Open" : "Closed"}`
     );
   };
 
   // Copy Monday's hours to all weekdays (Tue-Fri)
   const handleCopyMondayToWeekdays = () => {
     const monday = dayTimings[0];
-    setDayTimings((prev) =>
-      prev.map((d, index) => {
-        if (index >= 1 && index <= 4) {
-          return {
-            ...d,
-            isOpen: true,
-            openTime: monday.openTime,
-            closeTime: monday.closeTime,
-            hasBreak: monday.hasBreak,
-            breakStart: d.day === "Friday" ? "12:30 PM" : monday.breakStart,
-            breakEnd: d.day === "Friday" ? "02:30 PM" : monday.breakEnd,
-          };
-        }
-        return d;
-      })
-    );
-    showToast("Monday hours copied to Tue – Fri");
+    const updated = dayTimings.map((d, index) => {
+      if (index >= 1 && index <= 4) {
+        return {
+          ...d,
+          isOpen: true,
+          openTime: monday.openTime,
+          closeTime: monday.closeTime,
+          hasBreak: monday.hasBreak,
+          breakStart: d.day === "Friday" ? "12:30 PM" : monday.breakStart,
+          breakEnd: d.day === "Friday" ? "02:30 PM" : monday.breakEnd,
+        };
+      }
+      return d;
+    });
+    setDayTimings(updated);
+    handleSaveSchedule(updated, "Monday hours copied to Tue – Fri & saved");
   };
 
   // Save Modal Edits
   const handleSaveModal = () => {
     if (!editingDay) return;
 
-    setDayTimings((prev) =>
-      prev.map((d) => (d.day === editingDay.day ? editingDay : d))
+    const updated = dayTimings.map((d) =>
+      d.day === editingDay.day ? editingDay : d
     );
-
+    const dayName = editingDay.day;
+    setDayTimings(updated);
     setEditingDay(null);
-    showToast(`${editingDay.day} hours updated`);
+    handleSaveSchedule(updated, `${dayName} hours updated & saved ✨`);
   };
 
   return (
@@ -164,7 +296,13 @@ export default function TailorAvailabilityScreen() {
       {/* Top Header with Back button and hidden Notification icon */}
       <TailorDashboardHeader
         title="Shop Timings"
-        subtitle="Manage daily opening hours, breaks, and days off"
+        subtitle={
+          isLoadingAvailability
+            ? "Syncing hours from cloud..."
+            : isSaving
+            ? "Saving schedule to cloud..."
+            : "Manage daily opening hours, breaks, and days off"
+        }
         showBack={true}
         hideRightIcon={true}
       />
@@ -477,7 +615,8 @@ export default function TailorAvailabilityScreen() {
 
         {/* Save Timings Action Button */}
         <TouchableOpacity
-          onPress={() => showToast("Shop timings updated and published")}
+          onPress={() => handleSaveSchedule(dayTimings, "Shop timings saved & published ✨")}
+          disabled={isSaving}
           activeOpacity={0.85}
           style={{
             height: 52,
@@ -495,9 +634,16 @@ export default function TailorAvailabilityScreen() {
           }}
         >
           <ButtonTexture variant="greenish" borderRadius={16} />
-          <Text style={{ fontSize: 15, fontWeight: "700", color: "#FFFFFF", letterSpacing: 0.3 }}>
-            Save Shop Timings
-          </Text>
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Ionicons name="cloud-upload-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={{ fontSize: 15, fontWeight: "700", color: "#FFFFFF", letterSpacing: 0.3 }}>
+                Save Shop Timings
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 

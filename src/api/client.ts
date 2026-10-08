@@ -133,6 +133,34 @@ export const storage = {
     }
   },
 
+  async getTailorAvailability(tailorId?: string): Promise<any | null> {
+    try {
+      const key = `sui_dhaga_tailor_avail_${tailorId || 'default'}`;
+      if (Platform.OS === 'web') {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+        return raw ? JSON.parse(raw) : null;
+      }
+      const raw = await SecureStore.getItemAsync(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async setTailorAvailability(tailorId: string | undefined, timings: any): Promise<void> {
+    try {
+      const key = `sui_dhaga_tailor_avail_${tailorId || 'default'}`;
+      const serialized = JSON.stringify(timings);
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') localStorage.setItem(key, serialized);
+      } else {
+        await SecureStore.setItemAsync(key, serialized);
+      }
+    } catch (err) {
+      console.warn('Failed to save tailor availability to storage', err);
+    }
+  },
+
   async removeUser(): Promise<void> {
     try {
       if (Platform.OS === 'web') {

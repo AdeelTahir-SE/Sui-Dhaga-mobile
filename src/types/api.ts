@@ -101,6 +101,32 @@ export interface TailorItem {
     address?: string;
     name?: string;
   };
+  availability?: TailorAvailabilityItem[];
+}
+
+export interface TailorAvailabilityItem {
+  id?: string;
+  tailorId?: string;
+  tailor_id?: string;
+  dayOfWeek: string;
+  day_of_week?: string;
+  day?: string;
+  dayShort?: string;
+  startTime: string;
+  start_time?: string;
+  openTime?: string;
+  endTime: string;
+  end_time?: string;
+  closeTime?: string;
+  isAvailable: boolean;
+  is_available?: boolean;
+  isOpen?: boolean;
+  hasBreak?: boolean;
+  has_break?: boolean;
+  breakStart?: string;
+  break_start?: string;
+  breakEnd?: string;
+  break_end?: string;
 }
 
 export interface OrderItem {

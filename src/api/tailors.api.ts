@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { apiClient } from './client';
+import { apiClient, storage } from './client';
 import { TailorItem } from '../types/api';
 import { ImageAssetInput } from './users.api';
 
@@ -534,6 +534,77 @@ export const tailorsApi = {
     return apiClient<any>(`/tailors/${tailorId}/banner`, {
       method: 'POST',
       body,
+    });
+  },
+
+  async getTailorAvailability(tailorId: string) {
+    if (!tailorId) {
+      return { data: [], status: 200, success: true };
+    }
+    try {
+      const res = await apiClient<any[]>(`/tailors/${tailorId}/availability`, {
+        method: 'GET',
+      });
+      if (res?.data && Array.isArray(res.data)) {
+        await storage.setTailorAvailability(tailorId, res.data).catch(() => {});
+      }
+      return res;
+    } catch (err) {
+      const cached = await storage.getTailorAvailability(tailorId).catch(() => null);
+      if (cached && Array.isArray(cached)) {
+        return { data: cached, status: 200, success: true };
+      }
+      throw err;
+    }
+  },
+
+  async saveTailorAvailability(
+    tailorId: string,
+    timings: Array<{
+      day?: string;
+      dayOfWeek?: string;
+      day_of_week?: string;
+      openTime?: string;
+      closeTime?: string;
+      startTime?: string;
+      endTime?: string;
+      isOpen?: boolean;
+      isAvailable?: boolean;
+      hasBreak?: boolean;
+      breakStart?: string;
+      breakEnd?: string;
+    }>
+  ) {
+    const formattedSlots = timings.map((t) => ({
+      dayOfWeek: t.dayOfWeek || t.day_of_week || t.day || 'Monday',
+      startTime: t.startTime || t.openTime || '09:00 AM',
+      endTime: t.endTime || t.closeTime || '08:00 PM',
+      isAvailable: t.isAvailable !== undefined ? t.isAvailable : t.isOpen !== undefined ? t.isOpen : true,
+      hasBreak: Boolean(t.hasBreak),
+      breakStart: t.breakStart || undefined,
+      breakEnd: t.breakEnd || undefined,
+    }));
+
+    // Cache locally immediately
+    await storage.setTailorAvailability(tailorId, timings).catch(() => {});
+
+    // Send PUT/POST to backend
+    return apiClient<any[]>(`/tailors/${tailorId}/availability`, {
+      method: 'PUT',
+      body: JSON.stringify({ slots: formattedSlots }),
+    });
+  },
+
+  async updateAvailabilitySlot(slotId: string, slot: Record<string, unknown>) {
+    return apiClient<any>(`/availability/${slotId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(slot),
+    });
+  },
+
+  async deleteAvailabilitySlot(slotId: string) {
+    return apiClient<any>(`/availability/${slotId}`, {
+      method: 'DELETE',
     });
   },
 };

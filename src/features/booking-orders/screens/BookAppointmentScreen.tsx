@@ -20,6 +20,8 @@ import { ButtonTexture } from "@/components/ui/ButtonTexture";
 import { useTailorDetails } from "../../tailors/hooks/useTailors";
 import { useAppointments } from "../hooks/useAppointments";
 import { useAuthStore } from "@/stores/auth.store";
+import { tailorsApi } from "@/api/tailors.api";
+import { storage } from "@/api/client";
 
 const TIME_SLOT_GROUPS = [
   {
@@ -105,6 +107,30 @@ function normalizeDateStr(dateStr: string): string {
   }
   return dateStr.trim();
 }
+
+/**
+ * Converts time strings ("09:00 AM", "14:00", "02:00 PM", "09:00:00") into minutes from midnight (0 - 1440)
+ */
+function parseTimeToMinutes(timeStr?: string | null): number | null {
+  if (!timeStr) return null;
+  const time24 = normalizeTimeTo24h(timeStr);
+  if (!time24 || !time24.includes(":")) return null;
+  const parts = time24.split(":");
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+const WEEKDAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 export default function BookAppointmentScreen() {
   const { tailorId, date: initialDate, time: initialTime } = useLocalSearchParams<{
@@ -307,29 +333,203 @@ export default function BookAppointmentScreen() {
     [appointments, sessionBookedSlots, targetTailorId]
   );
 
-  // Counts of available & booked slots for currently selected date
-  const { availableCount, bookedCount } = useMemo(() => {
+  // Tailor Availability State
+  const [availabilityList, setAvailabilityList] = useState<any[]>(
+    Array.isArray(tailor?.availability) ? tailor.availability : []
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    const tid = tailor?.id || tailorId || (tailor as any)?.userId;
+    if (!tid) return;
+
+    if (tailor?.availability && Array.isArray(tailor.availability) && tailor.availability.length > 0) {
+      setAvailabilityList(tailor.availability);
+    }
+
+    storage
+      .getTailorAvailability(tid)
+      .then((cached) => {
+        if (isMounted && cached && Array.isArray(cached) && cached.length > 0) {
+          setAvailabilityList((prev) => (prev.length > 0 ? prev : cached));
+        }
+      })
+      .catch(() => {});
+
+    tailorsApi
+      .getTailorAvailability(tid)
+      .then((res) => {
+        if (isMounted && res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          setAvailabilityList(res.data);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, [tailorId, tailor?.id, (tailor as any)?.userId, tailor?.availability]);
+
+  // Selected Day Availability
+  const currentDayOfWeekIndex = selectedDate.getDay();
+  const currentDayName = WEEKDAY_NAMES[currentDayOfWeekIndex];
+
+  const selectedDayAvailability = useMemo(() => {
+    if (!availabilityList || availabilityList.length === 0) return null;
+    return (
+      availabilityList.find((s) => {
+        const d = String(s.day_of_week || s.dayOfWeek || s.day || "").trim().toLowerCase();
+        return (
+          d === currentDayName.toLowerCase() ||
+          d === currentDayName.slice(0, 3).toLowerCase() ||
+          d === String(currentDayOfWeekIndex)
+        );
+      }) || null
+    );
+  }, [availabilityList, currentDayName, currentDayOfWeekIndex]);
+
+  const isTailorClosedOnDate = useMemo(() => {
+    if (!selectedDayAvailability) return false;
+    const isOpen =
+      selectedDayAvailability.is_available !== undefined
+        ? Boolean(selectedDayAvailability.is_available)
+        : selectedDayAvailability.isAvailable !== undefined
+        ? Boolean(selectedDayAvailability.isAvailable)
+        : selectedDayAvailability.isOpen !== undefined
+        ? Boolean(selectedDayAvailability.isOpen)
+        : true;
+    return !isOpen;
+  }, [selectedDayAvailability]);
+
+  const workingHoursSummary = useMemo(() => {
+    if (isTailorClosedOnDate) {
+      return `Closed on ${currentDayName}s`;
+    }
+    if (!selectedDayAvailability) {
+      return "09:00 AM – 08:00 PM";
+    }
+    const open =
+      selectedDayAvailability.start_time ||
+      selectedDayAvailability.startTime ||
+      selectedDayAvailability.openTime ||
+      selectedDayAvailability.open_time ||
+      "09:00 AM";
+    const close =
+      selectedDayAvailability.end_time ||
+      selectedDayAvailability.endTime ||
+      selectedDayAvailability.closeTime ||
+      selectedDayAvailability.close_time ||
+      "08:00 PM";
+    const hasBreak = Boolean(
+      selectedDayAvailability.has_break || selectedDayAvailability.hasBreak
+    );
+    const breakStart =
+      selectedDayAvailability.break_start || selectedDayAvailability.breakStart;
+    const breakEnd =
+      selectedDayAvailability.break_end || selectedDayAvailability.breakEnd;
+
+    let text = `${open} – ${close}`;
+    if (hasBreak && breakStart && breakEnd) {
+      text += ` • Break: ${breakStart} – ${breakEnd}`;
+    }
+    return text;
+  }, [isTailorClosedOnDate, selectedDayAvailability, currentDayName]);
+
+  const getSlotAvailabilityStatus = useCallback(
+    (
+      timeSlot: string
+    ): {
+      isAvailable: boolean;
+      reason?: "booked" | "closed" | "break" | "outside_hours";
+      badge?: string;
+    } => {
+      if (isTailorClosedOnDate) {
+        return { isAvailable: false, reason: "closed", badge: "Closed" };
+      }
+
+      if (isSlotBooked(timeSlot, isoDateStr)) {
+        return { isAvailable: false, reason: "booked", badge: "Booked" };
+      }
+
+      if (selectedDayAvailability) {
+        const slotMin = parseTimeToMinutes(timeSlot);
+        if (slotMin !== null) {
+          const openStr =
+            selectedDayAvailability.start_time ||
+            selectedDayAvailability.startTime ||
+            selectedDayAvailability.openTime ||
+            selectedDayAvailability.open_time;
+          const closeStr =
+            selectedDayAvailability.end_time ||
+            selectedDayAvailability.endTime ||
+            selectedDayAvailability.closeTime ||
+            selectedDayAvailability.close_time;
+
+          const openMin = parseTimeToMinutes(openStr);
+          const closeMin = parseTimeToMinutes(closeStr);
+
+          if (openMin !== null && slotMin < openMin) {
+            return { isAvailable: false, reason: "outside_hours", badge: "Closed" };
+          }
+          if (closeMin !== null && slotMin >= closeMin) {
+            return { isAvailable: false, reason: "outside_hours", badge: "Closed" };
+          }
+
+          const hasBreak = Boolean(
+            selectedDayAvailability.has_break || selectedDayAvailability.hasBreak
+          );
+          if (hasBreak) {
+            const bStartMin = parseTimeToMinutes(
+              selectedDayAvailability.break_start || selectedDayAvailability.breakStart
+            );
+            const bEndMin = parseTimeToMinutes(
+              selectedDayAvailability.break_end || selectedDayAvailability.breakEnd
+            );
+
+            if (bStartMin !== null && bEndMin !== null) {
+              if (slotMin >= bStartMin && slotMin < bEndMin) {
+                return { isAvailable: false, reason: "break", badge: "Break" };
+              }
+            }
+          }
+        }
+      }
+
+      return { isAvailable: true };
+    },
+    [isTailorClosedOnDate, isSlotBooked, isoDateStr, selectedDayAvailability]
+  );
+
+  // Counts of available, booked, and closed slots for currently selected date
+  const { availableCount, bookedCount, closedCount } = useMemo(() => {
     let booked = 0;
     let available = 0;
+    let closed = 0;
     ALL_SLOTS.forEach((slot) => {
-      if (isSlotBooked(slot, isoDateStr)) {
+      const status = getSlotAvailabilityStatus(slot);
+      if (status.reason === "booked") {
         booked++;
+      } else if (!status.isAvailable) {
+        closed++;
       } else {
         available++;
       }
     });
-    return { availableCount: available, bookedCount: booked };
-  }, [isoDateStr, isSlotBooked]);
+    return { availableCount: available, bookedCount: booked, closedCount: closed };
+  }, [getSlotAvailabilityStatus]);
 
-  // If currently selected slot is booked on the active date, switch to the first open slot
+  // If currently selected slot is not open on the active date, switch to the first open slot
   useEffect(() => {
-    if (isSlotBooked(selectedTime, isoDateStr)) {
-      const firstAvailable = ALL_SLOTS.find((s) => !isSlotBooked(s, isoDateStr));
+    const currentStatus = getSlotAvailabilityStatus(selectedTime);
+    if (!currentStatus.isAvailable) {
+      const firstAvailable = ALL_SLOTS.find(
+        (s) => getSlotAvailabilityStatus(s).isAvailable
+      );
       if (firstAvailable) {
         setSelectedTime(firstAvailable);
       }
     }
-  }, [isoDateStr, isSlotBooked, selectedTime]);
+  }, [isoDateStr, getSlotAvailabilityStatus, selectedTime]);
 
   const handleToggleTag = (tagText: string) => {
     const tagClean = tagText.replace(/^[^\w\s]+\s*/, "").trim();
@@ -418,10 +618,17 @@ export default function BookAppointmentScreen() {
     }
 
     // Double-check slot availability before confirming
-    if (isSlotBooked(selectedTime, isoDateStr)) {
+    const currentSlotStatus = getSlotAvailabilityStatus(selectedTime);
+    if (!currentSlotStatus.isAvailable) {
       Alert.alert(
         "Slot Unavailable",
-        `Sorry, the ${selectedTime} slot on ${formattedDateStr} is already booked. Please choose an open slot.`
+        isTailorClosedOnDate
+          ? `Sorry, the tailor is closed on ${currentDayName}s (${formattedDateStr}). Please choose an open date.`
+          : currentSlotStatus.reason === "break"
+          ? `Sorry, the tailor is on break during the ${selectedTime} slot. Please select another slot.`
+          : currentSlotStatus.reason === "booked"
+          ? `Sorry, the ${selectedTime} slot on ${formattedDateStr} is already booked. Please choose an open slot.`
+          : `Sorry, ${selectedTime} is outside working hours for this tailor. Please choose an open slot.`
       );
       setCurrentStep(1);
       return;
@@ -466,7 +673,9 @@ export default function BookAppointmentScreen() {
     }
   };
 
-  const isCurrentSlotBooked = isSlotBooked(selectedTime, isoDateStr);
+  const currentSlotStatus = getSlotAvailabilityStatus(selectedTime);
+  const isCurrentSlotDisabled = !currentSlotStatus.isAvailable;
+  const isCurrentSlotBooked = currentSlotStatus.reason === "booked";
 
   if (isLoading) {
     return (
@@ -653,13 +862,37 @@ export default function BookAppointmentScreen() {
           <View>
             {/* Step Header */}
             <View className="mb-3">
-              <Text className="text-[17px] font-bold text-brand-dark">
-                Choose Date & Time
-              </Text>
-              <Text className="text-[12px] text-brand-gray">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-[17px] font-bold text-brand-dark">
+                  Choose Date & Time
+                </Text>
+                {/* Working hours pill */}
+                <View className="flex-row items-center rounded-full bg-brand-surface px-2.5 py-1 border border-brand-border/70">
+                  <Ionicons name="time-outline" size={12} color="#14919B" />
+                  <Text className="ml-1 text-[11px] font-semibold text-brand-gray" numberOfLines={1}>
+                    {workingHoursSummary}
+                  </Text>
+                </View>
+              </View>
+              <Text className="mt-0.5 text-[12px] text-brand-gray">
                 Pick an available slot for your tailoring appointment
               </Text>
             </View>
+
+            {/* If tailor is closed on this day, prominent warning banner */}
+            {isTailorClosedOnDate && (
+              <View className="mb-3.5 flex-row items-center rounded-xl bg-amber-50 p-3 border border-amber-200">
+                <Ionicons name="alert-circle" size={20} color="#D97706" />
+                <View className="ml-2.5 flex-1">
+                  <Text className="text-[13px] font-bold text-amber-900">
+                    Shop Closed on {currentDayName}s
+                  </Text>
+                  <Text className="text-[11px] text-amber-700 mt-0.5">
+                    This tailor does not accept bookings on this day. Please pick another date.
+                  </Text>
+                </View>
+              </View>
+            )}
 
             {/* Calendar Card */}
             <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs">
@@ -826,6 +1059,12 @@ export default function BookAppointmentScreen() {
                       <Text className="text-[10px] font-semibold text-gray-500">{bookedCount} Booked</Text>
                     </View>
                   )}
+                  {closedCount > 0 && (
+                    <View className="flex-row items-center rounded-full bg-amber-50 px-2 py-0.5 border border-amber-200">
+                      <View className="h-1.5 w-1.5 rounded-full bg-amber-500 mr-1" />
+                      <Text className="text-[10px] font-semibold text-amber-700">{closedCount} Closed</Text>
+                    </View>
+                  )}
                 </View>
               </View>
 
@@ -840,17 +1079,18 @@ export default function BookAppointmentScreen() {
 
                   <View className="flex-row flex-wrap" style={{ gap: 8 }}>
                     {group.slots.map((time) => {
-                      const isBooked = isSlotBooked(time, isoDateStr);
-                      const isSelected = !isBooked && time === selectedTime;
+                      const slotStatus = getSlotAvailabilityStatus(time);
+                      const isUnavailable = !slotStatus.isAvailable;
+                      const isSelected = !isUnavailable && time === selectedTime;
 
                       return (
                         <TouchableOpacity
                           key={time}
-                          disabled={isBooked}
+                          disabled={isUnavailable}
                           activeOpacity={0.75}
                           onPress={() => setSelectedTime(time)}
                           className={`h-[46px] min-w-[96px] flex-1 items-center justify-center rounded-xl border ${
-                            isBooked
+                            isUnavailable
                               ? "border-gray-200 bg-gray-100/90 opacity-60"
                               : isSelected
                               ? "border-primary bg-primary shadow-xs"
@@ -860,7 +1100,7 @@ export default function BookAppointmentScreen() {
                           <View className="items-center justify-center">
                             <Text
                               className={`text-[12px] font-bold ${
-                                isBooked
+                                isUnavailable
                                   ? "text-gray-400 line-through"
                                   : isSelected
                                   ? "text-white"
@@ -870,11 +1110,23 @@ export default function BookAppointmentScreen() {
                               {time}
                             </Text>
 
-                            {isBooked ? (
+                            {isUnavailable ? (
                               <View className="flex-row items-center mt-0.5">
-                                <Ionicons name="lock-closed" size={9} color="#9CA3AF" />
-                                <Text className="ml-0.5 text-[8px] font-bold text-gray-500 uppercase tracking-tight">
-                                  Booked
+                                {slotStatus.reason === "booked" ? (
+                                  <Ionicons name="lock-closed" size={9} color="#9CA3AF" />
+                                ) : slotStatus.reason === "break" ? (
+                                  <Ionicons name="cafe-outline" size={10} color="#D97706" />
+                                ) : (
+                                  <Ionicons name="close-circle-outline" size={9} color="#9CA3AF" />
+                                )}
+                                <Text
+                                  className={`ml-0.5 text-[8px] font-bold uppercase tracking-tight ${
+                                    slotStatus.reason === "break"
+                                      ? "text-amber-600"
+                                      : "text-gray-500"
+                                  }`}
+                                >
+                                  {slotStatus.badge || "Closed"}
                                 </Text>
                               </View>
                             ) : null}
@@ -887,28 +1139,45 @@ export default function BookAppointmentScreen() {
               ))}
             </View>
 
-            {/* Next Step CTA with uncrushed layout */}
+            {/* Next Step CTA */}
             <TouchableOpacity
               activeOpacity={0.85}
-              disabled={isCurrentSlotBooked}
+              disabled={isCurrentSlotDisabled}
               onPress={() => {
-                if (isCurrentSlotBooked) {
-                  Alert.alert("Slot Booked", "Please select an available time slot before continuing.");
+                if (isCurrentSlotDisabled) {
+                  Alert.alert(
+                    "Slot Unavailable",
+                    isTailorClosedOnDate
+                      ? "The shop is closed on this day. Please select an open date."
+                      : currentSlotStatus.reason === "break"
+                      ? "The tailor is on break during this slot. Please select another slot."
+                      : currentSlotStatus.reason === "booked"
+                      ? "This slot is already booked. Please choose another slot."
+                      : "Please select an available time slot before continuing."
+                  );
                   return;
                 }
                 setCurrentStep(2);
               }}
               className={`relative mt-6 h-[54px] w-full items-center justify-center overflow-hidden rounded-xl shadow-md ${
-                isCurrentSlotBooked ? "opacity-50" : ""
+                isCurrentSlotDisabled ? "opacity-50" : ""
               }`}
               style={{ borderRadius: 14 }}
             >
               <ButtonTexture variant="greenish" borderRadius={14} />
               <View className="flex-row items-center z-10">
                 <Text className="text-[16px] font-bold text-white tracking-wide mr-2">
-                  {isCurrentSlotBooked ? "Slot Booked — Choose Another" : "Continue to Notes"}
+                  {isTailorClosedOnDate
+                    ? "Shop Closed — Choose Another Date"
+                    : currentSlotStatus.reason === "break"
+                    ? "Tailor on Break — Choose Another"
+                    : currentSlotStatus.reason === "booked"
+                    ? "Slot Booked — Choose Another"
+                    : isCurrentSlotDisabled
+                    ? "Slot Unavailable"
+                    : "Continue to Notes"}
                 </Text>
-                {!isCurrentSlotBooked && (
+                {!isCurrentSlotDisabled && (
                   <Ionicons name="arrow-forward" size={17} color="#FFFFFF" />
                 )}
               </View>
