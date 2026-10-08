@@ -39,7 +39,9 @@ export default function LoginScreen() {
 
   React.useEffect(() => {
     if (!isLoading && isAuthenticated && currentUser) {
-      if (currentUser.role === "tailor") {
+      if (currentUser.profileCompleted === false) {
+        router.replace("/auth/complete-profile" as any);
+      } else if (currentUser.role === "tailor") {
         router.replace("/tailor-dashboard" as any);
       } else {
         router.replace("/home" as any);
@@ -54,15 +56,18 @@ export default function LoginScreen() {
       const result = await loginWithGoogle();
       if (result.success) {
         const currentUser = useAuthStore.getState().user;
-        const hasEstablishedRole = currentUser?.role === "tailor" || currentUser?.role === "customer";
-        if (result.needsProfileCompletion && !hasEstablishedRole) {
-          router.replace("/auth/complete-profile" as any);
-        } else {
+        const userExists = result.isExistingUser ?? !result.needsProfileCompletion;
+
+        if (userExists) {
+          // If user exists: check if customer or tailor
           if (currentUser?.role === "tailor") {
             router.replace("/tailor-dashboard" as any);
           } else {
             router.replace("/home" as any);
           }
+        } else {
+          // If user not exists: redirect to complete profile page
+          router.replace("/auth/complete-profile" as any);
         }
       } else if (result.error && result.error !== "Sign in was cancelled.") {
         setErrorMessage(result.error);

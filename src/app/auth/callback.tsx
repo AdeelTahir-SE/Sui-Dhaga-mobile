@@ -29,8 +29,8 @@ export default function AuthCallbackScreen() {
         // 0. If user is already authenticated (e.g. handled directly in LoginScreen)
         if (useAuthStore.getState().isAuthenticated) {
           const user = useAuthStore.getState().user;
-          const hasEstablishedRole = user?.role === "tailor" || user?.role === "customer";
-          if (!hasEstablishedRole) {
+          const userExists = user?.isExistingUser ?? (user?.profileCompleted !== false);
+          if (!userExists || user?.profileCompleted === false) {
             router.replace("/auth/complete-profile" as any);
           } else if (user?.role === "tailor") {
             router.replace("/tailor-dashboard" as any);
@@ -73,7 +73,14 @@ export default function AuthCallbackScreen() {
         if (!token && !code) {
           // If still no token but user is authenticated, redirect
           if (useAuthStore.getState().isAuthenticated) {
-            router.replace("/home" as any);
+            const user = useAuthStore.getState().user;
+            if (user?.profileCompleted === false) {
+              router.replace("/auth/complete-profile" as any);
+            } else if (user?.role === "tailor") {
+              router.replace("/tailor-dashboard" as any);
+            } else {
+              router.replace("/home" as any);
+            }
             return;
           }
           throw new Error("Authentication callback did not receive authorization credentials.");
@@ -90,15 +97,18 @@ export default function AuthCallbackScreen() {
         if (result.success) {
           setStatusMessage("Sign in complete! Redirecting...");
           const user = useAuthStore.getState().user;
-          const hasEstablishedRole = user?.role === "tailor" || user?.role === "customer";
-          if (result.needsProfileCompletion && !hasEstablishedRole) {
-            router.replace("/auth/complete-profile" as any);
-          } else {
+          const userExists = result.isExistingUser ?? !result.needsProfileCompletion;
+
+          if (userExists) {
+            // User exists: check if customer or tailor
             if (user?.role === "tailor") {
               router.replace("/tailor-dashboard" as any);
             } else {
               router.replace("/home" as any);
             }
+          } else {
+            // User does not exist: redirect to complete profile page
+            router.replace("/auth/complete-profile" as any);
           }
         } else {
           setErrorMessage(result.error || "Unable to complete Google sign in.");

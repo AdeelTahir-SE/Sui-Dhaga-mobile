@@ -16,13 +16,13 @@ interface AuthState {
 
   login: (payload: LoginPayload) => Promise<{ success: boolean; needsProfileCompletion?: boolean; error?: string }>;
   register: (payload: RegisterPayload) => Promise<boolean>;
-  loginWithGoogle: () => Promise<{ success: boolean; needsProfileCompletion?: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; isExistingUser?: boolean; needsProfileCompletion?: boolean; error?: string }>;
   handleAuthCallback: (params: {
     accessToken?: string;
     code?: string;
     email?: string;
     name?: string;
-  }) => Promise<{ success: boolean; needsProfileCompletion?: boolean; error?: string }>;
+  }) => Promise<{ success: boolean; isExistingUser?: boolean; needsProfileCompletion?: boolean; error?: string }>;
   completeProfile: (payload: {
     role: 'customer' | 'tailor';
     phone?: string;
@@ -176,6 +176,30 @@ function extractAuthData(
   const phone = rawUser?.phone || rawUser?.user_metadata?.phone || fallbackPayload?.phone;
   const avatar = rawUser?.avatar || rawUser?.avatarUrl || rawUser?.user_metadata?.avatar_url;
 
+  const isExistingUser =
+    d?.isExistingUser !== undefined
+      ? Boolean(d.isExistingUser)
+      : root?.isExistingUser !== undefined
+      ? Boolean(root.isExistingUser)
+      : d?.data?.isExistingUser !== undefined
+      ? Boolean(d.data.isExistingUser)
+      : undefined;
+
+  const rawProfileCompleted =
+    rawUser?.profileCompleted ??
+    rawUser?.profile_completed ??
+    rawUser?.user_metadata?.profile_completed ??
+    rawUser?.user_metadata?.role_selected;
+
+  const profileCompleted =
+    isExistingUser !== undefined
+      ? isExistingUser
+      : rawProfileCompleted !== undefined
+      ? Boolean(rawProfileCompleted)
+      : Boolean(
+          (rawUser?.role && rawUser.role !== 'authenticated' && (rawUser?.phone || rawUser?.user_metadata?.phone))
+        );
+
   const user: User = {
     id,
     email,
@@ -186,6 +210,9 @@ function extractAuthData(
     avatar,
     avatarUrl: avatar,
     bio: rawUser?.bio,
+    profileCompleted,
+    isExistingUser: isExistingUser ?? profileCompleted,
+    roleSelected: rawUser?.user_metadata?.role_selected ?? profileCompleted,
     createdAt: rawUser?.createdAt,
     updatedAt: rawUser?.updatedAt,
   };
@@ -416,10 +443,17 @@ export const useAuthStore = create<AuthState>((set) => ({
           error: null,
         });
 
-        const needsProfileCompletion = Boolean(
-          (res as any)?.data?.needsProfileCompletion ?? (res as any)?.needsProfileCompletion ?? false
+        const isExistingUser = Boolean(
+          (res as any)?.data?.isExistingUser ??
+          (res as any)?.isExistingUser ??
+          (authData.user.profileCompleted === true)
         );
-        return { success: true, needsProfileCompletion };
+        const needsProfileCompletion = Boolean(
+          (res as any)?.data?.needsProfileCompletion ??
+          (res as any)?.needsProfileCompletion ??
+          !isExistingUser
+        );
+        return { success: true, isExistingUser, needsProfileCompletion };
       } else {
         throw new Error(res.message || 'Google authentication response was invalid.');
       }
@@ -562,10 +596,17 @@ export const useAuthStore = create<AuthState>((set) => ({
           error: null,
         });
 
-        const needsProfileCompletion = Boolean(
-          (res as any)?.data?.needsProfileCompletion ?? (res as any)?.needsProfileCompletion ?? false
+        const isExistingUser = Boolean(
+          (res as any)?.data?.isExistingUser ??
+          (res as any)?.isExistingUser ??
+          (authData.user.profileCompleted === true)
         );
-        return { success: true, needsProfileCompletion };
+        const needsProfileCompletion = Boolean(
+          (res as any)?.data?.needsProfileCompletion ??
+          (res as any)?.needsProfileCompletion ??
+          !isExistingUser
+        );
+        return { success: true, isExistingUser, needsProfileCompletion };
       } else {
         throw new Error(res.message || 'Google authentication response was invalid.');
       }
@@ -593,6 +634,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         phone: payload.phone || currentUser?.phone,
         name: payload.fullName || payload.name || currentUser?.name,
         fullName: payload.fullName || payload.name || currentUser?.fullName,
+        profileCompleted: true,
+        isExistingUser: true,
+        roleSelected: true,
       };
 
       await storage.setUser(updatedUser);

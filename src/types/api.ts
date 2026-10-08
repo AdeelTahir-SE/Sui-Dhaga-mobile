@@ -21,6 +21,9 @@ export interface User {
   avatar_url?: string;
   avatar?: string;
   bio?: string;
+  profileCompleted?: boolean;
+  isExistingUser?: boolean;
+  roleSelected?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }

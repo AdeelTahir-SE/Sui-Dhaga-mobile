@@ -181,15 +181,18 @@ export default function RegisterScreen() {
       const result = await loginWithGoogle();
       if (result.success) {
         const currentUser = useAuthStore.getState().user;
-        const hasEstablishedRole = currentUser?.role === "tailor" || currentUser?.role === "customer";
-        if (result.needsProfileCompletion && !hasEstablishedRole) {
-          router.replace("/auth/complete-profile" as any);
-        } else {
+        const userExists = result.isExistingUser ?? !result.needsProfileCompletion;
+
+        if (userExists) {
+          // If user exists: check if customer or tailor
           if (currentUser?.role === "tailor") {
             router.replace("/tailor-dashboard" as any);
           } else {
             router.replace("/home" as any);
           }
+        } else {
+          // If user does not exist: redirect to complete profile page to select customer or tailor
+          router.replace("/auth/complete-profile" as any);
         }
       } else if (result.error && result.error !== "Sign in was cancelled.") {
         setErrorMessage(result.error);

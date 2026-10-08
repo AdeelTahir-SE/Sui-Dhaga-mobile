@@ -58,11 +58,13 @@ export default function CompleteProfileScreen() {
       router.replace("/auth/login" as any);
       return;
     }
-    // If user already has an established tailor profile or existing completed role, route them directly
-    if (user.role === "tailor") {
-      router.replace("/tailor-dashboard" as any);
-    } else if (user.role === "customer" && user.phone) {
-      router.replace("/home" as any);
+    // If user already completed profile, route directly to their respective home page
+    if (user.profileCompleted === true) {
+      if (user.role === "tailor") {
+        router.replace("/tailor-dashboard" as any);
+      } else {
+        router.replace("/home" as any);
+      }
     }
   }, [user]);
 
