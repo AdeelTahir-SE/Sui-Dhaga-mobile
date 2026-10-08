@@ -58,8 +58,9 @@ export default function CompleteProfileScreen() {
       router.replace("/auth/login" as any);
       return;
     }
-    // If user already completed profile, route directly to their respective home page
-    if (user.profileCompleted === true) {
+    // If user exists, NEVER allow staying on complete-profile page: route directly to home
+    const isExistingUser = user.isExistingUser === true || user.profileCompleted === true;
+    if (isExistingUser) {
       if (user.role === "tailor") {
         router.replace("/tailor-dashboard" as any);
       } else {

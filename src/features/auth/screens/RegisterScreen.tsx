@@ -310,18 +310,12 @@ export default function RegisterScreen() {
         const currentUser = useAuthStore.getState().user;
         const currentToken = useAuthStore.getState().token;
         if (currentToken && currentUser) {
-          const needsCompletion = !currentUser.phone || !currentUser.role;
-          if (needsCompletion) {
-            router.replace("/auth/complete-profile" as any);
-            return;
+          if (currentUser.role === "tailor") {
+            router.replace("/tailor-dashboard" as any);
           } else {
-            if (currentUser.role === "tailor") {
-              router.replace("/tailor-dashboard" as any);
-            } else {
-              router.replace("/home" as any);
-            }
-            return;
+            router.replace("/home" as any);
           }
+          return;
         }
         setRegistrationSuccess(true);
       } else {

@@ -29,10 +29,7 @@ export default function AuthCallbackScreen() {
         // 0. If user is already authenticated (e.g. handled directly in LoginScreen)
         if (useAuthStore.getState().isAuthenticated) {
           const user = useAuthStore.getState().user;
-          const userExists = user?.isExistingUser ?? (user?.profileCompleted !== false);
-          if (!userExists || user?.profileCompleted === false) {
-            router.replace("/auth/complete-profile" as any);
-          } else if (user?.role === "tailor") {
+          if (user?.role === "tailor") {
             router.replace("/tailor-dashboard" as any);
           } else {
             router.replace("/home" as any);
@@ -74,9 +71,7 @@ export default function AuthCallbackScreen() {
           // If still no token but user is authenticated, redirect
           if (useAuthStore.getState().isAuthenticated) {
             const user = useAuthStore.getState().user;
-            if (user?.profileCompleted === false) {
-              router.replace("/auth/complete-profile" as any);
-            } else if (user?.role === "tailor") {
+            if (user?.role === "tailor") {
               router.replace("/tailor-dashboard" as any);
             } else {
               router.replace("/home" as any);

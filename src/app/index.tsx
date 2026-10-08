@@ -31,9 +31,11 @@ export default function Index() {
 
   // Once checked, if user is already logged in, route directly into the app
   if (isAuthenticated && user && user.id && user.id !== "guest" && !user.id.startsWith("guest")) {
-    if (user.profileCompleted === false) {
+    // If brand new user who has not chosen role:
+    if (user.isExistingUser === false) {
       return <Redirect href="/auth/complete-profile" />;
     }
+    // Existing user: NEVER redirect to complete-profile!
     if (user.role === "tailor") {
       return <Redirect href="/tailor-dashboard" />;
     }

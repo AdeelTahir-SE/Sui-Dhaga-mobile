@@ -14,7 +14,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
 
-  login: (payload: LoginPayload) => Promise<{ success: boolean; needsProfileCompletion?: boolean; error?: string }>;
+  login: (payload: LoginPayload) => Promise<{ success: boolean; isExistingUser?: boolean; needsProfileCompletion?: boolean; error?: string }>;
   register: (payload: RegisterPayload) => Promise<boolean>;
   loginWithGoogle: () => Promise<{ success: boolean; isExistingUser?: boolean; needsProfileCompletion?: boolean; error?: string }>;
   handleAuthCallback: (params: {
@@ -302,12 +302,10 @@ export const useAuthStore = create<AuthState>((set) => ({
           error: null,
         });
 
-        const needsProfileCompletion =
-          (res as any)?.data?.needsProfileCompletion ??
-          (res as any)?.needsProfileCompletion ??
-          (!authData.user.phone || !authData.user.role);
+        const isExistingUser = true;
+        const needsProfileCompletion = false;
 
-        return { success: true, needsProfileCompletion };
+        return { success: true, isExistingUser, needsProfileCompletion };
       } else {
         const errorMsg =
           (res.success === false && (res.error || res.message)) ||
