@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router, Redirect, useFocusEffect } from "expo-router";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { Redirect, router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -53,7 +53,13 @@ export default function TailorDashboardScreen() {
   const authLoading = useAuthStore((state) => state.isLoading);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+    if (
+      !authLoading &&
+      (!user ||
+        !isAuthenticated ||
+        user.id === "guest" ||
+        user.id?.startsWith("guest"))
+    ) {
       toast.warning("You are logged out. Login to continue.");
       router.replace("/auth/login" as any);
     }
@@ -71,7 +77,7 @@ export default function TailorDashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       refreshProfile?.();
-    }, [refreshProfile])
+    }, [refreshProfile]),
   );
 
   const isUnauthenticated =
@@ -227,15 +233,11 @@ export default function TailorDashboardScreen() {
     }, [orders, appointments]);
 
   const isProfileIncomplete =
-    !isProfileLoading &&
-    (!isComplete || user?.profileCompleted === false);
+    !isProfileLoading && (!isComplete || user?.profileCompleted === false);
 
   const completionDetails = useMemo(() => {
     const p = (profile || {}) as any;
-    const hasBusinessName = !!(
-      p?.businessName?.trim() ||
-      p?.shopName?.trim()
-    );
+    const hasBusinessName = !!(p?.businessName?.trim() || p?.shopName?.trim());
     const hasSpecialties = !!(
       (Array.isArray(p?.specialties) && p.specialties.length > 0) ||
       (typeof p?.specialty === "string" && p.specialty.trim().length > 0)
@@ -244,7 +246,9 @@ export default function TailorDashboardScreen() {
     const hasLocation = !!(
       (p?.city && p.city.trim().length > 0) ||
       (p?.address && p.address.trim().length > 0) ||
-      (typeof loc === "object" && loc?.city && String(loc.city).trim().length > 0) ||
+      (typeof loc === "object" &&
+        loc?.city &&
+        String(loc.city).trim().length > 0) ||
       (typeof loc === "string" && loc.trim().length > 0)
     );
     const hasPrice = !!(
@@ -388,17 +392,7 @@ export default function TailorDashboardScreen() {
                       paddingVertical: 2.5,
                       borderRadius: 12,
                     }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        fontWeight: "800",
-                        color: "#78350F",
-                      }}
-                    >
-                      {completionDetails.completedCount}/{completionDetails.totalCount} Complete
-                    </Text>
-                  </View>
+                  ></View>
                 </View>
 
                 <Text
@@ -410,7 +404,8 @@ export default function TailorDashboardScreen() {
                     marginTop: 5,
                   }}
                 >
-                  Please complete your profile so that customers can find you, view your services, and place orders.
+                  Please complete your profile so that customers can find you,
+                  view your services, and place orders.
                 </Text>
 
                 {/* Progress bar */}
@@ -628,7 +623,14 @@ export default function TailorDashboardScreen() {
                 marginBottom: 10,
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", flex: 1, paddingRight: 8 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  flex: 1,
+                  paddingRight: 8,
+                }}
+              >
                 <View
                   style={{
                     width: 40,
@@ -644,7 +646,11 @@ export default function TailorDashboardScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
-                    style={{ fontSize: 18, fontWeight: "900", color: "#1A1D1F" }}
+                    style={{
+                      fontSize: 18,
+                      fontWeight: "900",
+                      color: "#1A1D1F",
+                    }}
                     numberOfLines={1}
                   >
                     Boutique Quick Actions

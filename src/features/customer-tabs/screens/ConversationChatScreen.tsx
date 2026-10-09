@@ -462,7 +462,34 @@ export default function ConversationChatScreen() {
     setIsLoading(true);
     hasInitiallyScrolledRef.current = false;
     try {
-      // 1. Primary path: Use tailorId and clientId
+      // 1. Direct path: If a specific conversationId is provided or active (not "new")
+      const directConvId =
+        (activeConvId && activeConvId !== "new" ? activeConvId : null) ||
+        (params.conversationId && params.conversationId !== "new" ? params.conversationId : null);
+
+      if (directConvId) {
+        const [convRes, msgsRes] = await Promise.all([
+          conversationsApi.getConversationById(directConvId).catch(() => null),
+          conversationsApi.getMessages(directConvId, { limit: 20 }).catch(() => null),
+        ]);
+
+        if (convRes?.data) {
+          setConversation(convRes.data);
+          setActiveConvId(directConvId);
+        }
+        if (msgsRes?.data && Array.isArray(msgsRes.data)) {
+          const normalized = msgsRes.data.map(normalizeMessage);
+          setMessages(normalized);
+          setHasMore(Boolean(msgsRes.hasMore));
+          markUnreadMessagesAsRead(normalized);
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: false });
+          }, 100);
+        }
+        return;
+      }
+
+      // 2. Pair path: Check between tailorId and clientId
       if (resolvedTailorId && resolvedClientId) {
         const [convRes, msgsRes] = await Promise.all([
           conversationsApi
@@ -480,38 +507,52 @@ export default function ConversationChatScreen() {
           if (convRes.data.conversation.id) {
             setActiveConvId(convRes.data.conversation.id);
           }
+          if (msgsRes?.data && Array.isArray(msgsRes.data)) {
+            const normalized = msgsRes.data.map(normalizeMessage);
+            setMessages(normalized);
+            setHasMore(Boolean(msgsRes.hasMore));
+            markUnreadMessagesAsRead(normalized);
+            setTimeout(() => {
+              scrollViewRef.current?.scrollToEnd({ animated: false });
+            }, 100);
+          }
+          return;
         }
-        if (msgsRes?.data && Array.isArray(msgsRes.data)) {
-          const normalized = msgsRes.data.map(normalizeMessage);
-          setMessages(normalized);
-          setHasMore(Boolean(msgsRes.hasMore));
-          markUnreadMessagesAsRead(normalized);
-          setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: false });
-          }, 100);
-        }
-        return;
       }
 
-      // 2. Fallback: If only activeConvId is known
-      const convId =
-        activeConvId ||
-        (params.conversationId !== "new" ? params.conversationId : null);
-      if (convId) {
-        const [convRes, msgsRes] = await Promise.all([
-          conversationsApi.getConversationById(convId).catch(() => null),
-          conversationsApi.getMessages(convId, { limit: 20 }).catch(() => null),
-        ]);
+      // 3. Fallback discovery: Search existing conversation list using target IDs and names
+      const candidateTargetIds = Array.from(
+        new Set(
+          [resolvedTailorId, params.tailorId, params.clientId, params.recipientId].filter(
+            (id): id is string => Boolean(id && (!currentUser?.id || id !== currentUser.id))
+          )
+        )
+      );
+      const candidateTargetNames = [params.name].filter((n): n is string => Boolean(n));
 
-        if (convRes?.data) setConversation(convRes.data);
-        if (msgsRes?.data && Array.isArray(msgsRes.data)) {
-          const normalized = msgsRes.data.map(normalizeMessage);
-          setMessages(normalized);
-          setHasMore(Boolean(msgsRes.hasMore));
-          markUnreadMessagesAsRead(normalized);
-          setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: false });
-          }, 100);
+      if (candidateTargetIds.length > 0 || candidateTargetNames.length > 0) {
+        const foundConv = await conversationsApi.findExistingConversation(
+          candidateTargetIds,
+          currentUser?.id,
+          candidateTargetNames
+        ).catch(() => null);
+
+        if (foundConv && (foundConv.id || (foundConv as any)._id)) {
+          const foundId = foundConv.id || (foundConv as any)._id;
+          setActiveConvId(foundId);
+          setConversation(foundConv);
+
+          const msgsRes = await conversationsApi.getMessages(foundId, { limit: 20 }).catch(() => null);
+          if (msgsRes?.data && Array.isArray(msgsRes.data)) {
+            const normalized = msgsRes.data.map(normalizeMessage);
+            setMessages(normalized);
+            setHasMore(Boolean(msgsRes.hasMore));
+            markUnreadMessagesAsRead(normalized);
+            setTimeout(() => {
+              scrollViewRef.current?.scrollToEnd({ animated: false });
+            }, 100);
+          }
+          return;
         }
       }
     } catch (err) {
@@ -536,22 +577,21 @@ export default function ConversationChatScreen() {
 
     try {
       let res: any = null;
-      if (resolvedTailorId && resolvedClientId) {
+      const currentActiveId =
+        (activeConvId && activeConvId !== "new" ? activeConvId : null) ||
+        (params.conversationId && params.conversationId !== "new" ? params.conversationId : null);
+
+      if (currentActiveId) {
+        res = await conversationsApi.getMessages(currentActiveId, {
+          limit: 20,
+          before: beforeCursor,
+        });
+      } else if (resolvedTailorId && resolvedClientId) {
         res = await conversationsApi.getMessagesBetween(
           resolvedTailorId,
           resolvedClientId,
           { limit: 20, before: beforeCursor },
         );
-      } else {
-        const convId =
-          activeConvId ||
-          (params.conversationId !== "new" ? params.conversationId : null);
-        if (convId) {
-          res = await conversationsApi.getMessages(convId, {
-            limit: 20,
-            before: beforeCursor,
-          });
-        }
       }
 
       if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
@@ -921,9 +961,13 @@ export default function ConversationChatScreen() {
         senderId: currentUser?.id,
       };
 
-      if (activeConvId && activeConvId !== "new") {
+      const targetConvId =
+        (activeConvId && activeConvId !== "new" ? activeConvId : null) ||
+        (params.conversationId && params.conversationId !== "new" ? params.conversationId : null);
+
+      if (targetConvId) {
         const res = await conversationsApi.sendMessage(
-          activeConvId,
+          targetConvId,
           messagePayload,
         );
         let rawData: any = res?.data;
@@ -1056,9 +1100,13 @@ export default function ConversationChatScreen() {
       };
 
       // 1. If conversationId is known, send directly to POST /conversations/:conversationId/messages with multipart/form-data
-      if (activeConvId && activeConvId !== "new") {
+      const targetConvId =
+        (activeConvId && activeConvId !== "new" ? activeConvId : null) ||
+        (params.conversationId && params.conversationId !== "new" ? params.conversationId : null);
+
+      if (targetConvId) {
         const res = await conversationsApi.sendMessage(
-          activeConvId,
+          targetConvId,
           messagePayload,
         );
         let rawData: any = res?.data;

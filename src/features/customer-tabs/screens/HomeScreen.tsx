@@ -417,7 +417,13 @@ export default function HomeScreen() {
                       o.design_images
                     }
                     tone={tone}
-                    onPress={() => router.push(`/orders/${order.id}` as any)}
+                    onPress={() => {
+                      const targetId = order.id || order.orderNumber;
+                      if (targetId) {
+                        const cleanId = String(targetId).replace(/^[#\s]+/, "").trim();
+                        router.push(`/orders/${encodeURIComponent(cleanId)}` as any);
+                      }
+                    }}
                   />
                 );
               })}

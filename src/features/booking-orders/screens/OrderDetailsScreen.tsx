@@ -48,6 +48,8 @@ export default function OrderDetailsScreen() {
   } | null>(null);
   const [previewImageUri, setPreviewImageUri] = useState<string | null>(null);
   const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
+  const [existingConversationId, setExistingConversationId] = useState<string | null>(null);
+  const [isNavigatingChat, setIsNavigatingChat] = useState(false);
 
   const effectiveOrderId = cleanOrderId || order?.id || rawParamId || "";
   const effectiveTailorId =
@@ -90,6 +92,7 @@ export default function OrderDetailsScreen() {
               return {
                 ...(prev || {}),
                 id: baseId,
+                userId: t.userId || (t as any).user_id || prev?.userId || "",
                 name: t.name || prev?.name || t.shopName || "Tailor",
                 shopName: t.shopName || prev?.shopName || "",
                 rating: t.rating ?? prev?.rating ?? 0,
@@ -137,6 +140,7 @@ export default function OrderDetailsScreen() {
               ...(prev || {}),
               ...tData,
               id: tData.id || prev?.id || "",
+              userId: tData.userId || (tData as any).user_id || prev?.userId || "",
             } as TailorItem));
           }
         })
@@ -153,6 +157,7 @@ export default function OrderDetailsScreen() {
                     ...(prev || {}),
                     ...found,
                     id: found.id || prev?.id || "",
+                    userId: found.userId || (found as any).user_id || prev?.userId || "",
                   } as TailorItem));
                 }
               }
@@ -383,34 +388,184 @@ export default function OrderDetailsScreen() {
     (order as any)?.city ||
     (displayCustomerAddress ? displayCustomerAddress.split(",")[0].trim() : "");
 
-  const handleMessageCustomer = () => {
-    const clientId = order?.customerId || (order as any)?.customer_id || "";
-    router.push({
-      pathname: "/messages/[conversationId]",
-      params: {
-        conversationId: "new",
-        tailorId: currentUser?.id,
-        clientId: clientId,
-        recipientId: clientId,
-        name: displayCustomerName,
-        avatar: displayCustomerAvatar || "",
-      },
-    } as any);
+  // Background preloading of existing conversation between order parties
+  useEffect(() => {
+    let isCancelled = false;
+    const currentUserId = currentUser?.id;
+    if (!currentUserId) return;
+
+    const findConversation = async () => {
+      try {
+        const isTailorRole =
+          from === "tailor" ||
+          currentUser?.role === "tailor" ||
+          Boolean(order?.tailorId && currentUserId && order.tailorId === currentUserId);
+
+        let targetIds: string[] = [];
+        let targetNames: string[] = [];
+
+        if (isTailorRole) {
+          const clientId =
+            order?.customerId ||
+            (order as any)?.customer_id ||
+            (customerInfo as any)?.id ||
+            (order?.customer as any)?.id;
+          if (clientId) targetIds.push(clientId);
+          if (displayCustomerName && displayCustomerName !== "Client") {
+            targetNames.push(displayCustomerName);
+          }
+        } else {
+          const tailorUser =
+            tailorInfo?.userId ||
+            (tailorInfo as any)?.user_id ||
+            (order?.tailor as any)?.userId ||
+            (order?.tailor as any)?.user_id ||
+            (order?.tailor as any)?.profile?.id;
+          const tailorTable =
+            tailorInfo?.id ||
+            order?.tailorId ||
+            (order as any)?.tailor_id ||
+            (order?.tailor as any)?.id;
+
+          if (tailorUser) targetIds.push(tailorUser);
+          if (tailorTable && tailorTable !== tailorUser) targetIds.push(tailorTable);
+          if (displayTailorName && displayTailorName !== "Tailor") {
+            targetNames.push(displayTailorName);
+          }
+          if (displayShopName) targetNames.push(displayShopName);
+        }
+
+        if (targetIds.length === 0) return;
+
+        const found = await conversationsApi.findExistingConversation(
+          targetIds,
+          currentUserId,
+          targetNames
+        );
+        if (!isCancelled && found && (found.id || (found as any)._id)) {
+          setExistingConversationId(found.id || (found as any)._id);
+        }
+      } catch {}
+    };
+
+    findConversation();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    currentUser?.id,
+    from,
+    order?.tailorId,
+    (order as any)?.tailor_id,
+    order?.customerId,
+    (order as any)?.customer_id,
+    tailorInfo?.id,
+    tailorInfo?.userId,
+    (tailorInfo as any)?.user_id,
+    (order?.tailor as any)?.userId,
+    (order?.tailor as any)?.user_id,
+    displayCustomerName,
+    displayTailorName,
+    displayShopName,
+  ]);
+
+  const handleMessageCustomer = async () => {
+    if (isNavigatingChat) return;
+    setIsNavigatingChat(true);
+
+    try {
+      const clientId =
+        order?.customerId ||
+        (order as any)?.customer_id ||
+        (customerInfo as any)?.id ||
+        (order?.customer as any)?.id ||
+        "";
+
+      let convId = existingConversationId;
+
+      if (!convId && currentUser?.id && clientId) {
+        const found = await conversationsApi.findExistingConversation(
+          [clientId],
+          currentUser.id,
+          [displayCustomerName].filter(Boolean)
+        );
+        if (found && (found.id || (found as any)._id)) {
+          convId = found.id || (found as any)._id;
+          setExistingConversationId(convId);
+        }
+      }
+
+      router.push({
+        pathname: "/messages/[conversationId]",
+        params: {
+          conversationId: convId || "new",
+          tailorId: currentUser?.id,
+          clientId: clientId,
+          recipientId: clientId,
+          name: displayCustomerName,
+          avatar: displayCustomerAvatar || "",
+        },
+      } as any);
+    } finally {
+      setIsNavigatingChat(false);
+    }
   };
 
-  const handleMessage = () => {
-    const targetUserId = order?.tailorId || order?.tailor_id || "";
-    router.push({
-      pathname: "/messages/[conversationId]",
-      params: {
-        conversationId: "new",
-        tailorId: targetUserId,
-        clientId: currentUser?.id,
-        recipientId: targetUserId,
-        name: displayTailorName,
-        avatar: displayTailorAvatar || "",
-      },
-    } as any);
+  const handleMessage = async () => {
+    if (isNavigatingChat) return;
+    setIsNavigatingChat(true);
+
+    try {
+      const tailorUserId =
+        tailorInfo?.userId ||
+        (tailorInfo as any)?.user_id ||
+        (order?.tailor as any)?.userId ||
+        (order?.tailor as any)?.user_id ||
+        (order?.tailor as any)?.profile?.id ||
+        "";
+
+      const tailorTableId =
+        tailorInfo?.id ||
+        order?.tailorId ||
+        (order as any)?.tailor_id ||
+        (order?.tailor as any)?.id ||
+        "";
+
+      const targetCandidates = Array.from(
+        new Set([tailorUserId, tailorTableId].filter(Boolean))
+      );
+
+      let convId = existingConversationId;
+
+      if (!convId && currentUser?.id && targetCandidates.length > 0) {
+        const found = await conversationsApi.findExistingConversation(
+          targetCandidates,
+          currentUser.id,
+          [displayTailorName, displayShopName].filter(Boolean)
+        );
+        if (found && (found.id || (found as any)._id)) {
+          convId = found.id || (found as any)._id;
+          setExistingConversationId(convId);
+        }
+      }
+
+      const resolvedTailorTargetId = tailorUserId || tailorTableId;
+
+      router.push({
+        pathname: "/messages/[conversationId]",
+        params: {
+          conversationId: convId || "new",
+          tailorId: resolvedTailorTargetId,
+          clientId: currentUser?.id,
+          recipientId: resolvedTailorTargetId,
+          name: displayTailorName,
+          avatar: displayTailorAvatar || "",
+        },
+      } as any);
+    } finally {
+      setIsNavigatingChat(false);
+    }
   };
 
   const isTailor =
@@ -763,14 +918,21 @@ export default function OrderDetailsScreen() {
                   {/* Message Button for Tailor */}
                   <TouchableOpacity
                     onPress={handleMessageCustomer}
+                    disabled={isNavigatingChat}
                     activeOpacity={0.8}
                     className="mt-3 h-9 rounded-lg bg-primary items-center justify-center flex-row overflow-hidden relative shadow-xs"
                   >
                     <ButtonTexture variant="greenish" borderRadius={8} />
-                    <Ionicons name="chatbubble-ellipses" size={13} color="#FFFFFF" style={{ marginRight: 5, zIndex: 1 }} />
-                    <Text className="text-[11px] font-bold text-white" style={{ zIndex: 1 }}>
-                      Message Customer
-                    </Text>
+                    {isNavigatingChat ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" style={{ zIndex: 1 }} />
+                    ) : (
+                      <>
+                        <Ionicons name="chatbubble-ellipses" size={13} color="#FFFFFF" style={{ marginRight: 5, zIndex: 1 }} />
+                        <Text className="text-[11px] font-bold text-white" style={{ zIndex: 1 }}>
+                          Message Customer
+                        </Text>
+                      </>
+                    )}
                   </TouchableOpacity>
                 </View>
               </>
@@ -862,11 +1024,18 @@ export default function OrderDetailsScreen() {
                   <View className="mt-3 flex-row gap-2">
                     <TouchableOpacity
                       onPress={handleMessage}
+                      disabled={isNavigatingChat}
                       className="flex-1 h-8 rounded-lg bg-[#E0F7F7] items-center justify-center flex-row"
                       activeOpacity={0.8}
                     >
-                      <Ionicons name="chatbubble-ellipses-outline" size={12} color="#0D7377" style={{ marginRight: 3 }} />
-                      <Text className="text-[11px] font-bold text-[#0D7377]">Message</Text>
+                      {isNavigatingChat ? (
+                        <ActivityIndicator size="small" color="#0D7377" />
+                      ) : (
+                        <>
+                          <Ionicons name="chatbubble-ellipses-outline" size={12} color="#0D7377" style={{ marginRight: 3 }} />
+                          <Text className="text-[11px] font-bold text-[#0D7377]">Message</Text>
+                        </>
+                      )}
                     </TouchableOpacity>
 
                     {displayTailorId ? (

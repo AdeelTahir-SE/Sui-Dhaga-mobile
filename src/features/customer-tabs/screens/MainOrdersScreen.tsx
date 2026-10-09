@@ -540,7 +540,7 @@ export default function MainOrdersScreen() {
               return (
                 <MainOrderCard
                   key={order.id || index}
-                  id={order.orderNumber || order.id || "—"}
+                  id={order.id || order.orderNumber || "—"}
                   orderId={order.id}
                   item={order.itemName || "Custom Garment"}
                   tailor={order.tailorName || "Tailor"}

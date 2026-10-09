@@ -21,6 +21,7 @@ import { useAppointmentDetails } from "../hooks/useAppointments";
 import { useAuthStore } from "@/stores/auth.store";
 import { ButtonTexture } from "@/components/ui/ButtonTexture";
 import { tailorsApi } from "@/api/tailors.api";
+import { conversationsApi } from "@/api/conversations.api";
 import type { TailorItem } from "@/types/api";
 
 export default function AppointmentDetailsScreen() {
@@ -42,6 +43,8 @@ export default function AppointmentDetailsScreen() {
     "accept" | "reject" | "complete" | "cancel" | null
   >(null);
   const [tailorInfo, setTailorInfo] = useState<TailorItem | null>(null);
+  const [existingConversationId, setExistingConversationId] = useState<string | null>(null);
+  const [isNavigatingChat, setIsNavigatingChat] = useState(false);
 
   // Fetch complete tailor details if tailorId is known
   useEffect(() => {
@@ -363,35 +366,154 @@ export default function AppointmentDetailsScreen() {
     appointment.customer?._id ||
     "";
 
+  // Background preloading of existing conversation between appointment parties
+  useEffect(() => {
+    let isCancelled = false;
+    const currentUserId = currentUser?.id;
+    if (!currentUserId) return;
+
+    const findConversation = async () => {
+      try {
+        const isTailorRole =
+          from === "tailor" ||
+          currentUser?.role === "tailor" ||
+          Boolean(displayTailorId && currentUserId && displayTailorId === currentUserId);
+
+        let targetIds: string[] = [];
+        let targetNames: string[] = [];
+
+        if (isTailorRole) {
+          if (displayCustomerId) targetIds.push(displayCustomerId);
+          if (displayCustomerName && displayCustomerName !== "Client") {
+            targetNames.push(displayCustomerName);
+          }
+        } else {
+          const tailorUser =
+            tailorInfo?.userId ||
+            (tailorInfo as any)?.user_id ||
+            displayTailorId;
+          const tailorTable = tailorInfo?.id || displayTailorId;
+
+          if (tailorUser) targetIds.push(tailorUser);
+          if (tailorTable && tailorTable !== tailorUser) targetIds.push(tailorTable);
+          if (displayTailorName && displayTailorName !== "Tailor") {
+            targetNames.push(displayTailorName);
+          }
+          if (displayShopName) targetNames.push(displayShopName);
+        }
+
+        if (targetIds.length === 0) return;
+
+        const found = await conversationsApi.findExistingConversation(
+          targetIds,
+          currentUserId,
+          targetNames
+        );
+        if (!isCancelled && found && (found.id || (found as any)._id)) {
+          setExistingConversationId(found.id || (found as any)._id);
+        }
+      } catch {}
+    };
+
+    findConversation();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    currentUser?.id,
+    from,
+    displayTailorId,
+    displayCustomerId,
+    tailorInfo?.id,
+    tailorInfo?.userId,
+    displayCustomerName,
+    displayTailorName,
+    displayShopName,
+  ]);
+
   // Actions
-  const handleMessageCustomer = () => {
-    const clientId = displayCustomerId;
-    router.push({
-      pathname: "/messages/[conversationId]",
-      params: {
-        conversationId: "new",
-        tailorId: currentUser?.id,
-        clientId: clientId,
-        recipientId: clientId,
-        name: displayCustomerName,
-        avatar: displayCustomerAvatar || "",
-      },
-    } as any);
+  const handleMessageCustomer = async () => {
+    if (isNavigatingChat) return;
+    setIsNavigatingChat(true);
+
+    try {
+      const clientId = displayCustomerId;
+      let convId = existingConversationId;
+
+      if (!convId && currentUser?.id && clientId) {
+        const found = await conversationsApi.findExistingConversation(
+          [clientId],
+          currentUser.id,
+          [displayCustomerName].filter(Boolean)
+        );
+        if (found && (found.id || (found as any)._id)) {
+          convId = found.id || (found as any)._id;
+          setExistingConversationId(convId);
+        }
+      }
+
+      router.push({
+        pathname: "/messages/[conversationId]",
+        params: {
+          conversationId: convId || "new",
+          tailorId: currentUser?.id,
+          clientId: clientId,
+          recipientId: clientId,
+          name: displayCustomerName,
+          avatar: displayCustomerAvatar || "",
+        },
+      } as any);
+    } finally {
+      setIsNavigatingChat(false);
+    }
   };
 
-  const handleMessageTailor = () => {
-    const targetUserId = displayTailorId;
-    router.push({
-      pathname: "/messages/[conversationId]",
-      params: {
-        conversationId: "new",
-        tailorId: targetUserId,
-        clientId: currentUser?.id,
-        recipientId: targetUserId,
-        name: displayTailorName,
-        avatar: displayTailorAvatar || "",
-      },
-    } as any);
+  const handleMessageTailor = async () => {
+    if (isNavigatingChat) return;
+    setIsNavigatingChat(true);
+
+    try {
+      const tailorUserId =
+        tailorInfo?.userId ||
+        (tailorInfo as any)?.user_id ||
+        "";
+      const tailorTableId = tailorInfo?.id || displayTailorId;
+
+      const targetCandidates = Array.from(
+        new Set([tailorUserId, tailorTableId, displayTailorId].filter(Boolean))
+      );
+
+      let convId = existingConversationId;
+
+      if (!convId && currentUser?.id && targetCandidates.length > 0) {
+        const found = await conversationsApi.findExistingConversation(
+          targetCandidates,
+          currentUser.id,
+          [displayTailorName, displayShopName].filter(Boolean)
+        );
+        if (found && (found.id || (found as any)._id)) {
+          convId = found.id || (found as any)._id;
+          setExistingConversationId(convId);
+        }
+      }
+
+      const resolvedTailorTargetId = tailorUserId || tailorTableId || displayTailorId;
+
+      router.push({
+        pathname: "/messages/[conversationId]",
+        params: {
+          conversationId: convId || "new",
+          tailorId: resolvedTailorTargetId,
+          clientId: currentUser?.id,
+          recipientId: resolvedTailorTargetId,
+          name: displayTailorName,
+          avatar: displayTailorAvatar || "",
+        },
+      } as any);
+    } finally {
+      setIsNavigatingChat(false);
+    }
   };
 
   const handleCallTailor = () => {

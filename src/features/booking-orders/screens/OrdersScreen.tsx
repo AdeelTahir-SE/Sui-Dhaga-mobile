@@ -147,14 +147,16 @@ export default function OrdersScreen() {
                 return (
                   <OrderCard
                     key={order.id || index}
-                    id={order.orderNumber || order.id || "—"}
+                    id={order.id || order.orderNumber || "—"}
                     item={order.itemName || "Custom Outfit"}
                     tailor={order.tailorName || "Tailor"}
                     image={firstDesignImg}
                     designImages={order.designImages || order.design_images}
                     onPress={() => {
-                      if (order.id || order.orderNumber) {
-                        router.push(`/orders/${order.id || order.orderNumber}` as any);
+                      const targetId = order.id || order.orderNumber;
+                      if (targetId) {
+                        const cleanId = String(targetId).replace(/^[#\s]+/, "").trim();
+                        router.push(`/orders/${encodeURIComponent(cleanId)}` as any);
                       }
                     }}
                     placedOn={

@@ -128,7 +128,6 @@ export default function RootLayout() {
           style={{ flex: 1, backgroundColor: "#FFFFFF" }}
         >
           <StatusBar style="dark" />
-          <NavigationBar style="dark" />
           <Stack
             screenOptions={{
               headerShown: false,
