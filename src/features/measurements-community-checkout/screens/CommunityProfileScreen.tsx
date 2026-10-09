@@ -183,13 +183,15 @@ export default function CommunityProfileScreen() {
     ((isCurrentUserTailor && isProfileCustomer) ||
       (isCurrentUserCustomer && isProfileTailor));
 
+  const userEmail = (profileUser as any)?.email;
+
   const displayName =
     (profileUser as any)?.fullName?.trim() ||
     (profileUser as any)?.full_name?.trim() ||
     (profileUser as any)?.name?.trim() ||
     params.name?.trim() ||
-    (profileUser?.email
-      ? profileUser.email.split("@")[0]
+    (userEmail
+      ? userEmail.split("@")[0]
       : isProfileTailor
       ? "Tailor"
       : "Community Member");
@@ -548,9 +550,9 @@ export default function CommunityProfileScreen() {
                   )}
                 </View>
 
-                {profileUser?.email ? (
+                {userEmail ? (
                   <Text className="mt-0.5 text-[12.5px] font-medium text-slate-500" numberOfLines={1}>
-                    {profileUser.email}
+                    {userEmail}
                   </Text>
                 ) : null}
 
