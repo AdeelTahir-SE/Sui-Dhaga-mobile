@@ -441,8 +441,8 @@ export default function TailorProfileSetupScreen() {
         return false;
       }
     } else if (step === 3) {
-      if (!city.trim()) {
-        Alert.alert("Required Field", "Please enter your City / Town.");
+      if (!city.trim() && !hasLocationPinned) {
+        Alert.alert("Location Pin Required", "Please tap 'Set on Map' above to pin your shop location.");
         return false;
       }
     }
@@ -518,17 +518,11 @@ export default function TailorProfileSetupScreen() {
 
         {/* Craft Segmented Steps & Progress Bar */}
         <View className="bg-white border-b border-brand-border px-4 pt-1 pb-3 shadow-xs">
-          {/* Progress bar (shows completion percentage) */}
+          {/* Step indicator */}
           <View className="flex-row items-center justify-between mb-2">
-            <View className="flex-row items-center gap-1.5 flex-1 mr-2">
-              <View className="h-2 w-2 rounded-full bg-primary" />
+            <View className="flex-row items-center flex-1">
               <Text className="text-[12px] font-black text-brand-dark" numberOfLines={1}>
                 Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].subtitle}
-              </Text>
-            </View>
-            <View className="rounded-full bg-primary-50 px-2 py-0.5 border border-primary/20">
-              <Text className="text-[10px] font-black text-primary">
-                {Math.round((currentStep / STEPS.length) * 100)}% Complete
               </Text>
             </View>
           </View>
@@ -875,39 +869,11 @@ export default function TailorProfileSetupScreen() {
                   Shop Location & Map Pin
                 </Text>
                 <Text className="mb-4 text-[12px] font-medium text-brand-gray">
-                  Help nearby customers find your boutique or workshop easily
+                  Pin your exact boutique or workshop location on the map. Your city and address are set automatically.
                 </Text>
 
-                {/* City */}
-                <View className="mb-4">
-                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
-                    City / Town *
-                  </Text>
-                  <TextInput
-                    value={city}
-                    onChangeText={setCity}
-                    placeholder="e.g. Delhi, Lahore"
-                    placeholderTextColor="#9CA3AF"
-                    className="h-12 rounded-xl border border-brand-border bg-brand-surface/30 px-4 text-[13.5px] font-medium text-brand-dark"
-                  />
-                </View>
-
-                {/* Shop Address */}
-                <View className="mb-4">
-                  <Text className="mb-1.5 text-[13px] font-bold text-brand-dark">
-                    Shop / Workshop Address
-                  </Text>
-                  <TextInput
-                    value={address}
-                    onChangeText={setAddress}
-                    placeholder="e.g. Shop 12, Fashion Street Market"
-                    placeholderTextColor="#9CA3AF"
-                    className="h-12 rounded-xl border border-brand-border bg-brand-surface/30 px-4 text-[13.5px] font-medium text-brand-dark"
-                  />
-                </View>
-
-                {/* Interactive Map Pin Box */}
-                <View className="rounded-2xl border border-brand-border bg-brand-surface/30 p-4">
+                {/* Interactive Map Pin Box (Placed above address fields) */}
+                <View className="rounded-2xl border border-brand-border bg-brand-surface/30 p-4 mb-4">
                   <View className="flex-row items-center justify-between mb-3.5">
                     <View className="flex-row items-center flex-1 mr-2">
                       <View className="h-8 w-8 rounded-xl bg-primary-50 items-center justify-center mr-2.5">
@@ -981,10 +947,57 @@ export default function TailorProfileSetupScreen() {
                         Tap to Pin Your Shop on Interactive Map
                       </Text>
                       <Text className="text-[11px] text-brand-gray text-center mt-1">
-                        Drag the pin, search your area or use GPS. Address, city & coordinates auto-fill.
+                        Drag the pin or use GPS. Address, city & coordinates auto-fill automatically.
                       </Text>
                     </TouchableOpacity>
                   )}
+                </View>
+
+                {/* City / Town (Uneditable - auto-set from map) */}
+                <View className="mb-4">
+                  <View className="flex-row items-center justify-between mb-1.5">
+                    <Text className="text-[13px] font-bold text-brand-dark">
+                      City / Town *
+                    </Text>
+                    <View className="flex-row items-center gap-1">
+                      <Ionicons name="lock-closed" size={11} color="#6F767E" />
+                      <Text className="text-[11px] font-semibold text-brand-gray">
+                        Auto-set by Map
+                      </Text>
+                    </View>
+                  </View>
+                  <TextInput
+                    value={city}
+                    editable={false}
+                    placeholder="Auto-set when you pin shop on map above"
+                    placeholderTextColor="#9CA3AF"
+                    className="h-12 rounded-xl border border-brand-border bg-gray-100/80 px-4 text-[13.5px] font-semibold text-brand-dark opacity-90"
+                  />
+                </View>
+
+                {/* Shop / Workshop Address (Uneditable - auto-set from map) */}
+                <View className="mb-2">
+                  <View className="flex-row items-center justify-between mb-1.5">
+                    <Text className="text-[13px] font-bold text-brand-dark">
+                      Shop / Workshop Address
+                    </Text>
+                    <View className="flex-row items-center gap-1">
+                      <Ionicons name="lock-closed" size={11} color="#6F767E" />
+                      <Text className="text-[11px] font-semibold text-brand-gray">
+                        Auto-set by Map
+                      </Text>
+                    </View>
+                  </View>
+                  <TextInput
+                    value={address}
+                    editable={false}
+                    placeholder="Auto-set when you pin shop on map above"
+                    placeholderTextColor="#9CA3AF"
+                    className="h-12 rounded-xl border border-brand-border bg-gray-100/80 px-4 text-[13.5px] font-semibold text-brand-dark opacity-90"
+                  />
+                  <Text className="mt-1 text-[11px] text-brand-gray">
+                    Tap "Set on Map" above to position your pin. City and address update automatically.
+                  </Text>
                 </View>
               </View>
 

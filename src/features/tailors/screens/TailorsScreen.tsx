@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from "react";
 import { RefreshControl, Text, TouchableOpacity, View } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 import { SearchAndFilters } from "../components/SearchAndFilters";
 import { TailorBottomTabs } from "../components/TailorBottomTabs";
@@ -87,9 +88,14 @@ export default function TailorsScreen() {
       <TailorHeader
         title="Tailors"
         subtitle="Find the perfect tailor for your style"
+        rightIcon="map-outline"
+        onPressRight={() => router.push("/tailors/map" as any)}
       />
       <View className="px-5 pt-1">
-        <SearchAndFilters />
+        <SearchAndFilters
+          onPressNearMe={() => router.push("/tailors/map" as any)}
+          onPressOptions={() => router.push("/tailors/map" as any)}
+        />
       </View>
     </View>
   ), []);

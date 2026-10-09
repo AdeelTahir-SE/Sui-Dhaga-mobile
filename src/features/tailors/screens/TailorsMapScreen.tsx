@@ -1016,6 +1016,7 @@ export default function TailorsMapScreen() {
                 </Text>
               </TouchableOpacity>
             );
+          })}
         </View>
 
         {/* GPS Status Message Strip if any */}
@@ -1197,45 +1198,116 @@ export default function TailorsMapScreen() {
           </View>
         ) : (
           <View style={styles.emptyCard}>
-            <View style={styles.emptyCardIconWrap}>
-              <Ionicons name="location-outline" size={30} color="#14919B" />
+            {/* Top Indicator Badge */}
+            <View style={styles.emptyTopBadge}>
+              <Ionicons name="compass-outline" size={13} color="#14919B" />
+              <Text style={styles.emptyTopBadgeText}>
+                {appliedSearch
+                  ? `Search: "${appliedSearch}"`
+                  : `Current Radius: ${maxRadius} km`}
+              </Text>
             </View>
+
+            {/* Icon Graphic */}
+            <View style={styles.emptyIconOuter}>
+              <View style={styles.emptyCardIconWrap}>
+                <Ionicons name="location" size={24} color="#14919B" />
+              </View>
+            </View>
+
+            {/* Title & Subtitle */}
             <Text style={styles.emptyCardTitle}>
-              No Tailors Within {maxRadius} km
+              {appliedSearch
+                ? "No Tailors Found For Search"
+                : `No Tailors Within ${maxRadius} km`}
             </Text>
             <Text style={styles.emptyCardSubtitle}>
-              {userCoords
-                ? `No registered tailors found within ${maxRadius} km of your location.`
-                : `No registered tailors found within ${maxRadius} km in this area.`}
-              {maxRadius < 15
-                ? " Try expanding your search radius to find nearby tailoring masters."
-                : ""}
+              {appliedSearch
+                ? `No tailoring studios matched "${appliedSearch}". Try a different spelling or clear search filters.`
+                : `No registered tailors found within ${maxRadius} km of this position. Expand your search distance or view all available masters.`}
             </Text>
+
+            {/* Action Buttons */}
             <View style={styles.emptyCardButtons}>
-              {maxRadius < 15 && (
+              {!appliedSearch && maxRadius < 15 && (
                 <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => setMaxRadius((prev) => (prev === 5 ? 10 : 15))}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    lightHaptic();
+                    setMaxRadius((prev) => (prev === 5 ? 10 : 15));
+                    setShowAllTailors(false);
+                  }}
                   style={styles.expandRadiusBtn}
                 >
-                  <Ionicons name="navigate-outline" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+                  <Ionicons
+                    name="expand-outline"
+                    size={14}
+                    color="#FFFFFF"
+                    style={{ marginRight: 5 }}
+                  />
                   <Text style={styles.expandRadiusBtnText}>
                     Expand to {maxRadius === 5 ? "10 km" : "15 km"}
                   </Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => {
-                  setSearchQuery("");
-                  setAppliedSearch("");
-                  setMinRating(null);
-                  setMaxRadius(10);
-                }}
-                style={styles.resetBtn}
-              >
-                <Text style={styles.resetBtnText}>Reset Filters</Text>
-              </TouchableOpacity>
+
+              {tailors.length > 0 && (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    selectionHaptic();
+                    setShowAllTailors(true);
+                    const nearest = [...tailors].sort(
+                      (a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999),
+                    )[0];
+                    if (nearest) {
+                      setSelectedTailorId(nearest.id);
+                      if (
+                        typeof nearest.latitude === "number" &&
+                        typeof nearest.longitude === "number"
+                      ) {
+                        sendMapCommand(
+                          `flyToTailor(${nearest.latitude}, ${nearest.longitude}, "${nearest.id}")`,
+                        );
+                      }
+                    }
+                  }}
+                  style={styles.showAllBtn}
+                >
+                  <Ionicons
+                    name="map-outline"
+                    size={14}
+                    color="#14919B"
+                    style={{ marginRight: 5 }}
+                  />
+                  <Text style={styles.showAllBtnText}>
+                    View All Tailors ({tailors.length})
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {(appliedSearch || minRating || maxRadius !== 10 || showAllTailors) && (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    lightHaptic();
+                    setSearchQuery("");
+                    setAppliedSearch("");
+                    setMinRating(null);
+                    setMaxRadius(10);
+                    setShowAllTailors(false);
+                  }}
+                  style={styles.resetBtn}
+                >
+                  <Ionicons
+                    name="refresh-outline"
+                    size={13}
+                    color="#4B5563"
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={styles.resetBtnText}>Reset</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         )}
@@ -1613,56 +1685,106 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 24,
+    borderRadius: 24,
+    paddingVertical: 22,
+    paddingHorizontal: 20,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    elevation: 10,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#E2E8F0",
+  },
+  emptyTopBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FAFA",
+    borderWidth: 1,
+    borderColor: "#BEE8EB",
+    paddingHorizontal: 11,
+    paddingVertical: 4.5,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  emptyTopBadgeText: {
+    fontSize: 11.5,
+    fontWeight: "700",
+    color: "#14919B",
+    marginLeft: 5,
+  },
+  emptyIconOuter: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#F0FAFA",
+    borderWidth: 1.5,
+    borderColor: "#D2F0F2",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
   },
   emptyCardIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#E0F7F7",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
   },
   emptyCardTitle: {
-    fontSize: 16,
+    fontSize: 16.5,
     fontWeight: "800",
-    color: "#1A1D1F",
-    marginTop: 6,
+    color: "#0F172A",
+    letterSpacing: -0.2,
+    textAlign: "center",
   },
   emptyCardSubtitle: {
-    fontSize: 13,
-    color: "#6F767E",
+    fontSize: 12.5,
+    color: "#64748B",
     textAlign: "center",
     marginTop: 6,
     lineHeight: 18,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
   },
   emptyCardButtons: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "center",
+    gap: 8,
     marginTop: 16,
   },
+  showAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FAFA",
+    borderWidth: 1,
+    borderColor: "#BEE8EB",
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 12,
+  },
+  showAllBtnText: {
+    fontSize: 12.5,
+    fontWeight: "700",
+    color: "#14919B",
+  },
   resetBtn: {
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 12,
   },
   resetBtnText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#4B5563",
+    color: "#475569",
   },
   modalBackdrop: {
     flex: 1,
@@ -1925,13 +2047,20 @@ const styles = StyleSheet.create({
     color: "#14919B",
   },
   expandRadiusBtn: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#14919B",
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 9,
+    borderRadius: 12,
+    shadowColor: "#14919B",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   expandRadiusBtnText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: "700",
     color: "#FFFFFF",
   },
