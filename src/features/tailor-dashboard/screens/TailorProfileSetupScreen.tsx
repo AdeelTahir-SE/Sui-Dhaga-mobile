@@ -300,8 +300,36 @@ export default function TailorProfileSetupScreen() {
         const asset = result.assets[0];
         setShopImage(asset.uri);
         setPendingBannerAsset(asset);
+
+        const targetTailorId = profile?.id;
+        const isUuid = Boolean(
+          targetTailorId &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetTailorId)
+        );
+
+        if (isUuid && targetTailorId) {
+          setIsUploadingImage(true);
+          try {
+            const res = await tailorsApi.uploadBanner(targetTailorId, asset);
+            const newBannerUrl =
+              res?.data?.bannerUrl ||
+              res?.data?.banner_url ||
+              res?.data?.banner ||
+              res?.data?.shop_banner ||
+              res?.data?.url ||
+              asset.uri;
+            setShopImage(newBannerUrl);
+            setPendingBannerAsset(null);
+            toast.success("Workshop banner updated!");
+          } catch {
+            // Will retry on handleSave
+          } finally {
+            setIsUploadingImage(false);
+          }
+        }
       }
     } catch (err: any) {
+      setIsUploadingImage(false);
       Alert.alert("Error", err?.message || "Failed to pick image");
     }
   };

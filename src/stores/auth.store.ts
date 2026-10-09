@@ -233,7 +233,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   setUser: (user) => set({ user, isAuthenticated: !!user }),
 
   checkAuth: async () => {
-    set({ isLoading: true });
+    const hasActiveSession = Boolean(useAuthStore.getState().user && useAuthStore.getState().isAuthenticated);
+    if (!hasActiveSession) {
+      set({ isLoading: true });
+    }
     try {
       const token = await storage.getToken();
       const savedUser = await storage.getUser();
