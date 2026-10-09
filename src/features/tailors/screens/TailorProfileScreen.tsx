@@ -508,6 +508,15 @@ export default function TailorProfileScreen() {
           </View>
         ) : null}
 
+        {tailor?.organizationName || tailor?.organization || (tailor as any)?.organization_name ? (
+          <View className="mt-2.5 self-start rounded-lg bg-amber-50 border border-amber-200/80 px-3 py-1 flex-row items-center">
+            <Ionicons name="business-outline" size={13} color="#B45309" style={{ marginRight: 5 }} />
+            <Text className="text-[12px] font-bold text-amber-900">
+              {tailor?.organizationName || tailor?.organization || (tailor as any)?.organization_name}
+            </Text>
+          </View>
+        ) : null}
+
         {tags.length > 0 ? (
           <View className="mt-4 flex-row flex-wrap gap-2">
             {tags.map((tag) => (

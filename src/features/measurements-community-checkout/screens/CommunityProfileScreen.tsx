@@ -59,11 +59,6 @@ export default function CommunityProfileScreen() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const authLoading = useAuthStore((state) => state.isLoading);
 
-  useEffect(() => {
-    if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
-      router.replace("/auth/login" as any);
-    }
-  }, [user, isAuthenticated, authLoading]);
 
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);

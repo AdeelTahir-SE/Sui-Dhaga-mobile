@@ -24,6 +24,12 @@ export interface CreateTailorProfilePayload {
   address?: string;
   latitude?: number;
   longitude?: number;
+  location?: {
+    city?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  };
   experienceYears?: number;
   bio?: string;
   organizationName?: string | null;
@@ -38,6 +44,12 @@ export interface UpdateTailorProfilePayload {
   address?: string;
   latitude?: number;
   longitude?: number;
+  location?: {
+    city?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  };
   experienceYears?: number;
   bio?: string;
   organizationName?: string | null;
@@ -276,15 +288,23 @@ export function mapTailorFromBackend(raw: any): TailorItem {
   let latitude =
     typeof raw.latitude === 'number' && !isNaN(raw.latitude)
       ? raw.latitude
+      : raw.latitude !== undefined && raw.latitude !== null && !isNaN(Number(raw.latitude))
+      ? Number(raw.latitude)
       : typeof raw.location?.latitude === 'number' && !isNaN(raw.location.latitude)
       ? raw.location.latitude
+      : raw.location?.latitude !== undefined && raw.location?.latitude !== null && !isNaN(Number(raw.location.latitude))
+      ? Number(raw.location.latitude)
       : undefined;
 
   let longitude =
     typeof raw.longitude === 'number' && !isNaN(raw.longitude)
       ? raw.longitude
+      : raw.longitude !== undefined && raw.longitude !== null && !isNaN(Number(raw.longitude))
+      ? Number(raw.longitude)
       : typeof raw.location?.longitude === 'number' && !isNaN(raw.location.longitude)
       ? raw.location.longitude
+      : raw.location?.longitude !== undefined && raw.location?.longitude !== null && !isNaN(Number(raw.location.longitude))
+      ? Number(raw.location.longitude)
       : undefined;
 
   if (latitude === undefined || longitude === undefined) {
@@ -649,26 +669,49 @@ export const tailorsApi = {
         : undefined;
 
     const latVal =
-      raw.latitude !== undefined && raw.latitude !== null && !isNaN(Number(raw.latitude))
+      typeof raw.latitude === 'number' && !isNaN(raw.latitude)
+        ? raw.latitude
+        : raw.latitude !== undefined && raw.latitude !== null && !isNaN(Number(raw.latitude))
         ? Number(raw.latitude)
-        : typeof data.location === 'object' && data.location?.latitude !== undefined
+        : typeof data.location === 'object' && typeof data.location?.latitude === 'number' && !isNaN(data.location.latitude)
+        ? data.location.latitude
+        : typeof data.location === 'object' && data.location?.latitude !== undefined && data.location?.latitude !== null && !isNaN(Number(data.location.latitude))
         ? Number(data.location.latitude)
         : undefined;
 
     const lngVal =
-      raw.longitude !== undefined && raw.longitude !== null && !isNaN(Number(raw.longitude))
+      typeof raw.longitude === 'number' && !isNaN(raw.longitude)
+        ? raw.longitude
+        : raw.longitude !== undefined && raw.longitude !== null && !isNaN(Number(raw.longitude))
         ? Number(raw.longitude)
-        : typeof data.location === 'object' && data.location?.longitude !== undefined
+        : typeof data.location === 'object' && typeof data.location?.longitude === 'number' && !isNaN(data.location.longitude)
+        ? data.location.longitude
+        : typeof data.location === 'object' && data.location?.longitude !== undefined && data.location?.longitude !== null && !isNaN(Number(data.location.longitude))
         ? Number(data.location.longitude)
         : undefined;
+
+    let finalLat = latVal;
+    let finalLng = lngVal;
+    if (finalLat === undefined || finalLng === undefined) {
+      const cityKey = (city || 'lahore').trim().toLowerCase();
+      const cityCoord = CITY_COORDINATES[cityKey] || CITY_COORDINATES['lahore'];
+      if (finalLat === undefined) finalLat = cityCoord.lat;
+      if (finalLng === undefined) finalLng = cityCoord.lng;
+    }
 
     const payload: CreateTailorProfilePayload = {
       shopName: resolvedShopName,
       specialties,
       city: city || 'Lahore',
       address: address || undefined,
-      latitude: latVal,
-      longitude: lngVal,
+      latitude: finalLat,
+      longitude: finalLng,
+      location: {
+        city: city || 'Lahore',
+        address: address || '',
+        latitude: finalLat,
+        longitude: finalLng,
+      },
       experienceYears: expYears,
       bio: data.bio || '',
       organizationName: resolvedOrg,

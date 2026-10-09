@@ -69,9 +69,6 @@ export default function TailorsMapScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setAppliedSearch(searchQuery.trim());
-      if (searchQuery.trim()) {
-        setShowAllTailors(false);
-      }
     }, 250);
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -93,6 +90,9 @@ export default function TailorsMapScreen() {
   // Selected Tailor State
   const [selectedTailorId, setSelectedTailorId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Record<string, boolean>>({});
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [minRating, setMinRating] = useState<number | null>(null);
+  const [showAllTailors, setShowAllTailors] = useState(false);
 
   const webViewRef = useRef<WebView | null>(null);
 
@@ -104,12 +104,13 @@ export default function TailorsMapScreen() {
     radius: maxRadius,
   });
 
-  // Client-side strict filtering for distance, rating, and verification
+  // Client-side strict filtering: ONLY within specified maxRadius!
   const filteredTailors = useMemo(() => {
     const originLat = effectiveCoords?.lat;
     const originLng = effectiveCoords?.lng;
 
-    const withDistances = tailors
+    // 1. Calculate distances and filter STRICTLY within specified radius
+    const withinRadius = tailors
       .map((t) => {
         let dist = typeof t.distanceKm === "number" ? t.distanceKm : undefined;
         if (
@@ -129,86 +130,51 @@ export default function TailorsMapScreen() {
           ...t,
           distanceKm: dist,
         };
-      });
+      })
+      .filter((t) => typeof t.distanceKm === "number" && t.distanceKm <= maxRadius);
 
-    // 1. If search is active: match across all tailors by name, city, specialty, address, bio
+    // 2. If search query is provided, filter within those tailors within the specified radius
     if (appliedSearch) {
       const q = appliedSearch.toLowerCase().trim();
-      const searchMatches = withDistances.filter((t) => {
-        const name = (t.shopName || t.name || t.businessName || "").toLowerCase();
-        const city = (t.city || "").toLowerCase();
-        const address = (t.address || "").toLowerCase();
-        const specs = Array.isArray(t.specialties)
-          ? t.specialties.join(" ").toLowerCase()
-          : (t.specialty || "").toLowerCase();
-        const bio = (t.bio || "").toLowerCase();
-        return (
-          name.includes(q) ||
-          city.includes(q) ||
-          address.includes(q) ||
-          specs.includes(q) ||
-          bio.includes(q)
-        );
-      });
-
-      if (minRating) {
-        return searchMatches
-          .filter((t) => (t.rating || 0) >= minRating)
-          .sort((a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999));
-      }
-      return searchMatches.sort(
-        (a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999),
-      );
+      return withinRadius
+        .filter((t) => {
+          const name = (t.shopName || t.name || t.businessName || "").toLowerCase();
+          const city = (t.city || "").toLowerCase();
+          const address = (t.address || "").toLowerCase();
+          const specs = Array.isArray(t.specialties)
+            ? t.specialties.join(" ").toLowerCase()
+            : (t.specialty || "").toLowerCase();
+          const bio = (t.bio || "").toLowerCase();
+          return (
+            name.includes(q) ||
+            city.includes(q) ||
+            address.includes(q) ||
+            specs.includes(q) ||
+            bio.includes(q)
+          );
+        })
+        .sort((a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999));
     }
 
-    // 2. Filter by minimum rating if set
-    let list = withDistances;
-    if (minRating) {
-      list = list.filter((t) => (t.rating || 0) >= minRating);
-    }
-
-    // 3. Proximity filter (Strictly within maxRadius)
-    const withinRadius = list.filter(
-      (t) => typeof t.distanceKm === "number" && t.distanceKm <= maxRadius,
+    return withinRadius.sort(
+      (a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999),
     );
+  }, [tailors, maxRadius, effectiveCoords, appliedSearch]);
 
-    if (withinRadius.length > 0 && !showAllTailors) {
-      return withinRadius.sort(
-        (a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999),
-      );
-    }
-
-    // 4. Show all tailors override (if user clicked "View All Tailors")
-    if (showAllTailors) {
-      return list.sort(
-        (a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999),
-      );
-    }
-
-    return [];
-  }, [tailors, minRating, maxRadius, effectiveCoords, appliedSearch, showAllTailors]);
-
-  // Keep a selected tailor in view
+  // Keep a selected tailor in view (strictly within filteredTailors)
   const selectedTailor = useMemo(() => {
-    const pool =
-      filteredTailors.length > 0
-        ? filteredTailors
-        : showAllTailors || !appliedSearch
-        ? tailors
-        : [];
-    if (!pool.length) return null;
+    if (!filteredTailors.length) return null;
     if (selectedTailorId) {
-      const found = pool.find((t) => t.id === selectedTailorId);
+      const found = filteredTailors.find((t) => t.id === selectedTailorId);
       if (found) return found;
     }
-    return pool[0];
-  }, [filteredTailors, selectedTailorId, showAllTailors, appliedSearch, tailors]);
+    return filteredTailors[0];
+  }, [filteredTailors, selectedTailorId]);
 
   const selectedIndex = useMemo(() => {
     if (!selectedTailor) return -1;
-    const pool = filteredTailors.length > 0 ? filteredTailors : tailors;
-    return pool.findIndex((t) => t.id === selectedTailor.id);
-  }, [filteredTailors, tailors, selectedTailor]);
+    return filteredTailors.findIndex((t) => t.id === selectedTailor.id);
+  }, [filteredTailors, selectedTailor]);
 
   // Update selectedTailorId when filteredTailors changes
   useEffect(() => {
@@ -247,7 +213,6 @@ export default function TailorsMapScreen() {
       if (data.type === "TAILOR_PIN_CLICKED") {
         if (data.tailorId) {
           lightHaptic();
-          setShowAllTailors(true);
           setSelectedTailorId(data.tailorId);
         }
       } else if (data.type === "USER_LOCATED") {
@@ -299,12 +264,11 @@ export default function TailorsMapScreen() {
     }
   };
 
-  // Sync active tailor pins with map
+  // Sync active tailor pins with map (strictly within specified radius)
   useEffect(() => {
-    const pinsToDisplay = filteredTailors.length > 0 ? filteredTailors : tailors;
     const payload = JSON.stringify({
       type: "SYNC_PINS",
-      tailors: pinsToDisplay.map((t) => ({
+      tailors: filteredTailors.map((t) => ({
         id: t.id,
         name: t.shopName || t.name || "Tailor Studio",
         rating: t.rating || 0,
@@ -320,7 +284,7 @@ export default function TailorsMapScreen() {
       selectedId: selectedTailor?.id || null,
     });
     sendMapCommand(`handleMapMessage(${JSON.stringify(payload)})`);
-  }, [filteredTailors, tailors, selectedTailor?.id, sendMapCommand]);
+  }, [filteredTailors, selectedTailor?.id, sendMapCommand]);
 
   // Sync user location marker & radius boundary circle on map whenever coordinates or maxRadius change
   useEffect(() => {

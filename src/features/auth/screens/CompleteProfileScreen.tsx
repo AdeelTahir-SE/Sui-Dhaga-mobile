@@ -56,16 +56,6 @@ export default function CompleteProfileScreen() {
   useEffect(() => {
     if (!user) {
       router.replace("/auth/login" as any);
-      return;
-    }
-    // If user exists, NEVER allow staying on complete-profile page: route directly to home
-    const isExistingUser = user.isExistingUser === true || user.profileCompleted === true;
-    if (isExistingUser) {
-      if (user.role === "tailor") {
-        router.replace("/tailor-dashboard" as any);
-      } else {
-        router.replace("/home" as any);
-      }
     }
   }, [user]);
 

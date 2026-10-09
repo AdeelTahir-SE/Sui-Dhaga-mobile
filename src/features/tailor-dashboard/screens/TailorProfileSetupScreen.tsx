@@ -109,11 +109,11 @@ export default function TailorProfileSetupScreen() {
       if (typeof p.location === "object" && p.location) {
         setCity(p.location.city || p.city || "");
         setAddress(p.location.address || p.address || "");
-        if (p.location.latitude) {
+        if (p.location.latitude !== undefined && p.location.latitude !== null && !isNaN(Number(p.location.latitude))) {
           setLatitude(Number(p.location.latitude));
           setHasLocationPinned(true);
         }
-        if (p.location.longitude) {
+        if (p.location.longitude !== undefined && p.location.longitude !== null && !isNaN(Number(p.location.longitude))) {
           setLongitude(Number(p.location.longitude));
         }
       } else if (typeof p.location === "string") {
@@ -332,6 +332,14 @@ export default function TailorProfileSetupScreen() {
     }
 
     const resolvedShopName = businessName.trim();
+    const latNum = typeof latitude === "number" && !isNaN(latitude) ? latitude : Number(latitude);
+    const lngNum = typeof longitude === "number" && !isNaN(longitude) ? longitude : Number(longitude);
+    const hasValidCoords = !isNaN(latNum) && !isNaN(lngNum) && (latNum !== 0 || lngNum !== 0);
+    const useCoords = hasLocationPinned || hasValidCoords;
+
+    const finalLat = useCoords ? latNum : undefined;
+    const finalLng = useCoords ? lngNum : undefined;
+
     const payload = {
       name:
         ownerName.trim() ||
@@ -344,17 +352,18 @@ export default function TailorProfileSetupScreen() {
       phone: phone.trim(),
       city: city.trim(),
       address: address.trim(),
-      latitude: hasLocationPinned ? Number(latitude) : undefined,
-      longitude: hasLocationPinned ? Number(longitude) : undefined,
+      latitude: finalLat,
+      longitude: finalLng,
       location: {
         city: city.trim(),
         address: address.trim(),
-        latitude: hasLocationPinned ? Number(latitude) : undefined,
-        longitude: hasLocationPinned ? Number(longitude) : undefined,
+        latitude: finalLat,
+        longitude: finalLng,
       },
       experienceYears: Number(experienceYears) || 0,
-      organizationName: organizationName.trim() || undefined,
-      organization: organizationName.trim() || undefined,
+      organizationName: organizationName.trim() || null,
+      organization: organizationName.trim() || null,
+      organization_name: organizationName.trim() || null,
       startingPrice: priceNum,
       specialties: selectedSpecialties,
       specialty: selectedSpecialties[0] || "",

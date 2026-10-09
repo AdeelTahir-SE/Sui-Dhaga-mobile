@@ -254,9 +254,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       try {
         const res = await authApi.getMe();
         const extracted = extractAuthData(res) || (res.data ? { token: token || '', user: res.data } : null);
-        if (extracted?.user) {
-          await storage.setUser(extracted.user);
-          set({ user: extracted.user, isAuthenticated: true });
+        const remoteUser = extracted?.user || (res?.data as User | undefined);
+        if (remoteUser && remoteUser.id) {
+          const mergedUser: User = {
+            ...savedUser,
+            ...remoteUser,
+            email: remoteUser.email || savedUser.email || '',
+            phone: remoteUser.phone || savedUser.phone || '',
+            role: remoteUser.role || savedUser.role || 'customer',
+            isExistingUser: remoteUser.isExistingUser ?? savedUser.isExistingUser ?? true,
+            profileCompleted: remoteUser.profileCompleted ?? savedUser.profileCompleted ?? true,
+          };
+          await storage.setUser(mergedUser);
+          set({ user: mergedUser, isAuthenticated: true });
         }
       } catch (err: any) {
         const status = err?.status || err?.response?.status;

@@ -34,22 +34,15 @@ export default function TailorMyProfileScreen() {
   const { profile, isLoading, refresh } = useTailorProfile();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
-      toast.warning("You are logged out. Login to continue.");
-      router.replace("/auth/login" as any);
-    }
-  }, [user, isAuthenticated, authLoading]);
-
   useFocusEffect(
     useCallback(() => {
-      if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
-        toast.warning("You are logged out. Login to continue.");
-        router.replace("/auth/login" as any);
+      const currentUser = useAuthStore.getState().user;
+      const isAuth = useAuthStore.getState().isAuthenticated;
+      if (!isAuth || !currentUser || currentUser.id === "guest" || currentUser.id?.startsWith("guest")) {
         return;
       }
       refresh?.();
-    }, [refresh, user, isAuthenticated, authLoading])
+    }, [refresh])
   );
 
   const pickAvatar = async () => {
@@ -209,6 +202,12 @@ export default function TailorMyProfileScreen() {
       ? p.experience_years
       : null;
 
+  const organization =
+    p.organizationName ||
+    p.organization_name ||
+    p.organization ||
+    "";
+
   const expNum = rawExp !== null ? Number(rawExp) : null;
   const experience =
     expNum !== null && !isNaN(expNum) && expNum > 0
@@ -364,6 +363,13 @@ export default function TailorMyProfileScreen() {
                         Tailor
                       </Text>
                     </View>
+                    {organization ? (
+                      <View className="ml-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 border border-amber-200">
+                        <Text className="text-[10px] font-bold text-amber-800">
+                          {organization}
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
 
                   {ownerName && ownerName !== shopName ? (
@@ -440,13 +446,27 @@ export default function TailorMyProfileScreen() {
             </View>
           </View>
 
-          {/* Workshop Overview: Specialties & Bio */}
-          {(specialties.length > 0 || bio) && (
+          {/* Workshop Overview: Specialties, Organization & Bio */}
+          {(specialties.length > 0 || bio || organization) && (
             <View className="mt-5">
               <Text className="mb-2.5 px-1 text-[14px] font-bold text-primary">
                 Workshop Overview
               </Text>
               <View className="rounded-2xl border border-brand-border bg-white p-4 shadow-xs">
+                {organization ? (
+                  <View className={specialties.length > 0 || bio ? "mb-3" : ""}>
+                    <Text className="mb-1 text-[11px] font-bold uppercase tracking-wider text-brand-gray">
+                      Affiliated Organization
+                    </Text>
+                    <View className="flex-row items-center">
+                      <Ionicons name="business-outline" size={14} color="#14919B" />
+                      <Text className="ml-1.5 text-[13px] font-bold text-brand-dark">
+                        {organization}
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
+
                 {specialties.length > 0 && (
                   <View className={bio ? "mb-3" : ""}>
                     <Text className="mb-2 text-[11px] font-bold uppercase tracking-wider text-brand-gray">

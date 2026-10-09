@@ -84,6 +84,7 @@ export default function ProfileScreen() {
         if (!isMounted) return;
         if (res.data) {
           const serverUser = res.data;
+          const currentUser = useAuthStore.getState().user;
           const actualAvatar =
             serverUser.avatar_url ||
             serverUser.avatarUrl ||
@@ -93,13 +94,16 @@ export default function ProfileScreen() {
             (serverUser as any).profileImage ||
             (serverUser as any).profile?.avatar_url ||
             (serverUser as any).profile?.avatarUrl ||
-            user?.avatar_url ||
-            user?.avatarUrl ||
-            user?.avatar;
+            currentUser?.avatar_url ||
+            currentUser?.avatarUrl ||
+            currentUser?.avatar;
 
           const updatedUser: User = {
-            ...(user || {}),
+            ...(currentUser || {}),
             ...serverUser,
+            email: serverUser.email || currentUser?.email || "",
+            phone: serverUser.phone || currentUser?.phone || "",
+            role: serverUser.role || currentUser?.role || "customer",
             avatar_url: actualAvatar,
             avatarUrl: actualAvatar,
             avatar: actualAvatar,
@@ -109,18 +113,8 @@ export default function ProfileScreen() {
         }
       })
       .catch((err: any) => {
-        const status = err?.status || err?.response?.status;
-        const msg = String(err?.message || "").toLowerCase();
-        if (
-          status === 401 ||
-          msg.includes("unauthorized") ||
-          msg.includes("jwt") ||
-          msg.includes("invalid token")
-        ) {
-          logout().then(() => {
-            router.replace("/auth/login" as any);
-          });
-        }
+        // Silently preserve cached user profile on background fetch failures
+        console.warn("Background fetch of user profile:", err?.message || err);
       })
       .finally(() => {
         if (isMounted) {
@@ -131,25 +125,18 @@ export default function ProfileScreen() {
     return () => {
       isMounted = false;
     };
-  }, [user, setUser, logout]);
-
-  useEffect(() => {
-    if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
-      toast.warning("You are logged out. Login to continue.");
-      router.replace("/auth/login" as any);
-    }
-  }, [user, isAuthenticated, authLoading]);
+  }, [setUser]);
 
   useFocusEffect(
     useCallback(() => {
-      if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
-        toast.warning("You are logged out. Login to continue.");
-        router.replace("/auth/login" as any);
+      const currentUser = useAuthStore.getState().user;
+      const isAuth = useAuthStore.getState().isAuthenticated;
+      if (!isAuth || !currentUser || currentUser.id === "guest" || currentUser.id?.startsWith("guest")) {
         return;
       }
       const cleanup = fetchFreshUser();
       return cleanup;
-    }, [fetchFreshUser, user, isAuthenticated, authLoading])
+    }, [fetchFreshUser])
   );
 
   const handleRefresh = async () => {

@@ -86,11 +86,41 @@ export function useTailorProfile() {
           (cached && (cached.shopName || cached.businessName)) ||
           '';
 
+        const latVal =
+          typeof remoteProfile.latitude === 'number' && !isNaN(remoteProfile.latitude)
+            ? remoteProfile.latitude
+            : remoteProfile.latitude !== undefined && remoteProfile.latitude !== null && !isNaN(Number(remoteProfile.latitude))
+            ? Number(remoteProfile.latitude)
+            : typeof remoteProfile.location?.latitude === 'number' && !isNaN(remoteProfile.location.latitude)
+            ? remoteProfile.location.latitude
+            : typeof cached?.latitude === 'number' && !isNaN(cached.latitude)
+            ? cached.latitude
+            : undefined;
+
+        const lngVal =
+          typeof remoteProfile.longitude === 'number' && !isNaN(remoteProfile.longitude)
+            ? remoteProfile.longitude
+            : remoteProfile.longitude !== undefined && remoteProfile.longitude !== null && !isNaN(Number(remoteProfile.longitude))
+            ? Number(remoteProfile.longitude)
+            : typeof remoteProfile.location?.longitude === 'number' && !isNaN(remoteProfile.location.longitude)
+            ? remoteProfile.location.longitude
+            : typeof cached?.longitude === 'number' && !isNaN(cached.longitude)
+            ? cached.longitude
+            : undefined;
+
         const mergedProfile: TailorItem = {
           ...(cached || {}),
           ...remoteProfile,
           shopName: resolvedShopName,
           businessName: resolvedShopName,
+          latitude: latVal,
+          longitude: lngVal,
+          location: {
+            city: remoteProfile.city || (typeof remoteProfile.location === 'object' ? remoteProfile.location?.city : '') || cached?.city || '',
+            address: remoteProfile.address || (typeof remoteProfile.location === 'object' ? remoteProfile.location?.address : '') || cached?.address || '',
+            latitude: latVal,
+            longitude: lngVal,
+          },
         };
 
         mergedProfile.isProfileComplete = checkIsComplete(mergedProfile);
@@ -185,6 +215,34 @@ export function useTailorProfile() {
         if (res.data.shopName) {
           updated.shopName = res.data.shopName;
           updated.businessName = res.data.shopName;
+        }
+        if (res.data.city) {
+          updated.city = res.data.city;
+        }
+        if (res.data.address) {
+          updated.address = res.data.address;
+        }
+        if (typeof res.data.latitude === 'number' && !isNaN(res.data.latitude)) {
+          updated.latitude = res.data.latitude;
+        }
+        if (typeof res.data.longitude === 'number' && !isNaN(res.data.longitude)) {
+          updated.longitude = res.data.longitude;
+        }
+        if (res.data.location && typeof res.data.location === 'object') {
+          updated.location = res.data.location;
+        } else if (updated.latitude !== undefined && updated.longitude !== undefined) {
+          updated.location = {
+            city: updated.city || '',
+            address: updated.address || '',
+            latitude: updated.latitude,
+            longitude: updated.longitude,
+          };
+        }
+        const serverOrg = res.data.organizationName ?? res.data.organization ?? res.data.organization_name;
+        if (serverOrg !== undefined) {
+          updated.organizationName = serverOrg || undefined;
+          updated.organization = serverOrg || undefined;
+          updated.organization_name = serverOrg || undefined;
         }
       }
 
