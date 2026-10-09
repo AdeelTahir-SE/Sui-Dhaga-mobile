@@ -39,10 +39,10 @@ export interface UpdateCheckResult {
 
 export const appUpdateService = {
   /**
-   * Returns current installed app version from expoConfig or fallback '1.0.3'
+   * Returns current installed app version from expoConfig or fallback '1.0.4'
    */
   getCurrentVersion(): string {
-    return Constants.expoConfig?.version || '1.0.3';
+    return Constants.expoConfig?.version || '1.0.4';
   },
 
   /**

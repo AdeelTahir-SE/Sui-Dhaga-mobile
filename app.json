@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sui Dhaga",
     "slug": "sui-dhaga-mobile",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/logos/icon.png",
     "scheme": "suidhagamobile",
@@ -24,7 +24,7 @@
     },
     "android": {
       "package": "com.suidhaga.app",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/logos/adaptive-icon.png",
