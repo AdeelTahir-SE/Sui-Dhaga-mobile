@@ -117,6 +117,26 @@ export default function CommunityScreen() {
       const isLiked = Boolean(post.isLiked ?? post.is_liked);
       const comments = post.commentsCount ?? post.comments_count ?? 0;
       const isTailor = post.author?.role === "tailor" || post.author?.isVerified;
+      const authorId =
+        post.author?.id ||
+        (post.author as any)?.user_id ||
+        (post.author as any)?.userId ||
+        post.userId ||
+        post.user_id;
+
+      const handleAuthorPress = () => {
+        if (!authorId) return;
+        router.push({
+          pathname: "/community/profile",
+          params: {
+            userId: String(authorId),
+            authorId: String(authorId),
+            name: authorName,
+            avatar: authorAvatar || "",
+            role: isTailor ? "tailor" : (post.author?.role || "customer"),
+          },
+        } as any);
+      };
 
       return (
         <View className="px-4">
@@ -133,6 +153,7 @@ export default function CommunityScreen() {
             commentsCount={comments}
             verifiedTailor={isTailor}
             onPress={() => router.push(`/community/${post.id}` as any)}
+            onAuthorPress={handleAuthorPress}
             onCommentPress={() => router.push(`/community/${post.id}` as any)}
             onLikePress={() => handleLike(post.id)}
           />

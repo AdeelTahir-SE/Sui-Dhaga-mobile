@@ -211,6 +211,7 @@ export default function PostDetailsScreen() {
           data={posts}
           keyExtractor={(item, index) => item.id || `post-${index}`}
           renderItem={({ item }) => (
+            
             <ReelItemView
               post={item}
               isActive={item.id === activePostId}

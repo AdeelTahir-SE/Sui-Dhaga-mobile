@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import { VideoView, useVideoPlayer } from "expo-video";
+import { memo, useEffect, useRef, useState } from "react";
 import {
-  View,
+  Animated,
+  ScrollView,
+  Share,
+  StyleSheet,
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  ScrollView,
-  StyleSheet,
-  Share,
-  Animated,
+  View,
 } from "react-native";
-import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
-import { VideoView, useVideoPlayer } from "expo-video";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
 import { CommunityPost } from "../../../types/api";
 import { isVideoMedia } from "./CommunityMediaCarousel";
 
@@ -60,14 +60,16 @@ function _ReelItemView({
 
   // Filter valid media
   const mediaList: string[] = (post.images || []).filter(
-    (uri): uri is string => typeof uri === "string" && uri.trim().length > 0
+    (uri): uri is string => typeof uri === "string" && uri.trim().length > 0,
   );
 
   // Determine if primary media is video
   const primaryMedia = mediaList[activeMediaIndex] || mediaList[0] || null;
   const isVideo = isVideoMedia(primaryMedia);
 
-  const [videoUri, setVideoUri] = useState<string | null>(isVideo ? primaryMedia : null);
+  const [videoUri, setVideoUri] = useState<string | null>(
+    isVideo ? primaryMedia : null,
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -86,10 +88,13 @@ function _ReelItemView({
   }, [isVideo, primaryMedia]);
 
   // Video player configuration
-  const player = useVideoPlayer(isVideo ? videoUri || primaryMedia : null, (p) => {
-    p.loop = true;
-    p.muted = isMuted;
-  });
+  const player = useVideoPlayer(
+    isVideo ? videoUri || primaryMedia : null,
+    (p) => {
+      p.loop = true;
+      p.muted = isMuted;
+    },
+  );
 
   // Keep mute state in sync
   useEffect(() => {
@@ -119,6 +124,7 @@ function _ReelItemView({
 
   // Cleanup timers on unmount
   useEffect(() => {
+    console.log(post.author?.avatar_url);
     return () => {
       if (singleTapTimerRef.current) {
         clearTimeout(singleTapTimerRef.current);
@@ -214,22 +220,58 @@ function _ReelItemView({
     "Sui Dhaga Tailor";
 
   const authorAvatar =
-    post.author?.avatarUrl ||
-    post.author?.avatar_url ||
-    post.author?.avatar;
+    post.author?.avatarUrl || post.author?.avatar_url || post.author?.avatar;
 
   const isTailor = post.author?.role === "tailor" || post.author?.isVerified;
   const captionText = post.content || post.caption || post.title || "";
 
+  const authorId =
+    post.author?.id ||
+    (post.author as any)?.user_id ||
+    (post.author as any)?.userId ||
+    post.userId ||
+    (post as any).user_id ||
+    (post as any).author_id;
+
+  const handleAuthorPress = () => {
+    if (!authorId) {
+      router.push("/community/profile" as any);
+      return;
+    }
+    router.push({
+      pathname: "/community/profile",
+      params: {
+        userId: String(authorId),
+        authorId: String(authorId),
+        name: authorName,
+        avatar: authorAvatar || "",
+        role: isTailor ? "tailor" : (post.author?.role || "customer"),
+      },
+    } as any);
+  };
+
   const safeBottom = Math.max(insets.bottom, 16);
 
   return (
-    <View style={{ width, height, backgroundColor: "#000000", overflow: "hidden", position: "relative" }}>
+    <View
+      style={{
+        width,
+        height,
+        backgroundColor: "#000000",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
       {/* 1. MEDIA LAYER (Full Screen Video / Image Carousel) */}
       {mediaList.length === 0 ? (
-        <View style={StyleSheet.absoluteFill} className="items-center justify-center bg-gray-950">
+        <View
+          style={StyleSheet.absoluteFill}
+          className="items-center justify-center bg-gray-950"
+        >
           <Ionicons name="film-outline" size={54} color="#374151" />
-          <Text className="mt-3 text-sm text-gray-500 font-medium">Bespoke Design</Text>
+          <Text className="mt-3 text-sm text-gray-500 font-medium">
+            Bespoke Design
+          </Text>
         </View>
       ) : mediaList.length === 1 ? (
         <TouchableWithoutFeedback onPress={handleMediaTap}>
@@ -260,7 +302,12 @@ function _ReelItemView({
                 className="items-center justify-center bg-black/30"
               >
                 <View className="h-16 w-16 items-center justify-center rounded-full bg-black/60 shadow-xl">
-                  <Ionicons name="play" size={32} color="#FFFFFF" style={{ marginLeft: 4 }} />
+                  <Ionicons
+                    name="play"
+                    size={32}
+                    color="#FFFFFF"
+                    style={{ marginLeft: 4 }}
+                  />
                 </View>
               </View>
             )}
@@ -283,7 +330,10 @@ function _ReelItemView({
           {mediaList.map((uri, idx) => {
             const isThisVideo = isVideoMedia(uri);
             return (
-              <TouchableWithoutFeedback key={`${uri}-${idx}`} onPress={handleMediaTap}>
+              <TouchableWithoutFeedback
+                key={`${uri}-${idx}`}
+                onPress={handleMediaTap}
+              >
                 <View style={{ width, height, position: "relative" }}>
                   {isThisVideo && idx === activeMediaIndex ? (
                     <VideoView
@@ -310,7 +360,12 @@ function _ReelItemView({
                       className="items-center justify-center bg-black/30"
                     >
                       <View className="h-16 w-16 items-center justify-center rounded-full bg-black/60 shadow-xl">
-                        <Ionicons name="play" size={32} color="#FFFFFF" style={{ marginLeft: 4 }} />
+                        <Ionicons
+                          name="play"
+                          size={32}
+                          color="#FFFFFF"
+                          style={{ marginLeft: 4 }}
+                        />
                       </View>
                     </View>
                   )}
@@ -323,7 +378,11 @@ function _ReelItemView({
 
       {/* Double Tap Heart Pop Animation */}
       {showHeartPop && (
-        <View pointerEvents="none" style={StyleSheet.absoluteFill} className="items-center justify-center z-50">
+        <View
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+          className="items-center justify-center z-50"
+        >
           <Animated.View
             style={{
               transform: [{ scale: heartScale }],
@@ -379,7 +438,7 @@ function _ReelItemView({
         {/* Author Avatar with Follow/Tailor Badge */}
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => router.push("/community/profile" as any)}
+          onPress={handleAuthorPress}
           className="items-center mb-0.5"
         >
           <View className="h-11 w-11 rounded-full border-2 border-white overflow-hidden bg-gray-800 shadow-lg">
@@ -432,16 +491,21 @@ function _ReelItemView({
         </TouchableOpacity>
 
         {/* Share Button */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={handleSharePress}
           activeOpacity={0.7}
           className="items-center"
         >
           <View className="h-10 w-10 items-center justify-center rounded-full bg-black/35 shadow-md">
-            <Ionicons name="paper-plane" size={21} color="#FFFFFF" style={{ marginRight: 1 }} />
+            <Ionicons
+              name="paper-plane"
+              size={21}
+              color="#FFFFFF"
+              style={{ marginRight: 1 }}
+            />
           </View>
           <Text style={styles.actionText}>Share</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* Mute/Audio Button */}
         {isVideo && (
@@ -474,7 +538,11 @@ function _ReelItemView({
         }}
       >
         {/* Creator Name + Role Tag */}
-        <View className="flex-row items-center flex-wrap mb-1.5">
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleAuthorPress}
+          className="flex-row items-center flex-wrap mb-1.5"
+        >
           <Text style={styles.authorTitle} numberOfLines={1}>
             {authorName}
           </Text>
@@ -484,7 +552,14 @@ function _ReelItemView({
               style={{ backgroundColor: "#14919B", borderWidth: 0 }}
             >
               <Ionicons name="cut-outline" size={10} color="#FFFFFF" />
-              <Text style={{ color: "#FFFFFF", fontSize: 10, fontWeight: "700", marginLeft: 4 }}>
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 10,
+                  fontWeight: "700",
+                  marginLeft: 4,
+                }}
+              >
                 Master Tailor
               </Text>
             </View>
@@ -492,7 +567,10 @@ function _ReelItemView({
           {post.category && (
             <View
               className="ml-2 rounded-full px-2.5 py-0.5"
-              style={{ backgroundColor: "rgba(255, 255, 255, 0.25)", borderWidth: 0 }}
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.25)",
+                borderWidth: 0,
+              }}
             >
               <Text
                 style={{
@@ -509,7 +587,7 @@ function _ReelItemView({
               </Text>
             </View>
           )}
-        </View>
+        </TouchableOpacity>
 
         {/* Caption / Description */}
         {captionText ? (
@@ -525,7 +603,9 @@ function _ReelItemView({
               {captionText}
             </Text>
             {captionText.length > 65 && !isCaptionExpanded && (
-              <Text className="text-[12px] font-bold text-gray-300 mt-0.5">...more</Text>
+              <Text className="text-[12px] font-bold text-gray-300 mt-0.5">
+                ...more
+              </Text>
             )}
           </TouchableOpacity>
         ) : null}
@@ -537,7 +617,10 @@ function _ReelItemView({
               <View
                 key={`tag-${idx}`}
                 className="rounded-md px-2 py-0.5"
-                style={{ backgroundColor: "rgba(255, 255, 255, 0.2)", borderWidth: 0 }}
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  borderWidth: 0,
+                }}
               >
                 <Text
                   style={{
@@ -558,7 +641,12 @@ function _ReelItemView({
 
         {/* Music / Audio Marquee Row */}
         <View className="flex-row items-center">
-          <Ionicons name="musical-notes" size={12} color="#FFFFFF" style={{ opacity: 0.85 }} />
+          <Ionicons
+            name="musical-notes"
+            size={12}
+            color="#FFFFFF"
+            style={{ opacity: 0.85 }}
+          />
           <Text style={styles.audioTicker} numberOfLines={1}>
             Original Audio • {authorName} — Sui Dhaga
           </Text>
@@ -571,9 +659,12 @@ function _ReelItemView({
 export const ReelItemView = memo(_ReelItemView, (prevProps, nextProps) => {
   return (
     prevProps.post.id === nextProps.post.id &&
-    (prevProps.post.isLiked ?? prevProps.post.is_liked) === (nextProps.post.isLiked ?? nextProps.post.is_liked) &&
-    (prevProps.post.likesCount ?? prevProps.post.likes_count) === (nextProps.post.likesCount ?? nextProps.post.likes_count) &&
-    (prevProps.post.commentsCount ?? prevProps.post.comments_count) === (nextProps.post.commentsCount ?? nextProps.post.comments_count) &&
+    (prevProps.post.isLiked ?? prevProps.post.is_liked) ===
+      (nextProps.post.isLiked ?? nextProps.post.is_liked) &&
+    (prevProps.post.likesCount ?? prevProps.post.likes_count) ===
+      (nextProps.post.likesCount ?? nextProps.post.likes_count) &&
+    (prevProps.post.commentsCount ?? prevProps.post.comments_count) ===
+      (nextProps.post.commentsCount ?? nextProps.post.comments_count) &&
     prevProps.isActive === nextProps.isActive &&
     prevProps.isMuted === nextProps.isMuted &&
     prevProps.height === nextProps.height &&

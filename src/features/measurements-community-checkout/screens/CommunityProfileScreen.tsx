@@ -69,7 +69,13 @@ export default function CommunityProfileScreen() {
   const authLoading = useAuthStore((state) => state.isLoading);
 
   // Check if viewing own profile or someone else's profile
-  const rawTargetId = params.userId || params.authorId;
+  const rawTargetId =
+    params.userId && params.userId !== "undefined" && params.userId !== "null"
+      ? params.userId
+      : params.authorId && params.authorId !== "undefined" && params.authorId !== "null"
+      ? params.authorId
+      : null;
+
   const isOwnProfile =
     !rawTargetId ||
     rawTargetId === "me" ||

@@ -24,6 +24,7 @@ type PostCardProps = {
   commentsCount?: number;
   verifiedTailor?: boolean;
   onPress?: () => void;
+  onAuthorPress?: () => void;
   onCommentPress?: () => void;
   onLikePress?: () => void;
 };
@@ -44,6 +45,7 @@ export const PostCard = memo(function PostCard({
   commentsCount = 0,
   verifiedTailor = false,
   onPress,
+  onAuthorPress,
   onCommentPress,
   onLikePress,
 }: PostCardProps) {
@@ -96,7 +98,7 @@ export const PostCard = memo(function PostCard({
       {/* Header */}
       <View className="mb-3 flex-row items-center justify-between">
         <TouchableOpacity
-          onPress={onPress}
+          onPress={onAuthorPress || onPress}
           activeOpacity={0.7}
           className="flex-1 flex-row items-center"
         >
