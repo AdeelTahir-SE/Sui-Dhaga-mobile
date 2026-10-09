@@ -533,6 +533,19 @@ export const tailorsApi = {
     });
   },
 
+  async getTailorServices(tailorId: string) {
+    return apiClient<any[]>(`/tailors/${tailorId}/services`, {
+      method: 'GET',
+    });
+  },
+
+  async updateTailorService(serviceId: string, service: { title?: string; price?: number; description?: string; category?: string }) {
+    return apiClient(`/tailors/services/${serviceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(service),
+    });
+  },
+
   async saveTailorProfile(data: Partial<TailorItem> & { shopName?: string; businessName?: string }) {
     const raw = data as any;
     const resolvedShopName =

@@ -105,7 +105,11 @@ export function MinimalOrderCard({
     if (onPress) {
       onPress();
     } else {
-      router.push(`/orders/${orderNumber || id}` as any);
+      const targetId = id || orderNumber;
+      if (targetId) {
+        const cleanId = String(targetId).replace(/^[#\s]+/, "").trim();
+        router.push(`/orders/${encodeURIComponent(cleanId)}` as any);
+      }
     }
   };
 

@@ -484,7 +484,15 @@ export default function OrderDetailsScreen() {
       <BookingOrdersHeader
         title="Order Details"
         leftIcon="arrow-back"
-        onPressLeft={() => router.back()}
+        onPressLeft={() => {
+          if (from === "tailor") {
+            router.replace("/tailor-dashboard/orders" as any);
+          } else if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace("/orders" as any);
+          }
+        }}
         hideRightIcon={true}
         titleClassName="text-[22px] font-black text-brand-dark tracking-tight"
       />
@@ -493,7 +501,7 @@ export default function OrderDetailsScreen() {
         <View className="mb-4">
           <View className="flex-row items-center justify-between mb-1.5">
             <Text className="text-[25px] font-black text-brand-dark tracking-tight flex-1 mr-2" numberOfLines={1}>
-              #{orderNumber}
+              #{String(orderNumber).replace(/^[#\s]+/, "")}
             </Text>
             <StatusPill
               label={status}

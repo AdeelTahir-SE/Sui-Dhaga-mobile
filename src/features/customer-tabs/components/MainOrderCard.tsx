@@ -60,8 +60,12 @@ export function MainOrderCard({
   const handleCardPress = () => {
     if (onPress) {
       onPress();
-    } else if (orderId || id) {
-      router.push(`/orders/${orderId || id}` as any);
+    } else {
+      const targetId = orderId || id;
+      if (targetId) {
+        const cleanId = String(targetId).replace(/^[#\s]+/, "").trim();
+        router.push(`/orders/${encodeURIComponent(cleanId)}` as any);
+      }
     }
   };
 

@@ -37,9 +37,10 @@ export default function TailorOrdersScreen() {
 
   const handleOpenOrder = (orderId: string) => {
     if (!orderId) return;
+    const cleanId = String(orderId).replace(/^[#\s]+/, "").trim();
     router.push({
       pathname: "/orders/[orderId]",
-      params: { orderId, from: "tailor" },
+      params: { orderId: cleanId, from: "tailor" },
     } as any);
   };
 

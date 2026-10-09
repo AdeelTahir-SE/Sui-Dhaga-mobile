@@ -63,7 +63,8 @@ export function OrderCard({
     if (onPress) {
       onPress();
     } else if (id) {
-      router.push(`/orders/${id}` as any);
+      const cleanId = String(id).replace(/^[#\s]+/, "").trim();
+      router.push(`/orders/${encodeURIComponent(cleanId)}` as any);
     }
   };
 
