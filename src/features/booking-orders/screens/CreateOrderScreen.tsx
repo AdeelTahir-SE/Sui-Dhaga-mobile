@@ -651,23 +651,14 @@ export default function CreateOrderScreen() {
                     borderRadius: 6,
                   }}
                 >
-                  <Text style={{ fontSize: 10, fontWeight: "700", color: "#14919B" }}>
-                    Verified
-                  </Text>
+                  
                 </View>
               </View>
-              <Text style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
-                Specialized in bespoke couture, lehengas & suits
-              </Text>
+             
             </View>
 
             <View style={{ alignItems: "flex-end" }}>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons name="star" size={13} color="#E5A83B" />
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#1A1D1F", marginLeft: 3 }}>
-                  4.9
-                </Text>
-              </View>
+              
               <Text style={{ fontSize: 10, color: "#64748B", marginTop: 2 }}>
                 Top Rated
               </Text>
