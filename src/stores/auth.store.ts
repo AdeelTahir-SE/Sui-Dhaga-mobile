@@ -3,7 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { User } from '../types/api';
 import { authApi, LoginPayload, RegisterPayload } from '../api/auth.api';
-import { storage, onAuthExpired } from '../api/client';
+import { storage, onAuthExpired, onTokenRefreshed, tryRefreshToken, isTokenExpired } from '../api/client';
 import { useCommunityStore } from './community.store';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -237,9 +237,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const token = await storage.getToken();
       const savedUser = await storage.getUser();
+      const refreshToken = await storage.getRefreshToken();
 
-      // If there is no token or no saved user, or if savedUser is a placeholder guest
-      if (!token || !savedUser || !savedUser.id || savedUser.id === 'guest' || savedUser.id.startsWith('guest')) {
+      // If there is no saved user at all, or if savedUser is an empty/guest placeholder
+      if (!savedUser || !savedUser.id || savedUser.id === 'guest' || savedUser.id.startsWith('guest')) {
         await storage.removeToken().catch(() => {});
         await storage.removeRefreshToken().catch(() => {});
         await storage.removeUser().catch(() => {});
@@ -247,13 +248,23 @@ export const useAuthStore = create<AuthState>((set) => ({
         return;
       }
 
-      // Temporarily restore authentication from local storage
+      // 1. Immediately restore session from storage so the user is NEVER kicked out
       set({ token, user: savedUser, isAuthenticated: true });
 
-      // Verify and refresh profile from backend
+      // 2. If access token is missing or expired, silently refresh it before making network calls
+      let activeToken = token;
+      if ((!token || isTokenExpired(token)) && refreshToken) {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
+          activeToken = refreshed;
+          set({ token: refreshed, isAuthenticated: true });
+        }
+      }
+
+      // 3. Verify and refresh profile from backend quietly in background
       try {
         const res = await authApi.getMe();
-        const extracted = extractAuthData(res) || (res.data ? { token: token || '', user: res.data } : null);
+        const extracted = extractAuthData(res) || (res.data ? { token: activeToken || '', user: res.data } : null);
         const remoteUser = extracted?.user || (res?.data as User | undefined);
         if (remoteUser && remoteUser.id) {
           const mergedUser: User = {
@@ -271,20 +282,42 @@ export const useAuthStore = create<AuthState>((set) => ({
       } catch (err: any) {
         const status = err?.status || err?.response?.status;
         const msg = String(err?.message || '').toLowerCase();
-        if (
+        const isAuthError =
           status === 401 ||
           msg.includes('unauthorized') ||
           msg.includes('jwt') ||
           msg.includes('invalid token') ||
           msg.includes('token expired') ||
-          msg.includes('not authenticated')
-        ) {
-          await storage.removeToken().catch(() => {});
-          await storage.removeRefreshToken().catch(() => {});
-          await storage.removeUser().catch(() => {});
-          set({ user: null, token: null, isAuthenticated: false });
+          msg.includes('not authenticated');
+
+        // If backend returned 401, attempt refresh token once more
+        if (isAuthError && refreshToken) {
+          const refreshed = await tryRefreshToken();
+          if (refreshed) {
+            set({ token: refreshed, isAuthenticated: true });
+            try {
+              const retryRes = await authApi.getMe();
+              const retryExtracted =
+                extractAuthData(retryRes) || (retryRes.data ? { token: refreshed, user: retryRes.data } : null);
+              const retryUser = retryExtracted?.user || (retryRes?.data as User | undefined);
+              if (retryUser && retryUser.id) {
+                const mergedUser: User = {
+                  ...savedUser,
+                  ...retryUser,
+                  email: retryUser.email || savedUser.email || '',
+                  phone: retryUser.phone || savedUser.phone || '',
+                  role: retryUser.role || savedUser.role || 'customer',
+                  isExistingUser: retryUser.isExistingUser ?? savedUser.isExistingUser ?? true,
+                  profileCompleted: retryUser.profileCompleted ?? savedUser.profileCompleted ?? true,
+                };
+                await storage.setUser(mergedUser);
+                set({ user: mergedUser, isAuthenticated: true });
+              }
+            } catch {}
+          }
         }
-        // If true network failure/offline, retain saved session for offline support
+        // IMPORTANT: Never destroy stored session on network error or offline mode.
+        // We preserve savedUser so the user stays authenticated!
       }
     } catch {
       // Do not clear user on transient storage errors
@@ -594,6 +627,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (authData) {
         await storage.setToken(authData.token);
+        if (authData.refreshToken) {
+          await storage.setRefreshToken(authData.refreshToken);
+        }
         await storage.setUser(authData.user);
         useCommunityStore.getState().reset();
         set({
@@ -678,9 +714,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 }));
 
+onTokenRefreshed((newToken) => {
+  useAuthStore.setState({ token: newToken });
+});
+
 onAuthExpired(() => {
   const { isAuthenticated, logout } = useAuthStore.getState();
   if (isAuthenticated) {
-    logout().catch(() => {});
+    tryRefreshToken().then((refreshedToken) => {
+      if (!refreshedToken) {
+        logout().catch(() => {});
+      }
+    });
   }
 });

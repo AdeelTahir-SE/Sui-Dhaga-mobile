@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Platform, StatusBar as RNStatusBar } from "react-native";
+import { AppState, Platform, StatusBar as RNStatusBar } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { NavigationBar } from "expo-navigation-bar";
@@ -70,6 +70,22 @@ export default function RootLayout() {
     }
   }, [user?.id]);
 
+  // Silently check and refresh auth when app comes back to foreground from background
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        const { isAuthenticated } = useAuthStore.getState();
+        if (isAuthenticated) {
+          checkAuth();
+        }
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [checkAuth]);
+
   // Route protection: prevent unauthenticated/undefined users from accessing customer or tailor pages
   useEffect(() => {
     if (isLoading) return;
@@ -94,11 +110,11 @@ export default function RootLayout() {
       "design-studio",
       "community",
       "tailor-dashboard",
+      "tailors",
     ];
 
     if (rootSegment && protectedSegments.includes(rootSegment)) {
       if (!isActualUser) {
-        toast.warning("You are logged out. Login to continue.");
         router.replace("/auth/login" as any);
       }
     }

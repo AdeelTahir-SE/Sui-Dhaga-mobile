@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, Redirect } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -91,6 +91,31 @@ export default function HomeScreen() {
   const [activeModal, setActiveModal] = useState<
     "designs" | "quickActions" | null
   >(null);
+
+  const isUnauthenticated =
+    !user ||
+    !isAuthenticated ||
+    user.id === "guest" ||
+    user.id?.startsWith("guest");
+
+  // Guard 1: While restoring auth session from secure storage, render clean splash loader (never flash customer page)
+  if (authLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="small" color="#14919B" />
+      </View>
+    );
+  }
+
+  // Guard 2: If user is unauthenticated or guest, redirect immediately to login page (NEVER show customer page)
+  if (isUnauthenticated) {
+    return <Redirect href="/auth/login" />;
+  }
+
+  // Guard 3: If authenticated user is a tailor, redirect to tailor dashboard (NEVER show customer page)
+  if (user?.role === "tailor") {
+    return <Redirect href="/tailor-dashboard" />;
+  }
 
   const emailPrefix = user?.email ? user.email.split("@")[0] : "User";
   const userName = user?.fullName?.trim() || user?.name?.trim() || emailPrefix;

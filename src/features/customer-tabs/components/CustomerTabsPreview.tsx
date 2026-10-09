@@ -82,7 +82,7 @@ export function CustomerTabsPreview({ active }: CustomerTabsPreviewProps) {
             accessibilityRole="button"
             activeOpacity={0.7}
             onPress={() => {
-              if (tab.label === "Profile" && isUnauthenticated) {
+              if (isUnauthenticated) {
                 router.push("/auth/login" as never);
                 return;
               }

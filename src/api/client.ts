@@ -369,12 +369,45 @@ export interface RequestOptions extends RequestInit {
   suppressAuthRedirect?: boolean;
 }
 
-type AuthExpiredCallback = () => void;
+export type AuthExpiredCallback = () => void;
 let authExpiredListener: AuthExpiredCallback | null = null;
+
+export type TokenRefreshedCallback = (newToken: string) => void;
+let tokenRefreshedListener: TokenRefreshedCallback | null = null;
+
+export function onTokenRefreshed(callback: TokenRefreshedCallback) {
+  tokenRefreshedListener = callback;
+}
+
+export function isTokenExpired(token: string | null): boolean {
+  if (!token) return true;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4) {
+      base64 += '=';
+    }
+    const g = globalThis as any;
+    const decoded =
+      typeof atob === 'function'
+        ? atob(base64)
+        : typeof g.Buffer !== 'undefined'
+        ? g.Buffer.from(base64, 'base64').toString('utf8')
+        : null;
+    if (!decoded) return false;
+    const payload = JSON.parse(decoded);
+    if (!payload.exp) return false;
+    // Expired or expiring within 60 seconds
+    return Date.now() >= payload.exp * 1000 - 60000;
+  } catch {
+    return false;
+  }
+}
 
 let refreshPromise: Promise<string | null> | null = null;
 
-async function tryRefreshToken(): Promise<string | null> {
+export async function tryRefreshToken(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
@@ -382,32 +415,76 @@ async function tryRefreshToken(): Promise<string | null> {
       const refreshToken = await storage.getRefreshToken();
       if (!refreshToken) return null;
 
-      const baseUrl = CONFIG.API_URL.replace(/\/+$/, '');
-      const res = await fetch(`${baseUrl}/api/v1/auth/refresh-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({ refreshToken }),
-      });
+      // 1. Primary: Backend refresh token endpoint
+      try {
+        const baseUrl = CONFIG.API_URL.replace(/\/+$/, '');
+        const res = await fetch(`${baseUrl}/api/v1/auth/refresh-token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
 
-      if (!res.ok) {
-        return null;
-      }
+        if (res.ok) {
+          const json = await res.json();
+          const session = json?.data?.session || json?.session || json?.data;
+          const newToken = session?.access_token || session?.accessToken || session?.token;
+          const newRefreshToken = session?.refresh_token || session?.refreshToken;
 
-      const json = await res.json();
-      const session = json?.data?.session || json?.session || json?.data;
-      const newToken = session?.access_token || session?.accessToken || session?.token;
-      const newRefreshToken = session?.refresh_token || session?.refreshToken;
-
-      if (newToken && typeof newToken === 'string') {
-        await storage.setToken(newToken);
-        if (newRefreshToken && typeof newRefreshToken === 'string') {
-          await storage.setRefreshToken(newRefreshToken);
+          if (newToken && typeof newToken === 'string') {
+            await storage.setToken(newToken);
+            if (newRefreshToken && typeof newRefreshToken === 'string') {
+              await storage.setRefreshToken(newRefreshToken);
+            }
+            tokenRefreshedListener?.(newToken);
+            return newToken;
+          }
         }
-        return newToken;
+      } catch (backendErr) {
+        console.warn('[apiClient] Backend refresh token endpoint notice:', backendErr);
       }
+
+      // 2. Resilient Fallback: Direct Supabase Auth token refresh endpoint
+      try {
+        const sbUrl = (CONFIG.SUPABASE_URL || 'https://nnuxpvskiypxsjsotvnz.supabase.co')
+          .trim()
+          .replace(/^["']|["']$/g, '')
+          .replace(/\/+$/, '');
+        const sbAnonKey = (CONFIG.SUPABASE_ANON_KEY || 'sb_publishable_k5aPuMNR-VUcCgA4SfZ16A_KFOTkpt6')
+          .trim()
+          .replace(/^["']|["']$/g, '');
+
+        if (sbUrl && sbAnonKey) {
+          const res = await fetch(`${sbUrl}/auth/v1/token?grant_type=refresh_token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: sbAnonKey,
+            },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            const newToken = data?.access_token;
+            const newRefreshToken = data?.refresh_token;
+
+            if (newToken && typeof newToken === 'string') {
+              await storage.setToken(newToken);
+              if (newRefreshToken && typeof newRefreshToken === 'string') {
+                await storage.setRefreshToken(newRefreshToken);
+              }
+              tokenRefreshedListener?.(newToken);
+              return newToken;
+            }
+          }
+        }
+      } catch (sbErr) {
+        console.warn('[apiClient] Supabase direct refresh error:', sbErr);
+      }
+
       return null;
     } catch {
       return null;

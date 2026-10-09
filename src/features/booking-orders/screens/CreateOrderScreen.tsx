@@ -93,8 +93,7 @@ export default function CreateOrderScreen() {
   const basePriceNum = parseInt(customBudget.replace(/[^0-9]/g, ""), 10) || selectedCategory.basePrice;
   const fabricSurcharge = fabricOption === "tailor" ? 3500 : 0;
   const speedSurcharge = deliverySpeed === "urgent" ? 1500 : 0;
-  const platformFee = 150;
-  const totalPrice = basePriceNum + fabricSurcharge + speedSurcharge + platformFee;
+  const totalPrice = basePriceNum + fabricSurcharge + speedSurcharge;
 
   // Auto-fetch user measurements on mount
   useEffect(() => {
@@ -1256,10 +1255,6 @@ export default function CreateOrderScreen() {
                   </View>
                 )}
 
-                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
-                  <Text style={{ fontSize: 13, color: "#64748B" }}>Platform & Assurance Fee</Text>
-                  <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹150</Text>
-                </View>
 
                 <View
                   style={{
