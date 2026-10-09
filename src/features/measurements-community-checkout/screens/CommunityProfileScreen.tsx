@@ -143,11 +143,22 @@ export default function CommunityProfileScreen() {
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
   // Resolve user identity & roles
-  const profileUser = isOwnProfile ? user : targetUser;
+  const profileUser = isOwnProfile
+    ? user
+    : targetUser || {
+        id: targetUserId,
+        fullName: params.name,
+        full_name: params.name,
+        name: params.name,
+        avatarUrl: params.avatar,
+        avatar_url: params.avatar,
+        avatar: params.avatar,
+        role: params.role,
+      };
 
   const currentUserRole = ((user?.role as string) || "customer").toLowerCase();
   const profileUserRole = (
-    (profileUser?.role as string) ||
+    (profileUser as any)?.role ||
     (params.role as string) ||
     "customer"
   ).toLowerCase();
@@ -174,6 +185,7 @@ export default function CommunityProfileScreen() {
 
   const displayName =
     (profileUser as any)?.fullName?.trim() ||
+    (profileUser as any)?.full_name?.trim() ||
     (profileUser as any)?.name?.trim() ||
     params.name?.trim() ||
     (profileUser?.email
@@ -256,11 +268,11 @@ export default function CommunityProfileScreen() {
         if (authorId && fetched.length > 0) {
           const matching = fetched.filter((p: CommunityPost) => {
             const postUserId = p.userId || p.user_id || p.author?.id;
-            return postUserId === authorId;
+            return String(postUserId || "").toLowerCase() === String(authorId).toLowerCase();
           });
 
-          if (matching.length > 0 || fetched.every((p: CommunityPost) => (p.userId || p.user_id || p.author?.id) === authorId)) {
-            fetched = matching.length > 0 ? matching : fetched;
+          if (matching.length > 0) {
+            fetched = matching;
           }
         }
 
