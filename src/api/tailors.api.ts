@@ -694,8 +694,14 @@ export const tailorsApi = {
       const res = await apiClient<any[]>(`/tailors/${tailorId}/availability`, {
         method: 'GET',
       });
-      if (res?.data && Array.isArray(res.data)) {
+      if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
         await storage.setTailorAvailability(tailorId, res.data).catch(() => {});
+      } else {
+        // If server returns empty array, check if we have offline cached schedule to preserve
+        const cached = await storage.getTailorAvailability(tailorId).catch(() => null);
+        if (cached && Array.isArray(cached) && cached.length > 0) {
+          return { data: cached, status: 200, success: true };
+        }
       }
       return res;
     } catch (err) {
@@ -734,14 +740,20 @@ export const tailorsApi = {
       breakEnd: t.breakEnd || undefined,
     }));
 
-    // Cache locally immediately
+    // Cache locally immediately to ensure immediate offline availability
     await storage.setTailorAvailability(tailorId, timings).catch(() => {});
 
-    // Send PUT/POST to backend
-    return apiClient<any[]>(`/tailors/${tailorId}/availability`, {
+    // Send PUT to backend
+    const res = await apiClient<any[]>(`/tailors/${tailorId}/availability`, {
       method: 'PUT',
       body: JSON.stringify({ slots: formattedSlots }),
     });
+
+    if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+      await storage.setTailorAvailability(tailorId, res.data).catch(() => {});
+    }
+
+    return res;
   },
 
   async updateAvailabilitySlot(slotId: string, slot: Record<string, unknown>) {

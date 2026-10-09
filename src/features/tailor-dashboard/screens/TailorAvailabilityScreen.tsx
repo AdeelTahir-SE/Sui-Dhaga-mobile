@@ -147,12 +147,20 @@ export default function TailorAvailabilityScreen() {
       return;
     }
 
-    // 1. Fast offline load
+    // 1. Fast offline load (check targetTailorId first, then user.id)
     storage
       .getTailorAvailability(targetTailorId)
-      .then((cached) => {
-        if (isMounted && cached && Array.isArray(cached) && cached.length > 0) {
+      .then(async (cached) => {
+        if (!isMounted) return;
+        if (cached && Array.isArray(cached) && cached.length > 0) {
           setDayTimings(mapServerSlotsToDayTimings(cached));
+          return;
+        }
+        if (user?.id && user.id !== targetTailorId) {
+          const userCached = await storage.getTailorAvailability(user.id).catch(() => null);
+          if (isMounted && userCached && Array.isArray(userCached) && userCached.length > 0) {
+            setDayTimings(mapServerSlotsToDayTimings(userCached));
+          }
         }
       })
       .catch(() => {});
@@ -176,7 +184,7 @@ export default function TailorAvailabilityScreen() {
     return () => {
       isMounted = false;
     };
-  }, [targetTailorId]);
+  }, [targetTailorId, user?.id]);
 
   // Save Schedule to Backend & Storage
   const handleSaveSchedule = useCallback(
@@ -190,7 +198,13 @@ export default function TailorAvailabilityScreen() {
 
       setIsSaving(true);
       try {
-        await tailorsApi.saveTailorAvailability(effectiveId, toSave);
+        const res = await tailorsApi.saveTailorAvailability(effectiveId, toSave);
+        if (user?.id && user.id !== effectiveId) {
+          await storage.setTailorAvailability(user.id, toSave).catch(() => {});
+        }
+        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+          setDayTimings(mapServerSlotsToDayTimings(res.data));
+        }
         showToast(feedbackMsg || "Shop timings saved & published ✨");
       } catch (err: any) {
         console.warn("Error persisting tailor availability:", err);
@@ -199,7 +213,7 @@ export default function TailorAvailabilityScreen() {
         setIsSaving(false);
       }
     },
-    [dayTimings, targetTailorId, showToast]
+    [dayTimings, targetTailorId, user?.id, showToast]
   );
 
   // Quick Preset Actions

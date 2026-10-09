@@ -135,12 +135,20 @@ export const storage = {
 
   async getTailorAvailability(tailorId?: string): Promise<any | null> {
     try {
-      const key = `sui_dhaga_tailor_avail_${tailorId || 'default'}`;
+      const cleanId = tailorId ? tailorId.replace(/^tailor_/, '') : 'default';
+      const key = `sui_dhaga_tailor_avail_${cleanId}`;
+      let raw: string | null = null;
       if (Platform.OS === 'web') {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
-        return raw ? JSON.parse(raw) : null;
+        raw = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+        if (!raw && tailorId && tailorId !== cleanId && typeof window !== 'undefined') {
+          raw = localStorage.getItem(`sui_dhaga_tailor_avail_${tailorId}`);
+        }
+      } else {
+        raw = await SecureStore.getItemAsync(key);
+        if (!raw && tailorId && tailorId !== cleanId) {
+          raw = await SecureStore.getItemAsync(`sui_dhaga_tailor_avail_${tailorId}`);
+        }
       }
-      const raw = await SecureStore.getItemAsync(key);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -149,12 +157,39 @@ export const storage = {
 
   async setTailorAvailability(tailorId: string | undefined, timings: any): Promise<void> {
     try {
-      const key = `sui_dhaga_tailor_avail_${tailorId || 'default'}`;
-      const serialized = JSON.stringify(timings);
+      if (!timings) return;
+      const cleanId = tailorId ? tailorId.replace(/^tailor_/, '') : 'default';
+      const key = `sui_dhaga_tailor_avail_${cleanId}`;
+
+      // Compact the payload so it never exceeds 2048 bytes limit on mobile SecureStore
+      let payloadToStore = timings;
+      if (Array.isArray(timings)) {
+        payloadToStore = timings.map((t: any) => ({
+          day: t.day || t.dayOfWeek || t.day_of_week,
+          dayOfWeek: t.dayOfWeek || t.day_of_week || t.day,
+          isOpen: t.isOpen !== undefined ? Boolean(t.isOpen) : t.isAvailable !== undefined ? Boolean(t.isAvailable) : Boolean(t.is_available),
+          isAvailable: t.isAvailable !== undefined ? Boolean(t.isAvailable) : t.isOpen !== undefined ? Boolean(t.isOpen) : Boolean(t.is_available),
+          openTime: t.openTime || t.startTime || t.start_time || '09:00 AM',
+          closeTime: t.closeTime || t.endTime || t.end_time || '08:00 PM',
+          hasBreak: Boolean(t.hasBreak || t.has_break),
+          breakStart: t.breakStart || t.break_start || null,
+          breakEnd: t.breakEnd || t.break_end || null,
+        }));
+      }
+
+      const serialized = JSON.stringify(payloadToStore);
       if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined') localStorage.setItem(key, serialized);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(key, serialized);
+          if (tailorId && tailorId !== cleanId) {
+            localStorage.setItem(`sui_dhaga_tailor_avail_${tailorId}`, serialized);
+          }
+        }
       } else {
         await SecureStore.setItemAsync(key, serialized);
+        if (tailorId && tailorId !== cleanId) {
+          await SecureStore.setItemAsync(`sui_dhaga_tailor_avail_${tailorId}`, serialized).catch(() => {});
+        }
       }
     } catch (err) {
       console.warn('Failed to save tailor availability to storage', err);

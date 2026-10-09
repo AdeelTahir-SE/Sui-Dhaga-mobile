@@ -30,6 +30,9 @@ interface CommunityState {
 
   // Optimistic post update
   updatePostLocally: (postId: string, updates: Partial<CommunityPost>) => void;
+
+  // Store reset on logout / auth change
+  reset: () => void;
 }
 
 export const useCommunityStore = create<CommunityState>((set, get) => ({
@@ -37,6 +40,15 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
   categoryLists: {},
   inFlightLikes: {},
   lastLikeTapTimes: {},
+
+  reset: () => {
+    set({
+      postsById: {},
+      categoryLists: {},
+      inFlightLikes: {},
+      lastLikeTapTimes: {},
+    });
+  },
 
   getPost: (postId: string) => {
     return get().postsById[postId];
@@ -55,16 +67,35 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
 
       posts.forEach((p) => {
         if (!p || !p.id) return;
-        // Merge with existing to preserve local up-to-date like/comment states if any
         const existing = nextPostsById[p.id];
+        const isPostInFlight = Boolean(state.inFlightLikes[p.id]);
+
+        // If a like toggle is actively in-flight for this post, preserve the optimistic state
+        // Otherwise, server state takes absolute priority over stale local state!
+        const serverLiked = p.isLiked ?? p.is_liked;
+        const resolvedIsLiked = isPostInFlight
+          ? Boolean(existing?.isLiked ?? existing?.is_liked ?? false)
+          : (serverLiked !== undefined ? Boolean(serverLiked) : false);
+
+        const serverLikesCount = p.likesCount ?? p.likes_count;
+        const resolvedLikesCount = isPostInFlight
+          ? (existing?.likesCount ?? existing?.likes_count ?? 0)
+          : (serverLikesCount !== undefined ? serverLikesCount : (existing?.likesCount ?? 0));
+
+        const serverCommentsCount = p.commentsCount ?? p.comments_count;
+        const resolvedCommentsCount = serverCommentsCount !== undefined
+          ? serverCommentsCount
+          : (existing?.commentsCount ?? existing?.comments_count ?? 0);
+
         nextPostsById[p.id] = {
+          ...existing,
           ...p,
-          isLiked: existing?.isLiked ?? p.isLiked ?? p.is_liked ?? false,
-          is_liked: existing?.is_liked ?? p.is_liked ?? p.isLiked ?? false,
-          likesCount: existing?.likesCount ?? p.likesCount ?? p.likes_count ?? 0,
-          likes_count: existing?.likes_count ?? p.likes_count ?? p.likesCount ?? 0,
-          commentsCount: existing?.commentsCount ?? p.commentsCount ?? p.comments_count ?? 0,
-          comments_count: existing?.comments_count ?? p.comments_count ?? p.commentsCount ?? 0,
+          isLiked: resolvedIsLiked,
+          is_liked: resolvedIsLiked,
+          likesCount: resolvedLikesCount,
+          likes_count: resolvedLikesCount,
+          commentsCount: resolvedCommentsCount,
+          comments_count: resolvedCommentsCount,
         };
         nextIds.push(p.id);
       });
@@ -83,15 +114,32 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
     if (!post || !post.id) return;
     set((state) => {
       const existing = state.postsById[post.id];
+      const isPostInFlight = Boolean(state.inFlightLikes[post.id]);
+
+      const serverLiked = post.isLiked ?? post.is_liked;
+      const resolvedIsLiked = isPostInFlight
+        ? Boolean(existing?.isLiked ?? existing?.is_liked ?? false)
+        : (serverLiked !== undefined ? Boolean(serverLiked) : Boolean(existing?.isLiked ?? existing?.is_liked ?? false));
+
+      const serverLikesCount = post.likesCount ?? post.likes_count;
+      const resolvedLikesCount = isPostInFlight
+        ? (existing?.likesCount ?? existing?.likes_count ?? 0)
+        : (serverLikesCount !== undefined ? serverLikesCount : (existing?.likesCount ?? 0));
+
+      const serverCommentsCount = post.commentsCount ?? post.comments_count;
+      const resolvedCommentsCount = serverCommentsCount !== undefined
+        ? serverCommentsCount
+        : (existing?.commentsCount ?? existing?.comments_count ?? 0);
+
       const merged: CommunityPost = {
         ...existing,
         ...post,
-        isLiked: post.isLiked ?? post.is_liked ?? existing?.isLiked ?? false,
-        is_liked: post.is_liked ?? post.isLiked ?? existing?.is_liked ?? false,
-        likesCount: post.likesCount ?? post.likes_count ?? existing?.likesCount ?? 0,
-        likes_count: post.likes_count ?? post.likesCount ?? existing?.likes_count ?? 0,
-        commentsCount: post.commentsCount ?? post.comments_count ?? existing?.commentsCount ?? 0,
-        comments_count: post.comments_count ?? post.commentsCount ?? existing?.comments_count ?? 0,
+        isLiked: resolvedIsLiked,
+        is_liked: resolvedIsLiked,
+        likesCount: resolvedLikesCount,
+        likes_count: resolvedLikesCount,
+        commentsCount: resolvedCommentsCount,
+        comments_count: resolvedCommentsCount,
       };
 
       return {
@@ -110,15 +158,32 @@ export const useCommunityStore = create<CommunityState>((set, get) => ({
       posts.forEach((post) => {
         if (!post || !post.id) return;
         const existing = nextPostsById[post.id];
+        const isPostInFlight = Boolean(state.inFlightLikes[post.id]);
+
+        const serverLiked = post.isLiked ?? post.is_liked;
+        const resolvedIsLiked = isPostInFlight
+          ? Boolean(existing?.isLiked ?? existing?.is_liked ?? false)
+          : (serverLiked !== undefined ? Boolean(serverLiked) : false);
+
+        const serverLikesCount = post.likesCount ?? post.likes_count;
+        const resolvedLikesCount = isPostInFlight
+          ? (existing?.likesCount ?? existing?.likes_count ?? 0)
+          : (serverLikesCount !== undefined ? serverLikesCount : (existing?.likesCount ?? 0));
+
+        const serverCommentsCount = post.commentsCount ?? post.comments_count;
+        const resolvedCommentsCount = serverCommentsCount !== undefined
+          ? serverCommentsCount
+          : (existing?.commentsCount ?? existing?.comments_count ?? 0);
+
         nextPostsById[post.id] = {
           ...existing,
           ...post,
-          isLiked: post.isLiked ?? post.is_liked ?? existing?.isLiked ?? false,
-          is_liked: post.is_liked ?? post.isLiked ?? existing?.is_liked ?? false,
-          likesCount: post.likesCount ?? post.likes_count ?? existing?.likesCount ?? 0,
-          likes_count: post.likes_count ?? post.likesCount ?? existing?.likes_count ?? 0,
-          commentsCount: post.commentsCount ?? post.comments_count ?? existing?.commentsCount ?? 0,
-          comments_count: post.comments_count ?? post.commentsCount ?? existing?.comments_count ?? 0,
+          isLiked: resolvedIsLiked,
+          is_liked: resolvedIsLiked,
+          likesCount: resolvedLikesCount,
+          likes_count: resolvedLikesCount,
+          commentsCount: resolvedCommentsCount,
+          comments_count: resolvedCommentsCount,
         };
       });
       return { postsById: nextPostsById };

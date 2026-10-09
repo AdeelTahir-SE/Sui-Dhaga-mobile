@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking';
 import { User } from '../types/api';
 import { authApi, LoginPayload, RegisterPayload } from '../api/auth.api';
 import { storage, onAuthExpired } from '../api/client';
+import { useCommunityStore } from './community.store';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -294,6 +295,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           await storage.setRefreshToken(authData.refreshToken);
         }
         await storage.setUser(authData.user);
+        useCommunityStore.getState().reset();
         set({
           user: authData.user,
           token: authData.token,
@@ -358,6 +360,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           await storage.setRefreshToken(authData.refreshToken);
         }
         await storage.setUser(authData.user);
+        useCommunityStore.getState().reset();
         set({
           user: authData.user,
           token: authData.token,
@@ -428,6 +431,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           await storage.setRefreshToken(authData.refreshToken);
         }
         await storage.setUser(authData.user);
+        useCommunityStore.getState().reset();
         set({
           user: authData.user,
           token: authData.token,
@@ -581,6 +585,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (authData) {
         await storage.setToken(authData.token);
         await storage.setUser(authData.user);
+        useCommunityStore.getState().reset();
         set({
           user: authData.user,
           token: authData.token,
@@ -651,6 +656,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       await storage.removeToken();
       await storage.removeRefreshToken();
       await storage.removeUser();
+      useCommunityStore.getState().reset();
       set({
         user: null,
         token: null,

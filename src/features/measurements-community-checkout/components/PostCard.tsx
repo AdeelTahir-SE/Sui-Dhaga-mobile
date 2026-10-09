@@ -51,7 +51,7 @@ export const PostCard = memo(function PostCard({
   const [internalLikeCount, setInternalLikeCount] = useState(initialLikes);
   const lastLikeTapRef = useRef<number>(0);
 
-  const isLiked = controlledIsLiked !== undefined ? controlledIsLiked : internalLiked;
+  const isLiked = controlledIsLiked !== undefined ? Boolean(controlledIsLiked) : internalLiked;
   const currentLikes = likesCount !== undefined ? likesCount : internalLikeCount;
 
   const handleLike = useCallback(() => {
