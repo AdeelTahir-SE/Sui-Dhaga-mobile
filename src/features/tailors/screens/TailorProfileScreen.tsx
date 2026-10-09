@@ -26,6 +26,7 @@ import { useTailorDetails } from "../hooks/useTailors";
 import { useTailorProfile } from "@/features/tailor-dashboard/hooks/useTailorProfile";
 import { TailorProfileSkeleton, ReviewsListSkeleton } from "@/components/ui/Skeleton";
 import { reviewsApi } from "@/api/reviews.api";
+import { conversationsApi } from "@/api/conversations.api";
 import type { ReviewItem } from "@/types/api";
 
 const profileHeroImage = require("@/assets/illustrations/tailor-discovery/profile-hero.png");
@@ -319,10 +320,29 @@ export default function TailorProfileScreen() {
       name ||
       "Tailor";
 
+    let convId = "new";
+    try {
+      const targetIds = Array.from(
+        new Set(
+          [resolvedTailorId, tailor?.userId, (tailor as any)?.user_id, tailor?.id, tailorId, targetUserId].filter(
+            (id): id is string => Boolean(id && id !== currentUser.id)
+          )
+        )
+      );
+      const found = await conversationsApi.findExistingConversation(
+        targetIds,
+        currentUser.id,
+        [personName, tailor?.shopName].filter(Boolean) as string[]
+      );
+      if (found && (found.id || (found as any)._id)) {
+        convId = found.id || (found as any)._id;
+      }
+    } catch {}
+
     router.push({
       pathname: "/messages/[conversationId]",
       params: {
-        conversationId: "new",
+        conversationId: convId,
         tailorId: resolvedTailorId,
         clientId: currentUser.id,
         recipientId: resolvedTailorId,

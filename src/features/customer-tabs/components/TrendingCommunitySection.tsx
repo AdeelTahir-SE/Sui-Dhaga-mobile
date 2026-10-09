@@ -170,8 +170,9 @@ export function TrendingCommunitySection({
             const likes = item.likesCount ?? item.likes_count ?? 0;
             const isLiked = Boolean(item.isLiked ?? item.is_liked);
             const comments = item.commentsCount ?? item.comments_count ?? 0;
-            const isVerified =
+            const isTailor =
               item.author?.role === "tailor" || item.author?.isVerified;
+            const isVerified = isTailor;
 
             return (
               <TouchableOpacity
@@ -234,7 +235,22 @@ export function TrendingCommunitySection({
                   </Text>
 
                   {/* Tailor / Creator row */}
-                  <View style={styles.authorRow}>
+                  <TouchableOpacity
+                    activeOpacity={0.75}
+                    onPress={() => {
+                      const authorId = item.author?.id || item.userId || (item as any).user_id;
+                      router.push({
+                        pathname: "/community/profile",
+                        params: {
+                          userId: authorId,
+                          name: authorName,
+                          avatar: authorAvatar || "",
+                          role: (item.author?.role === "tailor" || item.author?.isVerified) ? "tailor" : (item.author?.role || "customer"),
+                        },
+                      } as any);
+                    }}
+                    style={styles.authorRow}
+                  >
                     {authorAvatar ? (
                       <Image
                         source={{ uri: authorAvatar }}
@@ -261,7 +277,7 @@ export function TrendingCommunitySection({
                         )}
                       </View>
                     </View>
-                  </View>
+                  </TouchableOpacity>
 
                   {/* Engagement / Action Footer */}
                   <View style={styles.footerRow}>

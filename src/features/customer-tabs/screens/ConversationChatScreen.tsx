@@ -364,6 +364,12 @@ export default function ConversationChatScreen() {
       : null,
   );
 
+  useEffect(() => {
+    if (params.conversationId && params.conversationId !== "new") {
+      setActiveConvId(params.conversationId);
+    }
+  }, [params.conversationId]);
+
   const [conversation, setConversation] = useState<ConversationItem | null>(
     null,
   );
@@ -477,16 +483,26 @@ export default function ConversationChatScreen() {
           setConversation(convRes.data);
           setActiveConvId(directConvId);
         }
-        if (msgsRes?.data && Array.isArray(msgsRes.data)) {
-          const normalized = msgsRes.data.map(normalizeMessage);
+
+        let msgList = msgsRes?.data;
+        if ((!msgList || !Array.isArray(msgList) || msgList.length === 0) && (convRes?.data as any)?.messages) {
+          msgList = (convRes?.data as any).messages;
+        }
+
+        if (msgList && Array.isArray(msgList) && msgList.length > 0) {
+          const normalized = msgList.map(normalizeMessage);
           setMessages(normalized);
-          setHasMore(Boolean(msgsRes.hasMore));
+          setHasMore(Boolean(msgsRes?.hasMore));
           markUnreadMessagesAsRead(normalized);
           setTimeout(() => {
             scrollViewRef.current?.scrollToEnd({ animated: false });
           }, 100);
+          return;
         }
-        return;
+
+        if (convRes?.data) {
+          return;
+        }
       }
 
       // 2. Pair path: Check between tailorId and clientId
@@ -502,15 +518,21 @@ export default function ConversationChatScreen() {
             .catch(() => null),
         ]);
 
-        if (convRes?.data?.conversation) {
-          setConversation(convRes.data.conversation);
-          if (convRes.data.conversation.id) {
-            setActiveConvId(convRes.data.conversation.id);
+        const foundConv = convRes?.data?.conversation || (convRes?.data as any);
+        if (foundConv && (foundConv.id || foundConv._id)) {
+          setConversation(foundConv);
+          const foundId = foundConv.id || foundConv._id;
+          setActiveConvId(foundId);
+
+          let msgList = msgsRes?.data;
+          if ((!msgList || !Array.isArray(msgList) || msgList.length === 0) && foundConv.messages) {
+            msgList = foundConv.messages;
           }
-          if (msgsRes?.data && Array.isArray(msgsRes.data)) {
-            const normalized = msgsRes.data.map(normalizeMessage);
+
+          if (msgList && Array.isArray(msgList)) {
+            const normalized = msgList.map(normalizeMessage);
             setMessages(normalized);
-            setHasMore(Boolean(msgsRes.hasMore));
+            setHasMore(Boolean(msgsRes?.hasMore));
             markUnreadMessagesAsRead(normalized);
             setTimeout(() => {
               scrollViewRef.current?.scrollToEnd({ animated: false });
@@ -523,7 +545,12 @@ export default function ConversationChatScreen() {
       // 3. Fallback discovery: Search existing conversation list using target IDs and names
       const candidateTargetIds = Array.from(
         new Set(
-          [resolvedTailorId, params.tailorId, params.clientId, params.recipientId].filter(
+          [
+            resolvedTailorId,
+            params.tailorId,
+            params.clientId,
+            params.recipientId,
+          ].filter(
             (id): id is string => Boolean(id && (!currentUser?.id || id !== currentUser.id))
           )
         )
@@ -543,10 +570,15 @@ export default function ConversationChatScreen() {
           setConversation(foundConv);
 
           const msgsRes = await conversationsApi.getMessages(foundId, { limit: 20 }).catch(() => null);
-          if (msgsRes?.data && Array.isArray(msgsRes.data)) {
-            const normalized = msgsRes.data.map(normalizeMessage);
+          let msgList = msgsRes?.data;
+          if ((!msgList || !Array.isArray(msgList) || msgList.length === 0) && (foundConv as any).messages) {
+            msgList = (foundConv as any).messages;
+          }
+
+          if (msgList && Array.isArray(msgList)) {
+            const normalized = msgList.map(normalizeMessage);
             setMessages(normalized);
-            setHasMore(Boolean(msgsRes.hasMore));
+            setHasMore(Boolean(msgsRes?.hasMore));
             markUnreadMessagesAsRead(normalized);
             setTimeout(() => {
               scrollViewRef.current?.scrollToEnd({ animated: false });
@@ -565,6 +597,11 @@ export default function ConversationChatScreen() {
     resolvedClientId,
     activeConvId,
     params.conversationId,
+    params.tailorId,
+    params.clientId,
+    params.recipientId,
+    params.name,
+    currentUser?.id,
     markUnreadMessagesAsRead,
   ]);
 
@@ -961,9 +998,30 @@ export default function ConversationChatScreen() {
         senderId: currentUser?.id,
       };
 
-      const targetConvId =
+      let targetConvId =
         (activeConvId && activeConvId !== "new" ? activeConvId : null) ||
         (params.conversationId && params.conversationId !== "new" ? params.conversationId : null);
+
+      if (!targetConvId) {
+        const candidateTargetIds = Array.from(
+          new Set(
+            [resolvedTailorId, params.tailorId, params.clientId, params.recipientId].filter(
+              (id): id is string => Boolean(id && (!currentUser?.id || id !== currentUser.id))
+            )
+          )
+        );
+        const candidateTargetNames = [params.name].filter((n): n is string => Boolean(n));
+        const found = await conversationsApi.findExistingConversation(
+          candidateTargetIds,
+          currentUser?.id,
+          candidateTargetNames
+        ).catch(() => null);
+        if (found && (found.id || (found as any)._id)) {
+          targetConvId = found.id || (found as any)._id;
+          setActiveConvId(targetConvId);
+          setConversation(found);
+        }
+      }
 
       if (targetConvId) {
         const res = await conversationsApi.sendMessage(
@@ -1099,10 +1157,31 @@ export default function ConversationChatScreen() {
         senderId: currentUser?.id,
       };
 
-      // 1. If conversationId is known, send directly to POST /conversations/:conversationId/messages with multipart/form-data
-      const targetConvId =
+      // 1. If conversationId is known or found, send directly to POST /conversations/:conversationId/messages with multipart/form-data
+      let targetConvId =
         (activeConvId && activeConvId !== "new" ? activeConvId : null) ||
         (params.conversationId && params.conversationId !== "new" ? params.conversationId : null);
+
+      if (!targetConvId) {
+        const candidateTargetIds = Array.from(
+          new Set(
+            [resolvedTailorId, params.tailorId, params.clientId, params.recipientId].filter(
+              (id): id is string => Boolean(id && (!currentUser?.id || id !== currentUser.id))
+            )
+          )
+        );
+        const candidateTargetNames = [params.name].filter((n): n is string => Boolean(n));
+        const found = await conversationsApi.findExistingConversation(
+          candidateTargetIds,
+          currentUser?.id,
+          candidateTargetNames
+        ).catch(() => null);
+        if (found && (found.id || (found as any)._id)) {
+          targetConvId = found.id || (found as any)._id;
+          setActiveConvId(targetConvId);
+          setConversation(found);
+        }
+      }
 
       if (targetConvId) {
         const res = await conversationsApi.sendMessage(
@@ -1220,9 +1299,34 @@ export default function ConversationChatScreen() {
         senderId: currentUser?.id,
       };
 
-      if (activeConvId && activeConvId !== "new") {
+      let targetConvId =
+        (activeConvId && activeConvId !== "new" ? activeConvId : null) ||
+        (params.conversationId && params.conversationId !== "new" ? params.conversationId : null);
+
+      if (!targetConvId) {
+        const candidateTargetIds = Array.from(
+          new Set(
+            [resolvedTailorId, params.tailorId, params.clientId, params.recipientId].filter(
+              (id): id is string => Boolean(id && (!currentUser?.id || id !== currentUser.id))
+            )
+          )
+        );
+        const candidateTargetNames = [params.name].filter((n): n is string => Boolean(n));
+        const found = await conversationsApi.findExistingConversation(
+          candidateTargetIds,
+          currentUser?.id,
+          candidateTargetNames
+        ).catch(() => null);
+        if (found && (found.id || (found as any)._id)) {
+          targetConvId = found.id || (found as any)._id;
+          setActiveConvId(targetConvId);
+          setConversation(found);
+        }
+      }
+
+      if (targetConvId) {
         const res = await conversationsApi.sendMessage(
-          activeConvId,
+          targetConvId,
           messagePayload,
         );
         let rawData: any = res?.data;

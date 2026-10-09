@@ -14,13 +14,14 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { communityApi } from "../../../api/community.api";
+import { usersApi } from "../../../api/users.api";
 import { useAuthStore } from "../../../stores/auth.store";
 import { useCommunityStore } from "../../../stores/community.store";
-import { CommunityPost, CreateCommunityPostPayload } from "../../../types/api";
+import { CommunityPost, CreateCommunityPostPayload, User } from "../../../types/api";
 import { MccHeader } from "../components/MccHeader";
 import { MccScreenShell } from "../components/MccScreenShell";
 import { isVideoMedia } from "../components/CommunityMediaCarousel";
@@ -55,15 +56,68 @@ const PRESET_TAGS = [
 
 export default function CommunityProfileScreen() {
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{
+    userId?: string;
+    authorId?: string;
+    name?: string;
+    avatar?: string;
+    role?: string;
+  }>();
+
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const authLoading = useAuthStore((state) => state.isLoading);
 
+  // Check if viewing own profile or someone else's profile
+  const rawTargetId = params.userId || params.authorId;
+  const isOwnProfile =
+    !rawTargetId ||
+    rawTargetId === "me" ||
+    (Boolean(user?.id) && String(user?.id).toLowerCase() === String(rawTargetId).toLowerCase());
+
+  const targetUserId = isOwnProfile ? user?.id : rawTargetId;
+
+  // Target user details when viewing someone else's profile
+  const [targetUser, setTargetUser] = useState<User | null>(null);
+  const [isTargetUserLoading, setIsTargetUserLoading] = useState(!isOwnProfile);
 
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch target user profile details when not own profile
+  useEffect(() => {
+    if (!targetUserId || isOwnProfile) {
+      setTargetUser(null);
+      setIsTargetUserLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsTargetUserLoading(true);
+
+    usersApi
+      .getUserById(targetUserId)
+      .then((res) => {
+        if (isMounted && res?.data) {
+          setTargetUser(res.data);
+        }
+      })
+      .catch((err) => {
+        // Fallback gracefully to params if backend call errors
+        console.warn("Could not fetch target user profile:", err);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsTargetUserLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [targetUserId, isOwnProfile]);
 
   // Filters and layout
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -82,70 +136,145 @@ export default function CommunityProfileScreen() {
   // Delete Action State
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
+  // Resolve user identity & roles
+  const profileUser = isOwnProfile ? user : targetUser;
+
+  const currentUserRole = ((user?.role as string) || "customer").toLowerCase();
+  const profileUserRole = (
+    (profileUser?.role as string) ||
+    (params.role as string) ||
+    "customer"
+  ).toLowerCase();
+
+  const isCurrentUserTailor = currentUserRole === "tailor";
+  const isCurrentUserCustomer = !isCurrentUserTailor;
+
+  const isProfileTailor = profileUserRole === "tailor";
+  const isProfileCustomer = !isProfileTailor;
+
+  /**
+   * BUSINESS RULE:
+   * 1. Only tailor can message customer, and customer can message tailor.
+   * 2. Tailor cannot message tailor (no message button).
+   * 3. Customer cannot message customer (no message button).
+   * 4. Customer opening customer profile: no message button.
+   * 5. Tailor opening tailor profile: no message button.
+   * 6. Opening own profile: no message button.
+   */
+  const canMessage =
+    !isOwnProfile &&
+    ((isCurrentUserTailor && isProfileCustomer) ||
+      (isCurrentUserCustomer && isProfileTailor));
+
   const displayName =
-    user?.fullName?.trim() ||
-    user?.name?.trim() ||
-    (user?.email ? user.email.split("@")[0] : "Community Member");
+    (profileUser as any)?.fullName?.trim() ||
+    (profileUser as any)?.name?.trim() ||
+    params.name?.trim() ||
+    (profileUser?.email
+      ? profileUser.email.split("@")[0]
+      : isProfileTailor
+      ? "Tailor"
+      : "Community Member");
 
   const avatarUri =
-    user?.avatar_url ||
-    user?.avatarUrl ||
-    user?.avatar ||
-    (user as any)?.image ||
+    (profileUser as any)?.avatar_url ||
+    (profileUser as any)?.avatarUrl ||
+    (profileUser as any)?.avatar ||
+    (profileUser as any)?.image ||
+    params.avatar ||
     null;
 
   const initials = (displayName || "SD")
     .split(/\s+/)
-    .map((w) => w[0])
+    .map((w: string) => w[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
 
-  // Load user's community posts
-  const fetchMyPosts = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
+  // Handle navigating to chat / messaging
+  const handleOpenMessage = () => {
+    if (!isAuthenticated || !user?.id || user.id === "guest" || user.id.startsWith("guest")) {
+      Alert.alert("Login Required", "Please log in to send a message.");
+      return;
     }
-    setError(null);
 
-    try {
-      // 1. Query backend with authorId
-      const res = await communityApi.getPosts({
-        authorId: user?.id,
-        limit: 100,
-      });
+    if (!targetUserId) {
+      Alert.alert("Error", "User not found.");
+      return;
+    }
 
-      let fetched = Array.isArray(res.data)
-        ? res.data
-        : (res.data as any)?.records || [];
+    const recipientName = displayName || "User";
+    const recipientAvatar = avatarUri || "";
 
-      // Ensure client-side filtering matching current user
-      if (user?.id && fetched.length > 0) {
-        const matching = fetched.filter((p: CommunityPost) => {
-          const postUserId = p.userId || p.user_id || p.author?.id;
-          return postUserId === user.id;
-        });
+    // Navigate to conversation chat
+    router.push({
+      pathname: "/messages/[conversationId]",
+      params: {
+        conversationId: "new",
+        tailorId: isCurrentUserTailor ? user.id : targetUserId,
+        clientId: isCurrentUserTailor ? targetUserId : user.id,
+        recipientId: targetUserId,
+        name: recipientName,
+        avatar: recipientAvatar,
+      },
+    } as any);
+  };
 
-        if (matching.length > 0 || fetched.every((p: CommunityPost) => (p.userId || p.user_id || p.author?.id) === user.id)) {
-          fetched = matching.length > 0 ? matching : fetched;
-        }
+  // Load community posts for this profile
+  const fetchProfilePosts = useCallback(
+    async (isRefresh = false) => {
+      const authorId = targetUserId || user?.id;
+      if (!authorId) {
+        setIsLoading(false);
+        return;
       }
 
-      setPosts(fetched);
-      useCommunityStore.getState().upsertPosts(fetched);
-    } catch (err: any) {
-      setError(err?.message || "Failed to load your community posts");
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [user?.id]);
+      if (isRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      setError(null);
+
+      try {
+        const res = await communityApi.getPosts({
+          authorId: authorId,
+          limit: 100,
+        });
+
+        let fetched = Array.isArray(res.data)
+          ? res.data
+          : (res.data as any)?.records || [];
+
+        // Ensure filtering matching authorId
+        if (authorId && fetched.length > 0) {
+          const matching = fetched.filter((p: CommunityPost) => {
+            const postUserId = p.userId || p.user_id || p.author?.id;
+            return postUserId === authorId;
+          });
+
+          if (matching.length > 0 || fetched.every((p: CommunityPost) => (p.userId || p.user_id || p.author?.id) === authorId)) {
+            fetched = matching.length > 0 ? matching : fetched;
+          }
+        }
+
+        setPosts(fetched);
+        if (isOwnProfile) {
+          useCommunityStore.getState().upsertPosts(fetched);
+        }
+      } catch (err: any) {
+        setError(err?.message || "Failed to load community posts");
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [targetUserId, user?.id, isOwnProfile]
+  );
 
   useEffect(() => {
-    fetchMyPosts();
-  }, [fetchMyPosts]);
+    fetchProfilePosts();
+  }, [fetchProfilePosts]);
 
   // Derived statistics
   const totalPosts = posts.length;
@@ -290,10 +419,11 @@ export default function CommunityProfileScreen() {
   };
 
   const isUnauthenticated =
-    !user ||
-    !isAuthenticated ||
-    user.id === "guest" ||
-    user.id?.startsWith("guest");
+    isOwnProfile &&
+    (!user ||
+      !isAuthenticated ||
+      user.id === "guest" ||
+      user.id?.startsWith("guest"));
 
   if (isUnauthenticated) {
     return (
@@ -318,16 +448,18 @@ export default function CommunityProfileScreen() {
     <MccScreenShell
       header={
         <MccHeader
-          title="Community Profile"
+          title={isOwnProfile ? "Community Profile" : `${displayName}`}
           showBack
           titleClassName="text-[18px] font-bold text-brand-dark"
-          hideRight
+          hideRight={!canMessage}
+          rightIcon={canMessage ? "chatbubble-ellipses-outline" : undefined}
+          onRightPress={canMessage ? handleOpenMessage : undefined}
         />
       }
       refreshControl={
         <RefreshControl
           refreshing={isRefreshing}
-          onRefresh={() => fetchMyPosts(true)}
+          onRefresh={() => fetchProfilePosts(true)}
           tintColor="#14919B"
           colors={["#14919B"]}
         />
@@ -337,7 +469,7 @@ export default function CommunityProfileScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 60 }}
       >
-        {isLoading && !isRefreshing && posts.length === 0 ? (
+        {(isLoading || isTargetUserLoading) && !isRefreshing && posts.length === 0 ? (
           <View className="px-4 pt-2">
             <CommunityProfileSkeleton />
           </View>
@@ -377,7 +509,7 @@ export default function CommunityProfileScreen() {
                   >
                     {displayName}
                   </Text>
-                  {user?.role === "tailor" && (
+                  {isProfileTailor ? (
                     <View
                       className="ml-2 rounded-full bg-[#E0F7F7] px-2.5 py-0.5"
                       style={{ borderWidth: 1, borderColor: "#B2EBF2" }}
@@ -386,16 +518,27 @@ export default function CommunityProfileScreen() {
                         Tailor
                       </Text>
                     </View>
+                  ) : (
+                    <View
+                      className="ml-2 rounded-full bg-slate-100 px-2.5 py-0.5"
+                      style={{ borderWidth: 1, borderColor: "#E2E8F0" }}
+                    >
+                      <Text className="text-[10.5px] font-medium text-slate-600">
+                        Customer
+                      </Text>
+                    </View>
                   )}
                 </View>
 
-                <Text className="mt-0.5 text-[12.5px] font-medium text-slate-500" numberOfLines={1}>
-                  {user?.email || ""}
-                </Text>
+                {profileUser?.email ? (
+                  <Text className="mt-0.5 text-[12.5px] font-medium text-slate-500" numberOfLines={1}>
+                    {profileUser.email}
+                  </Text>
+                ) : null}
 
-                {user?.city ? (
+                {(profileUser as any)?.city ? (
                   <Text className="mt-1 text-[11.5px] font-medium text-slate-500" numberOfLines={1}>
-                    📍 {user.city}
+                    📍 {(profileUser as any).city}
                   </Text>
                 ) : null}
               </View>
@@ -438,28 +581,54 @@ export default function CommunityProfileScreen() {
               </View>
             </View>
 
-            {/* Quick Action Button with greenish texture and roundness-md */}
-            <TouchableOpacity
-              onPress={() => router.push("/community/create" as any)}
-              activeOpacity={0.88}
-              className="mt-4 relative overflow-hidden flex-row items-center justify-center py-3.5 px-5 rounded-md shadow-sm"
-              style={{ borderRadius: 8 }}
-            >
-              <ButtonTexture variant="greenish" borderRadius={8} />
-              <View className="z-10 flex-row items-center justify-center gap-1.5">
-                <Ionicons name="add" size={19} color="#FFFFFF" />
-                <Text
-                  className="text-[13.5px] font-bold text-white tracking-wide"
-                  style={{
-                    textShadowColor: "rgba(0,0,0,0.22)",
-                    textShadowOffset: { width: 0, height: 1 },
-                    textShadowRadius: 2,
-                  }}
-                >
-                  Share New Design
-                </Text>
-              </View>
-            </TouchableOpacity>
+            {/* Action Buttons: Message Button OR Share New Design */}
+            {canMessage ? (
+              <TouchableOpacity
+                onPress={handleOpenMessage}
+                activeOpacity={0.88}
+                className="mt-4 relative overflow-hidden flex-row items-center justify-center py-3.5 px-5 rounded-md shadow-sm"
+                style={{ borderRadius: 8 }}
+                accessibilityLabel="Message user"
+              >
+                <ButtonTexture variant="greenish" borderRadius={8} />
+                <View className="z-10 flex-row items-center justify-center gap-2">
+                  <Ionicons name="chatbubble-ellipses-outline" size={19} color="#FFFFFF" />
+                  <Text
+                    className="text-[14px] font-bold text-white tracking-wide"
+                    style={{
+                      textShadowColor: "rgba(0,0,0,0.22)",
+                      textShadowOffset: { width: 0, height: 1 },
+                      textShadowRadius: 2,
+                    }}
+                  >
+                    {isCurrentUserCustomer ? "Message Tailor" : "Message Customer"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ) : isOwnProfile ? (
+              <TouchableOpacity
+                onPress={() => router.push("/community/create" as any)}
+                activeOpacity={0.88}
+                className="mt-4 relative overflow-hidden flex-row items-center justify-center py-3.5 px-5 rounded-md shadow-sm"
+                style={{ borderRadius: 8 }}
+                accessibilityLabel="Share new design"
+              >
+                <ButtonTexture variant="greenish" borderRadius={8} />
+                <View className="z-10 flex-row items-center justify-center gap-1.5">
+                  <Ionicons name="add" size={19} color="#FFFFFF" />
+                  <Text
+                    className="text-[13.5px] font-bold text-white tracking-wide"
+                    style={{
+                      textShadowColor: "rgba(0,0,0,0.22)",
+                      textShadowOffset: { width: 0, height: 1 },
+                      textShadowRadius: 2,
+                    }}
+                  >
+                    Share New Design
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ) : null}
           </View>
 
           {/* Search & Layout Toggle Bar */}
@@ -569,7 +738,7 @@ export default function CommunityProfileScreen() {
                 {error}
               </Text>
               <TouchableOpacity
-                onPress={() => fetchMyPosts()}
+                onPress={() => fetchProfilePosts()}
                 className="mt-4 px-4 py-2 rounded-xl bg-[#14919B]"
               >
                 <Text className="text-[12.5px] font-bold text-white">Retry</Text>
@@ -755,41 +924,43 @@ export default function CommunityProfileScreen() {
                           </View>
                         </View>
 
-                        {/* Action Buttons: Edit & Delete */}
-                        <View className="flex-row items-center gap-2">
-                          <TouchableOpacity
-                            onPress={() => handleOpenEdit(post)}
-                            activeOpacity={0.7}
-                            className="flex-row items-center px-3 py-1.5 rounded-xl bg-[#E0F7F7] active:bg-[#C9F0F0]"
-                            style={{ borderWidth: 1, borderColor: "#B2EBF2" }}
-                            accessibilityLabel="Edit post"
-                          >
-                            <Ionicons name="create-outline" size={15} color="#0D7377" />
-                            <Text className="ml-1 text-[12px] font-semibold text-[#0D7377]">
-                              Edit
-                            </Text>
-                          </TouchableOpacity>
+                        {/* Action Buttons: Edit & Delete (Only for own profile) */}
+                        {isOwnProfile && (
+                          <View className="flex-row items-center gap-2">
+                            <TouchableOpacity
+                              onPress={() => handleOpenEdit(post)}
+                              activeOpacity={0.7}
+                              className="flex-row items-center px-3 py-1.5 rounded-xl bg-[#E0F7F7] active:bg-[#C9F0F0]"
+                              style={{ borderWidth: 1, borderColor: "#B2EBF2" }}
+                              accessibilityLabel="Edit post"
+                            >
+                              <Ionicons name="create-outline" size={15} color="#0D7377" />
+                              <Text className="ml-1 text-[12px] font-semibold text-[#0D7377]">
+                                Edit
+                              </Text>
+                            </TouchableOpacity>
 
-                          <TouchableOpacity
-                            onPress={() => handleDeletePost(post)}
-                            disabled={isDeleting}
-                            activeOpacity={0.7}
-                            className="flex-row items-center px-3 py-1.5 rounded-xl bg-red-50 active:bg-red-100"
-                            style={{ borderWidth: 1, borderColor: "#FECACA" }}
-                            accessibilityLabel="Delete post"
-                          >
-                            {isDeleting ? (
-                              <ActivityIndicator size="small" color="#EF4444" />
-                            ) : (
-                              <>
-                                <Ionicons name="trash-outline" size={15} color="#DC2626" />
-                                <Text className="ml-1 text-[12px] font-bold text-red-600">
-                                  Delete
-                                </Text>
-                              </>
-                            )}
-                          </TouchableOpacity>
-                        </View>
+                            <TouchableOpacity
+                              onPress={() => handleDeletePost(post)}
+                              disabled={isDeleting}
+                              activeOpacity={0.7}
+                              className="flex-row items-center px-3 py-1.5 rounded-xl bg-red-50 active:bg-red-100"
+                              style={{ borderWidth: 1, borderColor: "#FECACA" }}
+                              accessibilityLabel="Delete post"
+                            >
+                              {isDeleting ? (
+                                <ActivityIndicator size="small" color="#EF4444" />
+                              ) : (
+                                <>
+                                  <Ionicons name="trash-outline" size={15} color="#DC2626" />
+                                  <Text className="ml-1 text-[12px] font-bold text-red-600">
+                                    Delete
+                                  </Text>
+                                </>
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </View>
                     </View>
                   </View>
@@ -856,20 +1027,22 @@ export default function CommunityProfileScreen() {
                       >
                         {post.title || post.category || "Design"}
                       </Text>
-                      <View className="flex-row items-center gap-1.5">
-                        <TouchableOpacity
-                          onPress={() => handleOpenEdit(post)}
-                          className="h-7 w-7 items-center justify-center rounded-lg bg-[#E0F7F7]"
-                        >
-                          <Ionicons name="create-outline" size={14} color="#0D7377" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() => handleDeletePost(post)}
-                          className="h-7 w-7 items-center justify-center rounded-lg bg-red-50"
-                        >
-                          <Ionicons name="trash-outline" size={14} color="#DC2626" />
-                        </TouchableOpacity>
-                      </View>
+                      {isOwnProfile && (
+                        <View className="flex-row items-center gap-1.5">
+                          <TouchableOpacity
+                            onPress={() => handleOpenEdit(post)}
+                            className="h-7 w-7 items-center justify-center rounded-lg bg-[#E0F7F7]"
+                          >
+                            <Ionicons name="create-outline" size={14} color="#0D7377" />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={() => handleDeletePost(post)}
+                            className="h-7 w-7 items-center justify-center rounded-lg bg-red-50"
+                          >
+                            <Ionicons name="trash-outline" size={14} color="#DC2626" />
+                          </TouchableOpacity>
+                        </View>
+                      )}
                     </View>
                   </View>
                 );

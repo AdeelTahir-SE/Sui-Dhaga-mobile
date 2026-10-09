@@ -602,7 +602,7 @@ export default function TailorMessagesScreen() {
                     router.push({
                       pathname: "/messages/[conversationId]",
                       params: {
-                        conversationId: item.id || "new",
+                        conversationId: item.id || (item as any)._id || (item as any).conversationId || "new",
                         tailorId,
                         clientId,
                         recipientId: other.id,

@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { communityApi } from "../../../api/community.api";
 import { CommunityComment } from "../../../types/api";
@@ -157,39 +158,59 @@ export const ReelCommentsModal = memo(function ReelCommentsModal({
       } catch {}
     }
 
+    const handleCommentAuthorPress = () => {
+      const authorId = (item as any).authorId || (item as any).author?.id || (item as any).userId || (item as any).user_id;
+      if (authorId) {
+        onClose();
+        router.push({
+          pathname: "/community/profile",
+          params: {
+            userId: authorId,
+            name: authorName,
+            avatar: avatar || "",
+            role: isTailor ? "tailor" : "customer",
+          },
+        } as any);
+      }
+    };
+
     return (
       <View className="flex-row items-start px-4 py-3 border-b border-gray-100">
-        {avatar ? (
-          <Image
-            source={{ uri: avatar }}
-            cachePolicy="memory-disk"
-            style={{ width: 36, height: 36, borderRadius: 18 }}
-            contentFit="cover"
-          />
-        ) : (
-          <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-            <Ionicons name="person" size={18} color="#14919B" />
-          </View>
-        )}
+        <TouchableOpacity activeOpacity={0.8} onPress={handleCommentAuthorPress}>
+          {avatar ? (
+            <Image
+              source={{ uri: avatar }}
+              cachePolicy="memory-disk"
+              style={{ width: 36, height: 36, borderRadius: 18 }}
+              contentFit="cover"
+            />
+          ) : (
+            <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+              <Ionicons name="person" size={18} color="#14919B" />
+            </View>
+          )}
+        </TouchableOpacity>
 
         <View className="ml-3 flex-1">
           <View className="flex-row items-center">
-            <Text className="text-[13px] font-bold text-gray-900">{authorName}</Text>
-            {isTailor && (
-              <Ionicons
-                name="checkmark-circle"
-                size={13}
-                color="#14919B"
-                style={{ marginLeft: 3 }}
-              />
-            )}
+            <TouchableOpacity activeOpacity={0.8} onPress={handleCommentAuthorPress} className="flex-row items-center">
+              <Text className="text-[13px] font-bold text-gray-900">{authorName}</Text>
+              {isTailor && (
+                <Ionicons
+                  name="checkmark-circle"
+                  size={13}
+                  color="#14919B"
+                  style={{ marginLeft: 3 }}
+                />
+              )}
+            </TouchableOpacity>
             <Text className="ml-2 text-[11px] text-gray-400">{timeString}</Text>
           </View>
           <Text className="mt-1 text-[13px] text-gray-800 leading-4">{item.content}</Text>
         </View>
       </View>
     );
-  }, []);
+  }, [onClose]);
 
   // Compute accurate count: if comments fetched, use actual array length; otherwise fallback to post's count
   const displayCount = isLoading && comments.length === 0 ? commentsCount : comments.length;
