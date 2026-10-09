@@ -536,7 +536,7 @@ export default function ProfileScreen() {
               subtitle={
                 isCheckingUpdate
                   ? "Checking for new version..."
-                  : `Version v${Constants.expoConfig?.version || "1.0.2"} (Tap to check)`
+                  : `Version v${Constants.expoConfig?.version || "1.0.3"} (Tap to check)`
               }
               icon="cloud-download-outline"
               onPress={() => checkForUpdate(true)}
@@ -586,7 +586,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <Text className="mt-5 text-center text-[11px] font-medium text-brand-gray/60">
-          Sui Dhaga • v{Constants.expoConfig?.version || "1.0.2"}
+          Sui Dhaga • v{Constants.expoConfig?.version || "1.0.3"}
         </Text>
       </View>
       )}
