@@ -550,24 +550,31 @@ export default function TailorProfileScreen() {
         </View>
 
         <View className="overflow-hidden rounded-2xl border border-brand-border bg-white p-3.5 shadow-xs">
-          {/* Leaflet Map Preview with 1 single tailor marker */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => setIsMapModalVisible(true)}
-            className="relative h-[150px] w-full overflow-hidden rounded-xl bg-[#E6EFF0]"
-          >
+          {/* Interactive Leaflet Map Preview with custom radar tailor marker */}
+          <View className="relative h-[220px] w-full overflow-hidden rounded-xl bg-[#E6EFF0]">
             <TailorLeafletMap
               latitude={latitude}
               longitude={longitude}
               shopName={name}
               locationText={location}
-              height={150}
+              height={220}
               zoom={15}
-              interactive={false}
+              interactive={true}
+              showPinCallout={true}
             />
-          </TouchableOpacity>
 
-          {/* Bottom address row & Full Screen action button */}
+            {/* Quick Expand button in top-right corner of map */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setIsMapModalVisible(true)}
+              className="absolute top-2.5 right-2.5 z-10 flex-row items-center rounded-lg border border-brand-border/60 bg-white/95 px-2.5 py-1.5 shadow-sm backdrop-blur-sm active:bg-slate-100"
+            >
+              <Ionicons name="expand-outline" size={13} color="#14919B" />
+              <Text className="ml-1 text-[11px] font-bold text-[#14919B]">Expand</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Bottom address row & Full Screen / Directions action buttons */}
           <View className="mt-3.5 flex-row items-center justify-between">
             <View className="mr-3 flex-1 flex-row items-start">
               <Ionicons
@@ -576,20 +583,44 @@ export default function TailorProfileScreen() {
                 color="#14919B"
                 style={{ marginTop: 1 }}
               />
-              <Text className="ml-1.5 flex-1 text-[13.5px] font-semibold text-brand-dark leading-[19px]">
-                {location}
-              </Text>
+              <View className="ml-1.5 flex-1">
+                <Text className="text-[13.5px] font-semibold text-brand-dark leading-[19px]">
+                  {location}
+                </Text>
+                <Text className="text-[11px] font-mono text-brand-gray mt-0.5">
+                  GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                </Text>
+              </View>
             </View>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => setIsMapModalVisible(true)}
-              className="flex-shrink-0 flex-row items-center rounded-lg border border-[#14919B] bg-white px-3.5 py-1.5 shadow-xs active:bg-primary-50"
-            >
-              <Ionicons name="expand-outline" size={15} color="#14919B" />
-              <Text className="ml-1.5 text-[13px] font-bold text-[#14919B]">
-                Full Screen
-              </Text>
-            </TouchableOpacity>
+
+            <View className="flex-row items-center gap-2">
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  const query = encodeURIComponent(`${name} ${location}`);
+                  Linking.openURL(
+                    `https://www.google.com/maps/search/?api=1&query=${query}`,
+                  ).catch(() => {});
+                }}
+                className="flex-row items-center rounded-lg border border-brand-border bg-white px-2.5 py-1.5 shadow-xs active:bg-slate-50"
+              >
+                <Ionicons name="navigate-outline" size={14} color="#14919B" />
+                <Text className="ml-1 text-[12px] font-bold text-brand-dark">
+                  Directions
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setIsMapModalVisible(true)}
+                className="flex-row items-center rounded-lg border border-[#14919B] bg-primary px-3 py-1.5 shadow-xs active:bg-primary-600"
+              >
+                <Ionicons name="expand-outline" size={14} color="#FFFFFF" />
+                <Text className="ml-1 text-[12px] font-bold text-white">
+                  Full Screen
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 

@@ -2,15 +2,20 @@ import { Platform } from 'react-native';
 import { apiClient, storage } from './client';
 import { TailorItem } from '../types/api';
 import { ImageAssetInput } from './users.api';
+import { calculateDistanceKm } from '../utils/distance';
 
 export interface TailorFilters {
   search?: string;
   category?: string;
   specialty?: string;
   rating?: number;
+  minRating?: number;
   city?: string;
   lat?: number;
   lng?: number;
+  radius?: number;
+  radiusKm?: number;
+  verified?: boolean;
   organization?: string;
   organizationName?: string;
   limit?: number;
@@ -331,7 +336,45 @@ export const tailorsApi = {
       list = rawData.data;
     }
 
-    const mapped = list.map(mapTailorFromBackend);
+    let mapped = list.map(mapTailorFromBackend);
+
+    const userLat = typeof filters?.lat === 'number' && !isNaN(filters.lat) ? filters.lat : undefined;
+    const userLng = typeof filters?.lng === 'number' && !isNaN(filters.lng) ? filters.lng : undefined;
+
+    if (userLat !== undefined && userLng !== undefined) {
+      mapped = mapped.map((t) => {
+        let dist = typeof t.distanceKm === 'number' && !isNaN(t.distanceKm) ? t.distanceKm : undefined;
+        if (
+          dist === undefined &&
+          typeof t.latitude === 'number' &&
+          typeof t.longitude === 'number'
+        ) {
+          dist = calculateDistanceKm(userLat, userLng, t.latitude, t.longitude);
+        }
+        return {
+          ...t,
+          distanceKm: dist,
+          distance: dist !== undefined ? `${dist.toFixed(1)} km away` : t.distance,
+        };
+      });
+    }
+
+    const maxRad =
+      typeof filters?.radius === 'number' && !isNaN(filters.radius)
+        ? filters.radius
+        : typeof filters?.radiusKm === 'number' && !isNaN(filters.radiusKm)
+        ? filters.radiusKm
+        : undefined;
+
+    if (maxRad !== undefined && userLat !== undefined && userLng !== undefined) {
+      mapped = mapped.filter((t) => typeof t.distanceKm === 'number' && t.distanceKm <= maxRad);
+      mapped.sort((a, b) => {
+        const distA = a.distanceKm ?? 999999;
+        const distB = b.distanceKm ?? 999999;
+        return distA - distB;
+      });
+    }
+
     return {
       ...res,
       data: mapped,

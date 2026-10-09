@@ -142,11 +142,25 @@ function buildMapHtml(initLat: number, initLng: number) {
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Standard OpenStreetMap tile layer (no API key required)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+    // English Map Layer (Google Maps English raster tiles with hl=en)
+    var googleTiles = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en', {
+      subdomains: ['0', '1', '2', '3'],
+      maxZoom: 20,
+      attribution: '&copy; Google Maps'
+    });
+
+    googleTiles.on('tileerror', function() {
+      if (!window.__fallbackActive) {
+        window.__fallbackActive = true;
+        map.removeLayer(googleTiles);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          subdomains: 'abcd',
+          maxZoom: 20
+        }).addTo(map);
+      }
+    });
+
+    googleTiles.addTo(map);
 
     // Custom SVG Pin Icon
     var pinSvg = [

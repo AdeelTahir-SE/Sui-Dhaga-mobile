@@ -592,9 +592,25 @@ export default function TailorsMapScreen() {
       attributionControl: false
     }).setView([${initialCenter.lat}, ${initialCenter.lng}], 13);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
-    }).addTo(map);
+    // English Map Layer (Google Maps English raster tiles with hl=en)
+    var googleTiles = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}&hl=en', {
+      subdomains: ['0', '1', '2', '3'],
+      maxZoom: 20,
+      attribution: '&copy; Google Maps'
+    });
+
+    googleTiles.on('tileerror', function() {
+      if (!window.__fallbackActive) {
+        window.__fallbackActive = true;
+        map.removeLayer(googleTiles);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          subdomains: 'abcd',
+          maxZoom: 20
+        }).addTo(map);
+      }
+    });
+
+    googleTiles.addTo(map);
 
     var markersLayer = L.layerGroup().addTo(map);
     var markerMap = {};

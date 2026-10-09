@@ -39,8 +39,6 @@ const DEFAULT_CENTER = { lat: 31.5204, lng: 74.3587 }; // Lahore reference coord
 const PAGE_SIZE = 15;
 
 export default function TailorsScreen() {
-  const { tailors, isLoading, isRefreshing, refresh } = useTailors();
-
   // Location state
   const [userCoords, setUserCoords] = useState<{
     lat: number;
@@ -99,6 +97,21 @@ export default function TailorsScreen() {
   const effectiveCoords = useMemo(() => {
     return userCoords || DEFAULT_CENTER;
   }, [userCoords]);
+
+  // Query filters to fetch from database
+  const queryFilters = useMemo(() => {
+    return {
+      search: debouncedSearch || undefined,
+      lat: effectiveCoords?.lat,
+      lng: effectiveCoords?.lng,
+      radius: selectedRadius ?? undefined,
+      radiusKm: selectedRadius ?? undefined,
+      minRating: topRatedOnly ? 4.5 : undefined,
+      limit: 50,
+    };
+  }, [debouncedSearch, effectiveCoords, selectedRadius, topRatedOnly]);
+
+  const { tailors, isLoading, isRefreshing, refresh } = useTailors(queryFilters);
 
   // 1. Calculate distances & 2. Filter by radius & 3. Filter by query
   const filteredTailors = useMemo(() => {

@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMemo, useState } from "react";
+import * as Location from "expo-location";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -19,6 +20,22 @@ import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { MainTailorCard } from "../components/MainTailorCard";
 import { TailorsListSkeleton } from "../components/TailorCardSkeleton";
+import { calculateDistanceKm } from "../../../utils/distance";
+
+const DEFAULT_CENTER = { lat: 31.5204, lng: 74.3587 };
+
+const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
+  islamabad: { lat: 33.6844, lng: 73.0479 },
+  rawalpindi: { lat: 33.5651, lng: 73.0169 },
+  lahore: { lat: 31.5204, lng: 74.3587 },
+  karachi: { lat: 24.8607, lng: 67.0011 },
+  faisalabad: { lat: 31.4504, lng: 73.1350 },
+  multan: { lat: 30.1575, lng: 71.5249 },
+  peshawar: { lat: 34.0151, lng: 71.5249 },
+  quetta: { lat: 30.1798, lng: 66.9750 },
+  sialkot: { lat: 32.4945, lng: 74.5229 },
+  gujranwala: { lat: 32.1877, lng: 74.1945 },
+};
 
 export default function MainTailorsScreen() {
   const user = useAuthStore((state) => state.user);
@@ -28,9 +45,68 @@ export default function MainTailorsScreen() {
     params.from === "tailor" ||
     params.role === "tailor";
 
-  const { tailors, isLoading, isRefreshing, refresh } = useTailors();
+  // Location state
+  const [userCoords, setUserCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === "granted") {
+          const last = await Location.getLastKnownPositionAsync();
+          if (isMounted && last?.coords) {
+            setUserCoords({
+              lat: last.coords.latitude,
+              lng: last.coords.longitude,
+            });
+          }
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          if (isMounted && loc?.coords) {
+            setUserCoords({
+              lat: loc.coords.latitude,
+              lng: loc.coords.longitude,
+            });
+          }
+        }
+      } catch {
+        // Fallback silently
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const defaultCenter = useMemo(() => {
+    if (user?.city) {
+      const cityCoords = CITY_COORDINATES[user.city.trim().toLowerCase()];
+      if (cityCoords) return cityCoords;
+    }
+    return DEFAULT_CENTER;
+  }, [user?.city]);
+
+  const effectiveCoords = useMemo(() => {
+    return userCoords || defaultCenter;
+  }, [userCoords, defaultCenter]);
+
+  // Search & Filters State
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  // Debounce search query (250ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Nearest / Distance Filter Options State (default null to show all tailors)
   const [isNearbyModalVisible, setIsNearbyModalVisible] = useState(false);
@@ -80,37 +156,85 @@ export default function MainTailorsScreen() {
     },
   ];
 
-  const filterOptions = ["Near Me", "Rating 4+", "Verified"];
+  // Construct query filters to find tailors from database
+  const queryFilters = useMemo(() => {
+    const filters: any = {
+      search: debouncedSearch || undefined,
+      lat: effectiveCoords?.lat,
+      lng: effectiveCoords?.lng,
+      limit: 50,
+    };
+
+    if (selectedRadius !== null) {
+      filters.radius = selectedRadius;
+      filters.radiusKm = selectedRadius;
+    } else if (activeFilter === "Near Me") {
+      filters.radius = 15;
+      filters.radiusKm = 15;
+    }
+
+    if (activeFilter === "Rating 4+") {
+      filters.minRating = 4;
+    } else if (activeFilter === "Verified") {
+      filters.verified = true;
+    }
+
+    return filters;
+  }, [debouncedSearch, effectiveCoords, selectedRadius, activeFilter]);
+
+  // Fetch tailors with query filters from the database
+  const { tailors, isLoading, isRefreshing, refresh } = useTailors(queryFilters);
 
   // Helper to parse numeric distance in km from tailor
-  const getTailorDistanceKm = (tailor: any): number => {
-    if (typeof tailor.distanceKm === "number" && !isNaN(tailor.distanceKm)) {
-      return tailor.distanceKm;
-    }
-    const distStr = tailor.distance;
-    if (!distStr) return 999;
-    const lower = String(distStr).toLowerCase().trim();
-    if (lower.includes("nearby")) return 1.2;
-    const match = lower.match(/([0-9.]+)\s*(km|m)?/);
-    if (match) {
-      let num = parseFloat(match[1]);
-      if (match[2] === "m") num = num / 1000;
-      return isNaN(num) ? 999 : num;
-    }
-    return 999;
-  };
-
-  const getTailorCountForRadius = (rad: number | null) => {
-    if (rad === null) return tailors.length;
-    return tailors.filter((t) => getTailorDistanceKm(t) <= rad).length;
-  };
+  const getTailorDistanceKm = useCallback(
+    (tailor: any): number => {
+      if (typeof tailor.distanceKm === "number" && !isNaN(tailor.distanceKm)) {
+        return tailor.distanceKm;
+      }
+      if (
+        typeof effectiveCoords?.lat === "number" &&
+        typeof effectiveCoords?.lng === "number" &&
+        typeof tailor.latitude === "number" &&
+        typeof tailor.longitude === "number"
+      ) {
+        return calculateDistanceKm(
+          effectiveCoords.lat,
+          effectiveCoords.lng,
+          tailor.latitude,
+          tailor.longitude,
+        );
+      }
+      const distStr = tailor.distance;
+      if (!distStr) return 999;
+      const lower = String(distStr).toLowerCase().trim();
+      if (lower.includes("nearby")) return 1.2;
+      const match = lower.match(/([0-9.]+)\s*(km|m)?/);
+      if (match) {
+        let num = parseFloat(match[1]);
+        if (match[2] === "m") num = num / 1000;
+        return isNaN(num) ? 999 : num;
+      }
+      return 999;
+    },
+    [effectiveCoords],
+  );
 
   const filteredTailors = useMemo(() => {
-    let result = [...tailors];
+    let result = tailors.map((t) => {
+      const dist = getTailorDistanceKm(t);
+      return {
+        ...t,
+        distanceKm: dist < 999 ? dist : t.distanceKm,
+        distance:
+          dist < 999
+            ? `${dist.toFixed(1)} km away`
+            : t.distance || "Nearby",
+      };
+    });
 
-    // 1. Text Search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
+    // Client-side fallback guarantee for text search query
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase().trim();
       result = result.filter((t) => {
         const name = (
           t.shopName ||
@@ -124,47 +248,51 @@ export default function MainTailorsScreen() {
           ""
         ).toLowerCase();
         const locationStr =
-          t.city ||
+          (t.city ||
           (typeof t.location === "object"
             ? `${t.location?.address || ""} ${t.location?.city || ""}`
-            : t.address || t.distance || "");
+            : t.address || t.distance || "")).toLowerCase();
+        const bio = (t.bio || "").toLowerCase();
         return (
           name.includes(q) ||
           specialty.includes(q) ||
-          locationStr.toLowerCase().includes(q)
+          locationStr.includes(q) ||
+          bio.includes(q)
         );
       });
     }
 
-    // 2. Distance Radius Filter (only applied if a specific radius is chosen)
+    // Distance Radius Filter
     if (selectedRadius !== null) {
       result = result.filter(
-        (t) => getTailorDistanceKm(t) <= selectedRadius,
+        (t) => typeof t.distanceKm === "number" && t.distanceKm <= selectedRadius,
+      );
+    } else if (activeFilter === "Near Me") {
+      result = result.filter(
+        (t) => typeof t.distanceKm === "number" && t.distanceKm <= 15,
       );
     }
 
-    // 3. Quick filter chips
+    // Quick filter chips
     if (activeFilter === "Rating 4+") {
       result = result.filter((t) => (Number(t.rating) || 0) >= 4);
     } else if (activeFilter === "Verified") {
       result = result.filter(
         (t) => t.isVerified || t.verified || t.topRated || t.isTopRated,
       );
-    } else if (activeFilter === "Near Me") {
-      result = result.filter(
-        (t) => getTailorDistanceKm(t) <= (selectedRadius || 15),
-      );
     }
 
-    // Sort by nearest distance only when user filtered by distance
+    // Sort by nearest distance when distance filter is applied
     if (selectedRadius !== null || activeFilter === "Near Me") {
-      result.sort(
-        (a, b) => getTailorDistanceKm(a) - getTailorDistanceKm(b),
-      );
+      result.sort((a, b) => {
+        const distA = a.distanceKm ?? 999999;
+        const distB = b.distanceKm ?? 999999;
+        return distA - distB;
+      });
     }
 
     return result;
-  }, [tailors, searchQuery, activeFilter, selectedRadius]);
+  }, [tailors, debouncedSearch, selectedRadius, activeFilter, getTailorDistanceKm]);
 
   const getTone = (index: number) => {
     const tones: ("coral" | "blue" | "gold" | "teal")[] = [
@@ -317,7 +445,6 @@ export default function MainTailorsScreen() {
                 <View className="gap-2.5 mb-4">
                   {radiusOptions.map((opt) => {
                     const isSelected = selectedRadius === opt.value;
-                    const count = getTailorCountForRadius(opt.value);
                     return (
                       <TouchableOpacity
                         key={opt.label}
@@ -381,13 +508,6 @@ export default function MainTailorsScreen() {
                           </Text>
                         </View>
                         <View className="flex-row items-center">
-                          <Text
-                            className={`mr-2 text-[11px] font-bold ${
-                              isSelected ? "text-[#14919B]" : "text-slate-400"
-                            }`}
-                          >
-                            {count} {count === 1 ? "tailor" : "tailors"}
-                          </Text>
                           <View
                             className="h-5 w-5 rounded-full items-center justify-center"
                             style={{
@@ -471,7 +591,7 @@ export default function MainTailorsScreen() {
                   className="h-[50px] flex-1 items-center justify-center rounded-xl bg-primary active:bg-primary-dark shadow-sm px-4"
                 >
                   <Text className="text-[14px] font-bold text-white">
-                    Show Results ({filteredTailors.length})
+                    Apply Filter
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -495,13 +615,13 @@ export default function MainTailorsScreen() {
                 ? `We couldn't find any tailors matching your search criteria. Try adjusting your search or clearing filters.`
                 : "No tailors are available right now. Please check back later!"}
             </Text>
-            {searchQuery.trim() || activeFilter || selectedRadius !== 25 ? (
+            {searchQuery.trim() || activeFilter || selectedRadius !== null ? (
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => {
                   setSearchQuery("");
                   setActiveFilter(null);
-                  setSelectedRadius(25);
+                  setSelectedRadius(null);
                 }}
                 className="h-[48px] px-6 rounded-md bg-primary items-center justify-center shadow-sm active:bg-primary-dark"
               >
