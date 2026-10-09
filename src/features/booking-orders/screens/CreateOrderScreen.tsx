@@ -91,9 +91,7 @@ export default function CreateOrderScreen() {
 
   // Price calculations
   const basePriceNum = parseInt(customBudget.replace(/[^0-9]/g, ""), 10) || selectedCategory.basePrice;
-  const fabricSurcharge = fabricOption === "tailor" ? 3500 : 0;
-  const speedSurcharge = deliverySpeed === "urgent" ? 1500 : 0;
-  const totalPrice = basePriceNum + fabricSurcharge + speedSurcharge;
+  const totalPrice = basePriceNum;
 
   // Auto-fetch user measurements on mount
   useEffect(() => {
@@ -940,7 +938,7 @@ export default function CreateOrderScreen() {
                       </Text>
                     </View>
                     <Text style={{ fontSize: 11, color: "#64748B", marginLeft: 23 }}>
-                      Tailor sources matching fabric & lining (+₹3,500).
+                      Tailor sources matching fabric & lining.
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1084,7 +1082,7 @@ export default function CreateOrderScreen() {
                 <View style={{ flexDirection: "row", gap: 8 }}>
                   {[
                     { id: "standard", label: "Standard", time: `${selectedCategory.estDays} days`, extra: "Free" },
-                    { id: "urgent", label: "Express Urgent", time: `${Math.max(3, Math.floor(selectedCategory.estDays / 2))} days`, extra: "+₹1,500" },
+                    { id: "urgent", label: "Express Urgent", time: `${Math.max(3, Math.floor(selectedCategory.estDays / 2))} days`, extra: "Free" },
                     { id: "relaxed", label: "Flexible", time: `${selectedCategory.estDays + 7} days`, extra: "Standard" },
                   ].map((speed) => {
                     const isSelected = deliverySpeed === speed.id;
@@ -1240,20 +1238,6 @@ export default function CreateOrderScreen() {
                     />
                   </View>
                 </View>
-
-                {fabricOption === "tailor" && (
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-                    <Text style={{ fontSize: 13, color: "#64748B" }}>Fabric & Lining Sourcing</Text>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹3,500</Text>
-                  </View>
-                )}
-
-                {deliverySpeed === "urgent" && (
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-                    <Text style={{ fontSize: 13, color: "#64748B" }}>Express Urgent Stitching</Text>
-                    <Text style={{ fontSize: 13, fontWeight: "600", color: "#1A1D1F" }}>+₹1,500</Text>
-                  </View>
-                )}
 
 
                 <View

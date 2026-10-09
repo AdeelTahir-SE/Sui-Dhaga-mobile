@@ -2,6 +2,7 @@ import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuthStore } from "../../../stores/auth.store";
 
 type TailorDashboardTabsProps = {
   active?:
@@ -51,7 +52,15 @@ export function TailorDashboardTabs({ active }: TailorDashboardTabsProps) {
             key={tab.label}
             accessibilityRole="button"
             activeOpacity={0.7}
-            onPress={() => router.push(tab.href as never)}
+            onPress={() => {
+              const { user, isAuthenticated } = useAuthStore.getState();
+              const isUnauth = !user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest");
+              if (isUnauth) {
+                router.replace("/auth/login" as any);
+                return;
+              }
+              router.push(tab.href as never);
+            }}
             className="flex-1 items-center justify-center py-0.5"
           >
             <View

@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, Redirect } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Modal,
   ScrollView,
@@ -61,6 +62,31 @@ export default function TailorDashboardScreen() {
   const { profile } = useTailorProfile();
   const { orders } = useOrders();
   const { appointments } = useAppointments();
+
+  const isUnauthenticated =
+    !user ||
+    !isAuthenticated ||
+    user.id === "guest" ||
+    user.id?.startsWith("guest");
+
+  // Guard 1: While restoring auth session from secure storage, render clean splash loader (never flash dashboard or customer page)
+  if (authLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="small" color="#14919B" />
+      </View>
+    );
+  }
+
+  // Guard 2: If user is unauthenticated or token expired, redirect immediately to login page (NEVER customer page)
+  if (isUnauthenticated) {
+    return <Redirect href="/auth/login" />;
+  }
+
+  // Guard 3: If user is customer, redirect to customer home page
+  if (user?.role === "customer") {
+    return <Redirect href="/home" />;
+  }
 
   const tailorQuickActions = [
     {
