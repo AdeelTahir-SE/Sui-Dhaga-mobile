@@ -366,6 +366,7 @@ export interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
   skipAuth?: boolean;
   skipCache?: boolean;
+  suppressAuthRedirect?: boolean;
 }
 
 type AuthExpiredCallback = () => void;
@@ -592,7 +593,9 @@ export async function apiClient<T = any>(endpoint: string, options: RequestOptio
       }
 
       const errorMessage = extractErrorMessage(data, response.status);
-      handleAuthExpirationIfNeeded(response.status, errorMessage);
+      if (!options.suppressAuthRedirect) {
+        handleAuthExpirationIfNeeded(response.status, errorMessage);
+      }
       throw new ApiError(errorMessage, response.status, data);
     }
 

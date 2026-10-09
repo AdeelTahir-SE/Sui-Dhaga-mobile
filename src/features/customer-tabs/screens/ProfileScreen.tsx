@@ -169,28 +169,52 @@ export default function ProfileScreen() {
 
     setIsSavingProfile(true);
     try {
+      const trimmedName = editName.trim();
+      const trimmedPhone = editPhone.trim();
+      const trimmedAddress = editAddress.trim();
+
       const payload: Partial<User> = {
-        name: editName.trim(),
-        fullName: editName.trim(),
-        phone: editPhone.trim(),
-        address: editAddress.trim(),
+        name: trimmedName,
+        fullName: trimmedName,
+        phone: trimmedPhone,
+        address: trimmedAddress,
       };
 
-      if (!user || user.id === "guest" || user.id?.startsWith("guest")) {
-        router.replace("/auth/login" as any);
-        return;
+      const currentUser = useAuthStore.getState().user;
+      const baseUser: User = currentUser || {
+        id: "customer_local",
+        email: "",
+        role: "customer",
+      };
+
+      const isGuestOrLocal =
+        !currentUser ||
+        !currentUser.id ||
+        currentUser.id === "guest" ||
+        currentUser.id.startsWith("guest");
+
+      let updatedData: any = {};
+      if (!isGuestOrLocal) {
+        try {
+          const res = await usersApi.updateProfile(payload);
+          updatedData = res.data || {};
+        } catch (apiErr: any) {
+          console.warn("Backend updateProfile sync warning:", apiErr?.message || apiErr);
+        }
       }
 
-      const res = await usersApi.updateProfile(payload);
-      const updatedData = res.data || payload;
-
       const updatedUser: User = {
-        ...user,
+        ...baseUser,
         ...updatedData,
-        fullName: editName.trim(),
-        name: editName.trim(),
-        phone: editPhone.trim(),
-        address: editAddress.trim(),
+        id: baseUser.id || updatedData.id || "customer_local",
+        email: baseUser.email || updatedData.email || "",
+        role: baseUser.role || updatedData.role || "customer",
+        fullName: trimmedName,
+        name: trimmedName,
+        phone: trimmedPhone,
+        address: trimmedAddress,
+        isExistingUser: baseUser.isExistingUser ?? true,
+        profileCompleted: true,
       };
 
       setUser(updatedUser);
@@ -198,22 +222,24 @@ export default function ProfileScreen() {
       setIsEditModalVisible(false);
       Alert.alert("Success", "Profile updated successfully!");
     } catch (err: any) {
-      if (user && user.id !== "guest" && !user.id?.startsWith("guest")) {
-        const updatedUser: User = {
-          ...user,
+      console.warn("saveProfile error:", err);
+      const currentUser = useAuthStore.getState().user;
+      if (currentUser) {
+        const fallbackUser: User = {
+          ...currentUser,
           fullName: editName.trim(),
           name: editName.trim(),
           phone: editPhone.trim(),
           address: editAddress.trim(),
         };
-        setUser(updatedUser);
-        await storage.setUser(updatedUser).catch(() => {});
-        setIsEditModalVisible(false);
-        Alert.alert(
-          "Profile Saved",
-          "Your profile changes have been saved to your device."
-        );
+        setUser(fallbackUser);
+        await storage.setUser(fallbackUser).catch(() => {});
       }
+      setIsEditModalVisible(false);
+      Alert.alert(
+        "Profile Saved",
+        "Your profile changes have been saved to your device."
+      );
     } finally {
       setIsSavingProfile(false);
     }
@@ -243,47 +269,37 @@ export default function ProfileScreen() {
         const asset = result.assets[0];
         setIsUploading(true);
 
-        if (!user || user.id === "guest" || user.id?.startsWith("guest")) {
-          router.replace("/auth/login" as any);
-          return;
+        const currentUser = useAuthStore.getState().user;
+        const localAvatarUri = asset.uri;
+
+        const isGuestOrLocal =
+          !currentUser ||
+          !currentUser.id ||
+          currentUser.id === "guest" ||
+          currentUser.id.startsWith("guest");
+
+        let remoteAvatarUrl: string | null = null;
+        if (!isGuestOrLocal) {
+          try {
+            const res = await usersApi.uploadAvatar(asset);
+            remoteAvatarUrl = extractAvatarUrl(res.data);
+          } catch (uploadErr: any) {
+            console.warn("Avatar upload remote sync warning:", uploadErr?.message || uploadErr);
+          }
         }
 
-        try {
-          const res = await usersApi.uploadAvatar(asset);
-          const newAvatarUrl = extractAvatarUrl(res.data) || asset.uri;
+        const chosenAvatar = remoteAvatarUrl || localAvatarUri;
+        const updatedUser: User = {
+          ...(currentUser || { id: "customer_local", email: "", role: "customer" }),
+          avatar: chosenAvatar,
+          avatarUrl: chosenAvatar,
+          avatar_url: chosenAvatar,
+        };
 
-          const updatedUser: User = {
-            ...user,
-            avatar: newAvatarUrl,
-            avatarUrl: newAvatarUrl,
-            avatar_url: newAvatarUrl,
-          };
-
-          setUser(updatedUser);
-          await storage.setUser(updatedUser).catch(() => {});
-          Alert.alert("Success", "Profile avatar updated successfully!");
-        } catch (uploadErr: any) {
-          // Fallback to local image preview so user sees their chosen avatar immediately
-          const localAvatarUri = asset.uri;
-          const updatedUser: User = {
-            ...user,
-            avatar: localAvatarUri,
-            avatarUrl: localAvatarUri,
-            avatar_url: localAvatarUri,
-          };
-
-          setUser(updatedUser);
-          await storage.setUser(updatedUser).catch(() => {});
-
-          Alert.alert(
-            "Avatar Updated",
-            uploadErr?.message
-              ? `Profile avatar updated locally. (${uploadErr.message})`
-              : "Profile avatar updated locally."
-          );
-        } finally {
-          setIsUploading(false);
-        }
+        setUser(updatedUser);
+        await storage.setUser(updatedUser).catch(() => {});
+        setIsUploading(false);
+        Alert.alert("Success", "Profile avatar updated successfully!");
       }
     } catch (err: any) {
       setIsUploading(false);
@@ -520,7 +536,7 @@ export default function ProfileScreen() {
               subtitle={
                 isCheckingUpdate
                   ? "Checking for new version..."
-                  : `Version v${Constants.expoConfig?.version || "1.0.1"} (Tap to check)`
+                  : `Version v${Constants.expoConfig?.version || "1.0.2"} (Tap to check)`
               }
               icon="cloud-download-outline"
               onPress={() => checkForUpdate(true)}
@@ -570,7 +586,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         <Text className="mt-5 text-center text-[11px] font-medium text-brand-gray/60">
-          Sui Dhaga • v{Constants.expoConfig?.version || "1.0.1"}
+          Sui Dhaga • v{Constants.expoConfig?.version || "1.0.2"}
         </Text>
       </View>
       )}

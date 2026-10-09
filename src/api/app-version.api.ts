@@ -7,7 +7,7 @@ export const appVersionApi = {
    * Fetches latest version config from the backend /api/v1/app-version/latest endpoint.
    * If backend is unreachable, falls back to direct Supabase REST query.
    */
-  async getLatestVersion(platform = 'android', currentVersion = '1.0.1'): Promise<AppVersionInfo | null> {
+  async getLatestVersion(platform = 'android', currentVersion = '1.0.2'): Promise<AppVersionInfo | null> {
     try {
       const res = await apiClient<AppVersionInfo>(
         `/app-version/latest?platform=${encodeURIComponent(platform)}&clientVersion=${encodeURIComponent(currentVersion)}`,

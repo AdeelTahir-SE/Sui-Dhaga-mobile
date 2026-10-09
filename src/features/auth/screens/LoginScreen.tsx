@@ -38,7 +38,14 @@ export default function LoginScreen() {
   const isLoading = useAuthStore((state) => state.isLoading);
 
   React.useEffect(() => {
-    if (!isLoading && isAuthenticated && currentUser) {
+    if (
+      !isLoading &&
+      isAuthenticated &&
+      currentUser &&
+      currentUser.id &&
+      currentUser.id !== "guest" &&
+      !currentUser.id.startsWith("guest")
+    ) {
       if (currentUser.isExistingUser === false) {
         router.replace("/auth/complete-profile" as any);
       } else if (currentUser.role === "tailor") {

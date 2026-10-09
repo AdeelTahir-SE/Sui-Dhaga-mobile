@@ -88,6 +88,7 @@ export const usersApi = {
   async getMe(): Promise<ApiResponse<User>> {
     return apiClient<User>('/users/me', {
       method: 'GET',
+      suppressAuthRedirect: true,
     });
   },
 
@@ -104,6 +105,7 @@ export const usersApi = {
     return apiClient<AvatarUploadResponseData>('/users/me/avatar', {
       method: 'POST',
       body,
+      suppressAuthRedirect: true,
     });
   },
 
@@ -111,6 +113,7 @@ export const usersApi = {
     return apiClient<User>('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(payload),
+      suppressAuthRedirect: true,
     });
   },
 

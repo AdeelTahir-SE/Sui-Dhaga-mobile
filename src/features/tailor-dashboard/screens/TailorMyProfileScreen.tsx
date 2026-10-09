@@ -619,7 +619,7 @@ export default function TailorMyProfileScreen() {
           </TouchableOpacity>
 
           <Text className="mt-5 text-center text-[11px] font-medium text-brand-gray/60">
-            Sui Dhaga Partner • v{Constants.expoConfig?.version || "1.0.1"}
+            Sui Dhaga Partner • v{Constants.expoConfig?.version || "1.0.2"}
           </Text>
         </View>
         )}

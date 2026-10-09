@@ -1,7 +1,7 @@
 {
   "name": "sui-dhaga-mobile",
   "main": "expo-router/entry",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "dependencies": {
     "@expo/ui": "~56.0.17",
     "@expo/vector-icons": "^15.0.2",
