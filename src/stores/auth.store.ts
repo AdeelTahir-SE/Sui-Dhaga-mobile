@@ -367,21 +367,16 @@ export const useAuthStore = create<AuthState>((set) => ({
         });
         return true;
       } else {
-        // If registration succeeded without errors, create state
+        // Registration succeeded, but email confirmation is pending.
+        // User is not yet authenticated until they verify email link.
         if (res.success !== false) {
-          const fallbackUser: User = {
-            id: 'user_' + Date.now(),
-            email: payload.email,
-            name: payload.name || payload.email.split('@')[0],
-            fullName: payload.name || payload.email.split('@')[0],
-            role: (payload.role || 'customer') as any,
-            phone: payload.phone,
-          };
-          await storage.setUser(fallbackUser);
+          await storage.removeToken().catch(() => {});
+          await storage.removeRefreshToken().catch(() => {});
+          await storage.removeUser().catch(() => {});
           set({
-            user: fallbackUser,
+            user: null,
             token: null,
-            isAuthenticated: true,
+            isAuthenticated: false,
             isLoading: false,
             error: null,
           });

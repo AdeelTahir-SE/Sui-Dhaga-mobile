@@ -23,6 +23,7 @@ import { TailorDashboardHeader } from "../components/TailorDashboardHeader";
 import { TailorLocationPickerModal, SelectedLocation } from "../components/TailorLocationPickerModal";
 import { TailorLeafletMap } from "../../tailors/components/TailorLeafletMap";
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
+import { toast } from "../../../stores/toast.store";
 import { tailorsApi } from "../../../api/tailors.api";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
 import { storage } from "../../../api/client";
@@ -251,7 +252,7 @@ export default function TailorProfileSetupScreen() {
           }
 
           setAvatarUri(newAvatarUrl);
-          Alert.alert("Success", "Profile avatar updated successfully!");
+          toast.success("Profile avatar updated successfully!");
         } catch (uploadErr: any) {
           // Local fallback preview
           const localUri = asset.uri;
@@ -265,19 +266,14 @@ export default function TailorProfileSetupScreen() {
             await storage.setUser(updatedUser).catch(() => {});
           }
           setAvatarUri(localUri);
-          Alert.alert(
-            "Avatar Saved",
-            uploadErr?.message
-              ? `Profile avatar updated locally. (${uploadErr.message})`
-              : "Profile avatar updated locally."
-          );
+          toast.info("Profile avatar saved locally.");
         } finally {
           setIsUploadingAvatar(false);
         }
       }
     } catch (err: any) {
       setIsUploadingAvatar(false);
-      Alert.alert("Error", err?.message || "Failed to update profile picture");
+      toast.error(err?.message || "Failed to update profile picture");
     }
   };
 

@@ -62,7 +62,19 @@ export default function TailorsMapScreen() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [minRating, setMinRating] = useState<number | null>(null);
   const [maxRadius, setMaxRadius] = useState<AllowedRadius>(10);
+  const [showAllTailors, setShowAllTailors] = useState(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+
+  // Live search debounce (250ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppliedSearch(searchQuery.trim());
+      if (searchQuery.trim()) {
+        setShowAllTailors(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // User Geolocation State
   const [userCoords, setUserCoords] = useState<{
@@ -97,7 +109,7 @@ export default function TailorsMapScreen() {
     const originLat = effectiveCoords?.lat;
     const originLng = effectiveCoords?.lng;
 
-    return tailors
+    const withDistances = tailors
       .map((t) => {
         let dist = typeof t.distanceKm === "number" ? t.distanceKm : undefined;
         if (
@@ -117,37 +129,86 @@ export default function TailorsMapScreen() {
           ...t,
           distanceKm: dist,
         };
-      })
-      .filter((t) => {
-        if (minRating && (t.rating || 0) < minRating) return false;
-        // Strictly check distance: only tailors within maxRadius (5, 10, or 15 km)
-        if (typeof t.distanceKm === "number") {
-          return t.distanceKm <= maxRadius;
-        }
-        // Exclude tailors with no distance or invalid coordinates
-        return false;
-      })
-      .sort((a, b) => {
-        const distA = typeof a.distanceKm === "number" ? a.distanceKm : 999999;
-        const distB = typeof b.distanceKm === "number" ? b.distanceKm : 999999;
-        return distA - distB;
       });
-  }, [tailors, minRating, maxRadius, effectiveCoords]);
+
+    // 1. If search is active: match across all tailors by name, city, specialty, address, bio
+    if (appliedSearch) {
+      const q = appliedSearch.toLowerCase().trim();
+      const searchMatches = withDistances.filter((t) => {
+        const name = (t.shopName || t.name || t.businessName || "").toLowerCase();
+        const city = (t.city || "").toLowerCase();
+        const address = (t.address || "").toLowerCase();
+        const specs = Array.isArray(t.specialties)
+          ? t.specialties.join(" ").toLowerCase()
+          : (t.specialty || "").toLowerCase();
+        const bio = (t.bio || "").toLowerCase();
+        return (
+          name.includes(q) ||
+          city.includes(q) ||
+          address.includes(q) ||
+          specs.includes(q) ||
+          bio.includes(q)
+        );
+      });
+
+      if (minRating) {
+        return searchMatches
+          .filter((t) => (t.rating || 0) >= minRating)
+          .sort((a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999));
+      }
+      return searchMatches.sort(
+        (a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999),
+      );
+    }
+
+    // 2. Filter by minimum rating if set
+    let list = withDistances;
+    if (minRating) {
+      list = list.filter((t) => (t.rating || 0) >= minRating);
+    }
+
+    // 3. Proximity filter (Strictly within maxRadius)
+    const withinRadius = list.filter(
+      (t) => typeof t.distanceKm === "number" && t.distanceKm <= maxRadius,
+    );
+
+    if (withinRadius.length > 0 && !showAllTailors) {
+      return withinRadius.sort(
+        (a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999),
+      );
+    }
+
+    // 4. Show all tailors override (if user clicked "View All Tailors")
+    if (showAllTailors) {
+      return list.sort(
+        (a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999),
+      );
+    }
+
+    return [];
+  }, [tailors, minRating, maxRadius, effectiveCoords, appliedSearch, showAllTailors]);
 
   // Keep a selected tailor in view
   const selectedTailor = useMemo(() => {
-    if (!filteredTailors.length) return null;
+    const pool =
+      filteredTailors.length > 0
+        ? filteredTailors
+        : showAllTailors || !appliedSearch
+        ? tailors
+        : [];
+    if (!pool.length) return null;
     if (selectedTailorId) {
-      const found = filteredTailors.find((t) => t.id === selectedTailorId);
+      const found = pool.find((t) => t.id === selectedTailorId);
       if (found) return found;
     }
-    return filteredTailors[0];
-  }, [filteredTailors, selectedTailorId]);
+    return pool[0];
+  }, [filteredTailors, selectedTailorId, showAllTailors, appliedSearch, tailors]);
 
   const selectedIndex = useMemo(() => {
     if (!selectedTailor) return -1;
-    return filteredTailors.findIndex((t) => t.id === selectedTailor.id);
-  }, [filteredTailors, selectedTailor]);
+    const pool = filteredTailors.length > 0 ? filteredTailors : tailors;
+    return pool.findIndex((t) => t.id === selectedTailor.id);
+  }, [filteredTailors, tailors, selectedTailor]);
 
   // Update selectedTailorId when filteredTailors changes
   useEffect(() => {
@@ -186,6 +247,7 @@ export default function TailorsMapScreen() {
       if (data.type === "TAILOR_PIN_CLICKED") {
         if (data.tailorId) {
           lightHaptic();
+          setShowAllTailors(true);
           setSelectedTailorId(data.tailorId);
         }
       } else if (data.type === "USER_LOCATED") {
@@ -239,9 +301,10 @@ export default function TailorsMapScreen() {
 
   // Sync active tailor pins with map
   useEffect(() => {
+    const pinsToDisplay = filteredTailors.length > 0 ? filteredTailors : tailors;
     const payload = JSON.stringify({
       type: "SYNC_PINS",
-      tailors: filteredTailors.map((t) => ({
+      tailors: pinsToDisplay.map((t) => ({
         id: t.id,
         name: t.shopName || t.name || "Tailor Studio",
         rating: t.rating || 0,
@@ -257,7 +320,7 @@ export default function TailorsMapScreen() {
       selectedId: selectedTailor?.id || null,
     });
     sendMapCommand(`handleMapMessage(${JSON.stringify(payload)})`);
-  }, [filteredTailors, selectedTailor?.id, sendMapCommand]);
+  }, [filteredTailors, tailors, selectedTailor?.id, sendMapCommand]);
 
   // Sync user location marker & radius boundary circle on map whenever coordinates or maxRadius change
   useEffect(() => {
@@ -575,8 +638,6 @@ export default function TailorsMapScreen() {
       attributionControl: false
     }).setView([${initialCenter.lat}, ${initialCenter.lng}], 13);
 
-    L.control.zoom({ position: 'topright' }).addTo(map);
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19
     }).addTo(map);
@@ -743,6 +804,14 @@ export default function TailorsMapScreen() {
       locateDevice();
     }, 400);
 
+    // Zoom controls callable from React Native
+    function zoomInMap() {
+      if (map) map.zoomIn();
+    }
+    function zoomOutMap() {
+      if (map) map.zoomOut();
+    }
+
     // Dynamic message receiver
     function handleMapMessage(payloadStr) {
       try {
@@ -755,9 +824,24 @@ export default function TailorsMapScreen() {
 
     window.addEventListener('message', function(e) {
       try {
-        var data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        if (data && data.type === 'SYNC_PINS') {
-          renderPins(data.tailors || [], data.selectedId || null);
+        if (typeof e.data === 'string') {
+          if (
+            e.data.indexOf('zoomInMap') !== -1 ||
+            e.data.indexOf('zoomOutMap') !== -1 ||
+            e.data.indexOf('flyToTailor') !== -1 ||
+            e.data.indexOf('setUserMarker') !== -1 ||
+            e.data.indexOf('fitAllBounds') !== -1 ||
+            e.data.indexOf('handleMapMessage') !== -1
+          ) {
+            try {
+              eval(e.data);
+              return;
+            } catch (evalErr) {}
+          }
+          var data = JSON.parse(e.data);
+          if (data && data.type === 'SYNC_PINS') {
+            renderPins(data.tailors || [], data.selectedId || null);
+          }
         }
       } catch (err) {}
     });
@@ -932,21 +1016,6 @@ export default function TailorsMapScreen() {
                 </Text>
               </TouchableOpacity>
             );
-          })}
-          {userCoords ? (
-            <View style={styles.gpsActiveBadge}>
-              <Ionicons name="navigate-circle" size={12} color="#059669" />
-              <Text style={styles.gpsActiveText}>GPS Active</Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              onPress={handleTriggerGps}
-              style={styles.gpsDetectBadge}
-            >
-              <Ionicons name="locate" size={11} color="#14919B" />
-              <Text style={styles.gpsDetectText}>Detect GPS</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* GPS Status Message Strip if any */}
@@ -960,7 +1029,6 @@ export default function TailorsMapScreen() {
 
       {/* FLOATING ACTION BUTTONS (Right Side) */}
       <View style={styles.fabContainer}>
-
         {/* GPS locate me button */}
         <TouchableOpacity
           activeOpacity={0.8}
@@ -984,6 +1052,32 @@ export default function TailorsMapScreen() {
           accessibilityLabel="List View"
         >
           <Ionicons name="list" size={20} color="#1A1D1F" />
+        </TouchableOpacity>
+
+        {/* Zoom In button */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => {
+            lightHaptic();
+            sendMapCommand("zoomInMap();");
+          }}
+          style={styles.fabBtn}
+          accessibilityLabel="Zoom In"
+        >
+          <Ionicons name="add" size={22} color="#1A1D1F" />
+        </TouchableOpacity>
+
+        {/* Zoom Out button */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => {
+            lightHaptic();
+            sendMapCommand("zoomOutMap();");
+          }}
+          style={styles.fabBtn}
+          accessibilityLabel="Zoom Out"
+        >
+          <Ionicons name="remove" size={22} color="#1A1D1F" />
         </TouchableOpacity>
       </View>
 

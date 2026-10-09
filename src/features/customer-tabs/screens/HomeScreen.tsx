@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ButtonTexture } from "../../../components/ui/ButtonTexture";
 import { useAuthStore } from "../../../stores/auth.store";
+import { toast } from "../../../stores/toast.store";
 
 import { useAppointments } from "../../booking-orders/hooks/useAppointments";
 import { useOrders } from "../../booking-orders/hooks/useOrders";
@@ -54,6 +55,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+      toast.warning("You are logged out. Login to continue.");
       router.replace("/auth/login" as any);
     }
   }, [user, isAuthenticated, authLoading]);

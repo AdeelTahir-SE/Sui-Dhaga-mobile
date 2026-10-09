@@ -23,6 +23,7 @@ import { CustomerTabShell } from "../components/CustomerTabShell";
 import { CustomerTabsPreview } from "../components/CustomerTabsPreview";
 import { ProfileMenuRow } from "../components/ProfileMenuRow";
 import { useAuthStore } from "../../../stores/auth.store";
+import { toast } from "../../../stores/toast.store";
 import { useAppUpdateStore } from "../../../stores/app-update.store";
 import { storage } from "../../../api/client";
 import { extractAvatarUrl, usersApi } from "../../../api/users.api";
@@ -134,6 +135,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+      toast.warning("You are logged out. Login to continue.");
       router.replace("/auth/login" as any);
     }
   }, [user, isAuthenticated, authLoading]);
@@ -141,6 +143,7 @@ export default function ProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+        toast.warning("You are logged out. Login to continue.");
         router.replace("/auth/login" as any);
         return;
       }

@@ -11,11 +11,12 @@
     "androidStatusBar": {
       "barStyle": "dark-content",
       "backgroundColor": "#FFFFFF",
-      "translucent": true
+      "translucent": false
     },
     "androidNavigationBar": {
       "barStyle": "dark-content",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#FFFFFF",
+      "enforceContrast": false
     },
     "ios": {
       "bundleIdentifier": "com.suidhaga.app",
@@ -68,6 +69,13 @@
         {
           "icon": "./assets/logos/icon.png",
           "color": "#14919B"
+        }
+      ],
+      [
+        "expo-navigation-bar",
+        {
+          "style": "dark",
+          "enforceContrast": false
         }
       ]
     ],

@@ -13,9 +13,9 @@ export function FixedBottomTabs({ children }: FixedBottomTabsProps) {
 
   return (
     <View
-      className="absolute bottom-0 left-0 right-0 bg-white px-2 pt-2"
+      className="absolute bottom-0 left-0 right-0 bg-white px-2 pt-2 border-t border-slate-100"
       style={{
-        paddingBottom: Math.max(insets.bottom, 10),
+        paddingBottom: Math.max(insets.bottom, 12),
         shadowColor: "#000",
         shadowOffset: { width: 0, height: -3 },
         shadowOpacity: 0.06,

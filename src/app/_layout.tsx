@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Platform, StatusBar as RNStatusBar } from "react-native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { NavigationBar } from "expo-navigation-bar";
 import {
   SafeAreaProvider,
   initialWindowMetrics,
@@ -28,9 +29,16 @@ import { ThemedAlertModal } from "../components/ui/ThemedAlertModal";
 // Ensure auth session from deep linking is completed on app resume
 WebBrowser.maybeCompleteAuthSession();
 
+import { router, useSegments } from "expo-router";
+import { toast } from "../stores/toast.store";
+import { ToastBanner } from "../components/ui/ToastBanner";
+
 export default function RootLayout() {
   const checkAuth = useAuthStore((state) => state.checkAuth);
   const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const segments = useSegments();
   const { updateInfo, isVisible, dismissModal, triggerUpdate } = useAppUpdate();
 
   useEffect(() => {
@@ -40,9 +48,10 @@ export default function RootLayout() {
 
     SystemUI.setBackgroundColorAsync("#FFFFFF");
     if (Platform.OS === "android") {
-      RNStatusBar.setTranslucent(true);
-      RNStatusBar.setBackgroundColor("transparent", true);
+      RNStatusBar.setTranslucent(false);
+      RNStatusBar.setBackgroundColor("#FFFFFF", true);
       RNStatusBar.setBarStyle("dark-content", true);
+      NavigationBar.setStyle("dark");
     }
 
     // Initialize notification channels and lockscreen listeners
@@ -61,15 +70,49 @@ export default function RootLayout() {
     }
   }, [user?.id]);
 
+  // Route protection: prevent unauthenticated/undefined users from accessing customer or tailor pages
+  useEffect(() => {
+    if (isLoading) return;
+
+    const rootSegment = segments[0] as string | undefined;
+    const isActualUser = Boolean(
+      user &&
+      user.id &&
+      user.id !== "guest" &&
+      !user.id.startsWith("guest") &&
+      isAuthenticated
+    );
+
+    const protectedSegments = [
+      "home",
+      "profile",
+      "orders",
+      "appointments",
+      "messages",
+      "measurements",
+      "design",
+      "design-studio",
+      "community",
+      "tailor-dashboard",
+    ];
+
+    if (rootSegment && protectedSegments.includes(rootSegment)) {
+      if (!isActualUser) {
+        toast.warning("You are logged out. Login to continue.");
+        router.replace("/auth/login" as any);
+      }
+    }
+  }, [segments, user, isAuthenticated, isLoading]);
 
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider
-          initialMetrics={initialWindowMetrics}
+          initialMetrics={Platform.OS === "ios" ? initialWindowMetrics : undefined}
           style={{ flex: 1, backgroundColor: "#FFFFFF" }}
         >
           <StatusBar style="dark" />
+          <NavigationBar style="dark" />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -84,6 +127,7 @@ export default function RootLayout() {
             onDismiss={dismissModal}
           />
           <ThemedAlertModal />
+          <ToastBanner />
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>

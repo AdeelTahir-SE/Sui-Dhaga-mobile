@@ -133,11 +133,11 @@ export function useTailorProfile() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user?.id, user?.email]);
 
   useEffect(() => {
     loadProfile();
-  }, [loadProfile]);
+  }, [user?.id, user?.email]);
 
   const saveProfile = async (data: Partial<TailorItem>): Promise<boolean> => {
     setIsSaving(true);

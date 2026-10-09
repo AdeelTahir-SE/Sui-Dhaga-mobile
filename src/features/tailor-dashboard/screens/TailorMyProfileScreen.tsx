@@ -15,6 +15,7 @@ import { router, useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 
 import { useAuthStore } from "../../../stores/auth.store";
+import { toast } from "../../../stores/toast.store";
 import { useTailorProfile } from "../hooks/useTailorProfile";
 import { TailorDashboardShell } from "../components/TailorDashboardShell";
 import { TailorDashboardTabs } from "../components/TailorDashboardTabs";
@@ -35,6 +36,7 @@ export default function TailorMyProfileScreen() {
 
   useEffect(() => {
     if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+      toast.warning("You are logged out. Login to continue.");
       router.replace("/auth/login" as any);
     }
   }, [user, isAuthenticated, authLoading]);
@@ -42,6 +44,7 @@ export default function TailorMyProfileScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!authLoading && (!user || !isAuthenticated || user.id === "guest" || user.id?.startsWith("guest"))) {
+        toast.warning("You are logged out. Login to continue.");
         router.replace("/auth/login" as any);
         return;
       }
