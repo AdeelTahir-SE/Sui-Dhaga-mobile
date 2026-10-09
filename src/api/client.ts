@@ -212,10 +212,20 @@ export const storage = {
   async getStoredMeasurements(): Promise<any[] | null> {
     try {
       if (Platform.OS === 'web') {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem('sui_dhaga_saved_measurements') : null;
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) return parsed;
+        const candidateKeys = [
+          'sui_dhaga_saved_measurements',
+          'sui_dhaga_measurement_profiles_v2',
+          'sui_dhaga_measurement_profiles',
+          'sui_dhaga_measurements',
+        ];
+        for (const k of candidateKeys) {
+          const raw = typeof window !== 'undefined' ? localStorage.getItem(k) : null;
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            } catch {}
+          }
         }
         return null;
       }
@@ -250,7 +260,10 @@ export const storage = {
     try {
       const serialized = JSON.stringify(items);
       if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined') localStorage.setItem('sui_dhaga_saved_measurements', serialized);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('sui_dhaga_saved_measurements', serialized);
+          localStorage.setItem('sui_dhaga_measurement_profiles_v2', serialized);
+        }
         return;
       }
 

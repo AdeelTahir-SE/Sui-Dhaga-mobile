@@ -267,3 +267,7 @@ export const useMeasurementsStore = create<MeasurementsState>((set, get) => ({
     set({ activeProfile: profile });
   },
 }));
+
+// Eagerly hydrate stored measurements into memory on initialization
+useMeasurementsStore.getState().hydrate().catch(() => {});
+

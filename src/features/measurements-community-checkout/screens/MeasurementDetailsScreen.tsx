@@ -1,5 +1,4 @@
-import React from "react";
-import { Alert, ScrollView, Share, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, ScrollView, Share, Text, TouchableOpacity, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -10,12 +9,23 @@ import { useMeasurements } from "../hooks/useMeasurements";
 
 export default function MeasurementDetailsScreen() {
   const { measurementId } = useLocalSearchParams<{ measurementId?: string }>();
-  const { measurements, deleteMeasurement } = useMeasurements();
+  const { measurements, deleteMeasurement, isLoading } = useMeasurements();
 
   // Find the profile matching measurementId or fallback to first if no ID specified
   const profile = measurements.find((m) => m.id === measurementId) || (measurementId ? undefined : measurements[0]);
 
   if (!profile) {
+    if (isLoading) {
+      return (
+        <MccScreenShell>
+          <MccHeader title="Fit Profile Details" showBack rightText="" />
+          <View className="flex-1 items-center justify-center py-8">
+            <ActivityIndicator size="large" color="#00949D" />
+          </View>
+        </MccScreenShell>
+      );
+    }
+
     return (
       <MccScreenShell>
         <MccHeader title="Fit Profile Details" showBack rightText="" />
