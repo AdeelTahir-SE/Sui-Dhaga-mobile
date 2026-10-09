@@ -142,10 +142,10 @@ function buildMapHtml(initLat: number, initLng: number) {
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // English-first CARTO Voyager tile layer
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd',
-      maxZoom: 19
+    // Standard OpenStreetMap tile layer (no API key required)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     // Custom SVG Pin Icon

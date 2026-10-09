@@ -39,12 +39,14 @@ export const ordersApi = {
   },
 
   async getOrderById(id: string) {
-    return apiClient<OrderItem>(`/orders/${id}`, {
+    const cleanId = String(id || '').replace(/^[#\s]+/, '').trim();
+    return apiClient<OrderItem>(`/orders/${encodeURIComponent(cleanId)}`, {
       method: 'GET',
     });
   },
 
   async getOrderParties(id: string) {
+    const cleanId = String(id || '').replace(/^[#\s]+/, '').trim();
     return apiClient<{
       orderId: string;
       customer: {
@@ -69,7 +71,7 @@ export const ordersApi = {
         specialties?: string[];
         verified?: boolean;
       } | null;
-    }>(`/orders/${id}/parties`, {
+    }>(`/orders/${encodeURIComponent(cleanId)}/parties`, {
       method: 'GET',
     });
   },
@@ -82,6 +84,7 @@ export const ordersApi = {
   },
 
   async updateOrderStatus(id: string, status: string) {
+    const cleanId = String(id || '').replace(/^[#\s]+/, '').trim();
     const s = String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
     let backendStatus = s;
     if (s === 'in_progress' || s === 'in progress' || s === 'accepted') {
@@ -96,7 +99,7 @@ export const ordersApi = {
       backendStatus = 'pending';
     }
 
-    return apiClient<OrderItem>(`/orders/${id}/status`, {
+    return apiClient<OrderItem>(`/orders/${encodeURIComponent(cleanId)}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status: backendStatus }),
     });

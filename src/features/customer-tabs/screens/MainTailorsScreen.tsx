@@ -32,11 +32,24 @@ export default function MainTailorsScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
-  // Nearest / Distance Filter Options State
+  // Nearest / Distance Filter Options State (default null to show all tailors)
   const [isNearbyModalVisible, setIsNearbyModalVisible] = useState(false);
-  const [selectedRadius, setSelectedRadius] = useState<number>(25);
+  const [selectedRadius, setSelectedRadius] = useState<number | null>(null);
 
-  const radiusOptions = [
+  const radiusOptions: Array<{
+    label: string;
+    value: number | null;
+    desc: string;
+    icon: string;
+    badge: string;
+  }> = [
+    {
+      label: "All Distances",
+      value: null,
+      desc: "Show all verified master tailors",
+      icon: "earth-outline",
+      badge: "All",
+    },
     {
       label: "Within 2 km",
       value: 2,
@@ -87,7 +100,8 @@ export default function MainTailorsScreen() {
     return 999;
   };
 
-  const getTailorCountForRadius = (rad: number) => {
+  const getTailorCountForRadius = (rad: number | null) => {
+    if (rad === null) return tailors.length;
     return tailors.filter((t) => getTailorDistanceKm(t) <= rad).length;
   };
 
@@ -122,11 +136,12 @@ export default function MainTailorsScreen() {
       });
     }
 
-    // 2. Distance Radius Filter (strictly nearby regions only, default 25 km max)
-    const effectiveRadius = selectedRadius || 25;
-    result = result.filter(
-      (t) => getTailorDistanceKm(t) <= effectiveRadius,
-    );
+    // 2. Distance Radius Filter (only applied if a specific radius is chosen)
+    if (selectedRadius !== null) {
+      result = result.filter(
+        (t) => getTailorDistanceKm(t) <= selectedRadius,
+      );
+    }
 
     // 3. Quick filter chips
     if (activeFilter === "Rating 4+") {
@@ -137,14 +152,16 @@ export default function MainTailorsScreen() {
       );
     } else if (activeFilter === "Near Me") {
       result = result.filter(
-        (t) => getTailorDistanceKm(t) <= 10,
+        (t) => getTailorDistanceKm(t) <= (selectedRadius || 15),
       );
     }
 
-    // Sort by nearest distance
-    result.sort(
-      (a, b) => getTailorDistanceKm(a) - getTailorDistanceKm(b),
-    );
+    // Sort by nearest distance only when user filtered by distance
+    if (selectedRadius !== null || activeFilter === "Near Me") {
+      result.sort(
+        (a, b) => getTailorDistanceKm(a) - getTailorDistanceKm(b),
+      );
+    }
 
     return result;
   }, [tailors, searchQuery, activeFilter, selectedRadius]);
@@ -429,7 +446,7 @@ export default function MainTailorsScreen() {
               >
                 <TouchableOpacity
                   onPress={() => {
-                    setSelectedRadius(25);
+                    setSelectedRadius(null);
                     setActiveFilter(null);
                   }}
                   activeOpacity={0.7}
@@ -446,6 +463,8 @@ export default function MainTailorsScreen() {
                     setIsNearbyModalVisible(false);
                     if (selectedRadius !== null) {
                       setActiveFilter("Near Me");
+                    } else if (activeFilter === "Near Me") {
+                      setActiveFilter(null);
                     }
                   }}
                   activeOpacity={0.85}

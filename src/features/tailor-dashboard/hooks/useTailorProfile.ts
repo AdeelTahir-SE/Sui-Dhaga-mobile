@@ -108,11 +108,23 @@ export function useTailorProfile() {
             ? cached.longitude
             : undefined;
 
+        const resolvedStartingPrice =
+          typeof remoteProfile.startingPrice === 'number' && remoteProfile.startingPrice > 0
+            ? remoteProfile.startingPrice
+            : typeof (remoteProfile as any).starting_price === 'number' && (remoteProfile as any).starting_price > 0
+            ? (remoteProfile as any).starting_price
+            : Array.isArray(remoteProfile.services) && remoteProfile.services.length > 0 && typeof remoteProfile.services[0].price === 'number' && remoteProfile.services[0].price > 0
+            ? remoteProfile.services[0].price
+            : typeof cached?.startingPrice === 'number' && cached.startingPrice > 0
+            ? cached.startingPrice
+            : 0;
+
         const mergedProfile: TailorItem = {
           ...(cached || {}),
           ...remoteProfile,
           shopName: resolvedShopName,
           businessName: resolvedShopName,
+          startingPrice: resolvedStartingPrice,
           latitude: latVal,
           longitude: lngVal,
           location: {
@@ -181,6 +193,17 @@ export function useTailorProfile() {
         profile?.businessName?.trim() ||
         '';
 
+      const priceNum =
+        typeof (data as any).startingPrice === 'number'
+          ? (data as any).startingPrice
+          : !isNaN(Number((data as any).startingPrice)) && (data as any).startingPrice !== ''
+          ? Number((data as any).startingPrice)
+          : typeof (data as any).starting_price === 'number'
+          ? (data as any).starting_price
+          : !isNaN(Number((data as any).starting_price)) && (data as any).starting_price !== ''
+          ? Number((data as any).starting_price)
+          : profile?.startingPrice || 0;
+
       const updated: TailorItem = {
         ...(profile || {
           id: `tailor_${user?.id || Date.now()}`,
@@ -190,6 +213,7 @@ export function useTailorProfile() {
           reviewsCount: 0,
         }),
         ...data,
+        startingPrice: priceNum,
         shopName: resolvedShopName,
         businessName: resolvedShopName,
       };
@@ -243,6 +267,17 @@ export function useTailorProfile() {
           updated.organizationName = serverOrg || undefined;
           updated.organization = serverOrg || undefined;
           updated.organization_name = serverOrg || undefined;
+        }
+        const serverPrice =
+          typeof res.data.startingPrice === 'number' && res.data.startingPrice > 0
+            ? res.data.startingPrice
+            : typeof (res.data as any).starting_price === 'number' && (res.data as any).starting_price > 0
+            ? (res.data as any).starting_price
+            : Array.isArray(res.data.services) && res.data.services.length > 0 && typeof res.data.services[0].price === 'number' && res.data.services[0].price > 0
+            ? res.data.services[0].price
+            : priceNum;
+        if (serverPrice > 0) {
+          updated.startingPrice = serverPrice;
         }
       }
 

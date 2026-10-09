@@ -33,7 +33,9 @@ import type { TailorItem } from "@/types/api";
 
 export default function OrderDetailsScreen() {
   const { orderId, from } = useLocalSearchParams<{ orderId?: string; from?: string }>();
-  const { order, isLoading, updateOrderStatus } = useOrderDetails(orderId || "");
+  const rawParamId = Array.isArray(orderId) ? orderId[0] : orderId;
+  const cleanOrderId = rawParamId ? decodeURIComponent(rawParamId).replace(/^[#\s]+/, "").trim() : "";
+  const { order, isLoading, updateOrderStatus } = useOrderDetails(cleanOrderId || rawParamId || "");
   const currentUser = useAuthStore((state) => state.user);
   const [isActionLoading, setIsActionLoading] = useState<"accept" | "reject" | "complete" | null>(null);
   const [tailorInfo, setTailorInfo] = useState<TailorItem | null>(null);
@@ -47,7 +49,7 @@ export default function OrderDetailsScreen() {
   const [previewImageUri, setPreviewImageUri] = useState<string | null>(null);
   const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
 
-  const effectiveOrderId = orderId || order?.id || "";
+  const effectiveOrderId = cleanOrderId || order?.id || rawParamId || "";
   const effectiveTailorId =
     tailorInfo?.id ||
     order?.tailorId ||
@@ -63,7 +65,7 @@ export default function OrderDetailsScreen() {
 
   useEffect(() => {
     let isMounted = true;
-    const currentOrderId = orderId || order?.id;
+    const currentOrderId = cleanOrderId || order?.id || rawParamId;
 
     // 1. Fetch parties from dedicated backend endpoint if orderId exists
     if (currentOrderId) {

@@ -250,6 +250,55 @@ const QUICK_SUGGESTIONS = [
   "✨ Do you handle alterations and resizing?",
 ];
 
+function ChatMessageAvatar({
+  avatarUri,
+  name,
+}: {
+  avatarUri?: string | null;
+  name: string;
+}) {
+  const [loadError, setLoadError] = useState(false);
+
+  if (avatarUri && !loadError) {
+    return (
+      <Image
+        source={{ uri: avatarUri }}
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+        }}
+        contentFit="cover"
+        transition={200}
+        onError={() => setLoadError(true)}
+      />
+    );
+  }
+
+  return (
+    <View
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: "#E0F7F7",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text
+        style={{
+          fontSize: 13,
+          fontWeight: "800",
+          color: "#0D7377",
+        }}
+      >
+        {(name || "?").charAt(0).toUpperCase()}
+      </Text>
+    </View>
+  );
+}
+
 function normalizeMessage(raw: any): MessageItem {
   if (!raw) return raw;
   const isRead = raw.is_read === true || raw.isRead === true;
@@ -2318,8 +2367,19 @@ export default function ConversationChatScreen() {
                         String(nextItem.id).startsWith("temp_")) ||
                       (nextItem as any).isSender === true ||
                       (nextItem as any).is_sender === true);
-                  const isSameSenderAsNext =
-                    nextItem && isOutgoing === nextIsOutgoing;
+                  const nextItemDate = nextItem
+                    ? nextItem.createdAt || (nextItem as any).created_at
+                    : null;
+                  const isWithinClusterTime =
+                    nextItemDate && itemDate
+                      ? Math.abs(
+                          new Date(nextItemDate).getTime() -
+                            new Date(itemDate).getTime(),
+                        ) < 120000 // within 2 minutes
+                      : true;
+                  const isSameSenderAsNext = Boolean(
+                    nextItem && isOutgoing === nextIsOutgoing && isWithinClusterTime,
+                  );
 
                   const formattedTime = formatMessageTime(itemDate);
 
@@ -2393,43 +2453,10 @@ export default function ConversationChatScreen() {
                                 elevation: 2,
                               }}
                             >
-                              {!isSameSenderAsNext ? (
-                                messageAvatar ? (
-                                  <Image
-                                    source={{ uri: messageAvatar }}
-                                    style={{
-                                      width: 32,
-                                      height: 32,
-                                      borderRadius: 16,
-                                    }}
-                                    contentFit="cover"
-                                    transition={200}
-                                  />
-                                ) : (
-                                  <View
-                                    style={{
-                                      width: 32,
-                                      height: 32,
-                                      borderRadius: 16,
-                                      backgroundColor: "#E0F7F7",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                    }}
-                                  >
-                                    <Text
-                                      style={{
-                                        fontSize: 13,
-                                        fontWeight: "800",
-                                        color: "#0D7377",
-                                      }}
-                                    >
-                                      {participantName.charAt(0).toUpperCase()}
-                                    </Text>
-                                  </View>
-                                )
-                              ) : (
-                                <View style={{ width: 32, height: 32 }} />
-                              )}
+                              <ChatMessageAvatar
+                                avatarUri={messageAvatar}
+                                name={participantName}
+                              />
                             </View>
 
                             {!isSameSenderAsNext && (

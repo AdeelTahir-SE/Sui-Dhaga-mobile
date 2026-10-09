@@ -121,7 +121,12 @@ export function useOrderDetails(orderId: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!orderId) return;
+    const rawId = Array.isArray(orderId) ? orderId[0] : orderId;
+    const cleanId = String(rawId || "").replace(/^[#\s]+/, "").trim();
+    if (!cleanId) {
+      setIsLoading(false);
+      return;
+    }
 
     let isMounted = true;
     setIsLoading(true);
@@ -130,9 +135,17 @@ export function useOrderDetails(orderId: string) {
     const fallbackSearch = async () => {
       try {
         const listRes = await ordersApi.getMyOrders().catch(() => ordersApi.getOrders());
-        const found = (listRes.data || []).find(
-          (o) => o.id === orderId || o.orderNumber === orderId
-        );
+        const targetClean = cleanId.toLowerCase();
+        const found = (listRes.data || []).find((o) => {
+          const oCleanId = String(o.id || "").replace(/^[#\s]+/, "").trim().toLowerCase();
+          const oCleanNum = String(o.orderNumber || "").replace(/^[#\s]+/, "").trim().toLowerCase();
+          return (
+            oCleanId === targetClean ||
+            oCleanNum === targetClean ||
+            oCleanId.startsWith(targetClean) ||
+            targetClean.startsWith(oCleanId)
+          );
+        });
         if (isMounted && found) {
           setOrder(found);
           setError(null);
@@ -148,7 +161,7 @@ export function useOrderDetails(orderId: string) {
       }
     };
 
-    ordersApi.getOrderById(orderId)
+    ordersApi.getOrderById(cleanId)
       .then((res) => {
         if (isMounted) {
           if (res.data) {

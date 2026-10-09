@@ -365,6 +365,7 @@ export default function TailorProfileSetupScreen() {
       organization: organizationName.trim() || null,
       organization_name: organizationName.trim() || null,
       startingPrice: priceNum,
+      starting_price: priceNum,
       specialties: selectedSpecialties,
       specialty: selectedSpecialties[0] || "",
       bio: bio.trim(),

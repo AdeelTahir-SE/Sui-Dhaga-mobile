@@ -1,15 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
   Modal,
+  RefreshControl,
   ScrollView,
   Share,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { MccScreenShell } from "../components/MccScreenShell";
@@ -28,8 +29,15 @@ const RTW_SIZES = [
 ];
 
 export default function MeasurementsScreen() {
-  const { measurements, deleteMeasurement, isLoading } = useMeasurements();
+  const { measurements, deleteMeasurement, isLoading, isRefreshing, refresh } = useMeasurements();
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+
+  // Automatically refresh measurements whenever user navigates to this screen
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   const handleShareProfile = async (profile: MeasurementItem) => {
     const unit = profile.unit === "cm" ? "cm" : "in";
@@ -82,7 +90,16 @@ export default function MeasurementsScreen() {
   };
 
   return (
-    <MccScreenShell>
+    <MccScreenShell
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={refresh}
+          colors={["#00949D"]}
+          tintColor="#00949D"
+        />
+      }
+    >
       {/* Top Bar with Back button on left, centered title and centered subtitle */}
       <View className="px-4 pt-2 pb-3 bg-white border-b border-brand-border/40">
         <View className="flex-row items-center justify-between">

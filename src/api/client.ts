@@ -208,6 +208,67 @@ export const storage = {
       console.warn('Failed to remove user from storage', err);
     }
   },
+
+  async getStoredMeasurements(): Promise<any[] | null> {
+    try {
+      if (Platform.OS === 'web') {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('sui_dhaga_saved_measurements') : null;
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+        return null;
+      }
+
+      const raw = await SecureStore.getItemAsync('sui_dhaga_saved_measurements');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+
+      const indexRaw = await SecureStore.getItemAsync('sui_dhaga_meas_index');
+      if (indexRaw) {
+        const ids = JSON.parse(indexRaw);
+        if (Array.isArray(ids)) {
+          const items: any[] = [];
+          for (const id of ids) {
+            const itemRaw = await SecureStore.getItemAsync(`sui_dhaga_meas_${id}`);
+            if (itemRaw) {
+              try { items.push(JSON.parse(itemRaw)); } catch {}
+            }
+          }
+          if (items.length > 0) return items;
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+
+  async setStoredMeasurements(items: any[]): Promise<void> {
+    try {
+      const serialized = JSON.stringify(items);
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined') localStorage.setItem('sui_dhaga_saved_measurements', serialized);
+        return;
+      }
+
+      try {
+        await SecureStore.setItemAsync('sui_dhaga_saved_measurements', serialized);
+      } catch {
+        // Fallback to per-item storage if full array exceeds limit
+      }
+
+      const ids = items.map((m) => m.id);
+      await SecureStore.setItemAsync('sui_dhaga_meas_index', JSON.stringify(ids)).catch(() => {});
+      for (const item of items) {
+        await SecureStore.setItemAsync(`sui_dhaga_meas_${item.id}`, JSON.stringify(item)).catch(() => {});
+      }
+    } catch (err) {
+      console.warn('Failed to save measurements to storage', err);
+    }
+  },
 };
 
 interface CacheRecord {
