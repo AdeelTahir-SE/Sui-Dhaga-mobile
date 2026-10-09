@@ -1,29 +1,54 @@
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { isRunningInExpoGo } from 'expo';
 import { router } from 'expo-router';
 import { notificationsApi } from '../api/notifications.api';
+import type * as NotificationsType from 'expo-notifications';
+
+// Determine if the app is currently running inside Expo Go
+const isExpoGo =
+  isRunningInExpoGo() ||
+  Constants?.appOwnership === 'expo' ||
+  Constants?.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+// Remote push notifications were removed from Expo Go for Android in Expo SDK 53+.
+// Statically importing or loading expo-notifications inside Expo Go on Android throws a fatal error.
+// We dynamically load the module only when running outside of Android Expo Go (or in development builds).
+const canLoadNotifications = !(Platform.OS === 'android' && isExpoGo);
+
+let Notifications: typeof NotificationsType | null = null;
+
+if (canLoadNotifications) {
+  try {
+    Notifications = require('expo-notifications');
+  } catch (error) {
+    console.warn('[Push] Could not load expo-notifications module:', error);
+  }
+}
 
 // Configure how incoming notifications appear on the device
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    priority: Notifications.AndroidNotificationPriority.MAX,
-  }),
-});
-
+if (Notifications) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      priority: Notifications?.AndroidNotificationPriority?.MAX ?? 2,
+    }),
+  });
+}
 
 /**
  * Configure Android notification channels for maximum priority and lockscreen visibility.
  * This ensures the notification alerts the user even when the screen is turned off or device is locked.
  */
 export async function setupNotificationChannels(): Promise<void> {
-  if (Platform.OS === 'android') {
+  if (!Notifications || Platform.OS !== 'android') return;
+
+  try {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Important Alerts',
       importance: Notifications.AndroidImportance.MAX,
@@ -34,6 +59,8 @@ export async function setupNotificationChannels(): Promise<void> {
       enableVibrate: true,
       showBadge: true,
     });
+  } catch (error) {
+    console.warn('[Push] Failed to setup notification channels:', error);
   }
 }
 
@@ -42,6 +69,15 @@ export async function setupNotificationChannels(): Promise<void> {
  * then register it with the backend server.
  */
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
+  if (isExpoGo) {
+    console.log('[Push] Running in Expo Go: remote push notifications are disabled in Expo Go. Use a development build (expo run:android / expo run:ios) to test push notifications.');
+    return null;
+  }
+
+  if (!Notifications) {
+    return null;
+  }
+
   let token: string | null = null;
 
   await setupNotificationChannels();
@@ -107,7 +143,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 /**
  * Handle notification tap from lock screen or system notification tray
  */
-export function handleNotificationResponse(response: Notifications.NotificationResponse) {
+export function handleNotificationResponse(response: NotificationsType.NotificationResponse) {
   const data = response?.notification?.request?.content?.data as Record<string, any> | undefined;
   if (!data) return;
 
@@ -142,17 +178,25 @@ export function handleNotificationResponse(response: Notifications.NotificationR
  * Returns a cleanup unsubscribe function.
  */
 export function setupPushNotificationListeners(): () => void {
+  if (!Notifications) {
+    return () => {};
+  }
+
   // Listener for when user interacts with a notification (taps it on lockscreen or notification tray)
   const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
     handleNotificationResponse(response);
   });
 
   // Check if app was opened by tapping a notification while killed / closed
-  Notifications.getLastNotificationResponseAsync().then((response) => {
-    if (response) {
-      handleNotificationResponse(response);
-    }
-  });
+  Notifications.getLastNotificationResponseAsync()
+    .then((response) => {
+      if (response) {
+        handleNotificationResponse(response);
+      }
+    })
+    .catch((err) => {
+      console.warn('[Push] Error checking last notification response:', err);
+    });
 
   return () => {
     responseSubscription.remove();

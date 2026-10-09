@@ -1,3 +1,3 @@
-export { default } from "@/features/tailors/screens/TailorProfileScreen";
+import TailorProfileScreen from "@/features/tailors/screens/TailorProfileScreen";
 
-
+export default TailorProfileScreen;
