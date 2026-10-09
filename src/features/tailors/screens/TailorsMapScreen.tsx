@@ -10,7 +10,6 @@ import {
 } from "react";
 import {
   ActivityIndicator,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -60,8 +59,8 @@ export default function TailorsMapScreen() {
   // Filter & Search State
   const [searchQuery, setSearchQuery] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [minRating, setMinRating] = useState<number | null>(null);
   const [maxRadius, setMaxRadius] = useState<AllowedRadius>(10);
+  const [minRating, setMinRating] = useState<number | null>(null);
   const [showAllTailors, setShowAllTailors] = useState(false);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
 
@@ -89,10 +88,6 @@ export default function TailorsMapScreen() {
 
   // Selected Tailor State
   const [selectedTailorId, setSelectedTailorId] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<Record<string, boolean>>({});
-  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [minRating, setMinRating] = useState<number | null>(null);
-  const [showAllTailors, setShowAllTailors] = useState(false);
 
   const webViewRef = useRef<WebView | null>(null);
 
@@ -397,11 +392,6 @@ export default function TailorsMapScreen() {
   const handleFitAllPins = () => {
     lightHaptic();
     sendMapCommand("fitAllBounds();");
-  };
-
-  const toggleFavorite = (tailorId: string) => {
-    lightHaptic();
-    setFavorites((prev) => ({ ...prev, [tailorId]: !prev[tailorId] }));
   };
 
   // Initial center coordinates
@@ -855,10 +845,6 @@ export default function TailorsMapScreen() {
     ? `Rs. ${actualStartingPrice.toLocaleString()}`
     : "Pricing on request";
 
-  const isFavorite = selectedTailor?.id
-    ? !!favorites[selectedTailor.id]
-    : false;
-
   return (
     <View style={styles.container}>
       {/* MAP LAYER */}
@@ -923,28 +909,6 @@ export default function TailorsMapScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => setIsFilterModalVisible(true)}
-            style={[
-              styles.circleBtn,
-              minRating || maxRadius !== 10
-                ? styles.activeFilterBtn
-                : null,
-            ]}
-            accessibilityLabel="Filter Tailors"
-          >
-            <Ionicons
-              name="options-outline"
-              size={19}
-              color={
-                minRating || maxRadius !== 10
-                  ? "#14919B"
-                  : "#1A1D1F"
-              }
-            />
-          </TouchableOpacity>
         </View>
 
 
@@ -1090,18 +1054,6 @@ export default function TailorsMapScreen() {
                 >
                   <Ionicons name="chevron-forward" size={17} color="#1A1D1F" />
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => toggleFavorite(selectedTailor.id)}
-                  style={styles.favBtn}
-                >
-                  <Ionicons
-                    name={isFavorite ? "heart" : "heart-outline"}
-                    size={20}
-                    color={isFavorite ? "#EF4444" : "#1A1D1F"}
-                  />
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -1215,51 +1167,29 @@ export default function TailorsMapScreen() {
                 </TouchableOpacity>
               )}
 
-              {tailors.length > 0 && (
-                <TouchableOpacity
-                  activeOpacity={0.85}
-                  onPress={() => {
-                    selectionHaptic();
-                    setShowAllTailors(true);
-                    const nearest = [...tailors].sort(
-                      (a, b) => (a.distanceKm ?? 999999) - (b.distanceKm ?? 999999),
-                    )[0];
-                    if (nearest) {
-                      setSelectedTailorId(nearest.id);
-                      if (
-                        typeof nearest.latitude === "number" &&
-                        typeof nearest.longitude === "number"
-                      ) {
-                        sendMapCommand(
-                          `flyToTailor(${nearest.latitude}, ${nearest.longitude}, "${nearest.id}")`,
-                        );
-                      }
-                    }
-                  }}
-                  style={styles.showAllBtn}
-                >
-                  <Ionicons
-                    name="map-outline"
-                    size={14}
-                    color="#14919B"
-                    style={{ marginRight: 5 }}
-                  />
-                  <Text style={styles.showAllBtnText}>
-                    View All Tailors ({tailors.length})
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {(appliedSearch || minRating || maxRadius !== 10 || showAllTailors) && (
+              {appliedSearch ? (
                 <TouchableOpacity
                   activeOpacity={0.85}
                   onPress={() => {
                     lightHaptic();
-                    setSearchQuery("");
-                    setAppliedSearch("");
-                    setMinRating(null);
+                    handleClearSearch();
+                  }}
+                  style={styles.resetBtn}
+                >
+                  <Ionicons
+                    name="close-circle-outline"
+                    size={14}
+                    color="#4B5563"
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={styles.resetBtnText}>Clear Search</Text>
+                </TouchableOpacity>
+              ) : maxRadius !== 10 ? (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    lightHaptic();
                     setMaxRadius(10);
-                    setShowAllTailors(false);
                   }}
                   style={styles.resetBtn}
                 >
@@ -1269,129 +1199,13 @@ export default function TailorsMapScreen() {
                     color="#4B5563"
                     style={{ marginRight: 4 }}
                   />
-                  <Text style={styles.resetBtnText}>Reset</Text>
+                  <Text style={styles.resetBtnText}>Reset Radius (10 km)</Text>
                 </TouchableOpacity>
-              )}
+              ) : null}
             </View>
           </View>
         )}
       </View>
-
-      {/* FILTER MODAL */}
-      <Modal
-        visible={isFilterModalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setIsFilterModalVisible(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View
-            style={[
-              styles.modalSheet,
-              { paddingBottom: insets.bottom > 0 ? insets.bottom + 12 : 24 },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filter Tailors on Map</Text>
-              <TouchableOpacity
-                onPress={() => setIsFilterModalVisible(false)}
-                style={styles.circleBtn}
-              >
-                <Ionicons name="close" size={20} color="#1A1D1F" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Minimum Rating */}
-            <Text style={styles.filterSectionTitle}>Minimum Rating</Text>
-            <View style={styles.filterOptionsRow}>
-              {[null, 4.0, 4.5, 4.8].map((r) => {
-                const isSelected = minRating === r;
-                return (
-                  <TouchableOpacity
-                    key={r === null ? "all" : r.toString()}
-                    onPress={() => setMinRating(r)}
-                    style={[
-                      styles.filterChip,
-                      isSelected && styles.filterChipActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        isSelected && styles.filterChipTextActive,
-                      ]}
-                    >
-                      {r === null ? "Any Rating" : `★ ${r.toFixed(1)}+`}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-
-
-            {/* Distance Radius (Strictly 5, 10, 15 km) */}
-            <Text style={styles.filterSectionTitle}>Distance Radius</Text>
-            <Text style={styles.filterSectionSubtitle}>
-              Checks and displays tailors within this distance from your
-              location (lat & lng)
-            </Text>
-            <View style={styles.filterOptionsRow}>
-              {DISTANCE_OPTIONS.map((d) => {
-                const isSelected = maxRadius === d;
-                return (
-                  <TouchableOpacity
-                    key={d.toString()}
-                    onPress={() => setMaxRadius(d)}
-                    style={[
-                      styles.filterChip,
-                      isSelected && styles.filterChipActive,
-                    ]}
-                  >
-                    <Ionicons
-                      name="navigate-circle"
-                      size={14}
-                      color={isSelected ? "#14919B" : "#6B7280"}
-                      style={{ marginRight: 4 }}
-                    />
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        isSelected && styles.filterChipTextActive,
-                      ]}
-                    >
-                      Within {d} km
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* Apply & Reset Buttons */}
-            <View style={styles.modalActionRow}>
-              <TouchableOpacity
-                onPress={() => {
-                  setMinRating(null);
-                  setMaxRadius(10);
-                  setIsFilterModalVisible(false);
-                }}
-                style={styles.modalResetBtn}
-              >
-                <Text style={styles.modalResetBtnText}>Reset</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => setIsFilterModalVisible(false)}
-                style={styles.modalApplyBtn}
-              >
-                <Text style={styles.modalApplyBtnText}>
-                  Apply ({filteredTailors.length})
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
     </View>
   );
@@ -1576,15 +1390,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  favBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 4,
-  },
   cardBody: {
     flexDirection: "row",
     paddingTop: 12,
@@ -1749,193 +1554,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#475569",
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(15, 23, 42, 0.45)",
-    justifyContent: "flex-end",
-  },
-  modalSheet: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    maxHeight: "88%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 20,
-  },
-  dragHandle: {
-    height: 5,
-    width: 44,
-    borderRadius: 2.5,
-    backgroundColor: "#E2E8F0",
-    alignSelf: "center",
-    marginBottom: 12,
-    marginTop: 2,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingBottom: 4,
-  },
-  modalHeaderIconBadge: {
-    height: 40,
-    width: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 12,
-    backgroundColor: "#E0F7F7",
-    marginRight: 12,
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#1A1D1F",
-  },
-  modalSubtitle: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#6F767E",
-    marginTop: 2,
-  },
-  modalCloseBtn: {
-    height: 32,
-    width: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 16,
-    backgroundColor: "#F1F5F9",
-  },
-  hairlineDivider: {
-    height: 1,
-    backgroundColor: "#F1F5F9",
-    marginTop: 10,
-    marginBottom: 8,
-  },
-  filterSectionTitle: {
-    fontSize: 12.5,
-    fontWeight: "700",
-    color: "#1A1D1F",
-    marginTop: 14,
-    marginBottom: 8,
-  },
-  filterOptionsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    backgroundColor: "#FFFFFF",
-  },
-  filterChipActive: {
-    borderColor: "#14919B",
-    backgroundColor: "#F0FAFA",
-    borderWidth: 1.5,
-  },
-  filterChipText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6F767E",
-  },
-  filterChipTextActive: {
-    color: "#14919B",
-    fontWeight: "700",
-  },
-  toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-  },
-  toggleLabel: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#1A1D1F",
-  },
-  toggleDesc: {
-    fontSize: 11,
-    color: "#6F767E",
-    marginTop: 2,
-  },
-  switchTrack: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#E2E8F0",
-    padding: 2,
-    justifyContent: "center",
-  },
-  switchTrackActive: {
-    backgroundColor: "#14919B",
-  },
-  switchThumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  switchThumbActive: {
-    alignSelf: "flex-end",
-  },
-  modalActionRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 20,
-    marginBottom: 6,
-  },
-  modalResetBtn: {
-    flex: 1,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E6E8EC",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F7F8FA",
-  },
-  modalResetBtnText: {
-    fontSize: 13.5,
-    fontWeight: "700",
-    color: "#1A1D1F",
-  },
-  modalApplyBtn: {
-    flex: 2,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: "#14919B",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#14919B",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  modalApplyBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  filterSectionSubtitle: {
-    fontSize: 11,
-    color: "#6B7280",
-    marginTop: -4,
-    marginBottom: 10,
   },
   radiusQuickBar: {
     flexDirection: "row",

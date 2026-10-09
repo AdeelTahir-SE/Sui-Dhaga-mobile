@@ -128,7 +128,7 @@ export default function TailorEarningsScreen() {
         />
       }
     >
-      <TailorDashboardHeader title="Earnings" rightText="Overview" />
+      <TailorDashboardHeader title="Earnings" />
       {isLoading && !isRefreshing ? (
         <TailorEarningsSkeleton />
       ) : (
