@@ -31,7 +31,7 @@ export default function TailorMyProfileScreen() {
   const authLoading = useAuthStore((state) => state.isLoading);
   const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
-  const { profile, isLoading, refresh } = useTailorProfile();
+  const { profile, isLoading, refresh, isComplete } = useTailorProfile();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   useFocusEffect(
@@ -297,6 +297,73 @@ export default function TailorMyProfileScreen() {
           <TailorProfileSkeleton />
         ) : (
           <View className="px-5 pt-3">
+            {/* Incomplete Profile Setup Banner */}
+            {!isLoading && (!isComplete || user?.profileCompleted === false) && (
+              <TouchableOpacity
+                activeOpacity={0.88}
+                onPress={() => router.push("/tailor-dashboard/complete-profile" as any)}
+                className="mb-4 overflow-hidden rounded-2xl border border-amber-300 bg-amber-50/95 p-4 shadow-xs"
+                style={{
+                  backgroundColor: "#FFFBEB",
+                  borderColor: "#FCD34D",
+                  borderWidth: 1.5,
+                  borderRadius: 18,
+                  padding: 16,
+                }}
+              >
+                <View className="flex-row items-start">
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      backgroundColor: "#FEF3C7",
+                      borderWidth: 1,
+                      borderColor: "#FDE68A",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                    }}
+                  >
+                    <Ionicons name="sparkles" size={20} color="#D97706" />
+                  </View>
+                  <View className="flex-1">
+                    <Text style={{ fontSize: 14, fontWeight: "800", color: "#92400E" }}>
+                      Profile Setup Incomplete
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 12.5,
+                        lineHeight: 17,
+                        fontWeight: "500",
+                        color: "#78350F",
+                        marginTop: 4,
+                      }}
+                    >
+                      Please complete your profile so that customers can find you, view your services, and place orders.
+                    </Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginTop: 10,
+                        alignSelf: "flex-start",
+                        backgroundColor: "#D97706",
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <Text style={{ fontSize: 11.5, fontWeight: "700", color: "#FFFFFF", marginRight: 4 }}>
+                        Complete Profile Now
+                      </Text>
+                      <Ionicons name="arrow-forward" size={12} color="#FFFFFF" />
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+
             {/* Main Profile Card */}
           <View className="rounded-2xl border border-brand-border bg-white overflow-hidden shadow-xs">
             {/* Optional Workshop Banner Cover */}

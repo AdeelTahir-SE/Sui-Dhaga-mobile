@@ -129,76 +129,6 @@ function getDeterministicOffset(strId: string): { latOffset: number; lngOffset: 
   };
 }
 
-const FALLBACK_SEED_TAILORS: any[] = [
-  {
-    id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-    user_id: "22222222-2222-2222-2222-222222222222",
-    shop_name: "Royal Heritage Tailors",
-    specialties: ["bridal", "lehenga", "sherwani", "formal-wear"],
-    city: "Lahore",
-    address: "Shop 12, Anarkali Bazaar, Lahore",
-    experience_years: 22,
-    bio: "Master artisans in hand embroidery and bespoke bridal wear.",
-    rating: 4.9,
-    review_count: 38,
-    verification_status: "verified",
-    verified: true,
-    latitude: 31.5714,
-    longitude: 74.3087,
-    organization_name: "sundrop",
-    profile: {
-      id: "22222222-2222-2222-2222-222222222222",
-      full_name: "Master Tariq",
-      avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-      phone: "+923007654321",
-    },
-  },
-  {
-    id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
-    user_id: "33333333-3333-3333-3333-333333333333",
-    shop_name: "Zainab Haute Couture",
-    specialties: ["kurta", "shalwar-kameez", "casual-wear", "western-fusion"],
-    city: "Islamabad",
-    address: "Plaza 4, F-7 Markaz, Islamabad",
-    experience_years: 8,
-    bio: "Modern tailoring for contemporary women and men.",
-    rating: 4.7,
-    review_count: 19,
-    verification_status: "verified",
-    verified: true,
-    latitude: 33.7215,
-    longitude: 73.0563,
-    profile: {
-      id: "33333333-3333-3333-3333-333333333333",
-      full_name: "Zainab Stitching Studio",
-      avatar_url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
-      phone: "+923009876543",
-    },
-  },
-  {
-    id: "cccccccc-cccc-cccc-cccc-cccccccccccc",
-    user_id: "44444444-4444-4444-4444-444444444444",
-    shop_name: "Gulberg Bespoke Studio",
-    specialties: ["suits", "formal-wear", "alterations", "tuxedos"],
-    city: "Lahore",
-    address: "Main Boulevard, Gulberg III, Lahore",
-    experience_years: 15,
-    bio: "Finest Italian cut suits and modern silhouettes.",
-    rating: 4.8,
-    review_count: 24,
-    verification_status: "verified",
-    verified: true,
-    latitude: 31.5104,
-    longitude: 74.3440,
-    profile: {
-      id: "44444444-4444-4444-4444-444444444444",
-      full_name: "Master Aslam",
-      avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
-      phone: "+923004567890",
-    },
-  },
-];
-
 export function mapTailorFromBackend(raw: any): TailorItem {
   if (!raw) return raw;
 
@@ -401,15 +331,6 @@ export const tailorsApi = {
       list = rawData.data;
     }
 
-    if (list.length < 2) {
-      const existingIds = new Set(list.map((t) => String(t.id || '')));
-      for (const seed of FALLBACK_SEED_TAILORS) {
-        if (!existingIds.has(String(seed.id))) {
-          list.push(seed);
-        }
-      }
-    }
-
     const mapped = list.map(mapTailorFromBackend);
     return {
       ...res,
@@ -449,14 +370,6 @@ export const tailorsApi = {
           list = fbData.tailors;
         }
       } catch {}
-    }
-
-    // Ensure seed tailors exist so map is never empty in any major city
-    const existingIds = new Set(list.map((t) => String(t.id || '')));
-    for (const seed of FALLBACK_SEED_TAILORS) {
-      if (!existingIds.has(String(seed.id))) {
-        list.push(seed);
-      }
     }
 
     const mapped = list.map(mapTailorFromBackend);
@@ -735,11 +648,44 @@ export const tailorsApi = {
     }
 
     if (isUuid && targetId) {
-      return await tailorsApi.updateTailorProfile(targetId, payload);
+      const updateRes = await tailorsApi.updateTailorProfile(targetId, {
+        ...payload,
+        startingPrice: typeof data.startingPrice === 'number' ? data.startingPrice : undefined,
+      } as any);
+
+      // Persist starting price into tailor_services table for this tailor
+      if (typeof data.startingPrice === 'number' && data.startingPrice > 0) {
+        try {
+          const existingServicesRes = await tailorsApi.getTailorServices(targetId);
+          const existingServices = existingServicesRes.data;
+          if (Array.isArray(existingServices) && existingServices.length > 0) {
+            await tailorsApi.updateTailorService(existingServices[0].id, {
+              price: data.startingPrice,
+              title: specialties[0] || existingServices[0].title || 'Custom Stitching',
+            });
+          } else {
+            await tailorsApi.addTailorService(targetId, {
+              title: specialties[0] || 'Custom Stitching',
+              price: data.startingPrice,
+              category: specialties[0]?.toLowerCase() || 'custom',
+            });
+          }
+        } catch (serviceErr) {
+          console.warn('Could not sync service price on update:', serviceErr);
+        }
+      }
+
+      if (updateRes.data) {
+        updateRes.data.startingPrice = typeof data.startingPrice === 'number' ? data.startingPrice : updateRes.data.startingPrice;
+      }
+      return updateRes;
     }
 
     // Otherwise create new tailor profile in database via POST /tailors
-    const createRes = await tailorsApi.createTailorProfile(payload);
+    const createRes = await tailorsApi.createTailorProfile({
+      ...payload,
+      startingPrice: typeof data.startingPrice === 'number' ? data.startingPrice : undefined,
+    } as any);
     
     // If starting price was provided and tailor profile was created with ID, add initial service
     if (createRes.data?.id && typeof data.startingPrice === 'number' && data.startingPrice > 0) {
@@ -750,6 +696,10 @@ export const tailorsApi = {
           category: specialties[0]?.toLowerCase() || 'custom',
         });
       } catch {}
+    }
+
+    if (createRes.data) {
+      createRes.data.startingPrice = typeof data.startingPrice === 'number' ? data.startingPrice : createRes.data.startingPrice;
     }
 
     return createRes;

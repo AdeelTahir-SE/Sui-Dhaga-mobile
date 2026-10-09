@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { router, Redirect } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { router, Redirect, useFocusEffect } from "expo-router";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -59,9 +59,20 @@ export default function TailorDashboardScreen() {
     }
   }, [user, isAuthenticated, authLoading]);
 
-  const { profile } = useTailorProfile();
+  const {
+    profile,
+    isComplete,
+    isLoading: isProfileLoading,
+    refresh: refreshProfile,
+  } = useTailorProfile();
   const { orders } = useOrders();
   const { appointments } = useAppointments();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfile?.();
+    }, [refreshProfile])
+  );
 
   const isUnauthenticated =
     !user ||
@@ -215,6 +226,53 @@ export default function TailorDashboardScreen() {
       };
     }, [orders, appointments]);
 
+  const isProfileIncomplete =
+    !isProfileLoading &&
+    (!isComplete || user?.profileCompleted === false);
+
+  const completionDetails = useMemo(() => {
+    const p = (profile || {}) as any;
+    const hasBusinessName = !!(
+      p?.businessName?.trim() ||
+      p?.shopName?.trim()
+    );
+    const hasSpecialties = !!(
+      (Array.isArray(p?.specialties) && p.specialties.length > 0) ||
+      (typeof p?.specialty === "string" && p.specialty.trim().length > 0)
+    );
+    const loc = p?.location;
+    const hasLocation = !!(
+      (p?.city && p.city.trim().length > 0) ||
+      (p?.address && p.address.trim().length > 0) ||
+      (typeof loc === "object" && loc?.city && String(loc.city).trim().length > 0) ||
+      (typeof loc === "string" && loc.trim().length > 0)
+    );
+    const hasPrice = !!(
+      (typeof p?.startingPrice === "number" && p.startingPrice > 0) ||
+      (Array.isArray(p?.services) &&
+        p.services.length > 0 &&
+        typeof p.services[0]?.price === "number" &&
+        p.services[0].price > 0)
+    );
+
+    const steps = [
+      { name: "Shop Name", done: hasBusinessName },
+      { name: "Specialties", done: hasSpecialties },
+      { name: "Location", done: hasLocation },
+      { name: "Pricing", done: hasPrice },
+    ];
+    const completedCount = steps.filter((s) => s.done).length;
+    const missing = steps.filter((s) => !s.done).map((s) => s.name);
+    const percent = Math.round((completedCount / steps.length) * 100);
+
+    return {
+      completedCount,
+      totalCount: steps.length,
+      percent,
+      missing,
+    };
+  }, [profile]);
+
   return (
     <TailorDashboardShell
       bottomTabs={<TailorDashboardTabs active="Dashboard" />}
@@ -272,6 +330,163 @@ export default function TailorDashboardScreen() {
             }}
           />
         </View>
+
+        {/* Profile Setup Incomplete Callout Banner */}
+        {isProfileIncomplete && (
+          <TouchableOpacity
+            activeOpacity={0.88}
+            onPress={() =>
+              router.push("/tailor-dashboard/complete-profile" as any)
+            }
+            className="mt-4 overflow-hidden rounded-2xl border border-amber-300 bg-amber-50/95 p-4 shadow-xs"
+            style={{
+              backgroundColor: "#FFFBEB",
+              borderColor: "#FCD34D",
+              borderWidth: 1.5,
+              borderRadius: 18,
+              padding: 16,
+              shadowColor: "#D97706",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 6,
+              elevation: 2,
+            }}
+          >
+            <View className="flex-row items-start">
+              <View
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 12,
+                  backgroundColor: "#FEF3C7",
+                  borderWidth: 1,
+                  borderColor: "#FDE68A",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginRight: 12,
+                }}
+              >
+                <Ionicons name="sparkles" size={22} color="#D97706" />
+              </View>
+
+              <View className="flex-1">
+                <View className="flex-row items-center justify-between">
+                  <Text
+                    style={{
+                      fontSize: 15,
+                      fontWeight: "800",
+                      color: "#92400E",
+                      letterSpacing: -0.2,
+                    }}
+                  >
+                    Action Required: Profile Setup
+                  </Text>
+                  <View
+                    style={{
+                      backgroundColor: "#FDE68A",
+                      paddingHorizontal: 8,
+                      paddingVertical: 2.5,
+                      borderRadius: 12,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: "800",
+                        color: "#78350F",
+                      }}
+                    >
+                      {completionDetails.completedCount}/{completionDetails.totalCount} Complete
+                    </Text>
+                  </View>
+                </View>
+
+                <Text
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 18,
+                    fontWeight: "500",
+                    color: "#78350F",
+                    marginTop: 5,
+                  }}
+                >
+                  Please complete your profile so that customers can find you, view your services, and place orders.
+                </Text>
+
+                {/* Progress bar */}
+                <View
+                  style={{
+                    height: 5,
+                    backgroundColor: "#FDE68A",
+                    borderRadius: 3,
+                    marginTop: 10,
+                    overflow: "hidden",
+                  }}
+                >
+                  <View
+                    style={{
+                      height: "100%",
+                      width: `${Math.max(completionDetails.percent, 12)}%`,
+                      backgroundColor: "#D97706",
+                      borderRadius: 3,
+                    }}
+                  />
+                </View>
+
+                {/* Footer with missing items and CTA */}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginTop: 12,
+                    paddingTop: 10,
+                    borderTopWidth: 1,
+                    borderTopColor: "rgba(253, 230, 138, 0.7)",
+                  }}
+                >
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      flex: 1,
+                      fontSize: 11.5,
+                      fontWeight: "600",
+                      color: "#92400E",
+                      marginRight: 8,
+                    }}
+                  >
+                    {completionDetails.missing.length > 0
+                      ? `Pending: ${completionDetails.missing.join(", ")}`
+                      : "Finish final setup"}
+                  </Text>
+
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: "#D97706",
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 10,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "700",
+                        color: "#FFFFFF",
+                        marginRight: 4,
+                      }}
+                    >
+                      Complete Profile
+                    </Text>
+                    <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
+                  </View>
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Metrics Grid */}
         <View className="mt-5 flex-row flex-wrap justify-between gap-y-3">

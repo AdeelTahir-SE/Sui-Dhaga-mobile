@@ -45,6 +45,21 @@ export default function OrderDetailsScreen() {
     avatarUrl?: string;
   } | null>(null);
   const [previewImageUri, setPreviewImageUri] = useState<string | null>(null);
+  const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
+
+  const effectiveOrderId = orderId || order?.id || "";
+  const effectiveTailorId =
+    tailorInfo?.id ||
+    order?.tailorId ||
+    (order as any)?.tailor_id ||
+    "";
+
+  const {
+    review,
+    setReview,
+    isReviewed,
+    isLoading: isReviewLoading,
+  } = useOrderReview(effectiveOrderId, effectiveTailorId);
 
   useEffect(() => {
     let isMounted = true;
@@ -412,22 +427,6 @@ export default function OrderDetailsScreen() {
     normStatus === "processing";
   const isCompleted =
     normStatus === "completed" || normStatus === "delivered";
-
-  const effectiveOrderId = orderId || order?.id || "";
-  const effectiveTailorId =
-    displayTailorId ||
-    tailorInfo?.id ||
-    order?.tailorId ||
-    (order as any)?.tailor_id ||
-    "";
-
-  const {
-    review,
-    setReview,
-    isReviewed,
-    isLoading: isReviewLoading,
-  } = useOrderReview(effectiveOrderId, effectiveTailorId);
-  const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
 
   const handleAcceptOrder = async () => {
     setIsActionLoading("accept");
