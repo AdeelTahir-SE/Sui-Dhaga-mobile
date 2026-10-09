@@ -88,6 +88,261 @@ export default function AppointmentDetailsScreen() {
     appointment?.tailor?._id,
   ]);
 
+  // Determine user role and perspective
+  const isTailor =
+    from === "tailor" ||
+    currentUser?.role === "tailor" ||
+    Boolean(
+      (appointment?.tailorId && currentUser?.id && appointment.tailorId === currentUser.id) ||
+      (appointment?.tailor_id && currentUser?.id && appointment.tailor_id === currentUser.id) ||
+      (appointment?.tailor?.id && currentUser?.id && appointment.tailor.id === currentUser.id) ||
+      (appointment?.tailor?.userId && currentUser?.id && appointment.tailor.userId === currentUser.id)
+    );
+
+  const appointmentNumber =
+    appointment?.id && appointment.id.length > 12
+      ? appointment.id.startsWith("APT-")
+        ? appointment.id.slice(0, 11)
+        : appointment.id.slice(0, 8).toUpperCase()
+      : appointment?.id || appointmentId || "—";
+
+  const serviceName =
+    appointment?.serviceType ||
+    appointment?.service_type ||
+    appointment?.service?.name ||
+    appointment?.service?.title ||
+    "Tailoring Consultation & Fitting";
+
+  const dateStr =
+    appointment?.appointmentDate ||
+    appointment?.appointment_date ||
+    appointment?.date ||
+    "Scheduled";
+
+  const timeStr =
+    appointment?.appointmentTime ||
+    appointment?.appointment_time ||
+    appointment?.time ||
+    "";
+
+  const duration = appointment?.duration || "45 - 60 mins";
+  const notesStr = appointment?.notes || "";
+
+  const locationStr =
+    appointment?.location ||
+    tailorInfo?.address ||
+    tailorInfo?.city ||
+    appointment?.tailor?.location?.city ||
+    appointment?.tailor?.address ||
+    "In-Shop / Tailor Studio";
+
+  const rawPrice =
+    appointment?.price !== undefined && appointment?.price !== null
+      ? appointment.price
+      : appointment?.service?.price !== undefined && appointment?.service?.price !== null
+      ? appointment.service.price
+      : null;
+
+  const priceStr =
+    rawPrice !== null && rawPrice !== undefined && Number(rawPrice) > 0
+      ? `Rs. ${Number(rawPrice).toLocaleString("en-IN")}`
+      : "Consultation";
+
+  // Status mapping
+  const status = appointment?.status || "Pending";
+  const statusLower = status.toLowerCase();
+  const isPending =
+    statusLower === "pending" || statusLower === "requests" || statusLower === "new";
+  const isUpcoming =
+    statusLower === "upcoming" || statusLower === "confirmed";
+  const isCompleted = statusLower === "completed";
+  const isCancelled =
+    statusLower === "cancelled" ||
+    statusLower === "canceled" ||
+    statusLower === "declined" ||
+    statusLower === "rejected";
+
+  const statusLabel = isCompleted
+    ? "Completed"
+    : isCancelled
+    ? "Cancelled"
+    : isUpcoming
+    ? "Upcoming"
+    : "New Request";
+
+  const statusTone: "blue" | "green" | "red" | "gold" = isCompleted
+    ? "green"
+    : isCancelled
+    ? "red"
+    : isUpcoming
+    ? "blue"
+    : "gold";
+
+  // Tailor details
+  const displayTailorName =
+    tailorInfo?.name ||
+    tailorInfo?.shopName ||
+    appointment?.tailorName ||
+    appointment?.tailor?.shopName ||
+    appointment?.tailor?.fullName ||
+    appointment?.tailor?.name ||
+    "Master Tailor";
+
+  const displayShopName =
+    tailorInfo?.shopName ||
+    tailorInfo?.businessName ||
+    appointment?.tailor?.shopName ||
+    appointment?.tailor?.businessName ||
+    (displayTailorName.includes("Tailor") ? displayTailorName : `${displayTailorName}'s Studio`);
+
+  const displayTailorAvatar =
+    tailorInfo?.avatar ||
+    tailorInfo?.avatarUrl ||
+    tailorInfo?.imageUrl ||
+    tailorInfo?.image ||
+    appointment?.tailorAvatar ||
+    appointment?.tailor_avatar ||
+    appointment?.tailor?.avatar ||
+    appointment?.tailor?.avatarUrl ||
+    null;
+
+  const displayRating = tailorInfo?.rating
+    ? Number(tailorInfo.rating).toFixed(1)
+    : appointment?.tailor?.rating
+    ? Number(appointment.tailor.rating).toFixed(1)
+    : "4.9";
+
+  const displayReviews =
+    tailorInfo?.reviewsCount ?? tailorInfo?.reviews ?? appointment?.tailor?.reviewsCount ?? 28;
+
+  const displaySpecialty =
+    tailorInfo?.specialty ||
+    (tailorInfo?.specialties && tailorInfo.specialties[0]) ||
+    "Bespoke Fitting & Stitching";
+
+  const displayLocation =
+    tailorInfo?.city ||
+    tailorInfo?.address ||
+    locationStr ||
+    "Available for fittings";
+
+  const displayTailorId =
+    tailorInfo?.id ||
+    appointment?.tailorId ||
+    appointment?.tailor_id ||
+    appointment?.tailor?.id ||
+    "";
+
+  const displayTailorPhone =
+    tailorInfo?.phone ||
+    (tailorInfo as any)?.phoneNumber ||
+    appointment?.tailor?.phone ||
+    appointment?.tailor?.phoneNumber ||
+    appointment?.tailor?.contactNumber ||
+    "";
+
+  // Customer details
+  const displayCustomerName =
+    appointment?.customerName ||
+    appointment?.customer_name ||
+    appointment?.clientName ||
+    appointment?.userName ||
+    appointment?.customer?.fullName ||
+    appointment?.customer?.full_name ||
+    appointment?.customer?.name ||
+    "Client";
+
+  const displayCustomerAvatar =
+    appointment?.customerAvatar ||
+    appointment?.customer_avatar ||
+    appointment?.clientAvatar ||
+    appointment?.customer?.avatar ||
+    appointment?.customer?.avatarUrl ||
+    appointment?.customer?.avatar_url ||
+    null;
+
+  const displayCustomerPhone =
+    appointment?.customer?.phone ||
+    appointment?.customer?.phoneNumber ||
+    appointment?.customer?.phone_number ||
+    (appointment as any)?.phone ||
+    (appointment as any)?.customerPhone ||
+    "";
+
+  const displayCustomerId =
+    appointment?.customerId ||
+    appointment?.customer_id ||
+    appointment?.customer?.id ||
+    appointment?.customer?._id ||
+    "";
+
+  // Background preloading of existing conversation between appointment parties
+  useEffect(() => {
+    let isCancelled = false;
+    const currentUserId = currentUser?.id;
+    if (!currentUserId || !appointment) return;
+
+    const findConversation = async () => {
+      try {
+        const isTailorRole =
+          from === "tailor" ||
+          currentUser?.role === "tailor" ||
+          Boolean(displayTailorId && currentUserId && displayTailorId === currentUserId);
+
+        let targetIds: string[] = [];
+        let targetNames: string[] = [];
+
+        if (isTailorRole) {
+          if (displayCustomerId) targetIds.push(displayCustomerId);
+          if (displayCustomerName && displayCustomerName !== "Client") {
+            targetNames.push(displayCustomerName);
+          }
+        } else {
+          const tailorUser =
+            tailorInfo?.userId ||
+            (tailorInfo as any)?.user_id ||
+            displayTailorId;
+          const tailorTable = tailorInfo?.id || displayTailorId;
+
+          if (tailorUser) targetIds.push(tailorUser);
+          if (tailorTable && tailorTable !== tailorUser) targetIds.push(tailorTable);
+          if (displayTailorName && displayTailorName !== "Tailor") {
+            targetNames.push(displayTailorName);
+          }
+          if (displayShopName) targetNames.push(displayShopName);
+        }
+
+        if (targetIds.length === 0) return;
+
+        const found = await conversationsApi.findExistingConversation(
+          targetIds,
+          currentUserId,
+          targetNames
+        );
+        if (!isCancelled && found && (found.id || (found as any)._id)) {
+          setExistingConversationId(found.id || (found as any)._id);
+        }
+      } catch {}
+    };
+
+    findConversation();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    currentUser?.id,
+    from,
+    displayTailorId,
+    displayCustomerId,
+    tailorInfo?.id,
+    tailorInfo?.userId,
+    displayCustomerName,
+    displayTailorName,
+    displayShopName,
+    appointment,
+  ]);
+
   if (isLoading) {
     return (
       <BookingOrdersScreenShell>
@@ -177,260 +432,6 @@ export default function AppointmentDetailsScreen() {
       </BookingOrdersScreenShell>
     );
   }
-
-  // Determine user role and perspective
-  const isTailor =
-    from === "tailor" ||
-    currentUser?.role === "tailor" ||
-    Boolean(
-      (appointment.tailorId && currentUser?.id && appointment.tailorId === currentUser.id) ||
-      (appointment.tailor_id && currentUser?.id && appointment.tailor_id === currentUser.id) ||
-      (appointment.tailor?.id && currentUser?.id && appointment.tailor.id === currentUser.id) ||
-      (appointment.tailor?.userId && currentUser?.id && appointment.tailor.userId === currentUser.id)
-    );
-
-  const appointmentNumber =
-    appointment.id && appointment.id.length > 12
-      ? appointment.id.startsWith("APT-")
-        ? appointment.id.slice(0, 11)
-        : appointment.id.slice(0, 8).toUpperCase()
-      : appointment.id || appointmentId || "—";
-
-  const serviceName =
-    appointment.serviceType ||
-    appointment.service_type ||
-    appointment.service?.name ||
-    appointment.service?.title ||
-    "Tailoring Consultation & Fitting";
-
-  const dateStr =
-    appointment.appointmentDate ||
-    appointment.appointment_date ||
-    appointment.date ||
-    "Scheduled";
-
-  const timeStr =
-    appointment.appointmentTime ||
-    appointment.appointment_time ||
-    appointment.time ||
-    "";
-
-  const duration = appointment.duration || "45 - 60 mins";
-  const notesStr = appointment.notes || "";
-
-  const locationStr =
-    appointment.location ||
-    tailorInfo?.address ||
-    tailorInfo?.city ||
-    appointment.tailor?.location?.city ||
-    appointment.tailor?.address ||
-    "In-Shop / Tailor Studio";
-
-  const rawPrice =
-    appointment.price !== undefined && appointment.price !== null
-      ? appointment.price
-      : appointment.service?.price !== undefined && appointment.service?.price !== null
-      ? appointment.service.price
-      : null;
-
-  const priceStr =
-    rawPrice !== null && rawPrice !== undefined && Number(rawPrice) > 0
-      ? `Rs. ${Number(rawPrice).toLocaleString("en-IN")}`
-      : "Consultation";
-
-  // Status mapping
-  const status = appointment.status || "Pending";
-  const statusLower = status.toLowerCase();
-  const isPending =
-    statusLower === "pending" || statusLower === "requests" || statusLower === "new";
-  const isUpcoming =
-    statusLower === "upcoming" || statusLower === "confirmed";
-  const isCompleted = statusLower === "completed";
-  const isCancelled =
-    statusLower === "cancelled" ||
-    statusLower === "canceled" ||
-    statusLower === "declined" ||
-    statusLower === "rejected";
-
-  const statusLabel = isCompleted
-    ? "Completed"
-    : isCancelled
-    ? "Cancelled"
-    : isUpcoming
-    ? "Upcoming"
-    : "New Request";
-
-  const statusTone: "blue" | "green" | "red" | "gold" = isCompleted
-    ? "green"
-    : isCancelled
-    ? "red"
-    : isUpcoming
-    ? "blue"
-    : "gold";
-
-  // Tailor details
-  const displayTailorName =
-    tailorInfo?.name ||
-    tailorInfo?.shopName ||
-    appointment.tailorName ||
-    appointment.tailor?.shopName ||
-    appointment.tailor?.fullName ||
-    appointment.tailor?.name ||
-    "Master Tailor";
-
-  const displayShopName =
-    tailorInfo?.shopName ||
-    tailorInfo?.businessName ||
-    appointment.tailor?.shopName ||
-    appointment.tailor?.businessName ||
-    (displayTailorName.includes("Tailor") ? displayTailorName : `${displayTailorName}'s Studio`);
-
-  const displayTailorAvatar =
-    tailorInfo?.avatar ||
-    tailorInfo?.avatarUrl ||
-    tailorInfo?.imageUrl ||
-    tailorInfo?.image ||
-    appointment.tailorAvatar ||
-    appointment.tailor_avatar ||
-    appointment.tailor?.avatar ||
-    appointment.tailor?.avatarUrl ||
-    null;
-
-  const displayRating = tailorInfo?.rating
-    ? Number(tailorInfo.rating).toFixed(1)
-    : appointment.tailor?.rating
-    ? Number(appointment.tailor.rating).toFixed(1)
-    : "4.9";
-
-  const displayReviews =
-    tailorInfo?.reviewsCount ?? tailorInfo?.reviews ?? appointment.tailor?.reviewsCount ?? 28;
-
-  const displaySpecialty =
-    tailorInfo?.specialty ||
-    (tailorInfo?.specialties && tailorInfo.specialties[0]) ||
-    "Bespoke Fitting & Stitching";
-
-  const displayLocation =
-    tailorInfo?.city ||
-    tailorInfo?.address ||
-    locationStr ||
-    "Available for fittings";
-
-  const displayTailorId =
-    tailorInfo?.id ||
-    appointment.tailorId ||
-    appointment.tailor_id ||
-    appointment.tailor?.id ||
-    "";
-
-  const displayTailorPhone =
-    tailorInfo?.phone ||
-    (tailorInfo as any)?.phoneNumber ||
-    appointment.tailor?.phone ||
-    appointment.tailor?.phoneNumber ||
-    appointment.tailor?.contactNumber ||
-    "";
-
-  // Customer details
-  const displayCustomerName =
-    appointment.customerName ||
-    appointment.customer_name ||
-    appointment.clientName ||
-    appointment.userName ||
-    appointment.customer?.fullName ||
-    appointment.customer?.full_name ||
-    appointment.customer?.name ||
-    "Client";
-
-  const displayCustomerAvatar =
-    appointment.customerAvatar ||
-    appointment.customer_avatar ||
-    appointment.clientAvatar ||
-    appointment.customer?.avatar ||
-    appointment.customer?.avatarUrl ||
-    appointment.customer?.avatar_url ||
-    null;
-
-  const displayCustomerPhone =
-    appointment.customer?.phone ||
-    appointment.customer?.phoneNumber ||
-    appointment.customer?.phone_number ||
-    (appointment as any)?.phone ||
-    (appointment as any)?.customerPhone ||
-    "";
-
-  const displayCustomerId =
-    appointment.customerId ||
-    appointment.customer_id ||
-    appointment.customer?.id ||
-    appointment.customer?._id ||
-    "";
-
-  // Background preloading of existing conversation between appointment parties
-  useEffect(() => {
-    let isCancelled = false;
-    const currentUserId = currentUser?.id;
-    if (!currentUserId) return;
-
-    const findConversation = async () => {
-      try {
-        const isTailorRole =
-          from === "tailor" ||
-          currentUser?.role === "tailor" ||
-          Boolean(displayTailorId && currentUserId && displayTailorId === currentUserId);
-
-        let targetIds: string[] = [];
-        let targetNames: string[] = [];
-
-        if (isTailorRole) {
-          if (displayCustomerId) targetIds.push(displayCustomerId);
-          if (displayCustomerName && displayCustomerName !== "Client") {
-            targetNames.push(displayCustomerName);
-          }
-        } else {
-          const tailorUser =
-            tailorInfo?.userId ||
-            (tailorInfo as any)?.user_id ||
-            displayTailorId;
-          const tailorTable = tailorInfo?.id || displayTailorId;
-
-          if (tailorUser) targetIds.push(tailorUser);
-          if (tailorTable && tailorTable !== tailorUser) targetIds.push(tailorTable);
-          if (displayTailorName && displayTailorName !== "Tailor") {
-            targetNames.push(displayTailorName);
-          }
-          if (displayShopName) targetNames.push(displayShopName);
-        }
-
-        if (targetIds.length === 0) return;
-
-        const found = await conversationsApi.findExistingConversation(
-          targetIds,
-          currentUserId,
-          targetNames
-        );
-        if (!isCancelled && found && (found.id || (found as any)._id)) {
-          setExistingConversationId(found.id || (found as any)._id);
-        }
-      } catch {}
-    };
-
-    findConversation();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [
-    currentUser?.id,
-    from,
-    displayTailorId,
-    displayCustomerId,
-    tailorInfo?.id,
-    tailorInfo?.userId,
-    displayCustomerName,
-    displayTailorName,
-    displayShopName,
-  ]);
 
   // Actions
   const handleMessageCustomer = async () => {
