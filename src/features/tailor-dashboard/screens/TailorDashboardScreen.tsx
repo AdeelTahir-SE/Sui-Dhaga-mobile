@@ -80,6 +80,76 @@ export default function TailorDashboardScreen() {
     }, [refreshProfile]),
   );
 
+  const { newOrdersCount, pendingAppointmentsCount, totalEarnings } =
+    useMemo(() => {
+      const validOrders = Array.isArray(orders) ? orders : [];
+      const validAppts = Array.isArray(appointments) ? appointments : [];
+
+      const newOrders = validOrders.filter(
+        (o) => (o.status || "").toLowerCase() === "pending",
+      ).length;
+
+      const pendingAppts = validAppts.filter(
+        (a) => (a.status || "").toLowerCase() !== "completed",
+      ).length;
+
+      const earned = validOrders.reduce((sum, o) => {
+        const s = (o.status || "").toLowerCase();
+        if (s === "completed" || s === "delivered") {
+          return sum + (Number(o.price) || 0);
+        }
+        return sum;
+      }, 0);
+
+      return {
+        newOrdersCount: newOrders,
+        pendingAppointmentsCount: pendingAppts,
+        totalEarnings: earned,
+      };
+    }, [orders, appointments]);
+
+  const completionDetails = useMemo(() => {
+    const p = (profile || {}) as any;
+    const hasBusinessName = !!(p?.businessName?.trim() || p?.shopName?.trim());
+    const hasSpecialties = !!(
+      (Array.isArray(p?.specialties) && p.specialties.length > 0) ||
+      (typeof p?.specialty === "string" && p.specialty.trim().length > 0)
+    );
+    const loc = p?.location;
+    const hasLocation = !!(
+      (p?.city && p.city.trim().length > 0) ||
+      (p?.address && p.address.trim().length > 0) ||
+      (typeof loc === "object" &&
+        loc?.city &&
+        String(loc.city).trim().length > 0) ||
+      (typeof loc === "string" && loc.trim().length > 0)
+    );
+    const hasPrice = !!(
+      (typeof p?.startingPrice === "number" && p.startingPrice > 0) ||
+      (Array.isArray(p?.services) &&
+        p.services.length > 0 &&
+        typeof p.services[0]?.price === "number" &&
+        p.services[0].price > 0)
+    );
+
+    const steps = [
+      { name: "Shop Name", done: hasBusinessName },
+      { name: "Specialties", done: hasSpecialties },
+      { name: "Location", done: hasLocation },
+      { name: "Pricing", done: hasPrice },
+    ];
+    const completedCount = steps.filter((s) => s.done).length;
+    const missing = steps.filter((s) => !s.done).map((s) => s.name);
+    const percent = Math.round((completedCount / steps.length) * 100);
+
+    return {
+      completedCount,
+      totalCount: steps.length,
+      percent,
+      missing,
+    };
+  }, [profile]);
+
   const isUnauthenticated =
     !user ||
     !isAuthenticated ||
@@ -204,78 +274,8 @@ export default function TailorDashboardScreen() {
     user?.name?.trim() ||
     emailPrefix;
 
-  const { newOrdersCount, pendingAppointmentsCount, totalEarnings } =
-    useMemo(() => {
-      const validOrders = Array.isArray(orders) ? orders : [];
-      const validAppts = Array.isArray(appointments) ? appointments : [];
-
-      const newOrders = validOrders.filter(
-        (o) => (o.status || "").toLowerCase() === "pending",
-      ).length;
-
-      const pendingAppts = validAppts.filter(
-        (a) => (a.status || "").toLowerCase() !== "completed",
-      ).length;
-
-      const earned = validOrders.reduce((sum, o) => {
-        const s = (o.status || "").toLowerCase();
-        if (s === "completed" || s === "delivered") {
-          return sum + (Number(o.price) || 0);
-        }
-        return sum;
-      }, 0);
-
-      return {
-        newOrdersCount: newOrders,
-        pendingAppointmentsCount: pendingAppts,
-        totalEarnings: earned,
-      };
-    }, [orders, appointments]);
-
   const isProfileIncomplete =
     !isProfileLoading && (!isComplete || user?.profileCompleted === false);
-
-  const completionDetails = useMemo(() => {
-    const p = (profile || {}) as any;
-    const hasBusinessName = !!(p?.businessName?.trim() || p?.shopName?.trim());
-    const hasSpecialties = !!(
-      (Array.isArray(p?.specialties) && p.specialties.length > 0) ||
-      (typeof p?.specialty === "string" && p.specialty.trim().length > 0)
-    );
-    const loc = p?.location;
-    const hasLocation = !!(
-      (p?.city && p.city.trim().length > 0) ||
-      (p?.address && p.address.trim().length > 0) ||
-      (typeof loc === "object" &&
-        loc?.city &&
-        String(loc.city).trim().length > 0) ||
-      (typeof loc === "string" && loc.trim().length > 0)
-    );
-    const hasPrice = !!(
-      (typeof p?.startingPrice === "number" && p.startingPrice > 0) ||
-      (Array.isArray(p?.services) &&
-        p.services.length > 0 &&
-        typeof p.services[0]?.price === "number" &&
-        p.services[0].price > 0)
-    );
-
-    const steps = [
-      { name: "Shop Name", done: hasBusinessName },
-      { name: "Specialties", done: hasSpecialties },
-      { name: "Location", done: hasLocation },
-      { name: "Pricing", done: hasPrice },
-    ];
-    const completedCount = steps.filter((s) => s.done).length;
-    const missing = steps.filter((s) => !s.done).map((s) => s.name);
-    const percent = Math.round((completedCount / steps.length) * 100);
-
-    return {
-      completedCount,
-      totalCount: steps.length,
-      percent,
-      missing,
-    };
-  }, [profile]);
 
   return (
     <TailorDashboardShell
