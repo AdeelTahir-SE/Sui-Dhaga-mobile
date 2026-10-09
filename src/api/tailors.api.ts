@@ -26,8 +26,9 @@ export interface CreateTailorProfilePayload {
   longitude?: number;
   experienceYears?: number;
   bio?: string;
-  organizationName?: string;
-  organization?: string;
+  organizationName?: string | null;
+  organization?: string | null;
+  organization_name?: string | null;
 }
 
 export interface UpdateTailorProfilePayload {
@@ -39,8 +40,9 @@ export interface UpdateTailorProfilePayload {
   longitude?: number;
   experienceYears?: number;
   bio?: string;
-  organizationName?: string;
-  organization?: string;
+  organizationName?: string | null;
+  organization?: string | null;
+  organization_name?: string | null;
 }
 
 export async function buildBannerFormData(
@@ -630,13 +632,48 @@ export const tailorsApi = {
         ? Number(raw.experienceYears)
         : 0;
 
+    const rawOrg =
+      raw.organizationName !== undefined
+        ? raw.organizationName
+        : raw.organization !== undefined
+        ? raw.organization
+        : raw.organization_name !== undefined
+        ? raw.organization_name
+        : undefined;
+
+    const resolvedOrg =
+      rawOrg !== undefined
+        ? typeof rawOrg === 'string'
+          ? rawOrg.trim() || null
+          : rawOrg
+        : undefined;
+
+    const latVal =
+      raw.latitude !== undefined && raw.latitude !== null && !isNaN(Number(raw.latitude))
+        ? Number(raw.latitude)
+        : typeof data.location === 'object' && data.location?.latitude !== undefined
+        ? Number(data.location.latitude)
+        : undefined;
+
+    const lngVal =
+      raw.longitude !== undefined && raw.longitude !== null && !isNaN(Number(raw.longitude))
+        ? Number(raw.longitude)
+        : typeof data.location === 'object' && data.location?.longitude !== undefined
+        ? Number(data.location.longitude)
+        : undefined;
+
     const payload: CreateTailorProfilePayload = {
       shopName: resolvedShopName,
       specialties,
       city: city || 'Lahore',
       address: address || undefined,
+      latitude: latVal,
+      longitude: lngVal,
       experienceYears: expYears,
       bio: data.bio || '',
+      organizationName: resolvedOrg,
+      organization: resolvedOrg,
+      organization_name: resolvedOrg,
     };
 
     // 1. If we have a valid UUID tailorId, update via PATCH
